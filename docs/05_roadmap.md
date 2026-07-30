@@ -19,7 +19,7 @@ _The phased build plan / task checklist: what to implement, in order. Sequenced 
 
 **Launch-pass leftovers:** all done — personal-credit line + `LICENSE` ([D-029](03_decisions.md)), the OG image (`public/og-image.png`), and the production deploy ([D-030](03_decisions.md)). _(GitHub repo Settings → Social preview can still take the 1280×640 frame from `docs/og-image.html` if you want the repo card branded.)_
 
-**npm scripts:** `dev` · `build` · `build:data` · `vendor:images` (after `build:data`) · `audit:contrast` · `lint`.
+**npm scripts:** `dev` · `build` · `build:data` · `vendor:images` (after `build:data`) · `audit:contrast` · `lint` · `deploy` (`build` + `wrangler deploy`).
 
 **Notes:** `StatBar.jsx` is used only by the `/style` playground (kept for the future stats table).
 

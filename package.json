@@ -1,9 +1,30 @@
 {
   "name": "statmon",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "A simple set of Pokémon tools — starting with a head-to-head base-stat comparison.",
   "license": "MIT",
+  "author": "Noah Park-Nguyen (https://github.com/noahparknguyen)",
+  "homepage": "https://statmon.noahparknguyen.workers.dev/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/noahparknguyen/statmon.git"
+  },
+  "bugs": "https://github.com/noahparknguyen/statmon/issues",
+  "keywords": [
+    "pokemon",
+    "pokeapi",
+    "stat-comparison",
+    "react",
+    "vite",
+    "tailwindcss",
+    "react-router",
+    "cloudflare-workers"
+  ],
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -11,7 +32,8 @@
     "vendor:images": "node scripts/vendor-images.mjs",
     "audit:contrast": "node scripts/contrast-audit.mjs",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
