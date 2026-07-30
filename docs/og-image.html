@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Statmon — social image generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --base: #0b0c0f;
+        --primary: #f4f5f7;
+        --secondary: #a8aeba;
+        --accent: #9aa0e8;
+        --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+        --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #26272e;
+        font-family: var(--font-body);
+        color: var(--primary);
+        padding: 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 40px;
+        align-items: flex-start;
+      }
+      .note {
+        max-width: 1280px;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #cfd2da;
+        background: #1c1f27;
+        border: 1px solid #3a3f4b;
+        border-radius: 10px;
+        padding: 14px 18px;
+      }
+      .note code {
+        font-family: ui-monospace, monospace;
+        color: var(--accent);
+      }
+      .cap {
+        font-family: var(--font-display);
+        font-size: 13px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #9aa0e8;
+        margin-bottom: 10px;
+      }
+
+      /* Screenshot targets — capture these exact nodes. */
+      .frame {
+        position: relative;
+        overflow: hidden;
+        background: var(--base);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .frame.og {
+        width: 1200px;
+        height: 630px;
+      }
+      .frame.gh {
+        width: 1280px;
+        height: 640px;
+      }
+
+      .brand {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .brand img.fav {
+        width: 84px;
+        height: 84px;
+      }
+      .word {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 118px;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        color: var(--primary);
+      }
+      .word .dot {
+        color: var(--accent);
+      }
+      .sub {
+        font-family: var(--font-body);
+        font-size: 34px;
+        color: var(--secondary);
+        margin-top: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="note">
+      <strong>How to export:</strong> open this file in Chrome, wait a second
+      for the fonts to load, then right-click a frame → <em>Inspect</em> → in
+      the Elements panel right-click the highlighted
+      <code>&lt;div class="frame …"&gt;</code> →
+      <code>Capture node screenshot</code>. That saves the frame at its exact
+      pixel size — no cropping. Save the OG one as
+      <code>public/og-image.png</code>; upload the GitHub one under repo
+      Settings → Social preview.
+    </div>
+
+    <!-- OG image — 1200×630 (Open Graph / Twitter / Slack / Discord) -->
+    <div>
+      <div class="cap">og-image · 1200 × 630</div>
+      <div class="frame og">
+        <div class="brand">
+          <img class="fav" src="../public/favicon.svg" alt="" />
+          <div class="word">Statmon<span class="dot">.</span></div>
+          <div class="sub">A simple set of Pokémon tools.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GitHub social preview — 1280×640 (2:1) -->
+    <div>
+      <div class="cap">github social · 1280 × 640</div>
+      <div class="frame gh">
+        <div class="brand">
+          <img class="fav" src="../public/favicon.svg" alt="" />
+          <div class="word">Statmon<span class="dot">.</span></div>
+          <div class="sub">A simple set of Pokémon tools.</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
