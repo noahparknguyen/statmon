@@ -4,6 +4,18 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ---
 
+## 2026-07-29 — Session 4 (deployment · docs polish)
+
+<a id="d-030"></a>
+
+### D-030 · Deployed to Cloudflare Workers as a static-assets SPA — **Firm**
+
+**Decision.** Shipped the MVP to **Cloudflare Workers as a static-assets single-page app** — no Worker script. `wrangler.jsonc` sets `assets.directory: "./dist"` and `assets.not_found_handling: "single-page-application"`, so deep links (`/compare/<p1>/vs/<p2>`, `/credits`) serve `index.html` and React Router (data mode) renders the right page client-side. `vite build` emits everything — including the vendored `public/sprites/` + `public/artwork/` — into `dist/`, which Wrangler uploads as static assets (edge-cached, free, and not counted against the Worker request limit — [D-002](#d-002)). Live at **https://statmon.noahparknguyen.workers.dev/**. Also set `index.html`'s `og:url` / `og:image` / `twitter:image` to **absolute** production URLs (scrapers require it), closing the old `TODO(deploy)` from [D-026](#d-026).
+
+**Why.** The app is a client-side SPA ([D-022](#d-022)), so an assets-only deploy is the smallest, cleanest way to ship it: no server code, and the images need zero special handling. I chose this over React Router **framework/SSR mode** ([D-005](#d-005)) for launch because SSR's main win is per-route `<title>`/meta, which the MVP doesn't need (the site-level OG/meta is set). Framework mode stays the documented end-state and drops onto the same data-mode routes if per-comparison social unfurls or SEO ever justify it. Researched against the current Cloudflare Workers static-assets docs.
+
+---
+
 ## 2026-07-29 — Session 3 (mobile per-stat layout · launch leftovers)
 
 <a id="d-029"></a>

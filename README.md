@@ -2,6 +2,8 @@
 
 A simple set of Pokémon tools, built for myself. The first is a head-to-head comparison of two Pokémon's base stats.
 
+**Live at [statmon.noahparknguyen.workers.dev](https://statmon.noahparknguyen.workers.dev/).**
+
 ![Statmon comparing Volcarona and Chandelure](docs/home.png)
 
 ## Why
@@ -14,7 +16,7 @@ Everything comes from PokéAPI, pulled once at build time into a local JSON file
 
 ## Stack
 
-React + Vite, Tailwind (CSS-first tokens), React Router, plain JavaScript. Headed for Cloudflare Workers.
+React + Vite, Tailwind (CSS-first tokens), React Router, plain JavaScript. Deployed on Cloudflare Workers as static assets.
 
 ## Docs
 

@@ -6,20 +6,18 @@ _The phased build plan / task checklist: what to implement, in order. Sequenced 
 
 ---
 
-## Current status (2026-07-29 — Session 3)
+## Current status (2026-07-29 — Session 4, live)
 
-**Done — Phases 0–3.5, all of Phase 4 except the Cloudflare/SSR deploy.** The app is a polished, multi-page, self-contained, WCAG-AA site running locally, responsive from phone to desktop.
+**Done — the MVP is live.** Phases 0–4 are complete: a polished, multi-page, self-contained, WCAG-AA site, responsive from phone to desktop, deployed on Cloudflare Workers at **https://statmon.noahparknguyen.workers.dev/**. The one Phase-4 item intentionally left for later is the optional SSR/framework-mode upgrade (per-route meta).
 
 - **Phases 0–2:** plain Vite + React (JS) + Tailwind v4 CSS-first tokens; build-time data pipeline → **1,259 entries**; design-system primitives.
 - **Phase 3 — comparison tool:** search, two hero cards with form switching, the comparison card (BST summary, STAB matchup, mirrored **type-colored** diffs, speed banner), swap.
 - **Phase 3.5 — routing:** React Router **v8** (data mode); shared `Layout` (header/nav/footer + `main`); routes `/` Home, `/compare` (+ `/compare/<p1>/vs/<p2>`), `/credits`, `/style`, `*` 404; **URL is the single source of truth** ([D-022](03_decisions.md), `src/lib/compareUrl.js`).
-- **Phase 4:** **Home** product-as-hero (live Volcarona-vs-Chandelure board, blunt suite copy, corner mascot sprites, tools row) + blunt **Credits** ([D-023](03_decisions.md)); **image vendoring** — 2,513 sprites/artwork self-hosted + committed ([D-025](03_decisions.md)); **meta/favicons/OG** incl. the HTML-rendered OG generator `docs/og-image.html` ([D-026](03_decisions.md)); **accessibility** — skip link + landmarks ([D-024](03_decisions.md)) and a full **WCAG-AA contrast audit** with a reproducible checker ([D-027](03_decisions.md)); **mobile per-stat layout** — `ComparisonCard` + `FeaturedComparison` collapse to stacked per-stat cards below 768px ([D-010](03_decisions.md), [D-029](03_decisions.md)); the MIT `LICENSE` and a personal-credit footer line are in ([D-029](03_decisions.md)).
+- **Phase 4:** **Home** product-as-hero (live Volcarona-vs-Chandelure board, blunt suite copy, corner mascot sprites, tools row) + blunt **Credits** ([D-023](03_decisions.md)); **image vendoring** — 2,513 sprites/artwork self-hosted + committed ([D-025](03_decisions.md)); **meta/favicons/OG** incl. the HTML-rendered OG generator `docs/og-image.html` ([D-026](03_decisions.md)); **accessibility** — skip link + landmarks ([D-024](03_decisions.md)) and a full **WCAG-AA contrast audit** with a reproducible checker ([D-027](03_decisions.md)); **mobile per-stat layout** — `ComparisonCard` + `FeaturedComparison` collapse to stacked per-stat cards below 768px ([D-010](03_decisions.md), [D-029](03_decisions.md)); the MIT `LICENSE` and a personal-credit footer line are in ([D-029](03_decisions.md)); **deployed** to Cloudflare Workers as static assets, with absolute OG URLs set ([D-030](03_decisions.md)).
 
-**Next up — the only remaining Phase-4 item:**
+**Deferred (optional, post-MVP):** the React Router **framework/SSR mode** upgrade ([D-005](03_decisions.md), [D-022](03_decisions.md)) — the data-mode config migrates cleanly. It would add **per-route `<title>`/meta**; the site-level OG/meta is already set with absolute URLs. Not required for the MVP — revisit if per-comparison social unfurls become worth it.
 
-1. **Cloudflare Workers deploy** + React Router **framework/SSR mode** ([D-005](03_decisions.md), [D-022](03_decisions.md)) — the data-mode config migrates cleanly. This also unlocks the two deferred meta items: **per-route `<title>`/meta** and making **`og:url`/`og:image` absolute** (both flagged as `TODO(deploy)` in `index.html`).
-
-**Launch-pass leftovers (small):** ~~a personal-credit line~~ ✅ and ~~a `LICENSE` file~~ ✅ — done ([D-029](03_decisions.md)). Still open: the two social screenshots from `docs/og-image.html` — the 1200×630 frame → `public/og-image.png`, the 1280×640 frame → GitHub repo Settings → Social preview — and the final production deploy.
+**Launch-pass leftovers:** all done — personal-credit line + `LICENSE` ([D-029](03_decisions.md)), the OG image (`public/og-image.png`), and the production deploy ([D-030](03_decisions.md)). _(GitHub repo Settings → Social preview can still take the 1280×640 frame from `docs/og-image.html` if you want the repo card branded.)_
 
 **npm scripts:** `dev` · `build` · `build:data` · `vendor:images` (after `build:data`) · `audit:contrast` · `lint`.
 
@@ -35,8 +33,8 @@ _Goal: a minimal, running local app with the styling system wired up. Start simp
 - [x] Add **Tailwind** (v4, `@tailwindcss/vite`).
 - [x] Finalize the **style guide** ([06_style_guide](06_style_guide.md)) and translate it into the **Tailwind theme + design tokens** in `src/index.css` (colors, 11-step type scale, 17 named text styles, radii, breakpoints, motion) — everything token-driven from here on.
 - [x] Wire fonts (Space Grotesk + Inter) and page meta in `index.html`.
-- [ ] Confirm local dev + build run clean (`npm run dev` / `npm run build`).
-- [ ] Set up the repo: `.gitignore` (present), license, initial README stub, commit hygiene.
+- [x] Confirm local dev + build run clean (`npm run dev` / `npm run build`).
+- [x] Set up the repo: `.gitignore`, license (MIT), README, commit hygiene; published to GitHub.
 
 **Exit:** a blank, on-brand Statmon app runs locally with the full token system available in Tailwind. (Cloudflare deploy + routing come later — see Phase 3.5 and Phase 4.)
 
@@ -118,11 +116,11 @@ _Goal: a complete, showcase-ready site. This is where the **Cloudflare Workers/W
 - [x] **Logo + wordmark** — the flame Poké Ball favicon + "Statmon." wordmark serve as the mark (header + OG image).
 - [x] **Accessibility pass**: keyboard, labels, alt text, skip link ([D-024](03_decisions.md)); full type-color **contrast audit** to AA with a reproducible checker ([D-027](03_decisions.md), `npm run audit:contrast`).
 - [x] Implement the **mobile layout**: per-stat cards under 768px. ([D-010](03_decisions.md), [D-029](03_decisions.md))
-- [ ] Add the **Cloudflare Workers + Wrangler** deploy layer (and React Router's Cloudflare/SSR adapter if adopted). ([D-005](03_decisions.md))
-- [ ] Polished **README** and `/docs` up to date.
-- [ ] Final **Cloudflare production deploy**.
+- [x] Add the **Cloudflare Workers + Wrangler** deploy layer — shipped as a **static-assets SPA** (no Worker code); SSR adapter deferred (optional). ([D-005](03_decisions.md), [D-030](03_decisions.md))
+- [x] Polished **README** and `/docs` up to date.
+- [x] Final **Cloudflare production deploy** — live at https://statmon.noahparknguyen.workers.dev/. ([D-030](03_decisions.md))
 
-**Exit:** MVP is live, looks great, works on phone and desktop, and the repo is presentable. 🎉
+**Exit:** MVP is live, looks great, works on phone and desktop, and the repo is presentable. 🎉 **✅ Done 2026-07-29.**
 
 ---
 
