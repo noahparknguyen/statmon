@@ -61,7 +61,7 @@ Each stat is a simple horizontal bar, color-coded to the Pokémon's primary type
 - **`[Open]` Mega Evolutions.** Megas drastically change a Pokémon's stats. Treat each Mega as a separate selectable entity, or as the same Pokémon with a toggle that swaps in the alternate stat block? (PokéAPI models them as separate "varieties" under one species — see [02_research](02_research.md).)
 - **`[Open]` Other forms.** The same question generalizes: regional forms (Alolan, etc.), Rotom appliances, Deoxys formes, battle-only forms. How many of these are in scope, and how are they surfaced in search?
 - **`[Open]` Generation 1 "Special".** Gen 1 has a single "Special" stat; Gen 2+ splits it into Sp. Attack and Sp. Defense. Do I show Gen-1-accurate values, or normalize everything to the modern six-stat schema? (Leaning modern — see research.)
-- **✅ Generation scope for launch.** _Decided: all generations — the full National Dex (1,025 Pokémon)._ The Gens 1–5 playthrough inspired the project but shouldn't cap it; a complete dex makes it a complete tool. See [D-009](03_decisions.md).
+- **✅ Generation scope for launch.** _Decided: all generations — the full National Dex (1,025 Pokémon)._ The Gens 1–5 playthrough inspired the project but shouldn't cap it; a complete dex makes it a complete tool. See [D-009](03_decisions.md#d-009).
 
 ---
 
@@ -164,19 +164,19 @@ Deployment target is **Cloudflare Workers**, using **React Router (v7)** for a m
 - **404 / not-found** `[MVP]` — on-brand, helpful, links back home.
 - **Future tool pages** `[Someday]` — one per tool/game as they ship.
 
-**✅ Routing — decided.** React Router v7 (with the Cloudflare/SSR layer) is the end-state, added when multi-page routing is actually needed rather than up front. See [D-005](03_decisions.md), [D-013](03_decisions.md).
+**✅ Routing — decided.** React Router v7 (with the Cloudflare/SSR layer) is the end-state, added when multi-page routing is actually needed rather than up front. See [D-005](03_decisions.md#d-005), [D-013](03_decisions.md#d-013).
 
 ---
 
 ## 7. Tech Stack
 
 - **React + Tailwind + Vite** — standard, fast, well-supported. `[MVP]`
-- **JavaScript** — decided to start simple in JS rather than TypeScript ([D-014](03_decisions.md)); JSDoc typedefs cover the data model. `[MVP]`
+- **JavaScript** — decided to start simple in JS rather than TypeScript ([D-014](03_decisions.md#d-014)); JSDoc typedefs cover the data model. `[MVP]`
 - **React Router v7** for routing — added later, when a second route exists (not at scaffold time). `[V2]`
 - **Cloudflare Workers** for deployment, via **Wrangler** — added at launch, not up front. `[V2]`
 - **Build-time data pipeline** (Node script) to fetch + generate the local JSON. `[MVP]`
 
-**✅ Project template — decided.** Start with **no template — plain Vite + React (JavaScript)**, then layer in React Router and Cloudflare/Wrangler when each is actually needed. See [D-013](03_decisions.md), [D-014](03_decisions.md).
+**✅ Project template — decided.** Start with **no template — plain Vite + React (JavaScript)**, then layer in React Router and Cloudflare/Wrangler when each is actually needed. See [D-013](03_decisions.md#d-013), [D-014](03_decisions.md#d-014).
 
 **Supporting tooling** (portfolio polish):
 
@@ -192,7 +192,7 @@ Deployment target is **Cloudflare Workers**, using **React Router (v7)** for a m
 Minimalist and simple, with a **dark-mode, modern aesthetic**. Details land in the dedicated [04_design](04_design.md) style guide; the intent captured here:
 
 - **Type-driven color.** Each of the 18 types gets a color tuned for contrast on a dark background, since those colors carry the stat bars.
-- **Typography.** ✅ **Decided:** **Space Grotesk** for the logo/headers/titles (modern, characterful) + **Inter** for body and for **stat numbers with tabular figures** so digits align in columns. See [D-008](03_decisions.md).
+- **Typography.** ✅ **Decided:** **Space Grotesk** for the logo/headers/titles (modern, characterful) + **Inter** for body and for **stat numbers with tabular figures** so digits align in columns. See [D-008](03_decisions.md#d-008).
 - **Dark mode first**, with a **light-mode** toggle as a `[V2]` nice-to-have.
 - **Motion.** Restrained — a bar-fill animation, gentle transitions, nothing distracting. Respect reduced-motion.
 - **The mascot.** Volcarona woven into the brand tastefully, not gaudily.

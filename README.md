@@ -18,6 +18,15 @@ Everything comes from PokéAPI, pulled once at build time into a local JSON file
 
 React + Vite, Tailwind (CSS-first tokens), React Router, plain JavaScript. Deployed on Cloudflare Workers as static assets.
 
+## Run it
+
+```bash
+npm install
+npm run dev
+```
+
+`npm run build:data` regenerates the dataset from PokéAPI and `npm run vendor:images` fetches the images — both only needed when a new generation ships, and both cache aggressively so re-runs are free. The checks that keep things honest are `lint`, `format:check`, `audit:contrast` (WCAG AA across all 18 type colours) and `check:docs` (every link and anchor in `docs/`).
+
 ## Docs
 
 I keep my working notes in [`docs/`](docs/) — the original brainstorm, the design system, and a dated decision log for why things are built the way they are. If you want to see how I think through a project, start with the [decision log](docs/03_decisions.md).

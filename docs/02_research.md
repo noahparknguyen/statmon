@@ -42,7 +42,7 @@ _Answers to the open questions from [00_brainstorm](00_brainstorm.md) and extern
 
 **Finding.** As of 2026, **React Router v7 (the merged successor to Remix) is officially supported on Cloudflare Workers**, with an official Cloudflare template and the Cloudflare Vite plugin generally available. Cloudflare now recommends **Workers over Pages** for new full-stack apps, and Workers supports SSR (server-rendered HTML on request, then client hydration).
 
-**→ Recommendation.** React Router v7 + SSR on Cloudflare Workers is the confirmed **end-state** target (great for meta tags, OG images, direct-linked comparisons, and the multi-page suite). **Sequencing note:** I do **not** scaffold from the combined template up front — per [D-013](03_decisions.md) I start with a plain Vite + React (JavaScript) app and add React Router (Phase 3.5) and the Cloudflare/Wrangler layer (Phase 4) when each is actually needed. The finding (official support + template exist) still holds for when I add that layer. Decisions: [D-005](03_decisions.md), [D-013](03_decisions.md).
+**→ Recommendation.** React Router v7 + SSR on Cloudflare Workers is the confirmed **end-state** target (great for meta tags, OG images, direct-linked comparisons, and the multi-page suite). **Sequencing note:** I do **not** scaffold from the combined template up front — per [D-013](03_decisions.md#d-013) I start with a plain Vite + React (JavaScript) app and add React Router (Phase 3.5) and the Cloudflare/Wrangler layer (Phase 4) when each is actually needed. The finding (official support + template exist) still holds for when I add that layer. Decisions: [D-005](03_decisions.md#d-005), [D-013](03_decisions.md#d-013).
 
 ---
 
@@ -50,7 +50,7 @@ _Answers to the open questions from [00_brainstorm](00_brainstorm.md) and extern
 
 **Finding.** For data/numeric UIs the consensus favors clean sans-serifs with **tabular figures** (equal-width digits so columns align). Top Google-Fonts-available picks: **Inter** (the frequent #1 — tabular figures, great small-size legibility, consistent rendering), with IBM Plex Sans, Source Sans, Roboto, and Lato as solid alternates. For a more architectural/minimalist feel, **Urbanist** is a clean modern option. Sans-serif is preferred over serif for numeric tables.
 
-**→ Recommendation (decided).** A two-font system: **Inter** as the workhorse for body and — critically — for the **stat numbers with tabular figures enabled** (`font-feature-settings: "tnum"`), so digits line up in the difference column; paired with **Space Grotesk** for the logo/wordmark, headers, and titles (a geometric grotesque with a modern "calm-tech" character that complements Inter's neutrality). Finalize exact weights, sizes, and the type-color palette in [04_design](04_design.md). See [D-008](03_decisions.md).
+**→ Recommendation (decided).** A two-font system: **Inter** as the workhorse for body and — critically — for the **stat numbers with tabular figures enabled** (`font-feature-settings: "tnum"`), so digits line up in the difference column; paired with **Space Grotesk** for the logo/wordmark, headers, and titles (a geometric grotesque with a modern "calm-tech" character that complements Inter's neutrality). Finalize exact weights, sizes, and the type-color palette in [04_design](04_design.md). See [D-008](03_decisions.md#d-008).
 
 ---
 
@@ -62,8 +62,8 @@ _Answers to the open questions from [00_brainstorm](00_brainstorm.md) and extern
 | Megas / forms           | Each form is its own entry with `forms` counterpart refs + `isDefault`                                                                                   |
 | Gen-1 Special           | Normalize to modern six stats (PokéAPI already does)                                                                                                     |
 | Routing / deploy        | React Router **v8**, data mode, client-side now ([§10](#10-react-router--mode--version-phase-35)); framework mode + SSR on Cloudflare Workers at Phase 4 |
-| Fonts                   | ✅ Inter (tabular figures) for body/stats + Space Grotesk for display/headers. See [D-008](03_decisions.md)                                              |
-| Launch generation scope | ✅ All generations — full National Dex (1,025 Pokémon); pipeline parameterized. See [D-009](03_decisions.md)                                             |
+| Fonts                   | ✅ Inter (tabular figures) for body/stats + Space Grotesk for display/headers. See [D-008](03_decisions.md#d-008)                                        |
+| Launch generation scope | ✅ All generations — full National Dex (1,025 Pokémon); pipeline parameterized. See [D-009](03_decisions.md#d-009)                                       |
 
 ---
 
@@ -71,7 +71,7 @@ _Answers to the open questions from [00_brainstorm](00_brainstorm.md) and extern
 
 **Finding.** Chandelure's official artwork palette, per extracted color sources, centers on: soft periwinkle purple **#757CBB**, deep flame-core purples **#7352E6 / #5941BF**, pastel blue **#A8C3DD**, pale blue-white highlight **#D2DEF1**, near-black frame/body **#070808 / #2F2F2F**, and a small yellow flame tip **#FBD13D**. (Note: the _shiny_ form flames orange, not purple — I use the standard purple.)
 
-**→ Recommendation (decided).** Build the brand accent from the purple→blue flame: a pastel periwinkle `#9AA0E8` primary accent (lifted from #757CBB for dark-bg contrast), a `#A8C3DD` blue secondary/gradient stop, and a `#7352E6` deep-purple core for the hero flame gradient. Keep the accent bluer/lighter than the purple-family type colors so it never reads as a type. Full token table in [04_design §2](04_design.md); logged as [D-012](03_decisions.md).
+**→ Recommendation (decided).** Build the brand accent from the purple→blue flame: a pastel periwinkle `#9AA0E8` primary accent (lifted from #757CBB for dark-bg contrast), a `#A8C3DD` blue secondary/gradient stop, and a `#7352E6` deep-purple core for the hero flame gradient. Keep the accent bluer/lighter than the purple-family type colors so it never reads as a type. Full token table in [04_design §2](04_design.md); logged as [D-012](03_decisions.md#d-012).
 
 ---
 
@@ -85,13 +85,13 @@ _Answers to the open questions from [00_brainstorm](00_brainstorm.md) and extern
 - Free-plan caps are **20,000 files per deploy** and **25 MiB per file**. My footprint (~1,259 sprites + ~1,259 artworks ≈ 2,500 files, each ≤ ~150 KB) is well within both.
 - Cloudflare **Images** (their paid transformation/delivery product) is a different thing and is **not** needed — plain static assets suffice.
 
-**→ Recommendation (decided).** Self-host both image types as Cloudflare Workers static assets; optimize artwork to WebP (~475px); lazy-load everything. Cost: **$0**; only trade-off is deploy storage. Locked in [D-002](03_decisions.md).
+**→ Recommendation (decided).** Self-host both image types as Cloudflare Workers static assets; optimize artwork to WebP (~475px); lazy-load everything. Cost: **$0**; only trade-off is deploy storage. Locked in [D-002](03_decisions.md#d-002).
 
 ---
 
 ## 9. UI/UX Best Practices (spacing & typography)
 
-Research that drove the design-system rules in [06_style_guide](06_style_guide.md) and the spacing/hierarchy pass ([D-019](03_decisions.md)).
+Research that drove the design-system rules in [06_style_guide](06_style_guide.md) and the spacing/hierarchy pass ([D-019](03_decisions.md#d-019)).
 
 ### Spacing
 
@@ -113,27 +113,27 @@ Research that drove the design-system rules in [06_style_guide](06_style_guide.m
 
 ## 10. React Router — Mode & Version (Phase 3.5)
 
-Research behind the routing decision ([D-022](03_decisions.md)); revisits the [§4](#4-react-router-v7-on-cloudflare-workers) finding at implementation time.
+Research behind the routing decision ([D-022](03_decisions.md#d-022)); revisits the [§4](#4-react-router-v7-on-cloudflare-workers) finding at implementation time.
 
-**Three modes.** React Router (v7+) ships one library (`react-router`; React Native and the `react-router-dom` split are gone) with three modes: **declarative** (`<BrowserRouter>`/`<Routes>` — simplest, SPA-only, no data APIs), **data** (`createBrowserRouter` — adds loaders/actions and the data lifecycle; client-side, with an optional DIY SSR path), and **framework** (data mode packaged as a full-stack framework: file routes, typesafety, built-in SSR — the Remix successor). **Framework mode is data mode packaged up**, so choosing data mode now makes the eventual migration to the framework/SSR end-state ([D-005](03_decisions.md)) the smoothest — a synchronous slug lookup today becomes a route **loader** under SSR with no restructuring.
+**Three modes.** React Router (v7+) ships one library (`react-router`; React Native and the `react-router-dom` split are gone) with three modes: **declarative** (`<BrowserRouter>`/`<Routes>` — simplest, SPA-only, no data APIs), **data** (`createBrowserRouter` — adds loaders/actions and the data lifecycle; client-side, with an optional DIY SSR path), and **framework** (data mode packaged as a full-stack framework: file routes, typesafety, built-in SSR — the Remix successor). **Framework mode is data mode packaged up**, so choosing data mode now makes the eventual migration to the framework/SSR end-state ([D-005](03_decisions.md#d-005)) the smoothest — a synchronous slug lookup today becomes a route **loader** under SSR with no restructuring.
 
-**Version — v8 is current.** As of July 2026 the current major is **React Router v8** (v7's `react-router` targeted in [D-005](03_decisions.md) is superseded). v8 is an intentionally "boring," near-non-breaking release: all v7 `future.*` flags become defaults, middleware is baseline, it's **ESM-only**, and baselines rise to **Node 22+, React 19.2.7+, Vite 7+**. Statmon already satisfies these (React 19.2.7, Vite 8), and the data-mode APIs used (`createBrowserRouter`, `RouterProvider`, `Link`/`NavLink`, `useParams`, `useSearchParams`, `useNavigate`) are unchanged across v7→v8.
+**Version — v8 is current.** As of July 2026 the current major is **React Router v8** (v7's `react-router` targeted in [D-005](03_decisions.md#d-005) is superseded). v8 is an intentionally "boring," near-non-breaking release: all v7 `future.*` flags become defaults, middleware is baseline, it's **ESM-only**, and baselines rise to **Node 22+, React 19.2.7+, Vite 7+**. Statmon already satisfies these (React 19.2.7, Vite 8), and the data-mode APIs used (`createBrowserRouter`, `RouterProvider`, `Link`/`NavLink`, `useParams`, `useSearchParams`, `useNavigate`) are unchanged across v7→v8.
 
 **URL as source of truth.** Best practice for routed, shareable state is to derive it from the URL rather than mirror it in local state — this makes back/forward, deep links, and manual edits correct by construction and avoids desync bugs. Statmon derives the comparison selection from the path deep link (`/compare/<p1>/vs/<p2>`) or a query param (partial state) on every render.
 
-**→ Recommendation (decided).** React Router **v8**, **data mode**, client-side, URL-as-source-of-truth; framework mode + Cloudflare/SSR deferred to Phase 4 as planned. See [D-022](03_decisions.md).
+**→ Recommendation (decided).** React Router **v8**, **data mode**, client-side, URL-as-source-of-truth; framework mode + Cloudflare/SSR deferred to Phase 4 as planned. See [D-022](03_decisions.md#d-022).
 
 ---
 
 ## 11. Sprite/Artwork Licensing (redistribution check)
 
-Checked before committing the vendored images ([D-025](03_decisions.md)).
+Checked before committing the vendored images ([D-025](03_decisions.md#d-025)).
 
 **Finding.** The `PokeAPI/sprites` repo ships a `LICENCE.txt` that reads: _"All image contents within are Copyright The Pokémon Company. This repository is distributed under **CC0 1.0 Universal.**"_ CC0 is a public-domain dedication — the affirmer waives all copyright and related rights and grants use "for any purpose whatsoever, including … commercial," with reproduction, distribution, and adaptation explicitly enumerated. So **PokéAPI expressly permits self-hosting, redistribution (incl. committing to my repo), and modification (my WebP conversion).** Its fair-use policy independently _encourages_ local caching/self-hosting over hotlinking.
 
 **Caveat.** The same license opens by noting the images are **© The Pokémon Company**, and §4 clarifies CC0 waives only the _affirmer's_ (PokéAPI's) rights — it does **not** clear TPC's underlying copyright or any trademarks, and PokéAPI "disclaims responsibility for clearing rights of other persons." In practice this is the standard fan-project posture: game assets used under de-facto tolerance, with clear attribution and an "unofficial fan project" disclaimer (Statmon carries both in the footer + Credits). _This is a summary of the license text, not legal advice._
 
-**→ Recommendation (decided).** Vendor + commit both image types (they're static, so no git-history churn); keep the PokéAPI attribution + fan-project disclaimer. Locked in [D-025](03_decisions.md).
+**→ Recommendation (decided).** Vendor + commit both image types (they're static, so no git-history churn); keep the PokéAPI attribution + fan-project disclaimer. Locked in [D-025](03_decisions.md#d-025).
 
 ---
 

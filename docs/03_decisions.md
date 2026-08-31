@@ -4,6 +4,384 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ---
 
+## 2026-08-31 — Session 5 (review & consistency pass)
+
+<a id="d-037"></a>
+
+### D-037 · Copy pass; ESLint blind spot; combobox keyboard fix — **Firm**
+
+**Decision.** A read of every user-facing string, then a sweep of the files the
+review had not yet touched.
+
+**Copy.** Eight changes, all toward "blunt, no filler" ([D-023](#d-023)):
+
+- **`/compare`'s subtitle** was _"Visualizes the difference between two
+  Pokémon."_ — it described what the code does rather than what the reader gets,
+  and was the only impersonal third-person line on the site. The strongest copy
+  in the project was sitting unused in a meta tag, so the page now says **"See
+  who's faster, hits harder, and is bulkier."** — matching the `description`
+  tag and the [01_spec](01_spec.md) primary goal verbatim. This supersedes the
+  line recorded in [D-023](#d-023).
+- **404 said "**We** couldn't find…"** — the only first-person-plural on a
+  solo project, and the only HTML entity in the codebase. Now _"The link may be
+  broken, or the page moved."_
+- **Three different fan-project disclaimers** (footer, Credits, README) with two
+  different company lists. Unified on the Credits/README wording: _"an unofficial
+  fan project, not affiliated with Nintendo, Game Freak, or The Pokémon Company."_
+- **"Base Stat Total" vs "Base stat total"** — Title Case in `PokemonCard`,
+  sentence case elsewhere. Invisible on screen (`text-overline` uppercases) but
+  **screen readers read the DOM text**, so it was audibly inconsistent. Sentence
+  case everywhere, matching its sibling "Higher total".
+- **"Same Speed" → "Same speed"** — its sibling string is "{name} moves first".
+- **"STAB" is unexplained jargon** on a site whose success criterion is a
+  stranger mid-playthrough getting an answer instantly. Both instances now carry
+  a `title` expanding it to "Same Type Attack Bonus" — no visual change.
+- **`og:description` / `twitter:description`** were weaker truncations of
+  `description`, dropping the "who's faster" clause. All three now match.
+- **Credits' "How the site was made."** promised process the page doesn't
+  deliver; it lists sources and the repo. Now _"What Statmon is built on."_
+
+**A real blind spot in the tooling.** `eslint.config.js` matched only
+`**/*.{js,jsx}`, so **`scripts/*.mjs` were never linted** — all four Node
+scripts, including the two that talk to PokéAPI. Confirmed by appending an
+undefined identifier to a script and watching `npm run lint` pass. Added a
+Node-globals block for `scripts/**/*.mjs`; the same test now fails correctly.
+Also extended `globalIgnores` to `.wrangler` and `src/data`.
+
+**Combobox keyboard fix.** The search results put `role="option"` on a `<button>`
+inside an `<li>`, so the accessibility tree read _listbox → listitem → option_ —
+options must be immediate children of the listbox. Worse, the buttons were
+**tab stops**: Tab from the search field walked through all eight results instead
+of leaving the field, which is exactly what `aria-activedescendant` exists to
+avoid. Added `role="presentation"` to the `<li>` and `tabIndex={-1}` to the
+options. [D-020](#d-020)/[D-024](#d-024) reviewed this ARIA and missed both.
+
+**Also.** Title-casing logic existed in **four** places (I added the fourth in
+[D-036](#d-036)); `titleCase` is now exported once from the codec and used by the
+decoder, `formLabel`, and `build-data.mjs` — verified to produce byte-identical
+form labels across all 1,259 entries and a byte-identical dataset. `TypeBadge`
+called `typeTextVar(type)` with an argument the function ignores, implying the
+badge colour varies by type when [D-027](#d-027) made it uniform. Home's tools
+row was an unlabelled `<ul>` — four bare items with no context for a screen
+reader — and now carries `aria-label`. The README gained a **Run it** section;
+for a repo whose second audience is "someone judging how I work," not being able
+to clone and run it was the one real gap.
+
+<a id="d-036"></a>
+
+### D-036 · Dataset stored without derivable fields (bundle −37%) — **Firm**
+
+**Decision.** `src/data/pokemon.json` now stores only what cannot be rebuilt, via
+a shared codec (`src/lib/pokemonCodec.js`) that `src/lib/pokemon.js` decodes once
+at import. Six fields came out, each verified across all 1,259 entries first:
+
+| Field         | Rebuilt from         | Held for all entries         |
+| ------------- | -------------------- | ---------------------------- |
+| `name`        | `titlecase(slug)`    | 1259/1259                    |
+| `bst`         | `sum(stats)`         | 1259/1259                    |
+| `spriteUrl`   | `/sprites/{id}.png`  | 1256/1259, rest flagged `ns` |
+| `artworkUrl`  | `/artwork/{id}.webp` | 1257/1259, rest flagged `na` |
+| `forms`       | `[slug]`             | 845/1259, rest stored        |
+| `speciesSlug` | `slug`               | 988/1259, rest stored        |
+
+Keys are single letters and stats are a fixed-order array.
+
+```
+dataset : 382.8 → 119.1 KB raw   (−69%)   58.0 → 28.2 KB gzip  (−51%)
+bundle  : 717.7 → 449.7 KB raw   (−37%)  162.0 → 131.9 KB gzip (−19%)
+```
+
+**Why this and not fetching the JSON as a static asset.** Moving it out of the
+bundle would save more — the library floor is 325.7 KB raw / 100.9 KB gzip,
+measured by building with the dataset stubbed out — but it would break the thing
+[D-022](#d-022) is built on: _"slugs resolve synchronously via `getBySlug` (the
+dataset is a static import)."_ Every route would gain a loading state, Home
+included, since its hero board needs Volcarona and Chandelure to render at all.
+Trading instant render for bytes is the wrong trade for a tool whose whole pitch
+is being faster than the alternatives. This gets roughly half the saving and
+keeps the synchronous, URL-as-source-of-truth design intact.
+
+**No component changed.** The decoder returns the exact objects the app already
+used, so every consumer — components, `getBySlug`, `formsOf`, `searchPokemon` —
+is untouched.
+
+**Verified four ways.** (1) Encode→decode of the pre-existing file is
+**deep-equal** to the original. (2) All 13 rendered surfaces are **byte-identical**
+before and after. (3) `npm run build:data` re-run end-to-end from the on-disk
+cache (2.8s, zero network) emits a file **byte-identical** to the transform, so
+the pipeline and codec agree — same 1,259 entries, 414 alt-forms, per-generation
+counts and 3 sprite-less entries as before. (4) `npm run vendor:images` still
+resolves exactly the same 2,513 assets with nothing to fetch.
+
+**Also.** `vendor-images.mjs` no longer rewrites the data file — asset paths are
+derived from `id` now, and `build-data.mjs` already records the two "no sprite" /
+"no artwork" flags, so a whole class of mutable state disappeared from the
+pipeline.
+
+<a id="d-035"></a>
+
+### D-035 · Display-numeral styles added; `/style` made self-verifying — **Firm**
+
+**Decision.** Closed the last [06 §12](06_style_guide.md) rule-2 violations by
+**adding the four styles the design needed** rather than bending the design to
+the existing table: `text-numeral-xl` / `-lg` / `-md` (display, 700,
+`leading-none`) and `text-meta` (display, 12px, 600). §5 is now **21 styles**.
+
+**Why new styles rather than snapping to `text-display`.** The big BST figures
+differ from `text-display` in exactly one property — `leading-none` instead of
+`leading-tight` — and that is the whole reason they were hand-assembled. They are
+optically centred inside fixed-height bands (the card's `h-68` top zone, the
+featured board's BST row); `leading-tight`'s half-leading would push them off
+centre. §5 already prescribes the fix: a style the design needs "gets **added to
+this table**, not improvised." The design was right; the table was incomplete.
+All four numeral sites render **byte-identical**.
+
+**Two deliberate pixel changes**, both in small chip labels: the STAB multiplier
+goes 500 → 600 weight, and the effectiveness-chip label's line-height goes
+1.5 → 1.2. The 1.5 was **not a design decision** — `text-xs` emits
+`line-height: var(--tw-leading, var(--text-xs--line-height))` and we never define
+`--text-xs--line-height`, so the declaration is invalid at computed-value time
+and silently **inherits body's 1.5**. Replacing an accident with the intended
+value tightens each chip by ~3.6px inside a fixed, centred band.
+
+**One exception is now explicit rather than tacit.** Overriding **family and
+weight only**, inheriting size and leading, is permitted for inline emphasis —
+the way `<strong>` works. The leader's name in the BST summary is the single
+instance. Anything that also sets a size is not emphasis and needs a named style.
+Inventing a 22nd style for one inline span would have been worse than naming the
+rule.
+
+**`/style` can no longer drift.** It claimed to render "the REAL tokens and
+components (not hand-rolled copies)" while carrying a hardcoded hex beside every
+swatch and listing **14 of 17** styles. Swatch values are now read from the live
+stylesheet with `getComputedStyle`, so the page cannot disagree with
+`index.css`; all 21 styles are listed; and the page walks the stylesheet at
+render to find any `.text-*` rule that bundles a `font-family` and is missing
+from its own list, rendering a visible warning if so. Same principle as
+`npm run check:docs` — a consistency claim that isn't machine-checked degrades
+the moment attention moves on. Both reads use lazy `useState` initialisers rather
+than effects (the stylesheet is static; there is nothing to subscribe to) and are
+guarded for the no-DOM case so the page stays server-renderable.
+
+<a id="d-034"></a>
+
+### D-034 · Prettier made real; footer regrouped; social-preview asset explained — **Firm**
+
+**Decision.** Three small loose ends from the review pass.
+
+- **Prettier installed properly.** A `.prettierignore` had been sitting in the
+  repo with **no Prettier dependency, no config and no script** — the formatting
+  was happening via editor integration only, so it was unenforceable and
+  invisible to CI. Added `prettier` as a devDependency plus `npm run format` and
+  `npm run format:check`. No config file: the codebase already matches Prettier's
+  stock settings exactly, so adding one would only invite drift.
+- **Footer regrouped.** Three children under `justify-between` put the GitHub
+  link _dead centre_ between the attribution and the byline, which read as an
+  accident. Byline and repo link are one authorship group, so they now sit
+  together on the right; the fan-project attribution keeps the left.
+- **`docs/preview.png` explained.** It was an unreferenced 1280×640 file. It is
+  the checked-in copy of the GitHub social preview; `docs/og-image.html`'s export
+  instructions now name both destinations and note that GitHub stores that image
+  outside the repo, so it must be uploaded by hand.
+
+**Why the Prettier detail matters.** Running `prettier --check` for the first
+time flagged exactly six files — **all six were ones this review pass had
+touched**. The pre-existing codebase was already clean. That is the argument for
+installing it rather than deleting the ignore file: the convention was real and
+being followed, it just had no enforcement, so the only code that drifted was the
+code written without an editor doing it silently. `format:check` belongs in CI
+alongside `lint`, `check:docs` and `audit:contrast`.
+
+<a id="d-033"></a>
+
+### D-033 · Token reconciliation; Tailwind's stock palette cleared — **Firm**
+
+**Decision.** Audited all 100 declared tokens for real consumption and resolved
+every unreferenced one — by a rule rather than case by case:
+
+- **Unused _primitives_ are kept.** [06 §1](06_style_guide.md) defines a primitive as "the palette of
+  possible choices," so an unreferenced one is headroom, not drift.
+  `--color-neutral-100/500/800` and `--color-accent-500/600/muted` stay.
+- **Unused _semantic_ tokens are deleted.** A semantic token claims a role; if
+  nothing plays that role it is a lie. **`--color-diff-favor` removed** —
+  [D-023](#d-023) replaced the flat white winning value with the winner's own
+  type colour and left it orphaned.
+- **Scales that are ladders stay complete.** Only `--z-dropdown` and
+  `--z-sticky` are consumed, but the point of a z-index scale is being a
+  complete ladder — an incomplete one is what makes someone reach for `z-9999`.
+  Kept in full, deliberately the opposite call from the semantic-colour rule.
+- **`--ease-out-soft` removed** — a second easing specified on spec and used by
+  nothing. The bar fill uses `--ease-standard`.
+
+**`--dur-fast` is now real.** Every `transition-*` in the app was running
+Tailwind's stock **150ms** while [06 §9](06_style_guide.md) documented **120ms**
+for hover/focus. Rather than annotate 10 components with
+`duration-[var(--dur-fast)]`, the theme now sets
+**`--default-transition-duration: var(--dur-fast)`**, so every transition utility
+picks it up with no per-component opt-in. **This is the one perceptible change in
+this pass** — hover transitions are 30ms quicker — and it moves the build onto
+the documented value rather than moving the doc onto the build.
+
+**Tailwind's default colour palette is cleared** — `--color-*: initial` at the top
+of the `@theme` block, with `--color-transparent` re-added as the single stock
+value actually used (`text-transparent` for the gradient BST delta,
+`border-transparent` on active form chips).
+
+**Why that matters more than the dead tokens.** [06 §12](06_style_guide.md) rule 1
+("tokens only, no raw values") was unenforceable: `bg-red-500` or a fat-fingered
+`bg-neutral-200` rendered a perfectly good off-brand colour with no signal. The
+neutral ramp made this worse — it skips steps Tailwind defines (200, 600 in the
+stock scale), so those had invisible holes falling through to Tailwind's greys.
+With the palette cleared, an off-palette class emits **no CSS at all**: a visible
+no-op instead of a quiet violation. Verified by temporarily adding
+`bg-red-500 bg-neutral-200` to a component and confirming neither reached `dist`
+while `bg-surface` still did.
+
+**Verified.** All 13 rendered surfaces (both comparison boards in four and two
+states, both `PokemonCard` states, and all five pages) are **byte-identical**
+before and after — these are stylesheet-level changes only. `--color-type-*`,
+the semantic aliases and the `transparent` utilities all confirmed present in
+`dist`; `--color-diff-favor` and `--ease-out-soft` confirmed absent.
+
+**Census note.** My first two usage scans were both wrong and both
+under-reported. The first missed all 18 `--color-type-*` (consumed only through
+`typeColorVar()`'s runtime string-building — the [D-028](#d-028) case) and missed
+tokens whose `var()` reference the formatter had wrapped across lines. The second
+counted matches inside CSS comments, hiding `--color-diff-favor` and
+`--ease-out-soft`. Worth recording: a token census has to account for dynamic
+references, reflowed declarations, and comments, or it will confidently tell you
+to delete something load-bearing.
+
+<a id="d-032"></a>
+
+### D-032 · Shared comparison primitives + a real `Button` — **Firm**
+
+**Decision.** Extracted the duplication between the two comparison boards and
+gave the site one button component. Four new/changed shared pieces:
+
+- **`CmpRow.jsx`** — the desktop (≥ md) mirrored stat row _and_ its centre
+  `DiffCell`, previously duplicated near-verbatim in `ComparisonCard` (the tool)
+  and `FeaturedComparison` (Home). The Home copy was the tool's copy minus one
+  null branch, plus animated bars; the shared version takes an **`animate`** prop
+  and keeps the null handling, which is a superset of both.
+- **`SpeedBanner.jsx`** — the flame speed verdict, previously a component in one
+  file and inline markup in the other.
+- **`Button.jsx`** — two variants (primary/secondary) × two sizes (`md`/`sm`),
+  replacing **five** hand-copied class strings across Home, Compare, NotFound and
+  the `/style` playground. Passing `to` renders a router `<Link>` that looks
+  identical, since the Home and 404 CTAs are navigations rather than actions.
+- **`--shadow-art` + `.drop-shadow-art`** — the artwork lift was the literal
+  `drop-shadow(0 8px 22px rgba(0,0,0,0.5))` copied into both `PokemonCard` and
+  `Home`. Now one token, one utility, documented in [06 §7](06_style_guide.md).
+
+**Why.** [D-029](#d-029) already established this split for the _mobile_ per-stat
+card (`CmpStatCard`) precisely so Home and the tool could not drift — but the
+desktop halves were left duplicated, which is the seam
+[D-023](#d-023) says must stay consistent. Roughly 60 lines lived in two places
+on the most visually load-bearing part of the site. Every planned suite tool (dex
+table, type chart, quiz) needs buttons and stat rows, so these belong in the
+shared layer _before_ the next feature rather than after.
+
+**Verified pixel-identical, not assumed.** I rendered all ten affected surfaces
+to static HTML with `react-dom/server` before and after, and diffed the markup
+with class-attribute order normalised (order is meaningless in HTML; Tailwind
+resolves conflicts by stylesheet order, not attribute order). Every comparison
+surface — `ComparisonCard` in four states, `FeaturedComparison` in two, Home,
+404, Compare — came back **byte-identical**. The only differences were the three
+intended ones: the Swap button moved `flex` → `inline-flex` (it is a flex item,
+which CSS blockifies back to `flex`, so it renders the same), the playground
+buttons gained inert `disabled:*` classes, and the playground gained a disabled
+sample. Two Home images moved from an inline `style` to the new utility with an
+identical filter value.
+
+**A bug this caught in my own work.** The first draft of `CmpRow` built its class
+as `` `flex justify-${side}` ``. Tailwind's scanner cannot see template-built
+class names, so `justify-start` / `justify-end` would have been dropped from the
+build and the mirrored bars would have silently stopped mirroring — the exact
+failure mode [D-028](#d-028) documents. Replaced with a literal lookup map;
+confirmed both utilities are present in `dist`.
+
+**Side effect.** The CSS bundle fell again (25.71 → 24.62 kB) because five
+duplicated class strings collapsed into one.
+
+**Not done here.** The hand-assembled type in `ComparisonCard`'s BST summary and
+effectiveness chips (`text-3xl font-display font-bold leading-none`) is still a
+[06 §12](06_style_guide.md) rule-2 violation. It is deliberately left alone: no
+named style in §5 matches those exact values, so fixing it means either adding
+styles to the scale or accepting a visual change — a design decision, not a
+refactor. Same for the `/style` page's hardcoded hex swatches and its incomplete
+14-of-17 text-style list.
+
+<a id="d-031"></a>
+
+### D-031 · Docs re-synced to the shipped build; link-checking scripted — **Firm**
+
+**Decision.** Opened a review/polish phase by treating the docs as **code that can
+break**, and fixing the drift that had accumulated between the writing and the
+build. Concretely:
+
+- **Anchors completed and ordered.** `D-001`–`D-012` had no `<a id>` targets, so
+  eight in-doc links silently landed at the top of the file; every decision now
+  carries one. Session 0's entries were reordered to strict descending number
+  (they ran `12, 10, 11, 1, 2, …`), matching the log's "newest at the top" rule.
+- **86 cross-doc links anchored.** Every `[D-0XX](03_decisions.md)` across the
+  other six docs pointed at the _file_, dumping the reader at the top of a
+  350-line log. They now deep-link to the entry.
+- **Token names corrected to the emitted names.** [06_style_guide](06_style_guide.md)
+  and [04_design](04_design.md) still used pre-Tailwind-v4 names (`--fs-*`,
+  `--bg-base`, `--text-primary`, `--neutral-900`, `--bp-md`, `--content-max`).
+  Tailwind v4 is CSS-first and a token's _prefix decides which utilities it
+  generates_, so the real names carry namespaces (`--text-*` is the font-size
+  ramp; colors are `--color-*`). All names in the docs are now the real ones,
+  with a namespace note explaining why, and §13 was rewritten to describe the
+  actual `@theme static` setup instead of a Tailwind v3 JS config that never existed.
+- **Stale specs marked as built or as drift.** `--text-tertiary` still showed the
+  pre-[D-027](#d-027) hex; the ⚠ contrast markers survived the completed audit;
+  §2 named a `--diff-muted` token that ships as `--diff-tie`; the difference cell
+  was still described as sitting in the winner's column rather than centered and
+  type-tinted ([D-023](#d-023)). The [01_spec](01_spec.md) schema listed
+  `sprite`/`artwork` and omitted `speciesSlug`; it now matches the emitted JSON.
+- **Unimplemented specs stated honestly rather than quietly dropped.** The
+  `type → { fill, badgeText }` map is closed as **won't-do** (the CSS tokens make
+  it a redundant second source of truth). The `--dur-*` motion tokens, the 24px
+  desktop gutter, and `--ease-out-soft` are flagged **⚠ drift** where they're
+  documented — defined but unreferenced by any component.
+- **`npm run check:docs`** (`scripts/check-docs.mjs`) now validates every relative
+  link and fragment, kept as a regression tool exactly like `audit:contrast`
+  ([D-027](#d-027)). It reproduces GitHub's slug algorithm precisely — including
+  that runs of spaces become runs of hyphens, so `A — B` is `a--b`. My first
+  hand-rolled version collapsed whitespace and produced a false positive on a
+  link that was correct; scripting the rule is what caught my own error.
+
+**Also fixed (code).** `scripts/build-data.mjs` sent `github.com/noahpn/statmon`
+— a dead URL — as the identifying User-Agent handed to PokéAPI under its fair-use
+policy ([D-016](#d-016)); corrected to the real repo and bumped both scripts to
+`/1.0`. The roman-numeral generation map stopped at `ix`, so a Gen 10 release
+would have silently written `generation: null` for every new species; added `x`.
+Four source comments promising Phase 3.5/Phase 4 futures that resolved
+differently were rewritten to describe what shipped.
+
+**Why.** The docs are the project's main portfolio artifact — the README sends
+readers straight to this log — so drift there is more visible than drift in code,
+and it compounds: each stale value is a small lie a future decision gets built
+on. Fixing names and values without also recording what _wasn't_ built (the color
+map, the duration tokens, the responsive gutter) would just move the drift
+somewhere quieter, so those are marked rather than deleted. Scripting the link
+check follows the precedent set by the contrast audit: a consistency rule that
+isn't machine-checked degrades the moment attention moves on.
+
+**Deliberately unchanged.** No visual or behavioural change to the site — this
+pass only touched documentation, comments, two build-script constants, and the
+new checker. Component-level duplication (`DiffCell`/`Row`/`ROW_COLS`/the speed
+banner living in two files), the missing `Button` primitive, the hand-assembled
+type call sites, and the dead tokens are all **identified but not yet fixed**;
+they need code changes and are sequenced as follow-up work. The
+[05_roadmap](05_roadmap.md) status block and Phase 5 checkboxes were corrected in
+the same pass. Historical entries were **not** rewritten — [D-024](#d-024)'s
+description of a README that has since been replaced stands as a dated record.
+
+---
+
 ## 2026-07-29 — Session 4 (deployment · docs polish)
 
 <a id="d-030"></a>
@@ -229,17 +607,15 @@ consistency called out in [D-023](#d-023). Resolves the last open item on
 
 **Why.** Avoids configuring routing/SSR/deploy before anything needs them, keeps the initial repo minimal and easy to reason about, and lets each layer be added deliberately when its need is concrete. Revises the scaffolding approach in [D-005](#d-005); re-sequences [05_roadmap](05_roadmap.md) Phase 0.
 
+<a id="d-012"></a>
+
 ### D-012 · Brand accent: Chandelure pastel-purple flame — **Firm**
 
 **Decision.** The brand accent is a **pastel periwinkle purple** (`--accent #9AA0E8`) with a **purple→blue flame gradient** (`#7352E6` → `#9AA0E8` → `#A8C3DD`), derived from Chandelure's official artwork. Replaces the earlier Volcarona-ember orange. Volcarona stays the home mascot.
 
 **Why.** My preference — purple (pastel) over orange — and Chandelure is the #2 favorite, so the palette now honors both favorites (Volcarona mascot + Chandelure colors) while keeping the "flame" thread. Pastel purple also suits the calm-tech minimalist tone better than a hot orange. Colors were lifted slightly from the authentic tones for contrast on the near-black background, and the accent is kept bluer/lighter than the purple-family type colors so it never reads as a type. Sourced hexes and rationale in [04_design §2](04_design.md); research in [02_research §7](02_research.md).
 
-### D-010 · Mobile layout: per-stat cards below 768px — **Firm**
-
-**Decision.** Desktop (≥768px) uses the mirrored 5-column comparison grid; below 768px it collapses to **per-stat cards**, each showing both Pokémon's bars stacked with values and the Δ — no horizontal scrolling. Headers stack P1 above P2.
-
-**Why.** A side-by-side five-column layout is unreadable on a phone; stacking per stat keeps every comparison glanceable without scroll and reuses the same data. Resolves the brainstorm's open mobile question. See [04_design §5](04_design.md).
+<a id="d-011"></a>
 
 ### D-011 · StatBars scaled to a fixed max of 255 — **Firm**
 
@@ -247,11 +623,71 @@ consistency called out in [D-023](#d-023). Resolves the last open item on
 
 **Why.** A global scale means a bar's length means the same thing in every comparison, so users build intuition over time; a relative-only scale would make a 60 look "full" in one matchup and tiny in another. See [04_design §6](04_design.md).
 
-### D-001 · Data strategy: build-time fetch → local JSON — **Firm**
+<a id="d-010"></a>
 
-**Decision.** Pull all needed PokéAPI data once via a re-runnable Node script, transform to a slim local schema, and serve that JSON statically. No runtime PokéAPI calls, ever.
+### D-010 · Mobile layout: per-stat cards below 768px — **Firm**
 
-**Why.** PokéAPI's fair-use policy explicitly asks for local caching, and the data is effectively static, so runtime fetching buys nothing but latency, fragility, and fair-use risk. Baking data in makes the site fast and fully self-contained. See [02_research §1](02_research.md).
+**Decision.** Desktop (≥768px) uses the mirrored 5-column comparison grid; below 768px it collapses to **per-stat cards**, each showing both Pokémon's bars stacked with values and the Δ — no horizontal scrolling. Headers stack P1 above P2.
+
+**Why.** A side-by-side five-column layout is unreadable on a phone; stacking per stat keeps every comparison glanceable without scroll and reuses the same data. Resolves the brainstorm's open mobile question. See [04_design §5](04_design.md).
+
+<a id="d-009"></a>
+
+### D-009 · Launch generation scope: all generations (1,025 Pokémon) — **Firm**
+
+**Decision.** Ship covering the **complete National Dex — all 1,025 Pokémon** (as of July 2026), not a subset. The data pipeline stays generation-parameterized so future additions are trivial.
+
+**Why.** A complete dataset makes Statmon a complete tool at launch and avoids a whole class of "why isn't X here?" gaps; the origin playthrough (Gens 1–5) motivated the project but shouldn't cap it. The extra cost is mainly sprite volume, which compression + lazy-loading absorb. Supersedes the earlier Gens-1–5 lean. See [01_spec §5](01_spec.md).
+
+<a id="d-008"></a>
+
+### D-008 · Typography: Inter (body + stats) + Space Grotesk (display) — **Firm**
+
+**Decision.** **Inter** as the workhorse for body text and — with tabular figures (`tnum`) enabled — the stat numbers, so digits align in the difference column. **Space Grotesk** as the display face for the logo/wordmark, headers, and titles. Exact weights and sizes finalized in the design step.
+
+**Why.** Inter is the consensus pick for numeric/data UIs (tabular figures, legibility at small sizes). Space Grotesk brings a modern "calm-tech" character with distinctive letterforms that pair well with Inter's neutrality — enough personality for the brand/mascot without hurting readability, and free on Google Fonts. See [02_research §5](02_research.md).
+
+<a id="d-007"></a>
+
+### D-007 · Core UI: horizontal type-colored bars — **Firm**
+
+**Decision.** The MVP comparison uses horizontal bars color-coded by type, with a three-column layout (P1 · difference · P2). Radar/hex is deferred and optional.
+
+**Why.** Bars are the most instantly readable form for "who's bigger on this stat," match the tool's speed-and-clarity goal, and avoid the complexity/ambiguity of radar for a two-way compare. See [00_brainstorm §2.3](00_brainstorm.md).
+
+<a id="d-006"></a>
+
+### D-006 · ~~TypeScript~~ → JavaScript — **Reversed by [D-014](#d-014)**
+
+**Original decision.** Build in TypeScript. **Reversed** on 2026-07-27 — see [D-014](#d-014). Kept here for the record.
+
+**Why (original).** The data schema and stat math benefit from types and it's a portfolio signal. I've since chosen to start simpler in JavaScript.
+
+<a id="d-005"></a>
+
+### D-005 · Routing & deploy: React Router v7 (SSR) on Cloudflare Workers — **Firm** _(scaffolding approach revised by [D-013](#d-013))_
+
+**Decision.** React Router v7 in framework mode with SSR, deployed on Cloudflare Workers — as the **eventual** architecture. Note: per [D-013](#d-013) I do **not** scaffold from the official combined template up front; I start plain and add Cloudflare + React Router later.
+
+**Why.** Officially supported as of 2026; Cloudflare now recommends Workers over Pages; SSR gives clean meta/OG tags and direct-linked comparisons. The end-state target is unchanged; only the starting point moved (see [D-013](#d-013)). See [02_research §4](02_research.md).
+
+<a id="d-004"></a>
+
+### D-004 · Normalize to modern six-stat schema — **Firm**
+
+**Decision.** Use HP / Attack / Defense / Sp. Atk / Sp. Def / Speed everywhere; do not model Gen-1's single "Special."
+
+**Why.** It's what PokéAPI serves, what players expect today, and it keeps every comparison consistent. The Gen-1 Special quirk is at most a trivia footnote. Resolves the brainstorm open question. See [02_research §3](02_research.md).
+
+<a id="d-003"></a>
+
+### D-003 · Megas & forms as first-class entries — **Firm**
+
+**Decision.** Each Mega/alternate form is its own selectable data entry (own id/slug/stats), carrying a `forms` array of counterpart slugs and an `isDefault` flag.
+
+**Why.** Mirrors how PokéAPI models varieties, keeps comparison logic uniform (every side is just a stat block), and satisfies the brainstorm's "switch between versions" goal without special-casing. See [02_research §2](02_research.md).
+
+<a id="d-002"></a>
 
 ### D-002 · Self-host all images (sprites + artwork) — **Firm** _(refined 2026-07-27)_
 
@@ -264,47 +700,13 @@ Both are served as **Cloudflare Workers static assets** and **lazy-loaded** (onl
 
 **Why.** More reliable (no dependency on GitHub raw, which isn't a tuned image CDN), maximally fair-use-friendly, fully self-contained, and — confirmed against Cloudflare's current docs — **free**: static-asset requests are free and unlimited (don't count against the Worker's 100k/day) with unlimited bandwidth on the free plan; the only caps are 20,000 files (I'm at ~2,500) and 25 MiB/file (my images are far smaller). So self-hosting both costs $0; the only real trade-off is ~tens of MB of deploy storage, which WebP + sizing keeps modest. Since lazy-loading means artwork has no runtime-cost advantage when hotlinked, self-hosting is strictly better here. See [02_research §8](02_research.md).
 
-### D-003 · Megas & forms as first-class entries — **Firm**
+<a id="d-001"></a>
 
-**Decision.** Each Mega/alternate form is its own selectable data entry (own id/slug/stats), carrying a `forms` array of counterpart slugs and an `isDefault` flag.
+### D-001 · Data strategy: build-time fetch → local JSON — **Firm**
 
-**Why.** Mirrors how PokéAPI models varieties, keeps comparison logic uniform (every side is just a stat block), and satisfies the brainstorm's "switch between versions" goal without special-casing. See [02_research §2](02_research.md).
+**Decision.** Pull all needed PokéAPI data once via a re-runnable Node script, transform to a slim local schema, and serve that JSON statically. No runtime PokéAPI calls, ever.
 
-### D-004 · Normalize to modern six-stat schema — **Firm**
-
-**Decision.** Use HP / Attack / Defense / Sp. Atk / Sp. Def / Speed everywhere; do not model Gen-1's single "Special."
-
-**Why.** It's what PokéAPI serves, what players expect today, and it keeps every comparison consistent. The Gen-1 Special quirk is at most a trivia footnote. Resolves the brainstorm open question. See [02_research §3](02_research.md).
-
-### D-005 · Routing & deploy: React Router v7 (SSR) on Cloudflare Workers — **Firm** _(scaffolding approach revised by [D-013](#d-013))_
-
-**Decision.** React Router v7 in framework mode with SSR, deployed on Cloudflare Workers — as the **eventual** architecture. Note: per [D-013](#d-013) I do **not** scaffold from the official combined template up front; I start plain and add Cloudflare + React Router later.
-
-**Why.** Officially supported as of 2026; Cloudflare now recommends Workers over Pages; SSR gives clean meta/OG tags and direct-linked comparisons. The end-state target is unchanged; only the starting point moved (see [D-013](#d-013)). See [02_research §4](02_research.md).
-
-### D-006 · ~~TypeScript~~ → JavaScript — **Reversed by [D-014](#d-014)**
-
-**Original decision.** Build in TypeScript. **Reversed** on 2026-07-27 — see [D-014](#d-014). Kept here for the record.
-
-**Why (original).** The data schema and stat math benefit from types and it's a portfolio signal. I've since chosen to start simpler in JavaScript.
-
-### D-007 · Core UI: horizontal type-colored bars — **Firm**
-
-**Decision.** The MVP comparison uses horizontal bars color-coded by type, with a three-column layout (P1 · difference · P2). Radar/hex is deferred and optional.
-
-**Why.** Bars are the most instantly readable form for "who's bigger on this stat," match the tool's speed-and-clarity goal, and avoid the complexity/ambiguity of radar for a two-way compare. See [00_brainstorm §2.3](00_brainstorm.md).
-
-### D-008 · Typography: Inter (body + stats) + Space Grotesk (display) — **Firm**
-
-**Decision.** **Inter** as the workhorse for body text and — with tabular figures (`tnum`) enabled — the stat numbers, so digits align in the difference column. **Space Grotesk** as the display face for the logo/wordmark, headers, and titles. Exact weights and sizes finalized in the design step.
-
-**Why.** Inter is the consensus pick for numeric/data UIs (tabular figures, legibility at small sizes). Space Grotesk brings a modern "calm-tech" character with distinctive letterforms that pair well with Inter's neutrality — enough personality for the brand/mascot without hurting readability, and free on Google Fonts. See [02_research §5](02_research.md).
-
-### D-009 · Launch generation scope: all generations (1,025 Pokémon) — **Firm**
-
-**Decision.** Ship covering the **complete National Dex — all 1,025 Pokémon** (as of July 2026), not a subset. The data pipeline stays generation-parameterized so future additions are trivial.
-
-**Why.** A complete dataset makes Statmon a complete tool at launch and avoids a whole class of "why isn't X here?" gaps; the origin playthrough (Gens 1–5) motivated the project but shouldn't cap it. The extra cost is mainly sprite volume, which compression + lazy-loading absorb. Supersedes the earlier Gens-1–5 lean. See [01_spec §5](01_spec.md).
+**Why.** PokéAPI's fair-use policy explicitly asks for local caching, and the data is effectively static, so runtime fetching buys nothing but latency, fragility, and fair-use risk. Baking data in makes the site fast and fully self-contained. See [02_research §1](02_research.md).
 
 ---
 
@@ -312,7 +714,7 @@ Both are served as **Cloudflare Workers static assets** and **lazy-loaded** (onl
 
 - **Project template specifics** — confirm the exact official Cloudflare + React Router starter and its current state at scaffold time (D-005 sets direction; pin the concrete template when I init).
 - **Styling approach within Tailwind** — how type colors are wired (Tailwind theme extension vs. CSS variables driven by the data map).
-- ~~Mobile layout strategy~~ — ✅ resolved in [D-010](03_decisions.md) (per-stat cards under 768px).
+- ~~Mobile layout strategy~~ — ✅ resolved in [D-010](#d-010) (per-stat cards under 768px).
 - **Testing depth for MVP** — how much of Vitest/Playwright lands in V2 vs. later.
 
 ---
