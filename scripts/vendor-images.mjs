@@ -6,9 +6,10 @@
  * hotlinking raw.githubusercontent at runtime:
  *   - pixel sprites → public/sprites/{id}.png   (kept as-is; ~1–3 KB each)
  *   - official art  → public/artwork/{id}.webp  (resized ≤475px, WebP)
- * Then rewrites src/data/pokemon.json's spriteUrl/artworkUrl to local paths.
- * The app's `spriteUrl ?? artworkUrl` fallback keeps working (the ~3 entries
- * with no pixel sprite fall back to artwork).
+ * The data file is only READ here. Asset paths are derived from each entry's id
+ * by src/lib/pokemonCodec.js, so there is nothing to rewrite — build-data.mjs
+ * already records which entries lack a pixel sprite or official artwork, and the
+ * app's `spriteUrl ?? artworkUrl` fallback works off those flags.
  *
  * Good-citizen behaviour (mirrors build-data.mjs, D-016): rate-limited,
  * retrying with backoff, identifying User-Agent, and idempotent — files that
@@ -27,6 +28,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
+import { decodeAll } from "../src/lib/pokemonCodec.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -44,7 +46,7 @@ const REQUESTS_PER_SECOND = Number(process.env.RPS ?? 8);
 const CONCURRENCY = Number(process.env.CONCURRENCY ?? 8);
 const MAX_RETRIES = 4;
 const USER_AGENT =
-  "statmon-image-vendor/0.1 (https://github.com/noahparknguyen/statmon)";
+  "statmon-image-vendor/1.0 (https://github.com/noahparknguyen/statmon)";
 
 /* ----------------------------- UTILITIES -------------------------------- */
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -101,16 +103,15 @@ async function fetchBuffer(url) {
   throw new Error(`Failed after ${MAX_RETRIES}: ${url} — ${lastErr?.message}`);
 }
 
-/** True if the entry has real official artwork (vs. a pixel-sprite fallback).
- *  Works whether the stored URL is still remote or already local. */
-const hasRealArtwork = (a) =>
-  typeof a === "string" &&
-  (a.includes("official-artwork") || a.includes("/artwork/"));
+/** True if the entry has real official artwork rather than a pixel-sprite
+ *  fallback — the decoder points artworkUrl at /sprites/ for the handful of
+ *  entries PokéAPI has no official art for. */
+const hasRealArtwork = (a) => typeof a === "string" && a.includes("/artwork/");
 
 /* -------------------------------- MAIN ---------------------------------- */
 async function main() {
   const started = Date.now();
-  const entries = JSON.parse(await readFile(DATA_FILE, "utf8"));
+  const entries = decodeAll(JSON.parse(await readFile(DATA_FILE, "utf8")));
   await mkdir(SPRITES_DIR, { recursive: true });
   await mkdir(ARTWORK_DIR, { recursive: true });
 
@@ -177,20 +178,10 @@ async function main() {
   );
   await Promise.all(tasks);
 
-  // Rewrite the data to local paths (idempotent). spriteUrl first, so the
-  // artwork fallback can reuse it.
-  for (const e of entries) {
-    const realArt = hasRealArtwork(e.artworkUrl);
-    if (e.spriteUrl != null) e.spriteUrl = `/sprites/${e.id}.png`;
-    e.artworkUrl = realArt ? `/artwork/${e.id}.webp` : e.spriteUrl;
-  }
-  await writeFile(DATA_FILE, JSON.stringify(entries));
-
   console.log(`\n── Summary ─────────────────────────────`);
   console.log(`Sprites downloaded : ${sprites}`);
   console.log(`Artwork downloaded : ${artwork}`);
   console.log(`Skipped (existing) : ${skipped}`);
-  console.log(`Data rewritten     : ${path.relative(ROOT, DATA_FILE)}`);
   if (failures.length) {
     console.log(`\n⚠ ${failures.length} failure(s):`);
     for (const f of failures.slice(0, 20)) console.log(`  ${f}`);

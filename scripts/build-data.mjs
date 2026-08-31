@@ -17,7 +17,11 @@
  *   npm run build:data           # 5 req/s
  *   RPS=3 npm run build:data      # override the rate cap
  *
- * Output: src/data/pokemon.json
+ * Output: src/data/pokemon.json — written in the compact form defined by
+ * src/lib/pokemonCodec.js (fields derivable from id/slug are omitted, roughly
+ * a third the size), which src/lib/pokemon.js decodes at import. Entries are
+ * built and validated below in their full shape; encoding happens only at the
+ * final write, so the summary and checks stay readable.
  */
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -25,6 +29,7 @@ import { existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { encodeAll, titleCase } from "../src/lib/pokemonCodec.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -34,7 +39,8 @@ const API = "https://pokeapi.co/api/v2";
 const REQUESTS_PER_SECOND = Number(process.env.RPS ?? 5);
 const CONCURRENCY = Number(process.env.CONCURRENCY ?? 6);
 const MAX_RETRIES = 4;
-const USER_AGENT = "statmon-data-build/0.1 (https://github.com/noahpn/statmon)";
+const USER_AGENT =
+  "statmon-data-build/1.0 (https://github.com/noahparknguyen/statmon)";
 const CACHE_DIR = path.join(ROOT, ".cache", "pokeapi");
 const OUTPUT_FILE = path.join(ROOT, "src", "data", "pokemon.json");
 
@@ -124,14 +130,9 @@ const ROMAN = {
   vii: 7,
   viii: 8,
   ix: 9,
+  x: 10,
 };
 const generationNumber = (name) => ROMAN[name.split("-")[1]] ?? null; // "generation-v" -> 5
-
-const formatName = (slug) =>
-  slug
-    .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
 
 const STAT_KEY = {
   hp: "hp",
@@ -227,7 +228,7 @@ async function main() {
       entries.push({
         id: p.id,
         slug: p.name,
-        name: formatName(p.name),
+        name: titleCase(p.name),
         speciesSlug: sp.name,
         isDefault: p.is_default,
         generation,
@@ -250,7 +251,7 @@ async function main() {
   }
 
   entries.sort((a, b) => a.id - b.id);
-  await writeFile(OUTPUT_FILE, JSON.stringify(entries));
+  await writeFile(OUTPUT_FILE, JSON.stringify(encodeAll(entries)));
 
   /* ----------------------------- VALIDATION ---------------------------- */
   const missingStats = entries.filter((e) => Object.keys(e.stats).length !== 6);
