@@ -1,5 +1,6 @@
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { LuArrowLeftRight } from "react-icons/lu";
+import Button from "../components/Button";
 import SearchBar from "../components/SearchBar";
 import PokemonCard from "../components/PokemonCard";
 import ComparisonCard from "../components/ComparisonCard";
@@ -36,7 +37,7 @@ export default function Compare() {
           Compare<span className="text-accent">.</span>
         </h1>
         <p className="mt-1 text-body-sm text-secondary">
-          Visualizes the difference between two Pokémon.
+          See who&apos;s faster, hits harder, and is bulkier.
         </p>
       </header>
 
@@ -48,15 +49,15 @@ export default function Compare() {
 
       {/* Swap */}
       <div className="flex justify-center mb-3">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={swap}
           disabled={!p1 && !p2}
-          className="flex items-center gap-2 h-9 px-4 rounded-full bg-elevated border border-border-subtle text-secondary text-button transition-colors hover:text-primary hover:border-border-strong disabled:opacity-40 disabled:pointer-events-none"
         >
           <LuArrowLeftRight aria-hidden />
           Swap
-        </button>
+        </Button>
       </div>
 
       {/* Board: source order card1, card2, comparison. On lg the comparison

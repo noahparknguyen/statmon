@@ -57,21 +57,25 @@ export default function Layout() {
       <footer className="border-t border-border-subtle">
         <div className="max-w-content mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-5">
           <p className="text-caption text-tertiary">
-            Data from PokéAPI. Statmon is a fan project, not affiliated with
-            Nintendo or The Pokémon Company.
+            Data from PokéAPI. Statmon is an unofficial fan project, not
+            affiliated with Nintendo, Game Freak, or The Pokémon Company.
           </p>
-          <a
-            href={REPO_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 text-caption text-tertiary transition-colors hover:text-secondary"
-          >
-            <LuGithub aria-hidden />
-            GitHub
-          </a>
-          <span className="text-caption text-tertiary">
-            Built by Noah Park-Nguyen
-          </span>
+          {/* Byline + repo read as one authorship group, so they sit together
+              on the right rather than leaving the link stranded mid-row. */}
+          <div className="flex items-center gap-4 shrink-0">
+            <span className="text-caption text-tertiary">
+              Built by Noah Park-Nguyen
+            </span>
+            <a
+              href={REPO_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 text-caption text-tertiary transition-colors hover:text-secondary"
+            >
+              <LuGithub aria-hidden />
+              GitHub
+            </a>
+          </div>
         </div>
       </footer>
     </div>

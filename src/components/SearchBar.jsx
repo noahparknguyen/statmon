@@ -90,12 +90,18 @@ export default function SearchBar({ label, onSelect }) {
             </li>
           ) : (
             results.map((p, i) => (
-              <li key={p.slug}>
+              // role="presentation" keeps the <li> out of the a11y tree so the
+              // option is an immediate child of the listbox, as ARIA requires.
+              <li key={p.slug} role="presentation">
                 <button
                   type="button"
                   id={`${listId}-${i}`}
                   role="option"
                   aria-selected={i === active}
+                  // Focus stays in the input; the active option is conveyed by
+                  // aria-activedescendant. Without this, Tab walked through all
+                  // eight results instead of leaving the search field.
+                  tabIndex={-1}
                   onMouseEnter={() => setActive(i)}
                   onClick={() => choose(p)}
                   className={`flex items-center gap-3 w-full px-3 py-2 text-left ${

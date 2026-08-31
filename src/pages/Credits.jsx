@@ -1,7 +1,7 @@
 import { LuExternalLink } from "react-icons/lu";
 
-// Credits — blunt attribution pass (D-023). Personal note + logo land with the
-// final Phase 4 launch polish.
+// Credits — blunt attribution pass (D-023). Sources, the repo link, and the
+// unofficial-fan-project disclaimer; the shared footer carries the byline.
 const CREDITS = [
   {
     title: "PokéAPI",
@@ -27,7 +27,9 @@ export default function Credits() {
         <h1 className="text-h1">
           Credits<span className="text-accent">.</span>
         </h1>
-        <p className="mt-1 text-body text-secondary">How the site was made.</p>
+        <p className="mt-1 text-body text-secondary">
+          What Statmon is built on.
+        </p>
       </header>
 
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

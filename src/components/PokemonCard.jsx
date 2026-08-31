@@ -14,7 +14,6 @@ const SCRIM =
   " color-mix(in srgb, var(--color-surface) 35%, transparent) 52%," +
   " color-mix(in srgb, var(--color-surface) 80%, transparent) 66%," +
   " var(--color-surface) 90%)";
-const artFilter = { filter: "drop-shadow(0 8px 22px rgba(0,0,0,0.5))" };
 const shadowText = { textShadow: "0 1px 8px rgba(0,0,0,0.75)" };
 const statsShadow = { textShadow: "0 1px 5px rgba(0,0,0,0.75)" };
 
@@ -33,8 +32,7 @@ export default function PokemonCard({ pokemon, onSelectForm }) {
         src={artworkFor(pokemon)}
         alt={pokemon.name}
         loading="lazy"
-        className="pointer-events-none absolute inset-x-0 top-7 z-0 w-full aspect-square object-contain"
-        style={artFilter}
+        className="pointer-events-none absolute inset-x-0 top-7 z-0 w-full aspect-square object-contain drop-shadow-art"
       />
       <div
         className="pointer-events-none absolute inset-0 z-1"
@@ -98,7 +96,7 @@ export default function PokemonCard({ pokemon, onSelectForm }) {
 
         {/* BST */}
         <div className="h-14 mx-4 flex items-center justify-between border-t border-border-subtle">
-          <span className="text-overline text-tertiary">Base Stat Total</span>
+          <span className="text-overline text-tertiary">Base stat total</span>
           <span className="text-stat-lg text-primary">{pokemon.bst}</span>
         </div>
       </div>
@@ -127,7 +125,7 @@ function EmptyCard() {
         ))}
       </div>
       <div className="h-14 mx-4 flex items-center justify-between border-t border-border-subtle">
-        <span className="text-overline text-tertiary">Base Stat Total</span>
+        <span className="text-overline text-tertiary">Base stat total</span>
         <span className="text-stat-lg text-tertiary">–</span>
       </div>
     </div>

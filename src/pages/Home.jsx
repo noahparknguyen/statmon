@@ -1,5 +1,5 @@
-import { Link } from "react-router";
 import { LuArrowRight } from "react-icons/lu";
+import Button from "../components/Button";
 import FeaturedComparison from "../components/FeaturedComparison";
 import { getBySlug, artworkFor } from "../lib/pokemon";
 
@@ -17,8 +17,6 @@ const TOOLS = [
   { label: "Type chart · soon" },
   { label: "Games · soon" },
 ];
-
-const artShadow = { filter: "drop-shadow(0 8px 22px rgba(0,0,0,0.5))" };
 
 export default function Home() {
   return (
@@ -40,16 +38,14 @@ export default function Home() {
             alt=""
             aria-hidden
             decoding="async"
-            style={artShadow}
-            className="hidden lg:block pointer-events-none absolute z-0 left-0 top-1/2 w-100 -translate-y-1/2 -translate-x-1/2 rotate-[-10deg]"
+            className="hidden lg:block pointer-events-none absolute z-0 left-0 top-1/2 w-100 -translate-y-1/2 -translate-x-1/2 rotate-[-10deg] drop-shadow-art"
           />
           <img
             src={artworkFor(C)}
             alt=""
             aria-hidden
             decoding="async"
-            style={artShadow}
-            className="hidden lg:block pointer-events-none absolute z-0 right-0 top-1/2 w-90 -translate-y-1/2 translate-x-[60%] -scale-x-100 rotate-10"
+            className="hidden lg:block pointer-events-none absolute z-0 right-0 top-1/2 w-90 -translate-y-1/2 translate-x-[60%] -scale-x-100 rotate-10 drop-shadow-art"
           />
           <div className="relative z-10">
             <FeaturedComparison p1={V} p2={C} />
@@ -58,16 +54,18 @@ export default function Home() {
       )}
 
       <div className="mt-8 flex justify-center">
-        <Link
-          to="/compare"
-          className="inline-flex items-center gap-2 h-11 px-6 rounded-full bg-accent text-accent-contrast text-button transition-colors hover:bg-accent-hover"
-        >
+        <Button to="/compare">
           Try it out
           <LuArrowRight aria-hidden />
-        </Link>
+        </Button>
       </div>
 
-      <ul className="mt-8 flex flex-wrap justify-center gap-2">
+      {/* Labelled so a screen reader announces what the list is; without it
+          this is four bare items with no context. */}
+      <ul
+        aria-label="Statmon tools"
+        className="mt-8 flex flex-wrap justify-center gap-2"
+      >
         {TOOLS.map((t) => (
           <li
             key={t.label}

@@ -4,6 +4,8 @@
 // <TypeBadge>, and the sample comparison is the actual <FeaturedComparison>.
 // See docs/06_style_guide.md (tokens) and docs/04_design.md (rationale).
 
+import { useState } from "react";
+import Button from "../components/Button";
 import TypeBadge from "../components/TypeBadge";
 import StatBar from "../components/StatBar";
 import FeaturedComparison from "../components/FeaturedComparison";
@@ -13,6 +15,45 @@ import { getBySlug } from "../lib/pokemon";
 import { STAT_ORDER, STAT_LABEL } from "../lib/stats";
 
 const noop = () => {};
+
+// Reads each token's computed value from the live stylesheet, so a swatch can
+// never disagree with src/index.css. Read once in a lazy initialiser rather
+// than an effect: the stylesheet is static for the session, so there is nothing
+// to subscribe to, and this avoids a second render pass. Guarded for the
+// no-DOM case so the component stays server-renderable.
+function readTokenValues(names) {
+  if (typeof document === "undefined") return {};
+  const cs = getComputedStyle(document.documentElement);
+  return Object.fromEntries(
+    names.map((n) => [n, cs.getPropertyValue(n).trim()]),
+  );
+}
+
+// Guards against this page silently falling behind the stylesheet: finds every
+// `.text-*` rule that bundles a font-family (i.e. a §5 named style, not a colour
+// utility like `text-primary`) and reports any the page forgot to list. Same
+// idea as `npm run check:docs` — a consistency claim that isn't checked degrades
+// the moment attention moves on. This page previously listed 14 of 17.
+function readMissingTextStyles(listed) {
+  if (typeof document === "undefined") return [];
+  const found = new Set();
+  const walk = (rules) => {
+    for (const r of rules) {
+      if (r.cssRules) walk(r.cssRules);
+      if (!r.selectorText || !r.style?.fontFamily) continue;
+      for (const m of r.selectorText.matchAll(/\.(text-[a-z0-9-]+)\b/g))
+        found.add(m[1]);
+    }
+  };
+  for (const sheet of document.styleSheets) {
+    try {
+      walk(sheet.cssRules);
+    } catch {
+      /* cross-origin sheet — nothing to read */
+    }
+  }
+  return [...found].filter((c) => !listed.includes(c)).sort();
+}
 
 // Literal `rounded-*` strings so Tailwind's scanner keeps the utilities.
 const RADII = [
@@ -24,23 +65,32 @@ const RADII = [
   ["rounded-full", "full · pill"],
 ];
 
-// [label, CSS var (live color), hex (documentation), note]
+// [label, CSS var, note] — the value is read from the live stylesheet at
+// runtime (see useTokenValue), never hardcoded here. A literal hex in this file
+// would be a second source of truth and would drift the moment a token moved.
 const NEUTRALS = [
-  ["base", "--color-base", "#0B0C0F", "page background"],
-  ["surface", "--color-surface", "#14161B", "cards / surfaces"],
-  ["elevated", "--color-elevated", "#1C1F27", "elevated / inputs / tracks"],
-  ["border-subtle", "--color-border-subtle", "#2A2E37", "default border"],
-  ["border-strong", "--color-border-strong", "#3A3F4B", "hover/focus border"],
-  ["tertiary", "--color-tertiary", "#8A909C", "hints, captions, overlines"],
-  ["secondary", "--color-secondary", "#A8AEBA", "labels, secondary text"],
-  ["primary", "--color-primary", "#F4F5F7", "headings, values, body"],
+  ["base", "--color-base", "page background"],
+  ["surface", "--color-surface", "cards / surfaces"],
+  ["elevated", "--color-elevated", "elevated / inputs / tracks"],
+  ["border-subtle", "--color-border-subtle", "default border"],
+  ["border-strong", "--color-border-strong", "hover/focus border"],
+  ["tertiary", "--color-tertiary", "hints, captions, overlines"],
+  ["secondary", "--color-secondary", "labels, secondary text"],
+  ["primary", "--color-primary", "headings, values, body"],
 ];
 
 const ACCENTS = [
-  ["accent-core", "--color-accent-core", "#7352E6", "flame core"],
-  ["accent", "--color-accent", "#9AA0E8", "actions, links, focus"],
-  ["accent-hover", "--color-accent-hover", "#B3B8F0", "hover / active"],
-  ["accent-blue", "--color-accent-blue", "#A8C3DD", "flame blue"],
+  ["accent-core", "--color-accent-core", "flame core"],
+  ["accent", "--color-accent", "actions, links, focus"],
+  ["accent-hover", "--color-accent-hover", "hover / active"],
+  ["accent-blue", "--color-accent-blue", "flame blue"],
+  ["accent-contrast", "--color-accent-contrast", "text on an accent fill"],
+];
+
+// Semantic tokens that aren't part of the neutral or accent ramps.
+const OTHER_TOKENS = [
+  ["diff-tie", "--color-diff-tie", "zero-difference state"],
+  ["track-glass", "--color-track-glass", "bar track over artwork"],
 ];
 
 const TYPES = [
@@ -64,6 +114,10 @@ const TYPES = [
   "fairy",
 ];
 
+// ALL 21 named styles from 06_style_guide §5. Kept complete on purpose: a
+// partial list makes this page look authoritative while quietly omitting styles
+// (it previously showed 14 of 17). checkStyleCoverage below fails loudly if a
+// style exists in the stylesheet but is missing here.
 const TEXT_STYLES = [
   ["text-display-hero", "Display hero", "48 · 700"],
   ["text-display", "Display", "36 · 700"],
@@ -77,7 +131,14 @@ const TEXT_STYLES = [
   ["text-label", "Label — form and UI labels", "14 · 500"],
   ["text-caption", "Caption — hints and footnotes", "12 · 500"],
   ["text-overline", "Overline · stat labels", "11 · 500"],
+  ["text-numeral-xl", "+123", "48 · 700 · display numeral"],
+  ["text-numeral-lg", "+123", "36 · 700 · display numeral"],
+  ["text-numeral-md", "Tied", "30 · 700 · display numeral"],
+  ["text-stat-lg", "1234567890 — BST (tabular)", "20 · 600"],
   ["text-stat", "1234567890 — stat value (tabular)", "18 · 600"],
+  ["text-diff", "+42 — difference value (tabular)", "14 · 600"],
+  ["text-meta", "Fire ½× — chip / pill label", "12 · 600"],
+  ["text-badge", "TYPE BADGE", "11 · 600"],
   ["text-button", "Button label", "14 · 600"],
 ];
 
@@ -90,7 +151,7 @@ function Section({ title, children }) {
   );
 }
 
-function Swatch({ label, cssVar, hex, note }) {
+function Swatch({ label, cssVar, value, note }) {
   return (
     <div className="w-32">
       <div
@@ -99,14 +160,23 @@ function Swatch({ label, cssVar, hex, note }) {
       />
       <div className="mt-2">
         <div className="text-caption text-secondary">{label}</div>
-        <div className="text-caption text-tertiary">{hex}</div>
+        <div className="text-caption text-tertiary">{value || "\u00a0"}</div>
         {note ? <div className="text-caption text-tertiary">{note}</div> : null}
       </div>
     </div>
   );
 }
 
+const SWATCH_VARS = [...NEUTRALS, ...ACCENTS, ...OTHER_TOKENS].map(
+  ([, cssVar]) => cssVar,
+);
+const LISTED_TEXT_STYLES = TEXT_STYLES.map(([cls]) => cls);
+
 export default function StyleGuide() {
+  const [tokenValues] = useState(() => readTokenValues(SWATCH_VARS));
+  const [missingStyles] = useState(() =>
+    readMissingTextStyles(LISTED_TEXT_STYLES),
+  );
   const volcarona = getBySlug("volcarona");
   const chandelure = getBySlug("chandelure");
   const charizard = getBySlug("charizard"); // has Mega forms → FormChips demo
@@ -125,13 +195,25 @@ export default function StyleGuide() {
 
       <Section title="Core palette">
         <div className="flex flex-wrap gap-3">
-          {NEUTRALS.map(([l, v, h, n]) => (
-            <Swatch key={l} label={l} cssVar={v} hex={h} note={n} />
+          {NEUTRALS.map(([l, v, n]) => (
+            <Swatch
+              key={l}
+              label={l}
+              cssVar={v}
+              value={tokenValues[v]}
+              note={n}
+            />
           ))}
         </div>
         <div className="flex flex-wrap gap-3 mt-6">
-          {ACCENTS.map(([l, v, h, n]) => (
-            <Swatch key={l} label={l} cssVar={v} hex={h} note={n} />
+          {ACCENTS.map(([l, v, n]) => (
+            <Swatch
+              key={l}
+              label={l}
+              cssVar={v}
+              value={tokenValues[v]}
+              note={n}
+            />
           ))}
           <div className="w-32">
             <div className="h-12 rounded-md bg-flame border border-border-subtle" />
@@ -141,6 +223,21 @@ export default function StyleGuide() {
             </div>
           </div>
         </div>
+        <div className="flex flex-wrap gap-3 mt-6">
+          {OTHER_TOKENS.map(([l, v, n]) => (
+            <Swatch
+              key={l}
+              label={l}
+              cssVar={v}
+              value={tokenValues[v]}
+              note={n}
+            />
+          ))}
+        </div>
+        <p className="text-caption text-tertiary mt-4">
+          Values are read from the live stylesheet at runtime — this page cannot
+          disagree with <code>src/index.css</code>.
+        </p>
       </Section>
 
       <Section title="18 type colors — TypeBadge">
@@ -155,6 +252,13 @@ export default function StyleGuide() {
       </Section>
 
       <Section title="Type scale — named text styles">
+        {missingStyles.length > 0 && (
+          <p className="text-body-sm text-primary bg-elevated border border-border-strong rounded-md p-3 mb-6">
+            ⚠ {missingStyles.length} named style(s) exist in the stylesheet but
+            are missing from this page: <code>{missingStyles.join(", ")}</code>.
+            Add them to <code>TEXT_STYLES</code>.
+          </p>
+        )}
         <div className="flex flex-col gap-5">
           {TEXT_STYLES.map(([cls, sample, spec]) => (
             <div
@@ -187,18 +291,13 @@ export default function StyleGuide() {
         <div className="flex flex-col gap-6 max-w-md">
           <SearchBar label="Search a Pokémon" onSelect={noop} />
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 h-11 px-6 rounded-full bg-accent text-accent-contrast text-button transition-colors hover:bg-accent-hover"
-            >
-              Primary action
-            </button>
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 h-9 px-4 rounded-full bg-elevated border border-border-subtle text-secondary text-button transition-colors hover:text-primary hover:border-border-strong"
-            >
+            <Button>Primary action</Button>
+            <Button variant="secondary" size="sm">
               Secondary
-            </button>
+            </Button>
+            <Button variant="secondary" size="sm" disabled>
+              Disabled
+            </Button>
           </div>
           {charizard ? <FormChips pokemon={charizard} onSelect={noop} /> : null}
         </div>

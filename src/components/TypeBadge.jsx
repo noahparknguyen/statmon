@@ -6,7 +6,7 @@ export default function TypeBadge({ type, size = "md" }) {
   return (
     <span
       className={`text-badge rounded-full ${pad}`}
-      style={{ backgroundColor: typeColorVar(type), color: typeTextVar(type) }}
+      style={{ backgroundColor: typeColorVar(type), color: typeTextVar() }}
     >
       {capitalize(type)}
     </span>

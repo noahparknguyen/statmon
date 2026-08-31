@@ -1,8 +1,8 @@
-import { FaCaretLeft, FaCaretRight } from "react-icons/fa6";
-import { LuGauge } from "react-icons/lu";
 import TypeBadge from "./TypeBadge";
 import CmpStatCard from "./CmpStatCard";
-import { STAT_ORDER, STAT_LABEL, statPct } from "../lib/stats";
+import CmpRow from "./CmpRow";
+import SpeedBanner from "./SpeedBanner";
+import { STAT_ORDER, STAT_LABEL } from "../lib/stats";
 import { typeColorVar, capitalize } from "../lib/types";
 import { spriteFor } from "../lib/pokemon";
 import { stabMatchup, formatMult } from "../lib/typeChart";
@@ -11,20 +11,14 @@ import { stabMatchup, formatMult } from "../lib/typeChart";
 // Chandelure — the site's pseudo-mascots, D-023). It deliberately reuses the
 // comparison tool's visual language — mirrored type-colored bars, type-tinted
 // center diffs, the flame "Higher total" delta, and the flame speed banner — so
-// Home and the tool read as one site. Bars grow in once on mount for life.
-const ROW_COLS = "grid-cols-[1.6rem_1fr_3.25rem_1fr_1.6rem]";
+// Home and the tool read as one site — the mirrored rows and the speed banner
+// are literally the tool's own components (CmpRow / SpeedBanner), not copies.
+// Bars grow in once on mount (`animate`), which is the only difference.
 
 export default function FeaturedComparison({ p1, p2 }) {
   const delta = p1.bst - p2.bst;
   const tied = delta === 0;
   const p1Leads = delta > 0;
-  const faster =
-    p1.stats.speed === p2.stats.speed
-      ? null
-      : p1.stats.speed > p2.stats.speed
-        ? p1
-        : p2;
-
   return (
     <div className="flex flex-col overflow-hidden bg-surface border border-border-subtle rounded-lg">
       <h2 className="sr-only">
@@ -41,13 +35,14 @@ export default function FeaturedComparison({ p1, p2 }) {
       {/* Mirrored stat rows (≥768px, D-010) */}
       <div className="hidden md:block px-5 pt-3 pb-2">
         {STAT_ORDER.map((k) => (
-          <Row
+          <CmpRow
             key={k}
             label={STAT_LABEL[k]}
             a={p1.stats[k]}
             b={p2.stats[k]}
             aColor={p1.types[0]}
             bColor={p2.types[0]}
+            animate
           />
         ))}
       </div>
@@ -80,11 +75,9 @@ export default function FeaturedComparison({ p1, p2 }) {
             {tied ? "Base stat total" : "Higher total"}
           </span>
           {tied ? (
-            <span className="text-2xl font-display font-bold leading-none">
-              Tied
-            </span>
+            <span className="text-numeral-md">Tied</span>
           ) : (
-            <span className="text-3xl font-display font-bold leading-none bg-flame bg-clip-text text-transparent">
+            <span className="text-numeral-lg bg-flame bg-clip-text text-transparent">
               +{Math.abs(delta)}
             </span>
           )}
@@ -97,15 +90,7 @@ export default function FeaturedComparison({ p1, p2 }) {
       </div>
 
       {/* Speed verdict */}
-      <div
-        className="h-14 bg-flame flex items-center justify-center gap-2"
-        style={{ color: "var(--color-accent-contrast)" }}
-      >
-        <LuGauge aria-hidden size={19} className="shrink-0" />
-        <span className="text-button">
-          {faster ? `${faster.name} moves first` : "Same Speed"}
-        </span>
-      </div>
+      <SpeedBanner p1={p1} p2={p2} />
     </div>
   );
 }
@@ -144,7 +129,12 @@ function MonHead({ p, right = false }) {
 function StabCenter({ attacker, defender }) {
   return (
     <div className="flex flex-col items-center gap-1.5">
-      <span className="text-overline text-tertiary">STAB</span>
+      <span
+        className="text-overline text-tertiary"
+        title="Same Type Attack Bonus — damage from moves matching the attacker's own type"
+      >
+        STAB
+      </span>
       <div className="flex flex-col gap-1">
         {stabMatchup(attacker, defender).map(({ type, mult }) => (
           <StabPill key={type} type={type} mult={mult} />
@@ -169,67 +159,7 @@ function StabPill({ type, mult }) {
         style={{ backgroundColor: tc }}
       />
       <span className="text-caption text-secondary">{capitalize(type)}</span>
-      <span className="text-caption font-display text-primary">
-        {formatMult(mult)}
-      </span>
+      <span className="text-meta text-primary">{formatMult(mult)}</span>
     </span>
-  );
-}
-
-function Row({ label, a, b, aColor, bColor }) {
-  const aWins = a > b;
-  const bWins = b > a;
-  return (
-    <div className={`grid ${ROW_COLS} items-center gap-1.5 h-9`}>
-      <span
-        className={`text-diff text-right ${aWins ? "text-primary" : "text-tertiary"}`}
-      >
-        {a}
-      </span>
-      <div className="h-1.5 rounded-full bg-elevated overflow-hidden flex justify-end">
-        <div
-          className="h-full rounded-full animate-grow-w"
-          style={{
-            "--target": statPct(a),
-            backgroundColor: typeColorVar(aColor),
-          }}
-        />
-      </div>
-      <DiffCell label={label} d={a - b} aColor={aColor} bColor={bColor} />
-      <div className="h-1.5 rounded-full bg-elevated overflow-hidden flex justify-start">
-        <div
-          className="h-full rounded-full animate-grow-w"
-          style={{
-            "--target": statPct(b),
-            backgroundColor: typeColorVar(bColor),
-          }}
-        />
-      </div>
-      <span className={`text-diff ${bWins ? "text-primary" : "text-tertiary"}`}>
-        {b}
-      </span>
-    </div>
-  );
-}
-
-function DiffCell({ label, d, aColor, bColor }) {
-  return (
-    <div className="relative h-9 flex items-center justify-center">
-      <span className="absolute -top-1 inset-x-0 text-overline text-tertiary text-center">
-        {label}
-      </span>
-      {d === 0 ? (
-        <span className="text-diff text-diff-tie">—</span>
-      ) : (
-        <span
-          className="grid grid-cols-[0.55rem_auto_0.55rem] items-center justify-items-center text-diff"
-          style={{ color: typeColorVar(d > 0 ? aColor : bColor) }}
-        >
-          <FaCaretLeft aria-hidden className={d > 0 ? "" : "invisible"} />
-          <span>+{Math.abs(d)}</span>
-          <FaCaretRight aria-hidden className={d < 0 ? "" : "invisible"} />
-        </span>
-      )}
-    </div>
   );
 }
