@@ -9,11 +9,11 @@ _A minimalist, stat-focused Pokémon comparison tool — no bloat, no unnecessar
 
 ## 1. The Why (Origin Story)
 
-This past summer I played through all the mainline Pokémon games for the first time — from Red & Blue up through Black & White. Every playthrough, I kept hitting the same problem: when I had two Pokémon of the same type, I wanted to quickly know which one had the better speed and which had the better attacking stats.
+Sometimes I like to go on a nostalgia trip and play a ton of old childhood games. This past summer that turned into playing through every single mainline Pokémon game end to end for the first time — generation 1 straight through to generation 5.
 
-I'd look up stat-comparison sites to figure it out, but the ones I found didn't quite fit what I wanted — some felt a bit slow or clunky, and others were built for more than I needed (comparing six Pokémon at once when I only wanted two). I just wanted a fast, clean answer for two.
+During each playthrough I'd hit a fork in the road where I had to pick between two Pokémon, and what mattered most to me was speed and attack. So I'd go looking for a site that put two of them side by side. The problem was that the ones I found either looked a little outdated or were cluttered with features I didn't need — six-slot team builders when I only wanted two.
 
-That's the inspiration for Statmon.
+That's the moment I had the idea for Statmon: a personal tool with all the bloat and fluff stripped out, that gave me exactly what I wanted.
 
 **The guiding principle: keep it simple.** No overkill features, nothing more complicated than it needs to be, no cluttered or unappealing visuals. The goal is a tool that's easy and efficient to use, minimalist but visually clear, and never overwhelming. Every feature below is weighed against that principle — if it doesn't make the core comparison faster or clearer, it waits.
 

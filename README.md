@@ -8,7 +8,7 @@ A simple set of Pokémon tools, built for myself. Two so far: a head-to-head com
 
 ## Why
 
-I was playing through the mainline Pokémon games and wanted a quick way to see which of two Pokémon had the better stats. The sites I found for it were either a bit slow and clunky, or bloated with more than I needed for a simple comparison. So I built a lighter version of my own — minimal, quick, and clear.
+Sometimes I go on a nostalgia trip and play a ton of old childhood games. One summer that turned into playing every mainline Pokémon game end to end, generation 1 through 5. Every playthrough I'd hit a fork in the road where I had to pick between two Pokémon, and what mattered most to me was speed and attack. The sites I found for comparing them either looked a little outdated or were cluttered with features I didn't need, so I built a lighter version of my own — minimal, quick, and clear, with all the bloat and fluff stripped out.
 
 The dex table came next, for the other half of the same question: not "which of these two", but "who has the highest Speed in the whole game". All 1,259 entries in one sortable table, filterable by any combination of types and generations, with the sort and filters kept in the URL so a view is a link you can send someone.
 

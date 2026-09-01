@@ -1053,7 +1053,7 @@ consistency called out in [D-023](#d-023). Resolves the last open item on
 
 **Decision.** The brand accent is a **pastel periwinkle purple** (`--accent #9AA0E8`) with a **purple→blue flame gradient** (`#7352E6` → `#9AA0E8` → `#A8C3DD`), derived from Chandelure's official artwork. Replaces the earlier Volcarona-ember orange. Volcarona stays the home mascot.
 
-**Why.** My preference — purple (pastel) over orange — and Chandelure is the #2 favorite, so the palette now honors both favorites (Volcarona mascot + Chandelure colors) while keeping the "flame" thread. Pastel purple also suits the calm-tech minimalist tone better than a hot orange. Colors were lifted slightly from the authentic tones for contrast on the near-black background, and the accent is kept bluer/lighter than the purple-family type colors so it never reads as a type. Sourced hexes and rationale in [04_design §2](04_design.md); research in [02_research §7](02_research.md).
+**Why.** My preference — purple (pastel) over orange. Volcarona and Chandelure are both favorites and I genuinely can't rank them, so the palette honors both (Volcarona mascot + Chandelure colors) while keeping the "flame" thread. Pastel purple also suits the calm-tech minimalist tone better than a hot orange. Colors were lifted slightly from the authentic tones for contrast on the near-black background, and the accent is kept bluer/lighter than the purple-family type colors so it never reads as a type. Sourced hexes and rationale in [04_design §2](04_design.md); research in [02_research §7](02_research.md).
 
 <a id="d-011"></a>
 
