@@ -1,6 +1,9 @@
+import { Link } from "react-router";
 import { LuArrowRight } from "react-icons/lu";
 import Button from "../components/Button";
 import FeaturedComparison from "../components/FeaturedComparison";
+import FeaturePreview from "../components/FeaturePreview";
+import FeaturedDex from "../components/FeaturedDex";
 import { getBySlug, artworkFor } from "../lib/pokemon";
 
 // Home (D-023): product-as-hero. The header frames the whole site (a small suite
@@ -11,12 +14,21 @@ import { getBySlug, artworkFor } from "../lib/pokemon";
 const V = getBySlug("volcarona");
 const C = getBySlug("chandelure");
 
+// The two that exist link to themselves — a row advertising live tools that
+// cannot be clicked is a dead end, and there are two of them now.
 const TOOLS = [
-  { label: "Comparison", live: true },
-  { label: "Dex table · soon" },
+  { label: "Comparison", to: "/compare" },
+  { label: "Dex table", to: "/dex" },
   { label: "Type chart · soon" },
   { label: "Games · soon" },
 ];
+
+const TOOL_CHIP =
+  "text-caption inline-block rounded-full border px-3 py-1 transition-colors";
+const TOOL_LIVE = "text-accent hover:text-accent-hover";
+const LIVE_BORDER = {
+  borderColor: "color-mix(in srgb, var(--color-accent) 45%, transparent)",
+};
 
 export default function Home() {
   return (
@@ -60,28 +72,41 @@ export default function Home() {
         </Button>
       </div>
 
+      {/* Every feature the site ships gets a live preview here (D-043). The
+          comparison board above is the hero and keeps its own treatment; this is
+          the repeatable section each later tool adds. */}
+      <FeaturePreview
+        title="Dex"
+        description="Every Pokémon, sorted by any stat."
+        to="/dex"
+        cta="Open the dex"
+      >
+        <FeaturedDex />
+      </FeaturePreview>
+
       {/* Labelled so a screen reader announces what the list is; without it
           this is four bare items with no context. */}
       <ul
         aria-label="Statmon tools"
-        className="mt-8 flex flex-wrap justify-center gap-2"
+        className="mt-20 flex flex-wrap justify-center gap-2"
       >
         {TOOLS.map((t) => (
-          <li
-            key={t.label}
-            className={`text-caption rounded-full border px-3 py-1 ${
-              t.live ? "text-accent" : "text-tertiary border-border-subtle"
-            }`}
-            style={
-              t.live
-                ? {
-                    borderColor:
-                      "color-mix(in srgb, var(--color-accent) 45%, transparent)",
-                  }
-                : undefined
-            }
-          >
-            {t.label}
+          <li key={t.label}>
+            {t.to ? (
+              <Link
+                to={t.to}
+                className={`${TOOL_CHIP} ${TOOL_LIVE}`}
+                style={LIVE_BORDER}
+              >
+                {t.label}
+              </Link>
+            ) : (
+              <span
+                className={`${TOOL_CHIP} border-border-subtle text-tertiary`}
+              >
+                {t.label}
+              </span>
+            )}
           </li>
         ))}
       </ul>
