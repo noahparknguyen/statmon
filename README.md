@@ -1,6 +1,6 @@
 # Statmon
 
-A simple set of Pokémon tools, built for myself. The first is a head-to-head comparison of two Pokémon's base stats.
+A simple set of Pokémon tools, built for myself. Two so far: a head-to-head comparison of two Pokémon's base stats, and a full-dex table of every Pokémon sortable by any stat.
 
 **Live at [statmon.noahparknguyen.workers.dev](https://statmon.noahparknguyen.workers.dev/).**
 
@@ -9,6 +9,8 @@ A simple set of Pokémon tools, built for myself. The first is a head-to-head co
 ## Why
 
 I was playing through the mainline Pokémon games and wanted a quick way to see which of two Pokémon had the better stats. The sites I found for it were either a bit slow and clunky, or bloated with more than I needed for a simple comparison. So I built a lighter version of my own — minimal, quick, and clear.
+
+The dex table came next, for the other half of the same question: not "which of these two", but "who has the highest Speed in the whole game". All 1,259 entries in one sortable table, filterable by any combination of types and generations, with the sort and filters kept in the URL so a view is a link you can send someone.
 
 ## How it works
 
@@ -25,7 +27,9 @@ npm install
 npm run dev
 ```
 
-`npm run build:data` regenerates the dataset from PokéAPI and `npm run vendor:images` fetches the images — both only needed when a new generation ships, and both cache aggressively so re-runs are free. The checks that keep things honest are `lint`, `format:check`, `audit:contrast` (WCAG AA across all 18 type colours) and `check:docs` (every link and anchor in `docs/`).
+`npm run build:data` regenerates the dataset from PokéAPI and `npm run vendor:images` fetches the images — both only needed when a new generation ships, and both cache aggressively so re-runs are free.
+
+The checks that keep things honest are `lint`, `format:check`, `test:run` (Vitest — the stat math, the dataset codec round-trip, the dex sort/filter logic, and a server-render smoke test of every route), `audit:contrast` (WCAG AA across all 18 type colours, in five pairing groups) and `check:docs` (every link and anchor in `docs/`).
 
 ## Docs
 

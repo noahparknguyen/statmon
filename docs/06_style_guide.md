@@ -70,7 +70,7 @@ Flame gradient (hero only): `linear-gradient(90deg, var(--color-accent-core), va
 
 ### Type colors (18)
 
-The per-type primitives, tuned for the dark background. Full table with badge-text rules and ⚠ contrast-checks lives in [04_design §3](04_design.md); tokens are `--color-type-<name>` (e.g. `--color-type-fire: #FF9741`). Shipped as a generated `type → { fill, badgeText }` map ([01_spec §4](01_spec.md)).
+The per-type primitives, tuned for the dark background. Full table with badge-text rules and ⚠ contrast-checks lives in [04_design §3](04_design.md); tokens are `--color-type-<name>` (e.g. `--color-type-fire: #FF9741`), consumed through `typeColorVar()` / `typeTextVar()`. The generated `type → { fill, badgeText }` JSON map once planned here was **never built** and is closed as won't-do — the CSS tokens made it a redundant second source of truth ([D-031](03_decisions.md#d-031), [04_design §3](04_design.md)). The canonical list of the 18 type slugs is `TYPES` in `src/lib/types.js` ([D-038](03_decisions.md#d-038)).
 
 ---
 
@@ -179,6 +179,7 @@ Anchored at `--text-base: 1rem` (16px, the accessibility floor), stepping at ≈
 | `text-caption`      | body        | `--text-xs` (12)   | 500    | snug        | normal            | Captions, hints, footnotes                   |
 | `text-overline`     | display     | `--text-2xs` (11)  | 500    | none        | wider · UPPERCASE | Eyebrows · **stat-row labels** (HP, Atk…)    |
 | `text-stat`         | body (tnum) | `--text-md` (18)   | 600    | none        | wide              | Stat values in the comparison                |
+| `text-stat-sm`      | body (tnum) | `--text-sm` (14)   | 600    | none        | wide              | Stat values in a dense row (the dex table)   |
 | `text-stat-lg`      | body (tnum) | `--text-lg` (20)   | 600    | none        | wide              | BST · emphasized stat                        |
 | `text-diff`         | body (tnum) | `--text-sm` (14)   | 600    | none        | wide              | Difference value + caret                     |
 | `text-badge`        | display     | `--text-2xs` (11)  | 600    | none        | wide              | Type badges                                  |
@@ -188,7 +189,7 @@ Anchored at `--text-base: 1rem` (16px, the accessibility floor), stepping at ≈
 | `text-numeral-md`   | display     | `--text-2xl` (30)  | 700    | none        | normal            | "Tied" on Home                               |
 | `text-meta`         | display     | `--text-xs` (12)   | 600    | snug        | normal            | Small display label in a chip/pill           |
 
-That's **21 styles across 11 sizes** — the entire typographic surface of the site. Anything you're tempted to size by hand already has a home here.
+That's **22 styles across 11 sizes** — the entire typographic surface of the site. Anything you're tempted to size by hand already has a home here.
 
 **Why the numerals need their own styles.** `text-numeral-*` differ from
 `text-display*` in exactly one property — `leading-none` instead of
@@ -198,6 +199,12 @@ the featured board's BST row); `leading-tight`'s half-leading would push them of
 centre. They were hand-assembled for years because the scale had no style for
 "display numeral in a band". Adding one is the fix §5 prescribes — the design was
 right, the table was incomplete. ([D-035](03_decisions.md#d-035))
+
+**On `text-stat-sm` sharing `text-diff`'s values.** They are identical today and
+are still two styles, because §12 rule 2 is one style per **role**: a dex-table
+cell and a comparison delta are different roles and are free to diverge. Naming
+the role is the point — reusing `text-diff` in a table would make the next reader
+think the number is a difference. ([D-039](03_decisions.md#d-039))
 
 **The one permitted exception: inline emphasis.** Overriding **family and weight
 only** — inheriting size and line-height from the surrounding named style — is
@@ -296,19 +303,26 @@ A second easing (`--ease-out-soft`) was specified here and referenced by nothing
 
 ## 10. Z-Index Scale
 
-| Token          | Value | Layer                             |
-| -------------- | ----- | --------------------------------- |
-| `--z-base`     | 0     | normal flow                       |
-| `--z-dropdown` | 1000  | search results, menus             |
-| `--z-sticky`   | 1100  | sticky header                     |
-| `--z-overlay`  | 1200  | modals / dialogs                  |
-| `--z-toast`    | 1300  | toasts / copied-link confirmation |
+| Token          | Value | Layer                                          |
+| -------------- | ----- | ---------------------------------------------- |
+| `--z-base`     | 0     | normal flow                                    |
+| `--z-raised`   | 1     | lifted above sibling content, below all chrome |
+| `--z-dropdown` | 1000  | search results, menus                          |
+| `--z-sticky`   | 1100  | sticky header                                  |
+| `--z-overlay`  | 1200  | modals / dialogs                               |
+| `--z-toast`    | 1300  | toasts / copied-link confirmation              |
 
-Only `--z-dropdown` (search results) and `--z-sticky` (header) are currently
-consumed. The unused rungs stay: a z-index scale's whole value is being a
-**complete ladder** — an incomplete one is what makes someone reach for
-`z-9999`. This is the opposite call from unused semantic colour tokens, and
-deliberately so.
+`--z-dropdown` (search results), `--z-sticky` (site header) and `--z-raised`
+(the dex table's sticky column headers) are consumed. The unused rungs stay: a
+z-index scale's whole value is being a **complete ladder** — an incomplete one
+is what makes someone reach for `z-9999`. This is the opposite call from unused
+semantic colour tokens, and deliberately so.
+
+**`--z-raised` is that argument proving itself.** The ladder had no rung between
+"normal flow" and "floating chrome", so a sticky table header that only needed
+to out-paint its own rows had nowhere on the scale to sit — and shipped at
+`z-index: auto`, where the rows' positioned cells painted over it. The rung was
+added rather than reaching for a bare `z-10`. ([D-041](03_decisions.md#d-041))
 
 ---
 
@@ -350,6 +364,27 @@ There is **no `tailwind.config.js`**. Tailwind v4 is CSS-first: `src/index.css` 
 
 **Spacing** is the deliberate exception: Tailwind's default `--spacing: 0.25rem` already yields our 4px scale, so it is left alone (§6). **Durations** and **z-index** live as plain `:root` custom properties rather than theme tokens, because they're consumed as `var(--z-sticky)` in inline styles, not as utilities.
 
+### What Tailwind scans — why detection is off
+
+`src/index.css` opens with **`@import "tailwindcss" source(none)`** plus two
+explicit `@source` globs (`../index.html` and `./**/*.jsx`), rather than letting
+Tailwind detect content automatically.
+
+Automatic detection scans every non-gitignored file for class-name candidates,
+**prose included** — so an ordinary English word that happens to be a utility
+name silently ships that utility. Writing "a visible ring" in a source comment
+emitted `.visible`, `.ring` and the whole ring/shadow `@property` block: 1.7 kB
+of dead CSS from one sentence. Writing "filter" emitted `.filter`. Excluding
+`docs/` (the previous fix) only ever addressed one directory.
+
+Class names exist in exactly two places — `index.html` and the `.jsx`
+components — so those are declared and nothing else is scanned. Narrowing a scan
+can drop a real class, which is the [D-028](03_decisions.md#d-028) failure in
+reverse, so the change was verified by diffing the emitted selector list before
+and after: two selectors disappeared, both junk, none added.
+**Limit:** comments inside `.jsx` files are still scanned and can still leak
+(`.table`, `.fixed`, `.static` currently do). ([D-038](03_decisions.md#d-038))
+
 ### `@theme static` — why not plain `@theme`
 
 Plain `@theme` **tree-shakes** any token Tailwind doesn't see referenced by a scanned class name. Statmon reads many tokens — above all the 18 `--color-type-*` — only through inline `var(--color-…)` built in JavaScript (`typeColorVar`), which the scanner cannot see. Under plain `@theme` those variables were dropped and **type colors vanished app-wide**. `static` forces every token to emit regardless of class usage; the cost is a slightly larger `:root`, which is negligible. ([D-028](03_decisions.md#d-028))
@@ -358,4 +393,6 @@ Plain `@theme` **tree-shakes** any token Tailwind doesn't see referenced by a sc
 
 The §5 styles are hand-written utility classes in an `@layer components` block in `src/index.css` — each bundles family + size + weight + line-height + tracking. A component writes `className="text-stat"` and never re-specifies any of it. That is the payoff: uniform, and hard to drift.
 
-**Status:** every call site now uses a named style. The BST numerals and chip labels that used to hand-assemble type were resolved by _adding_ the four styles they needed (`text-numeral-*`, `text-meta`) rather than bending the design to fit the table ([D-035](03_decisions.md#d-035)). The single remaining family/weight override is the documented inline-emphasis case in §5.
+**Status:** every call site now uses a named style; `/style` walks the stylesheet
+at render and warns if one is missing from its own list, which is what caught
+`text-stat-sm` the moment it was added. The BST numerals and chip labels that used to hand-assemble type were resolved by _adding_ the four styles they needed (`text-numeral-*`, `text-meta`) rather than bending the design to fit the table ([D-035](03_decisions.md#d-035)). The single remaining family/weight override is the documented inline-emphasis case in §5.

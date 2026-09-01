@@ -4,6 +4,446 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ---
 
+## 2026-08-31 — Session 6 (the dex table)
+
+<a id="d-044"></a>
+
+### D-044 · The dex preview is my Black & White team — **Firm**
+
+**Decision.** The six rows in Home's dex preview are **Samurott, Krookodile,
+Chandelure, Volcarona, Archeops and Mienshao** — my actual team from the
+Black & White playthrough that the whole project came out of
+([00_brainstorm §1](00_brainstorm.md)). Nothing on screen marks it; it is meant
+to be found, not announced.
+
+**Why it works rather than just being self-indulgent.**
+
+- **It is coherent, not random.** All six are Gen 5, so the preview reads as a
+  deliberate slice rather than an arbitrary one, and the six between them cover
+  nine types — the type colours carry the table's visual signature, so a varied
+  team shows the component off better than six Water types would.
+- **It closes a loop the site already opened.** Volcarona and Chandelure are the
+  site's mascots ([D-023](#d-023)) because they are my two favourites; they are
+  also on this team. So they appear in the hero board and again in the preview
+  below it, which reads as a running thread rather than a repeat.
+- **The origin story is the product's whole premise.** [01_spec](01_spec.md)'s
+  success criterion is "a stranger mid-playthrough gets their answer instantly",
+  and this is the playthrough that produced the question. Putting that team on
+  the front page is the most on-brand content the preview could hold.
+
+**What did not change, deliberately.** The rows are still ordered by the tool's
+own `sortRows` on Speed descending — not written out in the order I want them.
+So the Speed column's highlight and its `aria-sort="descending"` stay truthful,
+and the preview keeps demonstrating the thing [D-043](#d-043) says a preview is
+for. Archeops (110) to Samurott (70) is a wide enough spread to make the sort
+visible. `getBySlug` is filtered rather than trusted, so a dataset rebuild that
+renamed a slug drops that row instead of rendering a hole.
+
+**Tested by name.** `routes.test.jsx` asserts all six are present and in real
+descending-Speed order, so a future refactor cannot quietly lose the egg. The
+ordering assertion is scoped to the preview table: two of the six are the hero's
+mascots and appear higher up the page, so an unscoped `indexOf` finds the hero's
+copy instead — which is exactly how the first version of that test failed.
+
+<a id="d-043"></a>
+
+### D-043 · Every feature gets a live preview on Home — **Firm**
+
+**Decision.** Home is the site's shop window: **every tool Statmon ships gets a
+preview there**, built from that tool's own components and fed real data. The
+dex table is the first to follow the rule; the comparison board ([D-023](#d-023))
+was already doing it as the hero.
+
+**The rule, precisely.**
+
+- **The hero is the flagship.** The comparison board keeps its unlabelled,
+  mascot-flanked treatment and is deliberately _not_ built from the shared
+  section shell. It is the first preview, given extra weight.
+- **Every later feature gets a `FeaturePreview` section:** heading in the site's
+  `Word.` motif, one-line description, the live preview, and a link into the
+  tool. Uniform by construction, because it is one component.
+- **A preview is the real thing, not a mockup.** It renders the tool's own
+  components against the real dataset. Home's dex preview is six `DexRow`s — the
+  same rows `/dex` renders — ordered by the real `sortRows`, so the ranking is
+  computed rather than written down and stays correct when the dataset is
+  rebuilt. This is the [D-032](#d-032) rule applied to a second surface: Home and
+  the tool cannot drift, because they are the same code.
+- **Preview the tool's point, not its chrome.** The dex preview is sorted by
+  Speed descending, because sorting is the thing the table exists to do — the
+  section's own promise is "every Pokémon, sorted by any stat". Which six rows it
+  shows is [D-044](#d-044).
+
+**Why a component and not a note.** A prose rule decays the moment attention
+moves on — the lesson of `check:docs` and `audit:contrast`. `FeaturePreview.jsx`
+makes the pattern the path of least resistance: a new tool fills in four props
+and is consistent automatically. [05_roadmap Phase 6](05_roadmap.md) now carries
+"ships with a Home preview" in each tool's checklist, so it is a task rather than
+a good intention.
+
+**Its limit, written down now rather than discovered later.** This does not scale
+past about four tools — a stack of full previews becomes a very long page, and
+the hero stops being a hero. At that point the pattern should become a grid of
+compact previews, or the previews should shrink to cards with the flagship alone
+at full size. The rule is "every feature is represented on Home", not "every
+feature gets 500px of it".
+
+**One structural consequence.** The preview needs the dex table's column
+geometry, which is Tailwind class strings — and those cannot live in `lib/`,
+because Tailwind only scans `.jsx` since [D-038](#d-038). They also cannot hang
+off `DexTable.jsx`, because `react-refresh` requires a component file to export
+only components. Hence `components/dexColumns.jsx`, a constants-only module that
+satisfies both. Worth recording: those two rules together mean shared _styling_
+constants need their own `.jsx` file, which is not obvious from either rule alone.
+
+**Also.** `DexRow` is reused verbatim, links included, so a name in the preview
+navigates to the comparison exactly as it does in the real table — the behaviour
+is the same everywhere rather than special-cased for Home. The preview's header
+is static (no sort buttons) but carries an accurate `aria-sort="descending"` on
+the Speed column, since those rows genuinely are sorted that way.
+
+<a id="d-042"></a>
+
+### D-042 · Pre-release polish: WCAG 2.5.3, a silent Tailwind conflict, and an honest touch-target rule — **Firm**
+
+**Decision.** A deliberate "find everything wrong" pass before shipping the
+iteration, driven by scripted audits over the production build rather than by
+re-reading the code. Everything found is fixed here except one item, which is
+tracked with its reason.
+
+**Fifteen WCAG 2.5.3 (Label in Name) failures — Level A.** Every one in code
+written this session. The pattern was replacing a control's accessible name with
+a _description_ of what it does: a header showing **"Atk"** was named "Sort by
+Attack", a chip showing **"Gen 1"** was named "Filter by Generation 1", **"BST"**
+was "Sort by Base stat total". The visible words are then absent from the
+accessible name, so speech control ("click BST") cannot act on them.
+
+Two fixes, in opposite directions:
+
+- **Sort headers** keep the expansion but _append_ it as `sr-only` text instead
+  of replacing the name — "BST sort by Base stat total" contains "BST".
+- **Filter chips** drop `aria-label` entirely. The enclosing `role="group"`
+  label and `aria-pressed` already supplied the context, so the visible text is
+  simply the better name. Less code, and correct by construction.
+
+**A conflict Tailwind resolves the opposite way to how it reads.** The mobile
+sort `<select>` was written `` `${FIELD} h-9` `` where `FIELD` already carried
+`h-11`. Appending a class does **not** override an earlier one — Tailwind
+resolves the conflict by **stylesheet order**, not by the order in the class
+string — so the select rendered **44px** beside its two 36px neighbours. Height
+came out of the shared constant; each call site sets its own. Nothing in review
+would have caught this: the code says `h-9` and means it.
+
+**The touch-target rule was aspirational fiction, so it has been rewritten.**
+Measuring every control on every route: **nothing on the site** met
+[04_design §9](04_design.md)'s "interactive hit areas ≥ 44×44px on touch". Nav
+links are 14px, Swap 36px, form chips 21px, and the new dex chips shipped at
+25px. 44×44 is WCAG **2.5.5**, a **AAA** criterion — Statmon targets **AA**
+([D-027](#d-027)), where the binding rule is **2.5.8: 24×24** or adequate
+spacing. So §9 now states the real, checkable policy (24px floor, 44px for
+primary CTAs, 36px for compact controls) and records the correction rather than
+quietly deleting the old claim. The dex chips were raised **25 → 36px** to match
+`Button` `sm`.
+
+**The one thing not fixed.** `FormChips` in the comparison card are 21px with
+6px gaps — the single place likely to fail 2.5.8's spacing test. Raising them
+needs `PokemonCard`'s fixed 40px chip band reworked first: at eight forms
+(Minior) the chips already wrap to two rows inside it, and 36px chips would
+overflow into the artwork. That is a redesign of a shipped, verified card, not a
+polish-pass edit, so it is written down in
+[05_roadmap Phase 5](05_roadmap.md) instead of patched blind.
+
+**Smaller things, all fixed.** A windowed range could point past the end of a
+list a filter had just shrunk, painting an empty table under a huge spacer for
+one frame — the range now falls back to the top when out of bounds. `DexRow`
+hand-built `/compare?p1=…` instead of calling `compareUrl`, the helper that
+exists to own that shape. The row height lived as `48` in one file and `h-12` in
+another; they are now defined together and passed down. The mobile
+`Filters (N)` badge counted the name box, which sits _outside_ the panel it
+opens, so a name filter alone showed "(1)" over a panel with nothing set —
+split into a panel count and a total. Home's tools row advertised two live tools
+that were not clickable. `index.html`'s three description tags still described a
+single-tool site. And `/style` pushed 6px past the viewport at 390px, because the
+longest text-style spec label carried `whitespace-nowrap` and so could not shrink.
+
+**What came back clean.** The final sweep runs nine routes at 390 / 768 / 1280px:
+no duplicate ids, exactly one `<h1>` each with sane heading order, no missing
+`alt`, no control without an accessible name, no positive `tabindex`, no
+horizontal overflow at any width, zero Label-in-Name failures, and **zero console
+errors or warnings** anywhere.
+
+**Method note.** Reading the code would not have found the height conflict, the
+z-order bleed ([D-041](#d-041)), or the touch-target gap — all three are
+properties of the _rendered_ page, and all three looked correct in source. The
+audits that found them are scripted against the real build over CDP and are
+worth keeping.
+
+<a id="d-041"></a>
+
+### D-041 · Sticky table header was being painted over; a `--z-raised` rung — **Firm**
+
+**Decision.** The dex table's sticky column headers now sit on a new
+**`--z-raised: 1`** rung of the z-scale ([06 §10](06_style_guide.md)), above the
+rows and far below the site header's `--z-sticky`.
+
+**The bug.** Scrolling the dex, the stat bars and numbers of the row passing
+underneath drew **over** the sticky header, while the sprite, name and type
+badges of that same row correctly slid **under** it. Reported as "the stat
+headers look transparent, and the overlap feels unintentional" — which it was.
+
+**Why only those columns.** Not a background problem: all ten header cells had
+the same opaque `bg-base`, the same `position: sticky`, the same `top`, and
+`z-index: auto`. The difference is in the _rows_. A stat cell positions its
+fill and its number (`relative` wrapper, `absolute` fill) so the number can sit
+on top of the bar. **A positioned element paints above a non-positioned one**,
+and between two at `auto` the one later in the DOM wins — the rows come after
+`<thead>`, so their positioned cells won. The name and type cells contain
+nothing positioned, so they stayed in the normal-flow layer and behaved. The
+split the user noticed was exactly the split between positioned and
+un-positioned cell content.
+
+**Why a new token rather than `z-10`.** [06 §10](06_style_guide.md) had rungs for
+normal flow and for floating chrome (dropdown / sticky / overlay / toast) and
+nothing in between, so an element that only needed to out-paint its own siblings
+had nowhere on the ladder to sit. That doc already argues an incomplete ladder
+"is what makes someone reach for `z-9999`" — this is that prediction coming
+true, so the fix is to complete the ladder. Applied inline, matching how
+`Layout` consumes `--z-sticky` (z tokens are plain `:root` properties, not
+theme tokens — [06 §13](06_style_guide.md)).
+
+**Considered and rejected:** painting the bar as a hard-stop `linear-gradient`
+on the cell instead, which needs no positioning and would have made the symptom
+disappear. It fixes this instance by accident. A sticky header that works only
+so long as no row cell is ever positioned is a trap for the next person, so the
+stacking order is stated rather than avoided.
+
+**Verified by hit-testing, not by eye.** `document.elementFromPoint` at the
+centre of every visible header cell now returns the header itself rather than a
+row — all ten columns, where before the six stat columns returned row content.
+Confirmed the header still resolves below the site header (1 < 1100). A
+server-render test asserts every `<th>` carries the rung, since the fault is
+only visible once the page is scrolled and no unit test scrolls.
+
+<a id="d-040"></a>
+
+### D-040 · Multi-select type & generation filters — **Firm**
+
+**Decision.** Types and generations are now **multi-select chips** instead of
+single-value `<select>`s. Click a chip to add it, click it again (it carries an
+**×** while active) to drop it, or **Clear all filters** to reset them at once.
+This supersedes the single-select part of [D-039](#d-039).
+
+**How multiple selections combine: OR within a group, AND across groups.**
+Fire + Fighting in Gens 1, 3 and 5 reads as _"(Fire **or** Fighting) **and**
+(Gen 1, 3 **or** 5)"_ — 83 rows, including pure Fire (Charmander), pure Fighting
+(Mankey) and dual Fire/Fighting (Blaziken). Generations admit no other reading, since a
+Pokémon belongs to exactly one and ANDing them would always match nothing; types
+follow the same rule so the two groups behave alike rather than each needing to
+be learned. The alternative for types — AND, meaning "dual Fire/Fighting only" —
+is a genuinely useful but _different_ feature, and mixing the two into one
+control is what makes faceted filters confusing. Confirmed with the user before
+building rather than guessed at.
+
+**Why this also fixes the odd-looking panel.** The real complaint that started
+this was that "Alternate forms" sat alone in something that looked like a filter
+area. The fix is not to move the toggle — it is that the panel now has **three
+labelled groups**: **Types**, **Generations**, **Options**. A lone toggle under
+its own heading is a group; a lone toggle under nothing is an orphan. The
+labels are `role="group"` + `aria-label`, so the grouping is real to a screen
+reader and not just visual.
+
+**Reversing the chips-vs-dropdown call.** [D-039](#d-039) chose `<select>`s
+because 18 colour chips wrap to several rows on a phone. That still happens —
+but once selection is multi-value, the current selection has to be on screen
+anyway, at which point the dropdown is a strictly extra step in front of the
+same information. So: chips, with the whole group collapsed on a phone behind a
+**`Filters (5)`** disclosure that counts the chips inside it (the name box sits
+outside the panel and is counted only by "Clear all" — [D-042](#d-042)). Sorting deliberately
+sits _outside_ that disclosure — the six stat column headers are already hidden
+below `md`, so burying sort inside a collapsed panel would leave a phone with no
+way to sort at all.
+
+**Chip states reuse audited colours.** Active type chips are the `TypeBadge`
+pairing (solid type colour, near-black label); inactive chips are the
+`FormChips` neutral pairing with a small type-coloured **dot**, which keeps the
+palette visible without inventing a colour pairing that
+[D-027](#d-027)'s audit has not already cleared. Generation chips have no
+inherent colour, so active uses the accent — chrome, per
+[D-023](#d-023)'s rule that accent is never a type colour.
+
+**Two small behaviours worth stating.** The URL is rebuilt from the **canonical
+order**, not click order, so clicking Fighting-then-Fire and Fire-then-Fighting
+produce the identical link (`?type=fire,fighting`) — the same normalisation
+drops duplicates and unknown values, so a hand-edited URL cannot reach a state
+the controls could not. And **Clear all clears filters but keeps the sort**:
+throwing away the column you were reading is not what "clear the filters" means.
+A single value still parses (`?type=fire`), so links shared before this change
+keep working.
+
+**Verified.** 17 browser checks over CDP — chips accumulating, canonical
+ordering regardless of click order, an × removing exactly one filter, Clear all
+keeping the sort, the phone disclosure and its count, no horizontal overflow at
+390px, and all 28 chips reporting `aria-pressed`. The 83- and 42-row results
+were checked against a direct dataset query rather than against the UI's own
+arithmetic, which is the habit [D-039](#d-039) earned the hard way.
+
+**The one real cost.** 28 chips are 28 tab stops, so a keyboard user now passes
+roughly 35 focusable controls before reaching the column headers (confirmed
+reachable, with the 2px focus ring intact). That is inherent to chips over
+dropdowns. Screen-reader users are unaffected — they navigate by group,
+landmark and table rather than by tabbing — but if it becomes annoying the fix
+is a skip link or a collapse-on-desktop, not a return to dropdowns.
+
+<a id="d-039"></a>
+
+### D-039 · The dex table — Statmon's second tool — **Firm**
+
+**Decision.** Built the full-dex stats table at **`/dex`** — the top near-term
+item in [05_roadmap Phase 6](05_roadmap.md), priority #1 in [D-023](#d-023), and
+the thing the Home tools row has been promising as "soon" since launch. Four
+choices define it:
+
+- **All 1,259 entries, with alternate forms filterable** rather than the 1,025
+  default forms. [D-003](#d-003) already treats a Mega as "just another stat
+  block", and Megas are a large part of _why_ someone looks a stat up; a toggle
+  hides them for anyone who wants the clean National Dex. Forms sort beside their
+  species because rows tie-break on **National Dex number**, not on the synthetic
+  id > 10000 they carry — so Charizard, Mega X and Mega Y are three consecutive
+  #0006 rows.
+- **Hand-rolled windowing, no new dependency.** Only the rows near the viewport
+  are mounted. Measured in the real build: **26 rows in the DOM** both at the top
+  and scrolled 30,000px into a **60,906px** page. It windows against the _page_
+  scroll rather than an inner scroll container, so there is one scrollbar and the
+  table behaves like an ordinary long page.
+- **Numeric cells with a type-tinted proportional fill** rather than plain
+  numbers or a full `StatBar` per stat. The fill is scaled to the same fixed 255
+  reference as every other bar on the site ([D-011](#d-011)), so a length means
+  the same thing here as in a comparison — but the number stays the thing you
+  read. Six full `StatBar`s per row would have been 7,554 bars and roughly halved
+  the rows on screen.
+- **The URL is the entire view state** ([D-022](#d-022)) — `sort`, `dir`, `q`,
+  `type`, `gen`, `forms`. The page holds no state at all: it parses the query
+  string and every control navigates (`replace`) to the next one. So a sorted,
+  filtered dex is a link, back/forward work, and a hand-edited URL cannot desync
+  anything. Defaults are omitted, so the common case stays a clean `/dex`.
+
+**Why a real `<table>`.** A grid of divs would have been easier to window, but
+the browser then gives a screen reader nothing — every cell would need explicit
+`role`/`aria` to recover what `<table>` provides for free. Windowing is done with
+one spacer row above and below the rendered slice, which keeps that structure
+intact, plus `aria-rowcount` on the table and `aria-rowindex` on each row so a
+sliced DOM still reports each row's real position in the full list.
+
+**The bug that took the longest, and what it teaches.** The spacer rows were
+first written as a single cell with `colSpan={10}`. That looked harmless and was
+fine at desktop — but **a `colSpan` does not span the columns, it creates them**:
+a table's column count is the maximum across all its rows. At phone widths seven
+of the ten headers are `display:none`, so the table had three real columns and
+the spacer's colSpan invented seven phantom ones, which took the width and
+crushed the name column down to the width of a sprite. The fix is one cell with
+no `colSpan` at all — the spacer only needs height. Worth recording because the
+desktop rendering looked completely correct throughout.
+
+**One new text style.** Table cells want a compact 14px tabular numeral, and the
+only existing one was `text-diff` — whose role is the comparison delta. Following
+[D-035](#d-035), the fix is to **add the style the design needs**:
+**`text-stat-sm`** ([06 §5](06_style_guide.md), now 22 styles). It shares
+`text-diff`'s values today and is deliberately still its own style — [06
+§12](06_style_guide.md) rule 2 is one style per _role_, and a table cell and a
+delta are free to diverge later. The `/style` page's self-check ([D-035](#d-035))
+caught the omission the moment the style was added, which is exactly what it is
+for.
+
+**Mobile keeps the no-horizontal-scroll rule.** Ten columns cannot fit on a
+phone, and [D-010](#d-010)/[D-029](#d-029) rejected sideways scrolling for this
+site. Below `md` the table condenses to **name + types · the column being sorted
+by · BST** — so sorting by Speed on a phone shows Speed. Sorting by name, dex or
+BST leaves that column out rather than picking an arbitrary stat. Verified at
+390 / 768 / 1280px: zero horizontal overflow at all three.
+
+**Verified in a real browser, not just by eye.** Driving the production preview
+over the Chrome DevTools Protocol: the windowed row count at depth, the page
+height, no horizontal overflow at three widths, scroll actually resetting across
+a navigation (25,000 → 0), per-route titles, header clicks writing the URL and
+reordering rows, the real Tab order reaching the column headers with
+`:focus-visible` and a 2px outline. Two of my assertions failed and **both were
+my expectations, not the app** — the Gen 5 Fire count and the lowest-Defense
+Gen 1 Water type — which is the argument for checking counts against a direct
+dataset query rather than against memory.
+
+**Not done, deliberately.** No row virtualisation library, no column
+show/hide UI, no multi-type filter (the any-vs-all ambiguity buys more confusion
+than it is worth), and type/generation are `<select>`s rather than 18 colour
+chips — the chips wrap to four rows on a phone, and this panel sits above the
+thing people came for.
+
+> **Superseded in part by [D-040](#d-040).** The filters are now multi-select
+> chips. The any-vs-all worry was real but resolvable — it just needed deciding
+> rather than avoiding — and the phone-height objection was answered by
+> collapsing the panel behind a disclosure instead of by dropping the feature.
+
+<a id="d-038"></a>
+
+### D-038 · Foundation before the second tool — **Firm**
+
+**Decision.** A pre-flight audit before building the dex table found the build
+healthy — all five checks green, no TODOs — but three foundational gaps that a
+long page is exactly the thing to expose. All three were closed first, because
+each is strictly harder to retrofit.
+
+- **Scroll and focus reset on navigation** — the outstanding item from
+  [D-024](#d-024). React Router data mode does **not** reset scroll on a
+  client-side navigation; nothing had exposed it because every page was short.
+  `<ScrollRestoration />` (exported by the react-router already installed, and
+  used by nothing) plus a focus move to `<main>` on pathname change. The focus
+  move uses `preventScroll` so it cannot fight the restored position on a Back
+  navigation, and `<main>` takes `outline-none` because it is a programmatic
+  target, not a control — the moved focus is the announcement.
+- **Per-route `<title>`.** Every route served the one static title from
+  `index.html`. This had been deferred pending SSR ([D-026](#d-026),
+  [D-030](#d-030)), but only OG unfurls need a server — a title is a client-side
+  effect. Routes now declare `handle: { title }` and `Layout` sets the document
+  title from `useMatches()`. `handle` is the data-mode equivalent of framework
+  mode's route `meta` export, so this migrates rather than being thrown away.
+- **Vitest.** The [05_roadmap Phase 5](05_roadmap.md) item that never landed.
+  Deliberately the smallest possible slice: `vitest` alone, **no jsdom and no
+  component-testing library**, node environment, pure functions only. 70 tests —
+  the dataset codec (including the whole-dataset round-trip [D-036](#d-036)
+  verified by hand and never again), the stat math, the dex sort/filter/URL
+  logic, and a `react-dom/server` smoke test that renders every route. Anything
+  needing layout, scroll or input is still checked against the running app.
+
+**A scanner leak worth writing down.** Adding one comment jumped the CSS bundle
+by 1.7 kB. Tailwind v4's automatic content detection scans every non-gitignored
+file for class-name candidates — **prose included** — so the words "a visible
+ring" in a source comment emitted `.visible`, `.ring` and the entire ring/shadow
+`@property` block into production CSS. Writing "filter" emitted `.filter`. The
+docs were already excluded from the scan for this exact reason, which fixed the
+symptom in one directory while every comment in `src/` kept doing it; `.table`,
+`.fixed`, `.static` and `.lowercase` were already shipping.
+
+So detection is now **off** (`@import "tailwindcss" source(none)`) with the two
+places that actually contain class names declared explicitly — `index.html` and
+`src/**/*.jsx`. Everything else is prose or data. The [D-028](#d-028) hazard runs
+the other way here — narrowing a scan can silently drop a real class — so this
+was checked rather than assumed: the emitted selector list was diffed before and
+after, and exactly two selectors disappeared, both junk, with nothing added.
+**Honest limit:** comments _inside_ `.jsx` files can still leak, and three tiny
+utilities still do. Rewording accurate comments to dodge a scanner is the worse
+trade; the structural fix removes the whole class of leak from everywhere else.
+
+**Also.** `TYPES` — the list of 18 — existed as **three** hand-maintained copies
+(`typeChart.js`'s chart keys, `contrast-audit.mjs`'s own array, and the dataset
+itself) and as an export from none of them. It now lives once in `lib/types.js`;
+the contrast audit imports it, and a test asserts it matches the chart's keys,
+the types present in the dataset, and the `--color-type-*` tokens in
+`index.css` — so all four can no longer drift apart quietly. `getBySlug` became a
+`Map` lookup instead of a linear `.find()`, because the table resolves a form
+group per row and that was 1.5M comparisons per sort. `dexNumberOf` — the
+"read the dex number off the group's default form" rule — moved out of
+`PokemonCard` into `lib/dexTable.js` so there is one copy.
+
+---
+
 ## 2026-08-31 — Session 5 (review & consistency pass)
 
 <a id="d-037"></a>

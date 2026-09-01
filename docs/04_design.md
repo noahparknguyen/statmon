@@ -4,7 +4,7 @@ _The style guide: color scheme, per-type bar colors, typography, dark mode, layo
 
 > Grounded in [D-007](03_decisions.md#d-007) (horizontal type-colored bars) and [D-008](03_decisions.md#d-008) (Inter + Space Grotesk). Dark mode is canonical; light mode is a [V2] token swap (§8).
 >
-> **This doc explains the _why_.** For the exhaustive, authoritative token list — every color, the complete font-size ramp, all 17 named text styles, spacing, radii, motion — see **[06_style_guide](06_style_guide.md)**. When a concrete value is needed, 06 is the source of truth.
+> **This doc explains the _why_.** For the exhaustive, authoritative token list — every color, the complete font-size ramp, all 22 named text styles, spacing, radii, motion — see **[06_style_guide](06_style_guide.md)**. When a concrete value is needed, 06 is the source of truth.
 
 ---
 
@@ -104,7 +104,7 @@ Two families ([D-008](03_decisions.md#d-008)):
 
 ### Type scale
 
-The intent: **Space Grotesk** carries display/heading weight; **Inter** carries body, UI, and tabular stat numbers. The **complete, authoritative ramp** — every one of the 11 sizes and all 17 named text styles (with exact rem/px, weight, line-height, and tracking) — lives in **[06_style_guide §4–5](06_style_guide.md)** and is the single source of truth. Do not re-specify sizes here; reference the named styles (`text-h1`, `text-stat`, …).
+The intent: **Space Grotesk** carries display/heading weight; **Inter** carries body, UI, and tabular stat numbers. The **complete, authoritative ramp** — every one of the 11 sizes and all 22 named text styles (with exact rem/px, weight, line-height, and tracking) — lives in **[06_style_guide §4–5](06_style_guide.md)** and is the single source of truth. Do not re-specify sizes here; reference the named styles (`text-h1`, `text-stat`, …).
 
 - **Stat numbers** use `text-stat` / `text-stat-lg`, always Inter with `tnum`.
 - **BST delta figures** use `text-numeral-xl` / `-lg` / `-md` — Space Grotesk, `leading-none` so they sit optically centred in their fixed-height band ([D-035](03_decisions.md#d-035)).
@@ -157,6 +157,14 @@ A **three-card board**: two Pokémon cards flanking a center comparison card. Al
 
 All: `rounded-full` (the shape is a pill, not a rounded rect), 150ms transitions, visible focus ring, and a disabled state (`opacity-40`, no pointer events). Passing `to` renders a router `<Link>` styled identically, since Home's and the 404's CTAs are navigations. **The Ghost variant this doc previously specified was never built** — nothing needed it; add it to `Button` if a use appears, rather than hand-rolling one.
 
+**Home feature preview** ([D-043](03_decisions.md#d-043)) — the repeatable section every tool after the flagship gets: an `<h2>` in the `Word.` motif with the accent dot, a one-line description in `text-body-sm text-secondary`, the live preview, and a primary `Button` into the tool. Shipped as `FeaturePreview.jsx`, so the pattern is a component rather than a convention. Sections are separated by `mt-20` (80px).
+
+The **hero is exempt by design**: the comparison board keeps its unlabelled, mascot-flanked treatment and full visual weight. Home therefore reads as hero → one `FeaturePreview` section per shipped tool → tools row. A preview is always the tool's own components against real data — never a mockup — so it cannot drift from what it advertises.
+
+**Dex table row** ([D-039](03_decisions.md#d-039)) — a real `<table>`, fixed 48px rows, on `--color-base` with `--color-border-subtle` row rules and a `--color-surface` hover. Sticky column headers sit above the rows on `--z-raised` and below the site header, and are buttons carrying `aria-sort`; the sorted one is tinted `--color-accent` with a caret. Each stat cell is a **number over a proportional fill** in the Pokémon's primary type color at 28% — scaled to the same fixed 255 reference as every bar on the site (§6), so length means the same thing here, while the number stays the thing you read. BST carries no fill (its range is not 0–255). Below `md` the six stat columns collapse to the single column being sorted by, plus BST — no horizontal scrolling (§5, [D-010](03_decisions.md#d-010)).
+
+**Dex filter chips** ([D-040](03_decisions.md#d-040)) — the filter panel is three `role="group"` sets under `text-overline` labels: **Types**, **Generations**, **Options**. Each chip is a `rounded-full` toggle carrying `aria-pressed`, `min-h-9` (36px) to match `Button` `sm`. Inactive: `--color-elevated` fill, `--color-border-strong`, `--color-secondary` label, plus a 6px dot in the type's color. Active: the solid type color with near-black label (the type-badge pairing, §3) and a trailing × — or `--color-accent` for chips with no inherent color (generations, options), keeping accent to chrome (§2). Below `md` the three groups collapse behind a `Filters (N)` disclosure; the sort control stays outside it, since the stat column headers are already hidden at that width.
+
 **Search input** — `--color-elevated`, `--color-border-subtle`, placeholder `--color-tertiary`; focus = `--color-border-strong` + 2px `--color-accent` focus ring. Results are a dropdown of rows: pixel sprite + name + type badges.
 
 **Type badge** — pill, `rounded-full`, background = type color, text = near-black (`--color-base`) for all types (§3, [D-027](03_decisions.md#d-027)).
@@ -187,7 +195,11 @@ Dark is canonical and the only mode at MVP. Light mode is a **[V2]** deliverable
 - **Not color alone:** type identity is always paired with the type name/badge text; advantage is conveyed by number, sign, and caret (§2).
 - **Focus:** every interactive element has a visible 2px `--color-accent` focus ring with offset.
 - **Motion:** reduced-motion fully honored (§7).
-- **Targets:** interactive hit areas ≥ 44×44px on touch.
+- **Targets:** the binding standard is **WCAG 2.5.8 (AA) — 24×24 CSS px**, or smaller where spacing keeps a 24px circle centred on one target clear of the next. Primary CTAs use `Button` `md` (44px); compact controls — `Button` `sm`, the dex filter chips — are **36px**.
+
+  > **Correction ([D-042](03_decisions.md#d-042)).** This line previously read "interactive hit areas ≥ 44×44px on touch". That was never true **anywhere** on the site — nav links are 14px, Swap is 36px, form chips 21px, and the dex chips shipped at 25px. 44×44 is WCAG **2.5.5**, a **AAA** criterion; Statmon targets AA ([D-027](03_decisions.md#d-027)). The rule now states the standard actually being met, so it can be checked instead of admired.
+
+- **Known exception:** `FormChips` in the comparison card are 21px tall with 6px gaps — the one place on the site likely to fail 2.5.8's spacing test. Raising them needs the card's fixed 40px chip band reworked first: at eight forms (Minior) they already wrap to two rows and overflow it. Tracked in [05_roadmap Phase 5](05_roadmap.md) rather than patched blind. ([D-042](03_decisions.md#d-042))
 - **Semantics:** stat rows use proper labels/structure so a screen reader announces "Speed, Pokémon 1 100, Pokémon 2 55, difference 45 in favor of Pokémon 1."
 
 ---

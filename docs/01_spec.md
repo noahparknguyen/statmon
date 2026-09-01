@@ -6,7 +6,7 @@ _The tangible plan parsed out of [00_brainstorm](00_brainstorm.md): what's actua
 
 ## 1. Product Definition
 
-**Statmon** is a minimalist, dark-mode web tool for comparing the base stats of **two** Pokémon head-to-head. It is deliberately narrow: fast search, two slots, three columns (Pokémon 1 · Pokémon 2 · difference), color-coded bars. It is built on a modular foundation so additional tools and games can be added over time without a rewrite.
+**Statmon** is a minimalist, dark-mode set of Pokémon stat tools. The flagship is a head-to-head comparison of **two** Pokémon, deliberately narrow: fast search, two slots, three columns (Pokémon 1 · Pokémon 2 · difference), color-coded bars. The modular foundation was always meant to carry more tools without a rewrite, and the **full-dex stats table** (§2.3) is the first proof that it does.
 
 **Primary goal:** answer "which of these two is faster / hits harder / is bulkier?" in seconds, and look good doing it.
 
@@ -57,9 +57,14 @@ The MVP is done when a user can land on the site, search two Pokémon, and read 
 - About page; light-mode toggle.
 - ESLint/Prettier, unit + smoke tests, CI/CD auto-deploy.
 
-### 2.3 Someday (the suite)
+### 2.3 Shipped since launch
 
-Radar/hex view, favorites, and the future tools & games catalogued in [00_brainstorm §5](00_brainstorm.md) — speed-tier tool, type coverage/matchup grid, team builder, EV/IV planner, Nuzlocke helper, dex trackers, and the guessing/higher-lower/silhouette/daily-puzzle games. Plus expanded generation coverage and per-comparison OG images.
+- **Home feature previews** — every tool gets a live preview on Home, built from its own components against real data ([D-043](03_decisions.md#d-043)).
+- **Full-dex stats table** (`/dex`) — the first item off the Someday list, and the second tool on the site. All 1,259 entries, sortable on every stat, searchable by name, filterable by any number of types and generations at once, alternate forms toggleable; the whole view lives in the URL. See [D-039](03_decisions.md#d-039) and [D-040](03_decisions.md#d-040).
+
+### 2.4 Someday (the rest of the suite)
+
+Radar/hex view, favorites, and the remaining tools & games catalogued in [00_brainstorm §5](00_brainstorm.md) — type matchup grid, speed-tier tool, type coverage calculator, team builder, EV/IV planner, Nuzlocke helper, dex trackers, and the guessing/higher-lower/silhouette/daily-puzzle games. Plus expanded generation coverage and per-comparison OG images.
 
 ---
 
@@ -79,6 +84,8 @@ Land on Home
         └─ Actions: Swap · Copy link · (change either selection re-renders)
    └─ URL always reflects the current matchup (deep-linkable / shareable)
 ```
+
+**Dex flow.** `/dex` answers the other half of the question — not "which of these two", but "who is highest in the whole game". Land on the table (or on Home's preview of it), sort by any stat, narrow by name / type / generation, and click a name to drop that Pokémon into slot 1 of the comparison. The whole view lives in the URL, so a sorted, filtered dex is a shareable link ([D-039](03_decisions.md#d-039), [D-040](03_decisions.md#d-040)).
 
 **Direct-link entry:** visiting `/compare/<p1>/vs/<p2>` loads straight into a rendered comparison, no interaction required. (Rendered client-side — the SPA resolves both slugs synchronously from the bundled dataset; SSR was deferred at launch, [D-030](03_decisions.md#d-030).)
 

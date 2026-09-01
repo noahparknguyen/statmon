@@ -6,26 +6,26 @@ _The phased build plan / task checklist: what to implement, in order. Sequenced 
 
 ---
 
-## Current status (2026-08-31 — Session 5, review & consistency pass)
+## Current status (2026-08-31 — Session 6, the dex table)
 
-**In progress — consistency & polish pass.** A full review of code against docs is underway (Session 5); documentation has been re-synced to the shipped build. Findings that need code changes are called out inline below with `[~]` or a **⚠ drift** note.
+**Done — Statmon is a two-tool site, and Home advertises both.** Every feature now ships with a live preview on Home ([D-043](03_decisions.md#d-043)) — a rule, a `FeaturePreview` component, and a line in each tool's checklist below. The **full-dex stats table** shipped at `/dex` ([D-039](03_decisions.md#d-039)): all 1,259 entries, sortable on every stat, multi-select filterable by type and generation ([D-040](03_decisions.md#d-040)), with alternate forms toggleable — windowed so only ~26 rows are ever in the DOM. The foundation work it depended on landed first ([D-038](03_decisions.md#d-038)): scroll + focus reset on navigation (closing the last [D-024](03_decisions.md#d-024) item), per-route `<title>`s, and **Vitest** with 70 tests.
 
 **Done — the MVP is live.** Phases 0–4 are complete: a polished, multi-page, self-contained, WCAG-AA site, responsive from phone to desktop, deployed on Cloudflare Workers at **https://statmon.noahparknguyen.workers.dev/**. The one Phase-4 item intentionally left for later is the optional SSR/framework-mode upgrade (per-route meta).
 
-- **Phases 0–2:** plain Vite + React (JS) + Tailwind v4 CSS-first tokens; build-time data pipeline → **1,259 entries**; design-system primitives (21 named text styles, shared `Button` / `CmpRow` / `CmpStatCard` / `SpeedBanner`).
+- **Phases 0–2:** plain Vite + React (JS) + Tailwind v4 CSS-first tokens; build-time data pipeline → **1,259 entries**; design-system primitives (22 named text styles, shared `Button` / `CmpRow` / `CmpStatCard` / `SpeedBanner`).
 - **Phase 3 — comparison tool:** search, two hero cards with form switching, the comparison card (BST summary, STAB matchup, mirrored **type-colored** diffs, speed banner), swap.
-- **Phase 3.5 — routing:** React Router **v8** (data mode); shared `Layout` (header/nav/footer + `main`); routes `/` Home, `/compare` (+ `/compare/<p1>/vs/<p2>`), `/credits`, `/style`, `*` 404; **URL is the single source of truth** ([D-022](03_decisions.md#d-022), `src/lib/compareUrl.js`).
+- **Phase 3.5 — routing:** React Router **v8** (data mode); shared `Layout` (header/nav/footer + `main`); routes `/` Home, `/compare` (+ `/compare/<p1>/vs/<p2>`), `/dex`, `/credits`, `/style`, `*` 404; **URL is the single source of truth** ([D-022](03_decisions.md#d-022), `src/lib/compareUrl.js`).
 - **Phase 4:** **Home** product-as-hero (live Volcarona-vs-Chandelure board, blunt suite copy, corner mascot sprites, tools row) + blunt **Credits** ([D-023](03_decisions.md#d-023)); **image vendoring** — 2,513 sprites/artwork self-hosted + committed ([D-025](03_decisions.md#d-025)); **meta/favicons/OG** incl. the HTML-rendered OG generator `docs/og-image.html` ([D-026](03_decisions.md#d-026)); **accessibility** — skip link + landmarks ([D-024](03_decisions.md#d-024)) and a full **WCAG-AA contrast audit** with a reproducible checker ([D-027](03_decisions.md#d-027)); **mobile per-stat layout** — `ComparisonCard` + `FeaturedComparison` collapse to stacked per-stat cards below 768px ([D-010](03_decisions.md#d-010), [D-029](03_decisions.md#d-029)); the MIT `LICENSE` and a personal-credit footer line are in ([D-029](03_decisions.md#d-029)); **deployed** to Cloudflare Workers as static assets, with absolute OG URLs set ([D-030](03_decisions.md#d-030)).
 
 **Deferred (optional, post-MVP):** the React Router **framework/SSR mode** upgrade ([D-005](03_decisions.md#d-005), [D-022](03_decisions.md#d-022)) — the data-mode config migrates cleanly. It would add **per-route `<title>`/meta**; the site-level OG/meta is already set with absolute URLs. Not required for the MVP — revisit if per-comparison social unfurls become worth it.
 
 **Launch-pass leftovers:** all done — personal-credit line + `LICENSE` ([D-029](03_decisions.md#d-029)), the OG image (`public/og-image.png`), and the production deploy ([D-030](03_decisions.md#d-030)). _(The 1280×640 GitHub social frame is already exported to `docs/preview.png`; it still needs uploading by hand at repo Settings → Social preview, which is a GitHub-side setting and not something the repo can carry.)_
 
-**npm scripts:** `dev` · `build` · `build:data` · `vendor:images` (after `build:data`) · `audit:contrast` · `check:docs` · `lint` · `format` · `format:check` · `preview` · `deploy` (`build` + `wrangler deploy`).
+**npm scripts:** `dev` · `build` · `test` / `test:run` · `build:data` · `vendor:images` (after `build:data`) · `audit:contrast` · `check:docs` · `lint` · `format` · `format:check` · `preview` · `deploy` (`build` + `wrangler deploy`).
 
-**The four checks that must stay green:** `npm run lint && npm run format:check && npm run build && npm run audit:contrast && npm run check:docs`.
+**The six checks that must stay green:** `npm run lint && npm run format:check && npm run test:run && npm run build && npm run audit:contrast && npm run check:docs`.
 
-**Notes:** `StatBar.jsx` is used only by the `/style` playground (kept for the future stats table). The dataset ships in the compact form defined by `src/lib/pokemonCodec.js` and is decoded at import ([D-036](03_decisions.md#d-036)) — read/write it through the codec, never as raw JSON. Shared primitives as of [D-032](03_decisions.md#d-032): `CmpRow` (desktop mirrored row + diff cell) and `CmpStatCard` (mobile per-stat card) are used by **both** `ComparisonCard` and Home's `FeaturedComparison`; `SpeedBanner` and `Button` are shared across the site. New tools should build on these rather than re-rolling them.
+**Notes:** `StatBar.jsx` is used only by the `/style` playground. It was kept "for the future stats table", but the dex table did **not** use it — a table cell is not a label·bar·value row ([D-039](03_decisions.md#d-039)) — so it is now genuinely only a playground specimen and is a candidate for deletion if nothing claims it. The dataset ships in the compact form defined by `src/lib/pokemonCodec.js` and is decoded at import ([D-036](03_decisions.md#d-036)) — read/write it through the codec, never as raw JSON. Shared primitives as of [D-032](03_decisions.md#d-032): `CmpRow` (desktop mirrored row + diff cell) and `CmpStatCard` (mobile per-stat card) are used by **both** `ComparisonCard` and Home's `FeaturedComparison`; `SpeedBanner` and `Button` are shared across the site. The dex adds `DexRow` (used by both the table and Home's preview) with its geometry in `components/dexColumns.jsx`, and `FeaturePreview` — the shell every Home preview is built from ([D-043](03_decisions.md#d-043)). New tools should build on these rather than re-rolling them.
 
 ---
 
@@ -35,7 +35,7 @@ _Goal: a minimal, running local app with the styling system wired up. Start simp
 
 - [x] Scaffold a **plain Vite + React (JavaScript)** app: `npm create vite@latest statmon -- --template react`. ([D-013](03_decisions.md#d-013), [D-014](03_decisions.md#d-014))
 - [x] Add **Tailwind** (v4, `@tailwindcss/vite`).
-- [x] Finalize the **style guide** ([06_style_guide](06_style_guide.md)) and translate it into the **Tailwind theme + design tokens** in `src/index.css` (colors, 11-step type scale, 17 named text styles, radii, breakpoints, motion) — everything token-driven from here on.
+- [x] Finalize the **style guide** ([06_style_guide](06_style_guide.md)) and translate it into the **Tailwind theme + design tokens** in `src/index.css` (colors, 11-step type scale, named text styles — 17 at the time, 22 today, radii, breakpoints, motion) — everything token-driven from here on.
 - [x] Wire fonts (Space Grotesk + Inter) and page meta in `index.html`.
 - [x] Confirm local dev + build run clean (`npm run dev` / `npm run build`).
 - [x] Set up the repo: `.gitignore`, license (MIT), README, commit hygiene; published to GitHub.
@@ -132,6 +132,7 @@ _Goal: a complete, showcase-ready site. This is where the **Cloudflare Workers/W
 
 _Goal: sharpen the core and add the low-cost, high-value extras._
 
+- [ ] **`FormChips` touch targets** — 21px tall with 6px gaps, the one likely WCAG 2.5.8 (AA) spacing failure on the site. Needs `PokemonCard`'s fixed 40px chip band reworked first, since eight forms (Minior) already wrap to two rows inside it. ([D-042](03_decisions.md#d-042), [04_design §9](04_design.md))
 - [ ] Attacker-identity read (physical vs. special).
 - [ ] Biggest-gap highlight.
 - [x] **Type-effectiveness** between the two Pokémon — **shipped early** in Phase 3 as the attacker-STAB matchup on the comparison card, on the hardcoded `src/lib/typeChart.js` matrix ([D-018](03_decisions.md#d-018)).
@@ -139,7 +140,7 @@ _Goal: sharpen the core and add the low-cost, high-value extras._
 - [ ] Copy-link button, **random matchup**, full keyboard flow.
 - [ ] Search **filters** (type / generation), recently-compared list.
 - [ ] **About** page; **light-mode** toggle.
-- [~] Tooling — **ESLint + Prettier are both in** (flat ESLint config + `npm run lint`; Prettier as a devDependency with `npm run format` / `format:check`, whole tree passing on stock config). **Vitest** (stat math + data transforms), **Playwright** smoke test, and **GitHub Actions → Cloudflare** CI/CD are still outstanding — CI is the natural home for `lint` + `format:check` + `check:docs` + `audit:contrast`.
+- [~] Tooling — **ESLint + Prettier are both in** (flat ESLint config + `npm run lint`; Prettier as a devDependency with `npm run format` / `format:check`, whole tree passing on stock config). **Vitest is in** ([D-038](03_decisions.md#d-038)): 70 tests over the stat math, the dataset codec (including the whole-dataset round-trip), the dex sort/filter/URL logic, and a `react-dom/server` smoke test of every route — node environment, no jsdom. **Playwright** and **GitHub Actions → Cloudflare** CI/CD are still outstanding — CI is the natural home for `lint` + `format:check` + `test:run` + `check:docs` + `audit:contrast`.
 
 **Exit:** the comparison tool feels finished and the repo has real engineering rigor.
 
@@ -149,11 +150,13 @@ _Goal: sharpen the core and add the low-cost, high-value extras._
 
 _Goal: grow Statmon into a small family of tools & games, one clean addition at a time. Near-term priorities firmed in [D-023](03_decisions.md#d-023) — all reuse the existing data layer + type engine, so each is an addition, not a rewrite. The Home tools row already advertises them ("soon")._
 
+> **Definition of done for every tool below:** it ships with a **live preview on Home** ([D-043](03_decisions.md#d-043)) — a `FeaturePreview` section built from the tool's own components against real data, not a mockup. A tool is not finished until Home advertises it.
+
 **Near-term (the suite the Home page promises):**
 
-- [ ] **Full-dex stats table** — every Pokémon in one table, **sortable / searchable / filterable** by stat, name, and type; pixel sprite per row. Reuses the built dataset (1,259 entries) and the kept `StatBar.jsx`. Highest-value companion to comparison.
-- [ ] **Type chart** — the 18×18 effectiveness grid, **dual-type aware**. Mostly presentation over `lib/typeChart.js`, which already does dual-type STAB math for the comparison card.
-- [ ] **Type-advantage quiz game** — quiz the user on the matchup between two (possibly dual) types. Sits directly on the type engine; a clean, well-scoped first game for retention + showcasing that Statmon is more than one tool.
+- [x] **Full-dex stats table** — shipped at `/dex` ([D-039](03_decisions.md#d-039)), with its Home preview ([D-043](03_decisions.md#d-043)). Every Pokémon in one table, **sortable** on all six stats + BST + name + dex number, **searchable** by name, **filterable** by any number of types and generations at once ([D-040](03_decisions.md#d-040)), with alternate forms toggleable; pixel sprite per row and a type-tinted proportional fill behind each stat. The whole view lives in the URL, so a sorted, filtered dex is a shareable link. Windowed rendering keeps ~26 rows in the DOM out of 1,259. _(It did not reuse `StatBar.jsx` — see Notes above.)_
+- [ ] **Type chart** — the 18×18 effectiveness grid, **dual-type aware**. Mostly presentation over `lib/typeChart.js`, which already does dual-type STAB math for the comparison card. _+ Home preview._
+- [ ] **Type-advantage quiz game** — quiz the user on the matchup between two (possibly dual) types. Sits directly on the type engine; a clean, well-scoped first game for retention + showcasing that Statmon is more than one tool. _+ Home preview._
 
 **Later:**
 
