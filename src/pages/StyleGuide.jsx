@@ -114,7 +114,7 @@ const TYPES = [
   "fairy",
 ];
 
-// ALL 21 named styles from 06_style_guide §5. Kept complete on purpose: a
+// ALL 22 named styles from 06_style_guide §5. Kept complete on purpose: a
 // partial list makes this page look authoritative while quietly omitting styles
 // (it previously showed 14 of 17). checkStyleCoverage below fails loudly if a
 // style exists in the stylesheet but is missing here.
@@ -136,6 +136,7 @@ const TEXT_STYLES = [
   ["text-numeral-md", "Tied", "30 · 700 · display numeral"],
   ["text-stat-lg", "1234567890 — BST (tabular)", "20 · 600"],
   ["text-stat", "1234567890 — stat value (tabular)", "18 · 600"],
+  ["text-stat-sm", "1234567890 — dex table cell (tabular)", "14 · 600"],
   ["text-diff", "+42 — difference value (tabular)", "14 · 600"],
   ["text-meta", "Fire ½× — chip / pill label", "12 · 600"],
   ["text-badge", "TYPE BADGE", "11 · 600"],
@@ -266,7 +267,12 @@ export default function StyleGuide() {
               className="grid grid-cols-[1fr_auto] items-baseline gap-4 border-b border-border-subtle pb-4"
             >
               <div className={cls}>{sample}</div>
-              <div className="text-caption text-tertiary text-right whitespace-nowrap">
+              {/* No whitespace-nowrap: the longest spec ("text-numeral-xl · 48 ·
+                  700 · display numeral") cannot shrink below its own width, and
+                  pushed this page 6px past the viewport at 390px. The auto grid
+                  column still takes max-content whenever there is room, so this
+                  only wraps on a narrow screen. */}
+              <div className="text-caption text-tertiary text-right">
                 <span className="text-secondary">{cls}</span> · {spec}
               </div>
             </div>

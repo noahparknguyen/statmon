@@ -2,7 +2,8 @@ import TypeBadge from "./TypeBadge";
 import FormChips from "./FormChips";
 import { STAT_ORDER, STAT_LABEL, statPct } from "../lib/stats";
 import { typeColorVar } from "../lib/types";
-import { artworkFor, formsOf } from "../lib/pokemon";
+import { artworkFor } from "../lib/pokemon";
+import { dexNumberOf } from "../lib/dexTable";
 
 // TCG-inspired card. Artwork is a bold square backdrop bleeding behind the
 // stat bars; a scrim keeps them legible. Vertical spec is on an 8pt rhythm and
@@ -21,10 +22,9 @@ export default function PokemonCard({ pokemon, onSelectForm }) {
   if (!pokemon) return <EmptyCard />;
 
   const primary = pokemon.types[0];
-  // Alternate forms (Mega/regional/…) share their species' National Dex number.
-  // Form entries have synthetic ids > 10000, so read the dex from the default
-  // form in the group (its id is the dex number).
-  const dex = (formsOf(pokemon).find((f) => f.isDefault) ?? pokemon).id;
+  // Alternate forms (Mega/regional/…) share their species' National Dex number
+  // — see dexNumberOf, which the dex table needs for every row.
+  const dex = dexNumberOf(pokemon);
 
   return (
     <div className="relative flex flex-col overflow-hidden bg-surface border border-border-subtle rounded-lg">

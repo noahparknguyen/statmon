@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import Compare from "./pages/Compare";
+import Dex from "./pages/Dex";
 import Credits from "./pages/Credits";
 import StyleGuide from "./pages/StyleGuide";
 import NotFound from "./pages/NotFound";
@@ -15,16 +16,33 @@ import NotFound from "./pages/NotFound";
 // URL each render (URL is the single source of truth), so the shared instance
 // needs no special handling. The literal "vs" segment keeps the deep link
 // readable: /compare/<p1>/vs/<p2>.
+//
+// `handle.title` is the page name; Layout turns it into "<name> — Statmon". The
+// index route declares none so Home keeps index.html's site title. This is the
+// data-mode stand-in for framework mode's route `meta` export.
 export const router = createBrowserRouter([
   {
     element: <Layout />,
     children: [
       { index: true, element: <Home /> },
-      { path: "compare", element: <Compare /> },
-      { path: "compare/:p1/vs/:p2", element: <Compare /> },
-      { path: "credits", element: <Credits /> },
-      { path: "style", element: <StyleGuide /> },
-      { path: "*", element: <NotFound /> },
+      { path: "compare", element: <Compare />, handle: { title: "Compare" } },
+      {
+        path: "compare/:p1/vs/:p2",
+        element: <Compare />,
+        handle: { title: "Compare" },
+      },
+      { path: "dex", element: <Dex />, handle: { title: "Dex" } },
+      { path: "credits", element: <Credits />, handle: { title: "Credits" } },
+      {
+        path: "style",
+        element: <StyleGuide />,
+        handle: { title: "Style guide" },
+      },
+      {
+        path: "*",
+        element: <NotFound />,
+        handle: { title: "Page not found" },
+      },
     ],
   },
 ]);

@@ -1,10 +1,22 @@
-import { Link, NavLink, Outlet } from "react-router";
+import { useEffect, useRef } from "react";
+import {
+  Link,
+  NavLink,
+  Outlet,
+  ScrollRestoration,
+  useLocation,
+  useMatches,
+} from "react-router";
 import { LuGithub } from "react-icons/lu";
 
 // Shared shell across all routes (D-022): a sticky brand/nav header, the routed
 // page in the <main> landmark, and a muted footer with attribution. Token-driven
 // and keyboard-navigable; the wordmark links home, nav marks the active route.
 const REPO_URL = "https://github.com/noahparknguyen/statmon";
+
+// Matches index.html's <title>. Routes declare a page name in `handle.title`
+// and get "<name> — Statmon"; the index route declares none and keeps this.
+const SITE_TITLE = "Statmon — Pokémon stat tools";
 
 function navClass({ isActive }) {
   return [
@@ -13,9 +25,44 @@ function navClass({ isActive }) {
   ].join(" ");
 }
 
+// Per-route document title. Framework/SSR mode (D-005) would express this as a
+// route `meta` export; `handle` is the data-mode equivalent and migrates onto it
+// without restructuring. Deepest match wins, so a child route can override.
+function useDocumentTitle() {
+  const matches = useMatches();
+  const title = matches.findLast((m) => m.handle?.title)?.handle.title;
+  useEffect(() => {
+    document.title = title ? `${title} — Statmon` : SITE_TITLE;
+  }, [title]);
+}
+
+// Moves focus to <main> after a client-side navigation so keyboard and screen
+// reader users are told the page changed — the other half of the D-024 item that
+// <ScrollRestoration> closes. Skips the initial render (nothing navigated yet)
+// and uses preventScroll so it cannot fight ScrollRestoration's restored
+// position on a Back navigation.
+function useFocusOnNavigate(ref) {
+  const { pathname } = useLocation();
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    ref.current?.focus({ preventScroll: true });
+  }, [pathname, ref]);
+}
+
 export default function Layout() {
+  const mainRef = useRef(null);
+  useDocumentTitle();
+  useFocusOnNavigate(mainRef);
+
   return (
     <div className="min-h-screen flex flex-col bg-base text-primary">
+      {/* Data mode does not reset scroll on navigation on its own; without this
+          a deep link out of a long page lands part-way down the next one. */}
+      <ScrollRestoration />
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-1300 focus:rounded-md focus:border focus:border-border-strong focus:bg-elevated focus:px-3 focus:py-2 focus:text-button focus:text-primary"
@@ -43,6 +90,9 @@ export default function Layout() {
             <NavLink to="/compare" className={navClass}>
               Compare
             </NavLink>
+            <NavLink to="/dex" className={navClass}>
+              Dex
+            </NavLink>
             <NavLink to="/credits" className={navClass}>
               Credits
             </NavLink>
@@ -50,7 +100,15 @@ export default function Layout() {
         </div>
       </header>
 
-      <main id="main" className="flex-1">
+      {/* These make <main> a programmatic focus target only: it is not an
+          interactive control, so the moved focus is itself the announcement, and
+          a focus indicator around the whole page would read as an artifact. */}
+      <main
+        id="main"
+        ref={mainRef}
+        tabIndex={-1}
+        className="flex-1 focus:outline-none"
+      >
         <Outlet />
       </main>
 

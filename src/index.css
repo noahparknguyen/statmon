@@ -1,10 +1,22 @@
-@import "tailwindcss";
+/* Tailwind v4's automatic content detection scans every non-gitignored file for
+   class-name candidates — prose included. So an ordinary English word that
+   happens to be a utility name silently ships that utility: writing "filter" or
+   "a visible ring" in a source comment emitted `.filter`, `.visible` and `.ring`
+   (with the whole ring/shadow @property block behind them) into production CSS.
+   Docs used to be excluded for this reason, which fixed the symptom in one file
+   while every comment in src/ kept doing it.
 
-/* Tailwind v4 scans every non-gitignored file for class-name candidates, which
-   includes docs/*.md — so writing `p-6` or `rounded-full` in prose silently
-   emits those utilities into the production stylesheet. The docs must not be
-   able to change the build output, so they're excluded from the scan. */
-@source not "../docs";
+   So detection is off (`source(none)`) and the two places that actually contain
+   class names are declared explicitly. Everything else — .js libs, tests, build
+   scripts, config, docs, the dataset — is prose or data and cannot reach the
+   stylesheet. Verified: no file outside these two globs contains a className.
+
+   The D-028 hazard cuts the other way here — narrowing the scan can drop a real
+   class — so this is checked by diffing the emitted selectors before and after,
+   not assumed. */
+@import "tailwindcss" source(none);
+@source "../index.html";
+@source "./**/*.jsx";
 
 /* =============================================================================
     STATMON — DESIGN TOKENS (Tailwind v4, CSS-first)
@@ -199,6 +211,7 @@
 
     /* Z-index scale (06_style_guide §10) */
     --z-base: 0;
+    --z-raised: 1;
     --z-dropdown: 1000;
     --z-sticky: 1100;
     --z-overlay: 1200;
@@ -260,7 +273,7 @@
 }
 
 /* =============================================================================
-    COMPONENTS LAYER — the 17 named text styles (06_style_guide §5).
+    COMPONENTS LAYER — the 22 named text styles (06_style_guide §5).
     Usage: class="text-h1" / class="text-stat" — never re-specify size/weight.
    ========================================================================== */
 @layer components {
@@ -360,6 +373,19 @@
   .text-stat-lg {
     font-family: var(--font-body);
     font-size: var(--text-lg);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--leading-none);
+    letter-spacing: var(--tracking-wide);
+    font-feature-settings: "tnum" 1;
+  }
+  /* Compact tabular stat value for a dense row — the dex table's stat cells,
+     where text-stat's 18px is too large to fit six columns. Same values as
+     text-diff today, deliberately kept as its own style: 06_style_guide §12
+     rule 2 is one style per *role*, and a table cell and a comparison delta are
+     different roles that are free to diverge later. */
+  .text-stat-sm {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
     font-weight: var(--font-weight-semibold);
     line-height: var(--leading-none);
     letter-spacing: var(--tracking-wide);
