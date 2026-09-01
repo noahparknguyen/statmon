@@ -18,6 +18,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { TYPES } from "../src/lib/types.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CSS = path.join(ROOT, "src", "index.css");
@@ -55,26 +56,6 @@ const ratio = (a, b) => {
   return (hi + 0.05) / (lo + 0.05);
 };
 
-const TYPES = [
-  "normal",
-  "fire",
-  "water",
-  "electric",
-  "grass",
-  "ice",
-  "fighting",
-  "poison",
-  "ground",
-  "flying",
-  "psychic",
-  "bug",
-  "rock",
-  "ghost",
-  "dragon",
-  "dark",
-  "steel",
-  "fairy",
-];
 // All badges use near-black (base) text — see lib/types.js typeTextVar (D-027).
 const base = hex("base"),
   surface = hex("surface"),
@@ -114,6 +95,29 @@ for (const t of TYPES) {
 console.log("\n=== 4. Bar fill vs elevated track — non-text (1.4.11, 3.0) ===");
 for (const t of TYPES)
   console.log(row(t, ratio(hex(`type-${t}`), elevated), 3.0));
+
+// The dex table's stat cell puts text-primary over a proportional fill of the
+// type colour at 28%, composited on the row background (D-039). The hover
+// background (surface) is the lighter of the two and therefore the worse case
+// for light text, so that is what is audited.
+console.log(
+  "\n=== 5. Dex stat cell — primary text on a 28% type fill over the row (AA 4.5) ===",
+);
+const primary = hex("primary");
+// Alpha compositing: the fill is `color-mix(type 28%, transparent)` painted on
+// the row background, so the effective colour is a 28/72 blend of the two.
+const blend = (fg, bg, alpha) => {
+  const mix = (i) =>
+    Math.round(
+      alpha * parseInt(fg.slice(1 + i * 2, 3 + i * 2), 16) +
+        (1 - alpha) * parseInt(bg.slice(1 + i * 2, 3 + i * 2), 16),
+    );
+  return `#${[0, 1, 2].map((i) => mix(i).toString(16).padStart(2, "0")).join("")}`;
+};
+for (const t of TYPES)
+  console.log(
+    row(t, ratio(primary, blend(hex(`type-${t}`), surface, 0.28)), 4.5),
+  );
 
 console.log(`\n── ${fails.length} failure(s) ─────────────────────────────`);
 for (const f of fails) console.log(`  ✗ ${f}`);

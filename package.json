@@ -28,6 +28,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "test": "vitest",
+    "test:run": "vitest run",
     "build:data": "node scripts/build-data.mjs",
     "vendor:images": "node scripts/vendor-images.mjs",
     "audit:contrast": "node scripts/contrast-audit.mjs",
@@ -58,6 +60,7 @@
     "prettier": "^3.9.6",
     "sharp": "^0.35.3",
     "vite": "^8.1.1",
+    "vitest": "^4.1.11",
     "wrangler": "^4.115.0"
   }
 }

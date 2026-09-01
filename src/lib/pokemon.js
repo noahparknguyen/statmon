@@ -17,7 +17,12 @@ const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 export const spriteFor = (p) => p.spriteUrl ?? p.artworkUrl;
 export const artworkFor = (p) => p.artworkUrl ?? p.spriteUrl;
 
-export const getBySlug = (slug) => DATA.find((p) => p.slug === slug);
+// Indexed rather than a linear scan: the dex table resolves a form group for
+// every one of the 1,259 rows on each sort, which is 1.5M comparisons as a
+// .find(). Built once at import, alongside the decode.
+const BY_SLUG = new Map(DATA.map((p) => [p.slug, p]));
+
+export const getBySlug = (slug) => BY_SLUG.get(slug);
 
 // The selectable forms of a Pokémon (Base + Megas/regionals/battle forms),
 // resolved from its `forms` slug list. Base (default) first.

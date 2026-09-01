@@ -1,7 +1,10 @@
 // Type effectiveness (Gen 6+ / current, includes Fairy). Attacking type → the
 // defending types it deviates from 1× against. Anything unlisted is 1×.
 // This is canonical, static data — safe to hardcode.
-const CHART = {
+//
+// Exported so a test can assert its keys match TYPES in lib/types.js exactly.
+// Two hand-maintained lists of the 18 types is precisely the pair that drifts.
+export const CHART = {
   normal: { rock: 0.5, ghost: 0, steel: 0.5 },
   fire: {
     fire: 0.5,
