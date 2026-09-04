@@ -5,13 +5,23 @@
 // See docs/06_style_guide.md (tokens) and docs/04_design.md (rationale).
 
 import { useState } from "react";
+import { LuX } from "react-icons/lu";
 import Button from "../components/Button";
 import TypeBadge from "../components/TypeBadge";
 import StatBar from "../components/StatBar";
 import FeaturedComparison from "../components/FeaturedComparison";
 import SearchBar from "../components/SearchBar";
 import FormChips from "../components/FormChips";
+import GenerationStrip from "../components/GenerationStrip";
 import { getBySlug } from "../lib/pokemon";
+import { generationOptions } from "../lib/eras";
+import { TYPES, typeColorVar, typeTextVar } from "../lib/types";
+import {
+  CHIP,
+  CHIP_OFF,
+  CHIP_ON,
+  CHIP_ON_FILLED,
+} from "../components/chipStyles";
 import { STAT_ORDER, STAT_LABEL } from "../lib/stats";
 
 const noop = () => {};
@@ -93,27 +103,6 @@ const OTHER_TOKENS = [
   ["track-glass", "--color-track-glass", "bar track over artwork"],
 ];
 
-const TYPES = [
-  "normal",
-  "fire",
-  "water",
-  "electric",
-  "grass",
-  "ice",
-  "fighting",
-  "poison",
-  "ground",
-  "flying",
-  "psychic",
-  "bug",
-  "rock",
-  "ghost",
-  "dragon",
-  "dark",
-  "steel",
-  "fairy",
-];
-
 // ALL 22 named styles from 06_style_guide §5. Kept complete on purpose: a
 // partial list makes this page look authoritative while quietly omitting styles
 // (it previously showed 14 of 17). checkStyleCoverage below fails loudly if a
@@ -142,6 +131,49 @@ const TEXT_STYLES = [
   ["text-badge", "TYPE BADGE", "11 · 600"],
   ["text-button", "Button label", "14 · 600"],
 ];
+
+// A labelled specimen row, so each chip family is captioned with what makes its
+// geometry different rather than left to be compared by eye.
+function ChipRow({ label, note, children }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-overline text-tertiary">{label}</span>
+      {children}
+      <span className="text-caption text-tertiary">{note}</span>
+    </div>
+  );
+}
+
+// The dex's filter chip, rebuilt from the shared constants rather than imported:
+// DexFilters keeps its Chip private and wires it to URL state, which this page
+// has none of. It is the one specimen here that is a copy, so it uses the same
+// exported classes the real one does — if those change, this changes with them.
+function DemoChip({ label, color, active = false }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      className={`${CHIP} min-h-9 gap-1.5 px-3 py-1.5 transition-colors ${
+        active ? (color ? CHIP_ON_FILLED : CHIP_ON) : CHIP_OFF
+      }`}
+      style={
+        active && color
+          ? { backgroundColor: typeColorVar(color), color: typeTextVar() }
+          : undefined
+      }
+    >
+      {!active && color && (
+        <span
+          aria-hidden
+          className="size-1.5 shrink-0 rounded-full"
+          style={{ backgroundColor: typeColorVar(color) }}
+        />
+      )}
+      {label}
+      {active && <LuX aria-hidden />}
+    </button>
+  );
+}
 
 function Section({ title, children }) {
   return (
@@ -305,7 +337,53 @@ export default function StyleGuide() {
               Disabled
             </Button>
           </div>
-          {charizard ? <FormChips pokemon={charizard} onSelect={noop} /> : null}
+        </div>
+      </Section>
+
+      {/* All three chip families side by side. They share one colour pair
+          (components/chipStyles.jsx) and differ only in geometry, so seeing
+          them together is the check that they still agree — the same reason
+          this page renders real components instead of copies. */}
+      <Section title="Chips — one colour pair, three geometries">
+        <div className="flex flex-col gap-6">
+          <ChipRow
+            label="Form chips · compact, inside the card's 40px band"
+            note="The one known WCAG 2.5.8 spacing exception (D-042)."
+          >
+            {/* Shown at roughly the width of the card band they live in, so
+                their centring reads as the real layout it is. */}
+            <div className="max-w-72 rounded-md border border-dashed border-border-subtle p-2">
+              {charizard ? (
+                <FormChips pokemon={charizard} onSelect={noop} />
+              ) : null}
+            </div>
+          </ChipRow>
+
+          <ChipRow
+            label="Generation strip · 36px, near-square around one numeral"
+            note="A dot marks a generation whose board differs from today (D-046)."
+          >
+            {charizard ? (
+              <GenerationStrip
+                label="Stats as of"
+                options={generationOptions([charizard])}
+                asof={1}
+                onSelect={noop}
+              />
+            ) : null}
+          </ChipRow>
+
+          <ChipRow
+            label="Filter chips · 36px, with a colour dot and a dismiss ×"
+            note="Selected type chips take the audited TypeBadge pairing (D-027)."
+          >
+            <div className="flex flex-wrap gap-1.5">
+              <DemoChip label="Fire" color="fire" />
+              <DemoChip label="Water" color="water" active />
+              <DemoChip label="Gen 5" />
+              <DemoChip label="Gen 6" active />
+            </div>
+          </ChipRow>
         </div>
       </Section>
 

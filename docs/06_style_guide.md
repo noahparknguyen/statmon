@@ -272,12 +272,13 @@ is not inline emphasis and needs a named style.
 
 ## 8. Breakpoints & Layout
 
-| Token             | Min-width | Note                                                                                   |
-| ----------------- | --------- | -------------------------------------------------------------------------------------- |
-| `--breakpoint-sm` | 480px     | large phone                                                                            |
-| `--breakpoint-md` | 768px     | **comparison collapses to per-stat cards below this** ([D-010](03_decisions.md#d-010)) |
-| `--breakpoint-lg` | 1024px    | tablet / small laptop                                                                  |
-| `--breakpoint-xl` | 1280px    | desktop                                                                                |
+| Token             | Min-width | Note                                                                                      |
+| ----------------- | --------- | ----------------------------------------------------------------------------------------- |
+| `--breakpoint-xs` | 360px     | **the wordmark drops to the bare flame mark below this** ([D-054](03_decisions.md#d-054)) |
+| `--breakpoint-sm` | 480px     | large phone                                                                               |
+| `--breakpoint-md` | 768px     | **comparison collapses to per-stat cards below this** ([D-010](03_decisions.md#d-010))    |
+| `--breakpoint-lg` | 1024px    | tablet / small laptop                                                                     |
+| `--breakpoint-xl` | 1280px    | desktop                                                                                   |
 
 Content max-width `--container-content: 1120px` (utility: `max-w-content`), centered. **Gutters are a uniform `px-4` (16px) at every width as built** — the responsive 24px desktop gutter originally specified here was never implemented; see [04_design §5](04_design.md).
 
@@ -343,6 +344,29 @@ Vector icons via **`react-icons`** — primarily the Lucide set (`react-icons/lu
 5. **Accent is chrome-only.** The purple accent is for brand/actions/focus — never a stat/type color (§2, [04_design §2](04_design.md)).
 6. **Never color alone.** Meaning always pairs color with text/number/icon (accessibility).
 7. **Spacing from the scale.** All spacing uses §6 tokens; no arbitrary margins.
+8. **Shared look lives in one module.** When two components should look alike, the class strings go in a shared constants module and the components add only what genuinely differs. `Button` is the component form of this; `components/chipStyles.jsx` is the constants form — one colour pair behind the three chip geometries ([04_design §6](04_design.md)), after the same four strings had been hand-copied into a third component. Note the constraint: such a module **must be `.jsx`** — Tailwind only scans `.jsx` (§13), so class strings in `lib/` are invisible to it, and `react-refresh` requires a component file to export only components. `components/dexColumns.jsx` is the other one.
+
+---
+
+## 12.1 The `/style` playground
+
+The route at `/style` is the executable half of this document: it renders the
+**real** tokens and components, never copies, so it cannot drift from the app.
+Swatches read their values out of the live stylesheet, badges are `TypeBadge`,
+the sample board is the actual `FeaturedComparison`, and all three chip
+geometries sit side by side so a divergence is visible rather than theoretical.
+
+It also **checks itself**. `readMissingTextStyles` walks the stylesheet for every
+`.text-*` rule that bundles a font-family — i.e. a §5 named style rather than a
+colour utility — and reports any the page has failed to list. That is what
+caught `text-stat-sm` the moment it was added ([D-035](03_decisions.md#d-035)).
+
+**One limit, learned the hard way.** "Renders the real thing" is a claim, not a
+guarantee: the page shipped its own hand-written copy of the 18 type slugs for
+months — a fourth copy, in the one file whose stated job is not to have one —
+because [D-038](03_decisions.md#d-038) consolidated the copies it knew about and
+missed this one. It now imports `TYPES`, and a test asserts no second list of
+the 18 exists anywhere in `src/`. When this page needs data, it imports it.
 
 ---
 

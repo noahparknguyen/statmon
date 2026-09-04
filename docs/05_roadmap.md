@@ -6,9 +6,27 @@ _The phased build plan / task checklist: what to implement, in order. Sequenced 
 
 ---
 
-## Current status (2026-08-31 — Session 6, the dex table)
+## Current status (2026-09-04 — Sessions 12–13, the grid made readable)
 
-**Done — Statmon is a two-tool site, and Home advertises both.** Every feature now ships with a live preview on Home ([D-043](03_decisions.md#d-043)) — a rule, a `FeaturePreview` component, and a line in each tool's checklist below. The **full-dex stats table** shipped at `/dex` ([D-039](03_decisions.md#d-039)): all 1,259 entries, sortable on every stat, multi-select filterable by type and generation ([D-040](03_decisions.md#d-040)), with alternate forms toggleable — windowed so only ~26 rows are ever in the DOM. The foundation work it depended on landed first ([D-038](03_decisions.md#d-038)): scroll + focus reset on navigation (closing the last [D-024](03_decisions.md#d-024) item), per-route `<title>`s, and **Vitest** with 94 tests.
+**Done — the type chart reads at a glance.** The grid's four cell states had measured 1.00–1.42 apart as fills, so it had to be read rather than scanned; the scale is now one loud state for 2× and three quiet ones, every cell is filled, both axes are colour-coded and square off into the grid, and hovering lights a cell's row and column ([D-052](03_decisions.md#d-052), [D-053](03_decisions.md#d-053)). Marking a selected column is done at its edges rather than with a wash, because a wash strong enough to see puts the multiplier under AA. Fixing it also uncovered a page-level horizontal scroll the grid had leaked since it shipped, which only `contain: paint` stops — the browser sweep now runs **ten widths** instead of three, because 390 / 768 / 1280 were all clean while 600 and 700 were not. Vitest is at **206 tests**.
+
+## Session 11 (the type chart)
+
+**Done — Statmon is a three-tool site.** `/types` ships the full 18×18 effectiveness matrix **and** a dual-type readout in one page ([D-051](03_decisions.md#d-051)), the thing other sites split across a page per pairing. It carries the same `?asof=` lens — the chart itself changed six times, so a Gen 1 chart is 15×15 with Ghost doing nothing to Psychic. Home's tools chip is live and the tool ships with its preview (Bug/Fire — the mascot's 4× Rock).
+
+## Session 10 (layout polish)
+
+**Done — the generation strip is always on screen.** It used to appear with the first selection, which pushed the comparison board down the page ([D-050](03_decisions.md#d-050)); it is now unconditional on both tools, and on the dex it leads the controls panel above a divider instead of floating on the background. The dex's origin filter is renamed **"Introduced in"** — two generation controls in one panel needed distinguishing — and hides when a lens leaves it one option. A smoke assertion across every route now catches a prop that quietly stopped being passed — which is how `/style` was found still handing the strip its pre-rename prop names.
+
+## Session 9 (the dex as of a generation)
+
+**Done — both tools read history.** `/dex` now takes the same generation lens as the comparison board, and on a table it does more: **"as of Gen 3" caps the rows too** ([D-049](03_decisions.md#d-049)), so it is a 392-row dex of what existed then, ranked on that generation's values. Gen 1 is 151 rows with five stat columns and a sortable **Special**. The filters narrow with the lens, and the lens is `?asof=` on **both** tools — `/dex`'s `?gen=` keeps meaning the origin filter, which is a different axis.
+
+**Done — one chip vocabulary, and the playground stops keeping copies.** The colour half of a toggle chip lives once in `components/chipStyles.jsx`; the three chip families keep only their geometry ([D-048](03_decisions.md#d-048)). `/style` renders all three side by side, and imports `TYPES` instead of restating it — it had been carrying a fourth hand-written copy of the 18, which a test now makes impossible.
+
+**Done — the comparison tool reads history.** `/compare` can now be read **as of an earlier generation** ([D-045](03_decisions.md#d-045)–[D-047](03_decisions.md#d-047)): Generation 1's five stats with a single **Special**, historical base stats and typings, and that generation's own type chart. One control covers both cases — a strip of numbered chips beside Swap, one per generation the two selected Pokémon **both existed in**, with a dot marking the generations that differ from today ([D-046](03_decisions.md#d-046)). The generation lives in the URL (`?asof=`) like every other view on this site. The dataset gained `statEras` / `typeEras` / `introducedIn` (+1.1 kB gzipped) from PokéAPI's `past_*` fields, and `npm run build:data` now verifies the hardcoded type chart against PokéAPI across all three eras.
+
+**Done — Statmon is a two-tool site, and Home advertises both.** Every feature now ships with a live preview on Home ([D-043](03_decisions.md#d-043)) — a rule, a `FeaturePreview` component, and a line in each tool's checklist below. The **full-dex stats table** shipped at `/dex` ([D-039](03_decisions.md#d-039)): all 1,259 entries, sortable on every stat, multi-select filterable by type and generation ([D-040](03_decisions.md#d-040)), with alternate forms toggleable (hidden by default since [D-056](03_decisions.md#d-056)) — windowed so only ~26 rows are ever in the DOM. The foundation work it depended on landed first ([D-038](03_decisions.md#d-038)): scroll + focus reset on navigation (closing the last [D-024](03_decisions.md#d-024) item), per-route `<title>`s, and **Vitest** with 94 tests.
 
 **Done — the MVP is live.** Phases 0–4 are complete: a polished, multi-page, self-contained, WCAG-AA site, responsive from phone to desktop, deployed on Cloudflare Workers at **https://statmon.noahparknguyen.workers.dev/**. The one Phase-4 item intentionally left for later is the optional SSR/framework-mode upgrade (per-route meta).
 
@@ -25,7 +43,9 @@ _The phased build plan / task checklist: what to implement, in order. Sequenced 
 
 **The six checks that must stay green:** `npm run lint && npm run format:check && npm run test:run && npm run build && npm run audit:contrast && npm run check:docs`.
 
-**Notes:** `StatBar.jsx` is used only by the `/style` playground. It was kept "for the future stats table", but the dex table did **not** use it — a table cell is not a label·bar·value row ([D-039](03_decisions.md#d-039)) — so it is now genuinely only a playground specimen and is a candidate for deletion if nothing claims it. The dataset ships in the compact form defined by `src/lib/pokemonCodec.js` and is decoded at import ([D-036](03_decisions.md#d-036)) — read/write it through the codec, never as raw JSON. Shared primitives as of [D-032](03_decisions.md#d-032): `CmpRow` (desktop mirrored row + diff cell) and `CmpStatCard` (mobile per-stat card) are used by **both** `ComparisonCard` and Home's `FeaturedComparison`; `SpeedBanner` and `Button` are shared across the site. The dex adds `DexRow` (used by both the table and Home's preview) with its geometry in `components/dexColumns.jsx`, and `FeaturePreview` — the shell every Home preview is built from ([D-043](03_decisions.md#d-043)). New tools should build on these rather than re-rolling them.
+**Reading a past generation (D-045, D-049):** all of the resolution logic is pure functions in `src/lib/eras.js` — `eraView(pokemon, gen)` returns `{ gen, keys, stats, bst, types }`, `generationOptions([p1, p2])` returns the generations both existed in (each flagged for whether it differs from today), and `dexGenerations()` is the dex's plainer equivalent. The dex layers `statKeysFor` / `sortKeysFor` / `typesFor` / `generationsFor` / `setAsOf` on top in `lib/dexTable.js`, so the columns, the sort keys and the filter chips all narrow together. The lens is `?asof=` on both tools; the dex's `?gen=` is the unrelated origin filter. Home and `/style` stay current-generation. `STAT_ORDER` is still exactly the modern six; Gen 1's `special` lives outside it because the stored stat array's order depends on it. The dex, Home and `/style` are all deliberately current-generation.
+
+**Notes:** `StatBar.jsx` is used only by the `/style` playground. It was kept "for the future stats table", but the dex table did **not** use it — a table cell is not a label·bar·value row ([D-039](03_decisions.md#d-039)) — so it is now genuinely only a playground specimen and is a candidate for deletion if nothing claims it. The dataset ships in the compact form defined by `src/lib/pokemonCodec.js` and is decoded at import ([D-036](03_decisions.md#d-036)) — read/write it through the codec, never as raw JSON. Shared primitives as of [D-032](03_decisions.md#d-032): `CmpRow` (desktop mirrored row + diff cell) and `CmpStatCard` (mobile per-stat card) are used by **both** `ComparisonCard` and Home's `FeaturedComparison`; `SpeedBanner` and `Button` are shared across the site. The dex adds `DexRow` (used by both the table and Home's preview) with its geometry in `components/dexColumns.jsx`, and `FeaturePreview` — the shell every Home preview is built from ([D-043](03_decisions.md#d-043)). Shared _styling_ constants live in their own `.jsx` modules for the reasons in [D-048](03_decisions.md#d-048): `components/dexColumns.jsx` (table geometry) and `components/chipStyles.jsx` (the one colour pair behind all three chip families). New tools should build on these rather than re-rolling them.
 
 ---
 
@@ -136,6 +156,7 @@ _Goal: sharpen the core and add the low-cost, high-value extras._
 - [ ] Attacker-identity read (physical vs. special).
 - [ ] Biggest-gap highlight.
 - [x] **Type-effectiveness** between the two Pokémon — **shipped early** in Phase 3 as the attacker-STAB matchup on the comparison card, on the hardcoded `src/lib/typeChart.js` matrix ([D-018](03_decisions.md#d-018)).
+- [x] **Generation-accurate stats** — Gen 1's single Special, historical base stats and typings, and per-generation type charts, behind one generation strip on `/compare` ([D-045](03_decisions.md#d-045), [D-046](03_decisions.md#d-046), [D-047](03_decisions.md#d-047)). _Not on the original V2 list — it came out of actually playing the games the project is about._
 - [~] Bar-fill **animation** (reduced-motion aware) — **partially shipped:** `.animate-grow-w` runs on Home's `FeaturedComparison` only ([D-023](03_decisions.md#d-023)). The `/compare` tool's own bars still render instantly; extending it there is what remains.
 - [ ] Copy-link button, **random matchup**, full keyboard flow.
 - [ ] Search **filters** (type / generation), recently-compared list.
@@ -155,7 +176,16 @@ _Goal: grow Statmon into a small family of tools & games, one clean addition at 
 **Near-term (the suite the Home page promises):**
 
 - [x] **Full-dex stats table** — shipped at `/dex` ([D-039](03_decisions.md#d-039)), with its Home preview ([D-043](03_decisions.md#d-043)). Every Pokémon in one table, **sortable** on all six stats + BST + name + dex number, **searchable** by name, **filterable** by any number of types and generations at once ([D-040](03_decisions.md#d-040)), with alternate forms toggleable; pixel sprite per row and a type-tinted proportional fill behind each stat. The whole view lives in the URL, so a sorted, filtered dex is a shareable link. Windowed rendering keeps ~26 rows in the DOM out of 1,259. _(It did not reuse `StatBar.jsx` — see Notes above.)_
-- [ ] **Type chart** — the 18×18 effectiveness grid, **dual-type aware**. Mostly presentation over `lib/typeChart.js`, which already does dual-type STAB math for the comparison card. _+ Home preview._
+- [x] **Type chart** — shipped at `/types` ([D-051](03_decisions.md#d-051)): the 18×18 grid, **dual-type aware** via a tier readout, generation-aware, with its Home preview. Built on `lib/typeChart.js` as predicted, plus `lib/typeView.js` for the URL and the tiers.
+- [ ] **Abilities** — two features that share one dataset, and the second is the reason the first is worth building.
+
+  1. **Show them.** List each Pokémon's abilities on the comparison card, hidden ability marked. Most Pokémon have a choice of two or three, so this needs a selector the way alternate forms do (`FormChips` is the pattern) — the chosen ability is part of the view and therefore belongs in the URL ([D-022](03_decisions.md#d-022)).
+  2. **Let them change the matchup.** The comparison card's STAB block currently scores Ground into Electric at 2× for Krookodile vs Eelektross — but Eelektross has **Levitate**, so the true answer is **0×**. An ability that alters type effectiveness has to feed `effectiveness()` alongside the era's chart, or the board is confidently wrong in exactly the cases people look up.
+
+  **What the research already settled** ([02_research §13](02_research.md#13-abilities-for-the-planned-abilities-feature)): the roster and its per-generation history come straight from PokéAPI, in the same `until` shape `lib/eras.js` already reads — but the **mechanical effect is prose only** (`"Evades Ground moves."`), so the ~20 effectiveness-modifying abilities must be a hardcoded table beside `lib/typeChart.js`, and unlike the chart it **cannot be verified against PokéAPI** by `build:data`. Unit tests have to stand in for that guard.
+
+  **The era interaction, free if designed in from the start:** abilities arrived in **Generation III**, so a Gen 1 or Gen 2 board should show none at all — the `?asof=` lens already expresses that. _+ Home preview, per [D-043](03_decisions.md#d-043)._
+
 - [ ] **Type-advantage quiz game** — quiz the user on the matchup between two (possibly dual) types. Sits directly on the type engine; a clean, well-scoped first game for retention + showcasing that Statmon is more than one tool. _+ Home preview._
 
 **Later:**
@@ -164,6 +194,7 @@ _Goal: grow Statmon into a small family of tools & games, one clean addition at 
 - [ ] **Speed-tier tool.**
 - [ ] More **games** — "Guess the Pokémon by its stats," "Higher/Lower BST," silhouette guess, daily puzzle.
 - [ ] **Team builder / analyzer.**
+- [x] **Era-aware dex table** — sort the whole dex as of a chosen generation ("who was fastest in Gen 1"), with the rows capped to what existed then ([D-049](03_decisions.md#d-049)).
 - [ ] **Keep data current** as new Pokémon/generations release (re-run the parameterized pipeline).
 - [ ] Stretch: EV/IV planner, Nuzlocke helper, dex trackers, per-comparison OG images.
 

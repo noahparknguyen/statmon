@@ -4,6 +4,650 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ---
 
+## 2026-09-04 — Session 14 (pre-push review)
+
+<a id="d-056"></a>
+
+### D-056 · Alternate forms are hidden by default — **Firm** _(reverses part of [D-039](#d-039))_
+
+**Decision.** The dex opens on the **1,025 default forms**, not all 1,259. The
+"Hide alternate forms" toggle starts on.
+
+**What this reverses.** [D-039](#d-039) shipped the opposite lean, arguing that
+Megas are a large part of _why_ someone looks a stat up. That is still true —
+which is why the toggle exists and is one click away — but it is not an argument
+for the resting state. The dex people picture is the National Dex, and opening on
+1,259 rows with Charizard appearing three times is a busier answer than the
+question deserves.
+
+**The count line does the advertising.** With forms hidden, the resting state
+reads **"1,025 of 1,259 Pokémon"** rather than a bare total, so the 234 hidden
+entries announce themselves instead of quietly not existing. That is the only
+reason hiding them by default is safe: an unexplained absence would be worse
+than a busy table. Toggling drops the qualifier to "1,259 Pokémon".
+
+**Old links keep their meaning.** The param inverts — `forms=1` now means show —
+but `?forms=0` was always an _explicit_ hide and still hides. Only a bare `/dex`
+changes, which is the point. The clean state is still a bare `/dex`, since the
+default stays out of the URL either way ([D-022](#d-022)).
+
+**Tests that leaned on the old default were made explicit rather than
+re-baselined.** The era-ceiling tests now pass `includeForms: true` on purpose:
+they exist to prove that Alolan Raichu is absent from a Gen 3 dex _because it did
+not exist yet_, and that means nothing if forms are hidden anyway.
+
+<a id="d-055"></a>
+
+### D-055 · Three grid fixes, and why a box-shadow was not one of them — **Firm**
+
+**Decision.** The last round of polish on the type grid.
+
+**The axis labels fill their cell.** A short badge floating in a 28px row read as
+a different kind of thing sitting _beside_ the grid rather than part of it. Both
+axes now match the cell height exactly, so the matrix is uniform edge to edge.
+
+**The selected column is framed on all four sides.** [D-053](#d-053) put an
+accent rule down each edge and left the ends open, so two lines ran into nothing.
+The header carries the top edge and the last row the bottom.
+
+**The sticky column was letting the grid show through beside it.** Scrolling a
+narrow screen revealed a sliver of cells to the _left_ of the row label. The
+cause is that sticky offsets resolve against the **scrollport**, so `left-0`
+parks the header at the inner edge of the panel's 6px padding and leaves a strip
+the cells scroll straight through.
+
+**And a pre-existing one the same sweep caught.** The dex's phone sort row put
+its Filters button 18px off the side of a 320px screen, cut off with no way to
+reach it — a flex item will not shrink below its content's intrinsic width, and
+that `<select>`'s longest option is "Sort: Base stat total". `min-w-0` fixes it.
+It had been there since the dex shipped; three sample widths never found it, and
+a **10 routes × 11 widths matrix** found it on the first run.
+
+**The fix that did not work is the interesting part.** A `box-shadow` extending
+left of the header is the obvious answer and it fails: inside a table the cells'
+own positioned boxes — they are `position: relative` for the cross-hair
+([D-052](#d-052)) — paint over the header's background layer, shadow included.
+Probing the paint stack showed the cell on top at every pixel of the strip. An
+absolutely positioned **pseudo-element** works, because the header is `sticky`
+with a z-index and therefore a stacking context that sits above them. Worth
+recording: "give it a background that extends further" is not reliable inside a
+table, and the paint order has to be checked rather than assumed.
+
+<a id="d-054"></a>
+
+### D-054 · An `xs` breakpoint, for the wordmark — **Firm**
+
+**Decision.** Added `--breakpoint-xs: 360px`, used in exactly one place: below it
+the header shows the flame mark alone and drops the "Statmon." wordmark.
+
+**Why it was needed.** Four tools in the nav ([D-051](#d-051)) plus the wordmark
+overflow a 320px viewport by 39px, and an overflowing header scrolls **every page
+on the site** sideways — the rule [D-010](#d-010)/[D-029](#d-029)/[D-039](#d-039)
+have held since launch. Tightening the gaps bought back enough for 360 and up
+([D-050](#d-050)) but not for 320.
+
+**Why a new breakpoint rather than reusing `sm`.** Hiding the wordmark at `sm`
+(480px) would remove it from _every_ phone to fix the handful that cannot fit it.
+The alternatives were each worse: shrinking the nav type breaks the scale, and
+letting the header wrap breaks the `h-14` the dex's sticky column headers are
+pinned to ([D-041](#d-041)). So the design got the breakpoint it actually needed
+— the [D-035](#d-035) principle, applied to a breakpoint instead of a text style.
+
+**What is not lost.** The flame Poké Ball is half the mark by
+[D-026](#d-026)'s own description and remains the link home, so the brand is
+present at every width; only the word goes.
+
+**Found during the pre-push review**, along with a doc claim that said 1,066
+entries have no history when the true figure is 1,045 — 1,259 minus the 193 with
+stat history is not the same as "no history", because 21 entries have a type era
+and no stat era. Every numeric claim in the docs is now checked against the
+dataset rather than against arithmetic done in prose.
+
+<a id="d-053"></a>
+
+### D-053 · Colour both axes; mark the selection at the edges — **Firm**
+
+**Decision.** Four refinements to the type chart, two of which have the same
+answer and one of which had to be solved twice.
+
+**The matchup heading mixed two type sizes.** "Attacking" was `text-h4` (18px
+display) sitting next to `TypeBadge` pills at 11px, and no amount of aligning
+makes those sit together on one line. The typing is now set as **text in its own
+colour** at the heading's own size — the pairing [D-023](#d-023) established for
+the comparison board's diffs, and one group 2 of the contrast audit already
+covers. It reads as a sentence: "Attacking Water / Flying".
+
+**Both axes are colour-coded now, and both fill their space.** Row headers were
+already `TypeBadge`s, but left-aligned in a fixed column, so eighteen names of
+different lengths left a ragged edge and a different-sized gap on every row; they
+now fill the column. Column headers were eighteen grey abbreviations, which meant
+counting columns to find one — they are filled badges too. The two axes are read
+the same way, and the grid gets a coloured frame instead of a ragged one.
+
+**Dimming the unselected headers was tried and reverted in the same pass.** It
+was the obvious way to make the selection pop, and it directly undid the point of
+colouring them: seventeen columns got harder to find in order to mark two.
+
+**The badges in the grid drop the pill shape.** Inside a matrix the axis labels
+_are_ cells, and a row of fully-rounded pills against a column of `rounded-xs`
+cells reads as two systems sharing a table — so `TypeBadge` gained a `radius`
+prop and the grid asks for the cells' corner. A prop rather than a class the
+caller appends, because `rounded-xs` after `rounded-full` does not win: Tailwind
+resolves that by stylesheet order, the same trap that gave the dex's sort control
+the wrong height ([D-042](#d-042)).
+
+**And the tier list drops them entirely.** Same diagnosis as the heading: a 14px
+multiplier beside 11px pills is two type sizes on one line. The attackers are now
+coloured text at the multiplier's size, flowing as a sentence — a tier is already
+a group, so each name did not need its own container, and a ten-type row wraps
+like prose instead of a hedge.
+
+**Two spacing fixes worth recording only because they were invisible until they
+were not.** The heading's typing gets an em dash, so "Attacking" and the types
+are not jammed together. And the grid panel gained `p-1.5`: with the table flush
+to the edge, the panel's own 16px corner radius cut across the corner badges and
+made them look differently rounded from the rest of the axis. The padding
+survives scrolling at both ends, which is not a given for a horizontal scroll
+container.
+
+**Marking the selected column: the wash could not do it.** A tint over the cells
+is the natural move and it is boxed in by contrast — 22% dropped 2× text to
+**4.14** and ½× to **4.24**, both under AA, and 12%, the most that stays legal,
+is a **1.23** change nobody would notice. Anything visible enough to help buries
+the number it is helping you find. So the weight went somewhere that costs the
+text nothing: an **accent rule down each edge of the column**, which draws two
+continuous lines the full height of the grid, with the 12% wash on top as
+support. The audit carries both washed pairings so the ceiling stays enforced
+rather than remembered.
+
+<a id="d-052"></a>
+
+### D-052 · The grid is scanned, not read — **Firm**
+
+**Decision.** Three complaints about the type chart, one of which turned out to
+be measurable rather than a matter of taste, and one of which uncovered a real
+bug.
+
+**"It takes me a second to spot what I want."** It did, and the numbers said why.
+As _fills_, the four cell states were the same cell: 2× against ½× measured
+**1.42**, ½× against a blank **1.10**, and 0× against ½× exactly **1.00** —
+identical, separated only by the colour of 11px text. All the information was in
+the type, none of it in the visual field, so the grid had to be read cell by
+cell rather than scanned.
+
+**The first fix was wrong, and measuring it said so.** The instinct was a
+luminance ramp sinking resisted cells _below_ the surface — base → surface →
+elevated. On a near-black UI the dark end has no room: those steps measured 1.08
+and 1.10, no better than what they replaced. Brightness is where the range is, so
+the scale now runs the other way: one loud state for 2× (a 55% accent blend,
+**3.00** clear of the baseline) and everything else quiet. 55% is the ceiling —
+70% would look better still and drops primary text to 3.78, under AA.
+
+**"It is largely empty space."** Two causes. Every 1× cell was blank, so ~70% of
+the grid was holes with nothing for the eye to track along; they now carry the
+baseline fill, which also gives the rows and columns something continuous to
+follow. And the table sat at its natural width inside a much wider panel, leaving
+a strip of dead space to the right of the last column — it now fills the panel,
+with the row-header column sized explicitly so the slack goes to the data columns
+rather than to the one column that had no width of its own.
+
+**A cross-hair, because a matrix is a lookup.** Hovering a cell lights its row
+and column ([index.css](../src/index.css)). Two overlays rather than a row
+background, since every cell now has its own fill and would paint over it.
+
+**"Pick up to two" felt out of place.** It was: no other control on the site
+captions itself. Gone from the screen — the chips dim when the cap is reached,
+which says it at the moment it matters — and kept `sr-only`, where dimming is
+the harder cue to notice.
+
+**The bug this uncovered, and the testing lesson.** Filling the panel exposed
+that the grid's overflow **leaked into the document's scrollable width**: at
+600px the page grew a real horizontal scrollbar and a wheel gesture over the
+header moved it 144px, breaking the site's oldest layout rule. It had been there
+since the page shipped. It survived `overflow: hidden` on both axes of the
+panel — only `contain: paint` stops it, which is the signature of the sticky row
+header escaping the container's clip.
+
+**390 / 768 / 1280 were all clean.** Every width this project has ever tested at
+walked straight past it; it lived at 600 and 700. The sweep now runs **ten
+widths** and checks for a real scrollbar (`innerHeight − clientHeight`) as well
+as attempting the scroll, because the programmatic check alone had been reporting
+a false negative at 390 for other reasons. A rule enforced at three sample points
+is a rule enforced at three sample points.
+
+---
+
+## 2026-09-04 — Session 11 (the type chart)
+
+<a id="d-051"></a>
+
+### D-051 · The type chart, dual types included — **Firm**
+
+**Decision.** Built `/types`, Statmon's third tool and the last thing the Home
+tools row still advertised as "soon". One page holds two things: the full
+effectiveness matrix as a reference, and a **dual-type readout**, which
+everywhere else on the web means a separate page per pairing. The typing is a
+path deep link (`/types/water/flying`, mirroring `/compare/<p1>/vs/<p2>`) and
+the generation is `?asof=`, so a matchup is a link like every other view here.
+
+**The research that justified the page.** "Has an existing matchup ever changed?"
+turned out to be yes, **six times, at exactly two boundaries** — and the answer
+was already sitting in the data [D-047](#d-047) derived:
+
+| Boundary  | Changes among types that already existed                                                                                                      |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Gen 1 → 2 | Bug → Poison ½×; Poison → Bug 1×; Ice → Fire ½×; Ghost → Psychic 2× (Gen 1 shipped a **bug** — the printed chart always said super effective) |
+| Gen 5 → 6 | Ghost → Steel 1×; Dark → Steel 1×                                                                                                             |
+
+Plus the additions: Dark and Steel in Gen 2, Fairy in Gen 6. Nothing changed
+within Gens 2–5 or 6–9, which is why there are exactly three charts in history.
+This page therefore needs the generation lens more than either existing tool: the
+chart **is** its subject, and at Gen 1 the grid is 15×15 rather than 18×18.
+
+**No red/green.** Every other type chart colours all 324 cells red and green —
+which [04_design §2](04_design.md) rules out outright: it clashes with eighteen
+type colours and is not colourblind-safe.
+
+> **Revised by [D-052](#d-052).** This decision also left 1× cells blank and gave
+> the other three states nearly identical fills, on the reasoning that a sparse
+> grid makes the exceptions pop. In use it did the opposite — the states were
+> indistinguishable without reading them, and the blanks left nothing to track
+> along. The fills and the empty cells are both gone; the no-red/green
+> constraint above still stands and still shapes the answer.
+
+**Why a tier list rather than eighteen rows.** The question people bring to a
+type chart is "what beats this?", and tiers answer it in one look where a list in
+canonical order makes you scan and compare yourself. **Empty tiers are dropped**,
+so the shape of the answer carries information: a typing with no 4× row has no
+double weakness, and an absent row says that faster than an empty one.
+
+**One documented exception to a firm rule.** The grid panel scrolls sideways
+below about 1024px. [D-010](#d-010)/[D-029](#d-029)/[D-039](#d-039) rejected
+sideways scrolling for the comparison board and the dex — but both of those are
+**lists**, where columns can be dropped and the remaining ones still answer the
+question. A matrix has no such subset: drop columns and it stops being the
+chart. So the scroll is confined to the bordered panel, the page around it never
+scrolls, and on a phone the picker and readout come first, because "what beats
+Water/Flying" is what you want on a phone and the matrix is the reference you
+scroll to. Verified by _attempting_ the scroll rather than by measuring
+`documentElement.scrollWidth`, which counts a clipped descendant's extent and
+over-reports for exactly this shape.
+
+**Reuse over invention.** The page adds two pure modules (`typesIn` on
+`typeChart.js`, and `lib/typeView.js` for the URL and the tiers) and three
+components, and otherwise runs on what was already here: `GenerationStrip`,
+`TypeBadge`, `FeaturePreview`, `chipStyles`, and the effectiveness maths built
+for the comparison card. `dexGenerations()` became **`allGenerations()`**, since
+a third tool wanted it and nothing about it was ever dex-specific.
+
+**Home advertises it** ([D-043](#d-043)): the tools chip is a link, and the
+preview is the real `MatchupSummary` for **Bug / Fire** — Volcarona's typing, so
+it happens to show the mascot's famous 4× Rock weakness. Same easter-egg spirit
+as the dex preview's Black & White team ([D-044](#d-044)). _This is Home's third
+tool preview, and D-043 puts the pattern's ceiling at about four: the next tool
+should trigger the compact-grid rethink it describes rather than letting the page
+keep growing._
+
+**The header nav was the easy thing to miss.** The page works perfectly when you
+type its URL, so nothing failed while `Layout`'s nav still listed three tools. A
+route test now asserts every page links to `/types`, because "a tool nobody can
+navigate to" is a state the whole test suite was happy with.
+
+---
+
+## 2026-09-04 — Session 10 (two layout nits, one shared cause)
+
+<a id="d-050"></a>
+
+### D-050 · The strip is always present, and on the dex it lives in the panel — **Firm**
+
+**Decision.** Two complaints, one of them a repeat, and the fix for both is
+placement rather than styling.
+
+**The comparison board moved when you picked a Pokémon.** The strip was absent
+until a selection existed, so the row it shares with Swap grew when it arrived
+and pushed the whole board down the page. That is
+[D-046](#d-046)'s appearing-and-vanishing control again — the thing that decision
+set out to remove — left behind on the one screen where it also caused a layout
+shift, because "no Pokémon selected" was still being treated as "nothing to
+offer". It now renders **unconditionally**: with nothing picked, the whole
+timeline is on offer, and a generation chosen before the first Pokémon survives
+into the selection. Verified as zero movement at 390 / 768 / 1280px.
+
+_Inlining the label beside the chips would have equalised the row's height on
+desktop and was the tempting fix, but the shift would have survived on a phone,
+where the row stacks. Removing the condition removes the shift everywhere._
+
+**The dex's strip had no visual home.** Everything else on that page is either in
+the controls card or in the table; the strip was a third thing floating on the
+background above a large panel. It was kept outside because the panel collapses
+on a phone — but only the **chip groups** collapse, and the name box already
+lives inside the card and stays visible. So the strip now leads the panel above a
+divider, outside the collapsible region: visible at every width, and reading top
+to bottom as the relationship actually is — choose the dex, then narrow it.
+
+**Which surfaced a third problem worth fixing.** Two generation controls now
+share one panel, and at Gen 1 the lower one was **inert**: filtering the Gen 1
+dex to "Gen 1" is every row it already has. So the origin filter is renamed from
+**"Generations"** to **"Introduced in"** — named for what it filters, which is
+what keeps it apart from a strip that also says a generation — and it is hidden
+entirely whenever the lens leaves it a single option.
+
+---
+
+## 2026-09-04 — Session 9 (the dex as of a generation)
+
+<a id="d-049"></a>
+
+### D-049 · The dex reads as of a generation — and that caps its rows — **Firm**
+
+**Decision.** `/dex` takes the same generation lens as the comparison board, with
+one addition that makes it more than a stat swap: **"as of Gen 3" also decides
+which Pokémon are in the table.** Anything that debuted later is gone. The result
+is a dex you could have used while playing that game — 392 rows at Gen 3, 151 at
+Gen 1, the latter with five stat columns and a **Special you can sort by**.
+
+**Why the lens filters as well as re-reads.** A table headed "Gen 3" that lists
+Volcarona is simply wrong, and nobody playing Gen 3 wants it there. The ceiling
+is `introducedIn`, not `generation` — Alolan Raichu is a Gen 1 _species_ that
+arrived in Gen 7, and a `generation <= asof` test would have let it into a Gen 3
+dex. Type filtering moves to the era's typing for the same reason: a Gen 5 dex
+offers no Fairy chip, and Clefairy answers to Normal there.
+
+**Why not per-row history popups.** The alternative on the table was a Gen 1
+toggle plus an ⓘ on each of the ~62 rows whose stats later changed, opening its
+old values. It was rejected on one argument: **the dex exists to rank.** A popup
+states a fact about one row; it cannot answer "who was the fastest Pokémon in
+Gen 3", which is the entire reason this tool is a sortable table. History that
+the sort cannot reach is trivia sitting next to a ranking instrument — and it
+would have cost 193 markers of chrome in a table built for scanning, plus a
+popup layer that has to survive windowed 48px rows. The lens feeds the sort, so
+`?asof=1&sort=special` ranks the 151 by the stat they actually had.
+
+**`asof` and `gen` are different axes, so they get different names.** The dex
+already spends `?gen=` on the **origin filter** ("Pokémon introduced in Gen 5"),
+which is not the same question as "the dex as it stood in Gen 5" — and both are
+on screen at once. So the lens is **`?asof=`** on both tools; `/compare`'s
+`?gen=`, written a day earlier and never committed, was renamed to match. One
+concept, one name. The labels carry the distinction too: the strip says **"Dex as
+of"** on the dex — because it changes the rows — and **"Stats as of"** on the
+comparison board, where it does not.
+
+**Two degradations, both self-healing.** A stale `?asof=3&gen=7` would otherwise
+be a table with nothing in it, so the origin filter's canonical list is capped at
+the lens. And a sort key the lens has no column for **maps across the Special
+split** (`spAtk`/`spDef` ↔ `special`) rather than being discarded: switch a
+Sp. Atk ranking to the Gen 1 dex and you get the Special ranking, which is the
+same question asked of the generation that had one stat for it. Both are done in
+one place, so a chip click and a hand-edited URL land in the same state.
+
+**No dots on this strip.** The comparison board marks the generations whose board
+differs from today ([D-046](#d-046)). Across 1,259 rows nearly every generation
+contains _something_ that changed, so every chip would be marked and the mark
+would carry no information. It stays a two-Pokémon affordance.
+
+**One performance note, measured rather than assumed.** `DexRow` takes `asof` as
+a **primitive** and resolves its own view, instead of being handed a view object.
+The row is memoised because the windowing hook re-renders the table on every
+scroll frame; a fresh object per render would give it a new prop identity each
+time and re-render every visible row as you scroll. Resolving the whole
+era-filtered dex for the sort measures **~1ms** — the same order as the filter
+and sort themselves — so it stays unmemoised, as [D-039](#d-039) established.
+
+**Verified against the dataset, not from memory.** Two of the new assertions
+failed on the first run and **both were my expectations**: Chansey is 18th by Gen
+1 Special, not top-eight, and a Pokémon's row _index_ is not its rank when the
+two tables being compared are different sizes. Exactly the [D-039](#d-039)
+lesson, which is why the counts in these tests are computed from `ALL_POKEMON`
+rather than typed in.
+
+---
+
+## 2026-09-04 — Session 8 (style consolidation)
+
+<a id="d-048"></a>
+
+### D-048 · One chip vocabulary; the playground stops keeping its own copies — **Firm**
+
+**Decision.** The colour half of a toggle chip lives once, in
+`src/components/chipStyles.jsx`, and the three chip families keep only their
+geometry. And `/style` — the page whose whole claim is that it renders the real
+thing — now imports the data it displays instead of restating it.
+
+**The chip drift, caught at three copies.** Form chips, the dex filter chips and
+the new generation strip ([D-046](#d-046)) had the same four class strings
+hand-copied into each. That is exactly the failure [D-032](#d-032) wrote up when
+it built `Button`: variants that start identical and diverge one careless edit at
+a time. What differs between them is real and stays local — form chips are
+compact enough for the card's fixed 40px band, filter chips carry a dot and a
+dismiss ×, generation chips are near-square around one numeral — so the split is
+**colour and shape shared, size and padding local** ([04_design §6](04_design.md)).
+
+A constants module rather than a `Chip` component, because a component would
+have to take a prop for each of those geometries and would end up a worse
+version of three clear call sites. It has to be `.jsx`: Tailwind only scans
+`.jsx` ([D-038](#d-038)), and `react-refresh` allows a component file to export
+only components — the same pair of constraints that produced `dexColumns.jsx`.
+
+**The fourth copy of the 18 types.** [D-038](#d-038) consolidated three
+hand-maintained copies of the type list into `lib/types.js` and added assertions
+tying them together. It missed one — in `/style`, of all files, the page whose
+stated purpose is that it cannot drift from the app. It had been there since the
+playground was written.
+
+The lesson is not "look harder". It is that **a consistency claim survives only
+as long as something checks it**: the three copies D-038 knew about are still
+correct because a test asserts it, and the one it did not know about quietly
+stayed wrong. So the fix is not only the import — it is a test that fails on
+_any_ second list of the 18 anywhere in `src/`, named file by file. Verified by
+planting a copy and watching it fail, because a guard nobody has seen fail is a
+guess.
+
+**Also.** `/style` now renders all three chip geometries side by side, so a
+divergence between them is visible on a page someone actually looks at rather
+than inferred from three files. `04_design` §5 gained the Gen 1 board's 532px
+height and the control row; §6 gained the generation strip and the chip table;
+`06_style_guide` gained a usage rule for shared class modules and a section on
+what the playground is and where it has been wrong.
+
+---
+
+## 2026-09-03 — Session 7 (generation-accurate comparisons)
+
+<a id="d-047"></a>
+
+### D-047 · The type chart moves with the era — **Firm**
+
+**Decision.** When the board is read at an earlier generation, the STAB matchup
+is scored on **that generation's type chart**, not today's. Three charts have
+ever existed — Generation 1, Generations 2–5, and Generation 6 onward — and
+`lib/typeChart.js` now carries the two older ones as `CHART_ERAS` beside the
+current `CHART`, plus `TYPE_INTRODUCED_IN` for the three types that arrived
+late (Dark and Steel in Gen 2, Fairy in Gen 6).
+
+**Why this was not optional.** [D-046](#d-046) swaps a Pokémon's typing to its
+era's, which on its own would produce a board mixing Gen 1 typings with Gen 9
+maths — Gen 2–5 Ghost reading 1× into Steel when it was ½×, or Gen 1 Bug
+reading ½× into Poison when it was 2×. Half the change would have been worse
+than none: it looks authoritative and is wrong.
+
+**It is much smaller than it sounds.** Once types that did not exist yet are
+excluded from a matchup, only **four attacking rows differ in Gen 1** (Ice,
+Poison, Bug, Ghost) and **two in Gen 2–5** (Ghost, Dark). Everything else is
+inherited. Fire's modern row mentions Steel, but in Gen 1 that entry can never
+be reached, so the row needs no historical copy — the existence filter does the
+work that a hand-written era chart would otherwise have to.
+
+**Whole rows, not cell patches.** A patch can override a cell but cannot express
+one that is simply absent, and Gen 1's Ice row is defined as much by what is
+missing (Fire did not resist Ice) as by what it contains. Replacing whole
+attacking rows is unambiguous and reads as the chart it is.
+
+**Hardcoded, but no longer merely trusted.** [D-018](#d-018) hardcoded the chart
+as canonical static data, which is still right — but "canonical" is not the same
+as "typed correctly". `npm run build:data` now fetches all 18 `/type` resources
+and asserts our chart matches PokéAPI cell for cell **across all three eras**,
+failing the build on any mismatch. The first run found **zero drift** in the
+existing chart, which is the outcome that makes the check worth keeping: it
+confirms the hand-written data and would have caught a typo in the new rows.
+
+**The Gen 1 Ghost/Psychic question, answered deliberately.** Gen 1's own type
+chart says Ghost is super effective on Psychic; the games shipped a bug that
+made it do nothing. PokéAPI records the bug, and so do we — someone asking what
+a Gen 1 matchup looked like is asking about the game they played, not about the
+manual.
+
+<a id="d-046"></a>
+
+### D-046 · One generation strip for the board, always shown — **Firm**
+
+**Decision.** Both historical readings — Gen 1's Special split and later stat
+revisions — are one control: a strip of numbered chips, **one per generation the
+two selected Pokémon both existed in**, on the same line as Swap. The newest
+chip is today. The generation lives in the URL as `?asof=`, so a historical
+matchup is a link like any other view on this site ([D-022](#d-022)). _(Written
+as `?gen=` on the day; renamed the next, when the dex needed `gen` for its own
+origin filter — see [D-049](#d-049).)_
+
+**Why one control and not two.** The obvious build is a "Gen 1 Special" toggle
+plus a generation dropdown. That is two overlapping controls that can
+contradict each other — what does "Gen 5" plus "Gen 1 Special" mean? — and needs
+a rule for which wins. Scoping one generation to the whole board makes both
+features one thing and deletes two rules that would otherwise be hand-written:
+Gen 1's five-stat shape is just what the dataset returns when you ask for Gen 1,
+and "only offer Gen 1 when both are Gen 1 Pokémon" is just where the strip
+starts.
+
+**Every shared generation, not only the ones that changed.** The first build
+offered only the _eras_ — the ranges between changes — and hid the control
+entirely when a matchup had no history, which is 1,045 of 1,259 entries. In use
+that was the wrong call, and the reason is worth recording: **the control's
+presence depended on a computation across both slots** — the shared range
+intersected with the change-boundaries of either — so it appeared and vanished
+for reasons nothing on screen explained. You could not learn the rule by using
+it. A plain range is legible instead: pair a Gen 1 Pokémon with Volcarona and
+the strip starts at 5, so "why can't I pick Gen 1" answers itself. The extra
+options are honest — "as of Gen 3, Pikachu had these stats" is true whether or
+not Gen 3 differs from Gen 4 — and a **dot marks the generations that differ
+from today**, so the strip doubles as a map of where this matchup has history.
+The dot is paired with screen-reader text rather than carrying meaning alone
+([04_design §1](04_design.md) rule 4).
+
+**Numbers, not range labels.** "Gen 1 · Gen 2–5 · Gen 6–now" does not fit beside
+Swap at any width once there are nine of them, and a generation is a number
+people already think in. The visible label is a bare numeral with the accessible
+name built _around_ it — `Generation 5`, not a replacement string — because
+WCAG 2.5.3 needs the visible text inside the accessible name ([D-042](#d-042)).
+
+**What answers "a Gen 1 Pokémon against a modern one".** Nothing, deliberately:
+the strip starts at the later debut, so that board is unreachable. Gen 1 is a
+different _measurement_, not a different value — five stats, and Special is not
+Sp. Atk. One Special row against two modern ones has no honest layout, and a
+five-stat 425 total against a six-stat 550 is a category error rather than a
+delta, on one of the three headline numbers of the board. So Gen 1 is a state
+both cards are in or neither is. _(This was the original instinct at the start
+of the session — "you can only switch to the gen 1 stats if you are comparing 2
+gen 1 Pokemon" — arrived at again from the other direction.)_
+
+**Per-card selectors, considered and rejected.** Giving each card its own
+generation would unlock comparing a Pokémon to its past self (Pikachu Gen 5 vs
+Gen 9), which is genuinely nice. It costs more than it returns: the primary use
+case — "I am playing Gen 3, show me both at Gen 3" — becomes a two-step action;
+Gen 1 has to be special-cased back into a linked control anyway, so one option
+behaves unlike the rest; and the STAB block loses its answer to "which
+generation's chart is this?" when the two sides disagree. Worth revisiting only
+if same-Pokémon-across-eras becomes a thing people ask for.
+
+**Layout.** The strip takes the width it needs on the left and Swap sits
+opposite it, rather than two stacked centred rows leaving the middle of a
+1,120px page empty. Below `sm` they stack — nine chips plus a button do not fit
+on a phone, though the nine chips alone do.
+
+**A Gen 1 board is 532px, not 568.** Five stat rows instead of six shortens the
+cards by exactly one 36px row. All three switch together, so they stay equal
+height and the mirrored rows stay aligned — the [D-019](#d-019) rhythm holds at
+both heights. The empty card takes the board's stat list rather than assuming
+six, so a half-filled Gen 1 board does not go lopsided.
+
+**Known and deliberate: the form chips still offer Megas in a Gen 1 view.**
+Picking one is not an error — it navigates to that form, and since the form did
+not exist in Gen 1 the generation falls back to current, visibly. Hiding forms
+per generation would remove working functionality to prevent a state that
+already resolves itself gracefully.
+
+**Gen 1 totals read lower, and that is correct.** Alakazam is 405 in Gen 1 and
+500 today, because Gen 1 had one fewer stat to add up. Worth writing down: it
+looks like a bug the first time you see it, and it is the single most likely
+thing to be "fixed" by mistake later.
+
+<a id="d-045"></a>
+
+### D-045 · Historical stats and typings, as eras — **Firm**
+
+**Decision.** The dataset now carries what a Pokémon's base stats and typing
+**used to be**, as `statEras` / `typeEras` records plus an `introducedIn` date
+per entry. Two real situations motivated it: Generation 1 had no Sp. Atk /
+Sp. Def — a single **Special** stat covered both — and a number of Pokémon have
+had stats revised since (Butterfree's Sp. Atk was 80 through Gen 5, Aegislash
+was cut down in Gen 8, Zacian-Crowned in Gen 9).
+
+**PokéAPI has all of it, which was not a given.** Three fields, all sharing one
+rule — a record's `generation` is the **last generation those values applied
+in** — which the dataset keeps verbatim as `until` rather than converting, so
+the stored data reads the same as its source:
+
+| Field                        | Coverage                              |
+| ---------------------------- | ------------------------------------- |
+| `pokemon.past_stats`         | **193** of 1,259 entries, 213 records |
+| `pokemon.past_types`         | **29** entries                        |
+| `type.past_damage_relations` | 8 of 18 types → [D-047](#d-047)       |
+| `pokemon-form.version_group` | the debut of each alternate form      |
+
+**Gen 1's Special had to come from the API, not from a formula.** The tempting
+shortcut is "Gen 1 Special became Sp. Atk in Gen 2". It is wrong for **43 of the
+151** Gen 1 species — Chansey 105 → 35, Gyarados 100 → 60, Hypno 115 → 73,
+Charizard 85 → 109. A derived Gen 1 board would have been confidently wrong for
+28% of the generation it was built for. PokéAPI records the real value for all 151.
+
+**Seven records are traps.** PokéAPI also emits a `past_stats` record when only
+the **EV yield** changed, and Blissey, Roselia, Yanma, Dusclops, Duskull,
+Misdreavus and Slowking each carry one whose base stat is identical. Kept, they
+would put a "Gen 3" chip on Blissey's board that changes nothing on screen. The
+build drops any record whose value matches the one it would replace — comparing
+against the **running** resolved value rather than against today's, so a record
+that restores an earlier value would still survive.
+
+**Alternate forms need their own date.** An alt form does not debut with its
+species: Alolan Raichu is a Gen 1 species introduced in Gen 7, and Mega Alakazam
+a Gen 1 species introduced in Gen 6. Without `introducedIn`, an era selector
+would happily offer Gen 1 for a form that did not exist yet. The build reads it
+from each form's `version_group` (161 of the 234 alternate forms are re-dated;
+the rest debut with their species), which needed a version-group → generation
+map — 32 more cached requests.
+
+**Where the logic lives.** `src/lib/eras.js`, pure functions over plain data with
+no React and no DOM, unit-tested directly — the same split as
+[`lib/dexTable.js`](../src/lib/dexTable.js), and for the same reason: the
+interesting part here is resolution, not rendering. `STAT_ORDER` was deliberately
+**not** extended with `special`; the stored six-stat array's order depends on it,
+and so does every dex consumer. Era patches index into `ERA_STAT_KEYS`
+(`STAT_ORDER` plus `special`) instead, so the modern six are untouched.
+
+**Cost.** The dataset grew 121,962 → 128,074 bytes, **+1.1 kB gzipped** — the
+compact-encoding rules of [D-036](#d-036) applied to the new fields, which are
+absent entirely on the ~85% of entries with no history. The whole-dataset
+round-trip test covers them for free, which is what that test was for.
+
+**Deliberately not done.** The **dex table** stays current-generation. "Sort the
+whole dex as of Gen 1" is a genuinely good feature and `lib/eras.js` would drop
+straight into it, but it is a second tool's worth of UI and this pass was scoped
+to the comparison tool. **Home** keeps no era control either: [D-043](#d-043)
+requires a live preview for every _tool_, and this is an enhancement to a tool
+whose preview is already the hero board. Recorded rather than left implicit, so
+the rule is not silently skipped.
+
+---
+
 ## 2026-08-31 — Session 6 (the dex table)
 
 <a id="d-044"></a>
@@ -305,7 +949,9 @@ choices define it:
 - **All 1,259 entries, with alternate forms filterable** rather than the 1,025
   default forms. [D-003](#d-003) already treats a Mega as "just another stat
   block", and Megas are a large part of _why_ someone looks a stat up; a toggle
-  hides them for anyone who wants the clean National Dex. Forms sort beside their
+  hides them for anyone who wants the clean National Dex. _(The default was
+  later flipped — the clean dex is the resting state and the toggle reveals the
+  forms; see [D-056](#d-056).)_ Forms sort beside their
   species because rows tie-break on **National Dex number**, not on the synthetic
   id > 10000 they carry — so Charizard, Mega X and Mega Y are three consecutive
   #0006 rows.

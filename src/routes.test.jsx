@@ -5,6 +5,7 @@ import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import Compare from "./pages/Compare";
 import Dex from "./pages/Dex";
+import TypeChart from "./pages/TypeChart";
 import Credits from "./pages/Credits";
 import StyleGuide from "./pages/StyleGuide";
 import NotFound from "./pages/NotFound";
@@ -30,6 +31,9 @@ const routes = [
       { path: "compare", element: <Compare /> },
       { path: "compare/:p1/vs/:p2", element: <Compare /> },
       { path: "dex", element: <Dex /> },
+      { path: "types", element: <TypeChart /> },
+      { path: "types/:t1", element: <TypeChart /> },
+      { path: "types/:t1/:t2", element: <TypeChart /> },
       { path: "credits", element: <Credits /> },
       { path: "style", element: <StyleGuide /> },
       { path: "*", element: <NotFound /> },
@@ -43,6 +47,32 @@ const render = (path) =>
       router={createMemoryRouter(routes, { initialEntries: [path] })}
     />,
   );
+
+// A prop that quietly stopped being passed renders as "undefined" in the markup
+// rather than throwing, which every other test here would sail straight past —
+// this caught `/style` still handing GenerationStrip the prop names it had
+// before a rename, showing an empty label and the wrong chip pressed. Cheap,
+// and it covers every route at once.
+describe.each([
+  "/",
+  "/compare",
+  "/compare/charizard/vs/blastoise?asof=1",
+  "/dex",
+  "/dex?asof=1",
+  "/types",
+  "/types/water/flying",
+  "/types/water/flying?asof=1",
+  "/credits",
+  "/style",
+  "/no-such-page",
+])("route %s", (path) => {
+  it("renders no undefined props into the markup", () => {
+    const html = render(path);
+    for (const smell of ["undefined", "NaN", "[object Object]"]) {
+      expect(html, `${path} rendered "${smell}"`).not.toContain(smell);
+    }
+  });
+});
 
 describe.each([
   ["/", "Statmon"],
@@ -59,6 +89,232 @@ describe.each([
   });
 });
 
+describe("the compare route's generation views (D-045)", () => {
+  // The strip's chips read "<sr-only>Generation </sr-only>5", and React splits
+  // text from an expression with a comment node — so these assertions run
+  // against rendered text rather than raw markup.
+  const text = (path) =>
+    render(path)
+      .replace(/<!-- -->/g, "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ");
+
+  it("renders a Gen 1 board with five stats and a Special", () => {
+    const html = render("/compare/charizard/vs/blastoise?asof=1");
+    expect(html).toContain("Spc");
+    expect(html).not.toContain("SpA");
+    expect(html).not.toContain("SpD");
+    // Five-stat totals, so both read 425 (78+84+78+85+100 and 79+83+100+85+78)
+    // where today they are 534 and 530 — Gen 1 had one fewer stat to add up.
+    // (React splits text from an expression with a comment node, hence the
+    // strip: the markup is literally `Both <!-- -->425`.)
+    expect(html.replace(/<!-- -->/g, "")).toContain("Both 425");
+    expect(html).toContain("Tied");
+    expect(html).not.toContain("534");
+    expect(html).not.toContain("530");
+  });
+
+  it("keeps the current board on the modern six stats", () => {
+    const html = render("/compare/charizard/vs/blastoise");
+    expect(html).toContain("SpA");
+    expect(html).not.toContain("Spc");
+  });
+
+  it("shows the generation strip on every state of the page", () => {
+    // The strip's presence used to depend on a computation across both slots,
+    // which made it appear and vanish for reasons nothing on screen explained
+    // (D-046) — and on the empty page it arrived with the first pick and pushed
+    // the board down (D-050). It is now unconditional.
+    for (const path of [
+      "/compare",
+      "/compare/charizard/vs/blastoise",
+      "/compare/volcarona/vs/chandelure",
+      "/compare?p1=charizard",
+    ]) {
+      expect(render(path)).toContain("Stats as of");
+    }
+  });
+
+  it("offers the whole timeline before anything is picked", () => {
+    const board = text("/compare");
+    for (const gen of [1, 5, 9]) expect(board).toContain(`Generation ${gen}`);
+  });
+
+  it("starts the strip at the later debut, so a mixed pair cannot reach Gen 1", () => {
+    // Volcarona arrived in Gen 5, so Charizard's Gen 1 stats are unreachable
+    // here — which is the answer to comparing a Gen 1 Pokémon with a modern
+    // one: five stats never face six.
+    const board = text("/compare/charizard/vs/volcarona");
+    expect(board).toContain("Generation 5");
+    expect(board).not.toContain("Generation 1 ");
+    // The strip runs 5–9, so a hand-typed ?asof=1 has nothing to land on.
+    expect(render("/compare/charizard/vs/volcarona?asof=1")).toContain("SpA");
+  });
+
+  it("marks the generations whose board differs from today", () => {
+    // Butterfree's Sp. Atk changed after Gen 5; Volcarona debuted in Gen 5, so
+    // the shared strip is 5–9 with exactly one generation marked.
+    const marked = render("/compare/butterfree/vs/volcarona").match(
+      /stats differ from today/g,
+    );
+    expect(marked).toHaveLength(1);
+    expect(
+      render("/compare/volcarona/vs/chandelure").match(
+        /stats differ from today/g,
+      ),
+    ).toBeNull();
+  });
+
+  it("scores the STAB matchup on the era's own chart", () => {
+    // Gengar is Ghost/Poison. Into Psychic-type Alakazam, Ghost is 2× today and
+    // 0× in Gen 1 — the bug the games shipped with.
+    expect(render("/compare/gengar/vs/alakazam")).toContain("2×");
+    expect(render("/compare/gengar/vs/alakazam?asof=1")).toContain("0×");
+  });
+
+  it("falls back to the current view for a generation this matchup never had", () => {
+    // Volcarona did not exist in Gen 1, so the parameter is meaningless here.
+    const html = render("/compare/volcarona/vs/chandelure?asof=1");
+    expect(html).toContain("SpA");
+    expect(html).not.toContain("Spc");
+  });
+});
+
+describe("the dex route's generation lens (D-049)", () => {
+  it("renders a Gen 1 dex with five stat columns and a Special", () => {
+    const html = render("/dex?asof=1");
+    expect(html).toContain('aria-rowcount="151"');
+    expect(html).toContain("Spc");
+    expect(html).not.toContain("SpA");
+  });
+
+  it("caps the rows at what existed, by form rather than by species", () => {
+    // forms=1, because this is testing the era ceiling and the default hides
+    // forms (D-056) — Alolan Raichu has to be reachable for its absence here
+    // to mean anything.
+    const html = render("/dex?asof=3&forms=1");
+    const expected = ALL_POKEMON.filter((p) => p.introducedIn <= 3).length;
+    expect(html).toContain(`aria-rowcount="${expected}"`);
+    expect(html).not.toContain("Volcarona");
+    // A Gen 1 species whose form arrived in Gen 7.
+    expect(html).not.toContain("Raichu Alola");
+    expect(html).toContain("Raichu");
+  });
+
+  it("ranks by the generation's own values", () => {
+    const html = render("/dex?asof=1&sort=special&dir=desc");
+    expect(html.indexOf("Mewtwo")).toBeLessThan(html.indexOf("Alakazam"));
+    // Tentacruel's Gen 1 Special of 120 is 9th of the 151; its modern Sp. Atk
+    // of 80 would be nowhere near the first screen.
+    expect(html).toContain("Tentacruel");
+  });
+
+  it("shrinks the filters to the generation", () => {
+    const html = render("/dex?asof=1");
+    expect(html).not.toContain("Fairy");
+    expect(html).not.toContain("Gen 7");
+    // The origin filter disappears entirely at Gen 1: "introduced in Gen 1" is
+    // every row the Gen 1 dex already has, so it could only be a no-op (D-050).
+    expect(html).not.toContain("Introduced in");
+    expect(render("/dex?asof=3")).toContain("Introduced in");
+    expect(render("/dex")).toContain("Fairy");
+  });
+
+  it("counts against the generation's dex, not all 1,259", () => {
+    expect(render("/dex?asof=1")).toContain("151 Pokémon");
+    expect(render("/dex?asof=1")).not.toContain("of 1,259");
+  });
+
+  it("survives a lens the dataset cannot honour", () => {
+    expect(render("/dex?asof=99&sort=nonsense")).toContain(
+      'aria-rowcount="1025"',
+    );
+  });
+});
+
+describe("the type chart route (D-051)", () => {
+  it("keeps the header within a 320px screen", () => {
+    // Four tools plus the wordmark do not fit on the narrowest phones, and a
+    // header that overflows scrolls every page on the site sideways (D-054).
+    // The markup check is the cheap half; the sweep measures the real width.
+    expect(render("/types")).toContain("hidden xs:inline");
+  });
+
+  it("is reachable from the primary nav on every page", () => {
+    // A tool nobody can navigate to is not shipped. The Home chip going live
+    // is D-043's rule; this is the header, which is easy to forget because the
+    // page works perfectly when you type the URL yourself.
+    for (const path of ["/", "/compare", "/dex", "/types", "/credits"]) {
+      expect(render(path)).toContain('href="/types"');
+    }
+  });
+
+  const text = (path) =>
+    render(path)
+      .replace(/<!-- -->/g, "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ");
+
+  it("renders the grid with no typing selected", () => {
+    const html = render("/types");
+    expect(html).toContain("Full chart");
+    // 18 attacking rows + the header row.
+    expect((html.match(/<tr/g) ?? []).length).toBe(19);
+    // No tier readout until something is picked. (Checked by the section's own
+    // id — the grid's row-header carries an sr-only "Attacking type" of its own.)
+    expect(html).not.toContain("matchup-heading");
+  });
+
+  it("leaves 1× cells blank so only the deviations are marked", () => {
+    const html = render("/types");
+    // Normal attacking: only Rock (½×), Ghost (0×) and Steel (½×) deviate, so
+    // three marked cells in a row of eighteen.
+    expect((html.match(/½×/g) ?? []).length).toBeGreaterThan(0);
+    // Every blank cell still says 1× to a screen reader.
+    expect(html).toContain("1×");
+  });
+
+  it("answers a dual typing in tiers, strongest first", () => {
+    expect(render("/types/water/flying")).toContain("matchup-heading");
+    const board = text("/types/water/flying");
+    expect(board).toContain("4×");
+    // Electric is the 4× answer for Water/Flying; Ground does nothing.
+    expect(board.indexOf("4×")).toBeLessThan(board.indexOf("0×"));
+    expect(board).toContain("Electric");
+    expect(board).toContain("Ground");
+  });
+
+  it("canonicalises the typing so one view has one URL", () => {
+    expect(render("/types/flying/water")).toBe(render("/types/water/flying"));
+  });
+
+  it("shrinks the chart to the generation being read", () => {
+    const gen1 = text("/types?asof=1");
+    // 15 types in Gen 1: no Dark, Steel or Fairy on either axis or in the picker.
+    expect(gen1).not.toContain("Fairy");
+    expect(gen1).not.toContain("Steel");
+    const html = render("/types?asof=1");
+    expect((html.match(/<tr/g) ?? []).length).toBe(16);
+  });
+
+  it("scores the readout on the era's chart", () => {
+    // Ghost did nothing to Psychic in Gen 1 (D-047), so it sits in the 0× tier.
+    const gen1 = text("/types/psychic?asof=1");
+    expect(gen1.slice(gen1.indexOf("0×"))).toContain("Ghost");
+  });
+
+  it("drops a type the generation never had", () => {
+    // Fairy did not exist in Gen 5, so this degrades to Water alone.
+    const board = text("/types/water/fairy?asof=5");
+    expect(board).not.toContain("Fairy");
+    expect(board).toContain("Water");
+  });
+
+  it("survives an unknown type without blowing up", () => {
+    expect(render("/types/plastic")).toContain("Full chart");
+  });
+});
+
 describe("the dex route", () => {
   it("renders a windowed slice of rows, not all 1,259", () => {
     const rowCount = (render("/dex").match(/aria-rowindex/g) ?? []).length;
@@ -67,11 +323,14 @@ describe("the dex route", () => {
   });
 
   it("declares the full row count for assistive tech", () => {
-    expect(render("/dex")).toContain('aria-rowcount="1259"');
+    // 1,025 default forms: alternate forms are hidden by default (D-056), and
+    // the whole 1,259 is one toggle away.
+    expect(render("/dex")).toContain('aria-rowcount="1025"');
+    expect(render("/dex?forms=1")).toContain('aria-rowcount="1259"');
   });
 
   it("applies sort and filters from the URL", () => {
-    const html = render("/dex?sort=speed&dir=desc&type=fire&gen=5");
+    const html = render("/dex?sort=speed&dir=desc&type=fire&gen=5&forms=1");
     expect(html).toContain('aria-sort="descending"');
     // Filtered down from the full dex.
     expect(html).not.toContain('aria-rowcount="1259"');
@@ -113,7 +372,7 @@ describe("the dex route", () => {
 
   it("survives an unparseable view without blowing up", () => {
     expect(render("/dex?sort=nonsense&gen=99&type=plastic")).toContain(
-      'aria-rowcount="1259"',
+      'aria-rowcount="1025"',
     );
   });
 
