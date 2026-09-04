@@ -89,8 +89,9 @@ export default function FeaturedComparison({ p1, p2 }) {
         </span>
       </div>
 
-      {/* Speed verdict */}
-      <SpeedBanner p1={p1} p2={p2} />
+      {/* Speed verdict. Home is always the current generation, so it hands the
+          banner today's speeds. */}
+      <SpeedBanner p1={p1} p2={p2} a={p1.stats.speed} b={p2.stats.speed} />
     </div>
   );
 }

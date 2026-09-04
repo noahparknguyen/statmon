@@ -10,6 +10,15 @@ import { dexNumberOf } from "../lib/dexTable";
 // is shared with ComparisonCard so all three cards are equal height with
 // aligned stat rows: head 56 + body 176 + chips 40 (= 272 top zone),
 // stats (pt-2 + 6×h-9 + pb-4 = 240), footer 56 → 568 total.
+//
+// In a Generation 1 view there are five stat rows, not six — Gen 1 had a single
+// Special where the modern schema has Sp. Atk and Sp. Def (D-045) — so the
+// stats band is 204 and the card 532. All three cards switch era together, so
+// they stay equal height and the mirrored rows stay aligned either way.
+//
+// Stats, typing and BST come from the era view (lib/eras.js) rather than
+// straight off the entry, so the card renders whichever generation is selected.
+// `view` is always supplied; `eraView(p, null)` is today's values untouched.
 const SCRIM =
   "linear-gradient(180deg, transparent 0%, transparent 38%," +
   " color-mix(in srgb, var(--color-surface) 35%, transparent) 52%," +
@@ -18,10 +27,12 @@ const SCRIM =
 const shadowText = { textShadow: "0 1px 8px rgba(0,0,0,0.75)" };
 const statsShadow = { textShadow: "0 1px 5px rgba(0,0,0,0.75)" };
 
-export default function PokemonCard({ pokemon, onSelectForm }) {
-  if (!pokemon) return <EmptyCard />;
+export default function PokemonCard({ pokemon, view, keys, onSelectForm }) {
+  // The empty card takes the board's stat list rather than assuming six, so a
+  // half-filled Gen 1 board keeps both cards the same height.
+  if (!pokemon) return <EmptyCard keys={keys} />;
 
-  const primary = pokemon.types[0];
+  const primary = view.types[0];
   // Alternate forms (Mega/regional/…) share their species' National Dex number
   // — see dexNumberOf, which the dex table needs for every row.
   const dex = dexNumberOf(pokemon);
@@ -54,7 +65,7 @@ export default function PokemonCard({ pokemon, onSelectForm }) {
             </div>
           </div>
           <div className="flex flex-col items-end gap-1.5 shrink-0">
-            {pokemon.types.map((t) => (
+            {view.types.map((t) => (
               <TypeBadge key={t} type={t} />
             ))}
           </div>
@@ -70,7 +81,7 @@ export default function PokemonCard({ pokemon, onSelectForm }) {
 
         {/* Stats over the lower artwork */}
         <div className="px-4 pt-2 pb-4" style={statsShadow}>
-          {STAT_ORDER.map((k) => (
+          {view.keys.map((k) => (
             <div
               key={k}
               className="grid grid-cols-[2rem_1fr_2.5rem] items-center gap-3 h-9"
@@ -82,13 +93,13 @@ export default function PokemonCard({ pokemon, onSelectForm }) {
                 <div
                   className="h-full rounded-full"
                   style={{
-                    width: statPct(pokemon.stats[k]),
+                    width: statPct(view.stats[k]),
                     backgroundColor: typeColorVar(primary),
                   }}
                 />
               </div>
               <span className="text-stat text-primary text-right">
-                {pokemon.stats[k]}
+                {view.stats[k]}
               </span>
             </div>
           ))}
@@ -97,14 +108,14 @@ export default function PokemonCard({ pokemon, onSelectForm }) {
         {/* BST */}
         <div className="h-14 mx-4 flex items-center justify-between border-t border-border-subtle">
           <span className="text-overline text-tertiary">Base stat total</span>
-          <span className="text-stat-lg text-primary">{pokemon.bst}</span>
+          <span className="text-stat-lg text-primary">{view.bst}</span>
         </div>
       </div>
     </div>
   );
 }
 
-function EmptyCard() {
+function EmptyCard({ keys = STAT_ORDER }) {
   return (
     <div className="flex flex-col overflow-hidden bg-surface border border-dashed border-border-subtle rounded-lg">
       <div className="h-14" />
@@ -113,7 +124,7 @@ function EmptyCard() {
       </div>
       <div className="h-10" />
       <div className="px-4 pt-2 pb-4">
-        {STAT_ORDER.map((k) => (
+        {keys.map((k) => (
           <div
             key={k}
             className="grid grid-cols-[2rem_1fr_2.5rem] items-center gap-3 h-9"
