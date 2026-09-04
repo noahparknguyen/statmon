@@ -3,6 +3,7 @@ import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import Compare from "./pages/Compare";
 import Dex from "./pages/Dex";
+import TypeChart from "./pages/TypeChart";
 import Credits from "./pages/Credits";
 import StyleGuide from "./pages/StyleGuide";
 import NotFound from "./pages/NotFound";
@@ -32,6 +33,20 @@ export const router = createBrowserRouter([
         handle: { title: "Compare" },
       },
       { path: "dex", element: <Dex />, handle: { title: "Dex" } },
+      // Three routes for one page, the same shape as the compare deep link: the
+      // defending typing is what the page is about, so it lives in the path
+      // rather than a query param (D-051).
+      { path: "types", element: <TypeChart />, handle: { title: "Types" } },
+      {
+        path: "types/:t1",
+        element: <TypeChart />,
+        handle: { title: "Types" },
+      },
+      {
+        path: "types/:t1/:t2",
+        element: <TypeChart />,
+        handle: { title: "Types" },
+      },
       { path: "credits", element: <Credits />, handle: { title: "Credits" } },
       {
         path: "style",

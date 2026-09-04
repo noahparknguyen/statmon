@@ -167,7 +167,14 @@
 
   /* ---------------------------------------------------------------------------
       BREAKPOINTS (06_style_guide §8). md = comparison collapses to cards.
+      xs exists for one thing: the header's wordmark. With four tools in the nav
+      there is not room for both on a 320px screen, and every alternative was
+      worse — shrinking the type breaks the scale, wrapping the nav breaks the
+      h-14 the dex's sticky headers are pinned to, and hiding the wordmark at
+      `sm` would remove it from every phone rather than the few that cannot fit
+      it. (D-054)
      ------------------------------------------------------------------------ */
+  --breakpoint-xs: 360px;
   --breakpoint-sm: 480px;
   --breakpoint-md: 768px;
   --breakpoint-lg: 1024px;
@@ -467,6 +474,76 @@
      into both PokemonCard and Home; now one token, one utility. */
   .drop-shadow-art {
     filter: drop-shadow(var(--shadow-art));
+  }
+
+  /* The type grid's scroll panel. `contain: paint` is doing real work here, not
+     tidiness: without it the table's overflow leaks into the DOCUMENT's
+     scrollable width even though the panel clips it, and the page itself gains
+     a horizontal scrollbar at some viewport widths — 600px scrolled 144px on a
+     real wheel gesture over the header, while 390 and 768 were fine, which is
+     why three rounds of width testing missed it.
+     Notably `overflow: hidden` on both axes does NOT stop it; only paint
+     containment does, which is the signature of the sticky row header escaping
+     the container's clip. It also confines the cross-hair's full-height bar
+     below, which would otherwise be a second source of the same problem. */
+  .type-grid-panel {
+    contain: paint;
+  }
+
+  /* The type grid's sticky row-header column has to paint over the panel's own
+     left padding. Sticky offsets resolve against the scrollport, so `left-0`
+     parks the header at the padding's inner edge and leaves a 6px strip that
+     the cells scroll straight through — a sliver of the grid reappearing to the
+     left of the row label.
+     A box-shadow does NOT close it: inside a table the cells' own positioned
+     boxes paint over the header's background layer. A pseudo-element does,
+     because the header is `sticky` with a z-index and therefore a stacking
+     context that sits above them — so this block travels with the header and
+     covers the strip. Wider than the padding on purpose, since it is clipped by
+     the panel either way. (D-055) */
+  .type-grid-sticky::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 100%;
+    width: 10px;
+    background-color: var(--color-surface);
+  }
+
+  /* Type-chart cross-hair (D-052). Finding one cell in an 18×18 matrix means
+     tracing a row and a column with nothing to guide the eye — the single
+     biggest reason the grid was slow to read. Hovering a cell lights its whole
+     row and column.
+
+     Two overlays rather than a background, because every cell now carries its
+     own fill and a background set on the <tr> would be painted over by them:
+     ::before tints each cell of the hovered row, ::after draws a bar down the
+     hovered column. Both are translucent white, so they lighten whatever fill
+     is underneath instead of replacing it, and both are pointer-events:none so
+     they never eat the hover they depend on.
+
+     The column bar is deliberately taller than the table and clipped by the
+     panel's own overflow — that is what lets one cell paint a full-height bar
+     without knowing how tall the table is. */
+  .type-grid td {
+    position: relative;
+  }
+  .type-grid tbody tr:hover td::before,
+  .type-grid td:hover::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    background-color: color-mix(in srgb, var(--color-primary) 7%, transparent);
+  }
+  .type-grid tbody tr:hover td::before {
+    inset: 0;
+  }
+  .type-grid td:hover::after {
+    top: -100vh;
+    bottom: -100vh;
+    left: 0;
+    right: 0;
   }
 
   /* Bar grow-in for the Home featured board (D-023). Animates width from 0 to

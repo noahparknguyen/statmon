@@ -8,6 +8,8 @@
  *   2. type color AS TEXT on `surface` — the type-colored diff numbers (D-023)
  *   3. type badge labels — the badge's text color on the filled type color
  *   4. stat-bar fill vs the `elevated` track — non-text (graphical) contrast
+ *   5. dex stat-cell text over its proportional type fill
+ *   6. type-chart grid cells — the multiplier text on each cell fill
  *
  * Thresholds: AA normal text 4.5, AA large text 3.0, non-text (1.4.11) 3.0.
  * (Statmon's diff/badge/label text is small, so 4.5 applies.)
@@ -118,6 +120,69 @@ for (const t of TYPES)
   console.log(
     row(t, ratio(primary, blend(hex(`type-${t}`), surface, 0.28)), 4.5),
   );
+
+// The type chart's grid (D-051) tints a cell by what it does — accent-muted for
+// super effective, elevated for resisted and immune — and prints the multiplier
+// on top. The fills themselves are deliberately NOT audited against the panel:
+// they are redundant with the text, so 1.4.11 does not bite, the same reading
+// 04_design §3 already applies to stat-bar fills. The text is what has to pass.
+console.log(
+  "\n=== 6. Type chart grid cell — multiplier text on its fill (AA 4.5) ===",
+);
+// 2× is a 55% blend of accent into elevated, so it is composited the same way
+// the dex stat cell is above rather than read straight from a token.
+const strongFill = blend(hex("accent"), hex("elevated"), 0.55);
+console.log(
+  row("2× — primary on the accent blend", ratio(primary, strongFill), 4.5),
+);
+for (const [label, fg, bg] of [
+  ["0× — primary on base", "primary", "base"],
+  ["½× — tertiary on base", "tertiary", "base"],
+  ["1× — baseline, no text", "tertiary", "elevated"],
+]) {
+  console.log(row(label, ratio(hex(fg), hex(bg)), 4.5));
+}
+// A selected column lays a 12% accent wash over whatever fill is beneath it
+// (D-053). 12% is not an aesthetic choice: it is the most that keeps the text on
+// top of it above AA, which is why the column's edges carry the highlight and
+// the wash only assists.
+const washed = (fill) => blend(hex("accent"), fill, 0.12);
+console.log("\n  -- selected column, text over the wash --");
+console.log(
+  row(
+    "2× — primary over washed accent blend",
+    ratio(primary, washed(strongFill)),
+    4.5,
+  ),
+);
+console.log(
+  row(
+    "½× — tertiary over washed base",
+    ratio(hex("tertiary"), washed(hex("base"))),
+    4.5,
+  ),
+);
+console.log(
+  row(
+    "0× — primary over washed base",
+    ratio(primary, washed(hex("base"))),
+    4.5,
+  ),
+);
+
+// The fills also have to be tellable apart, which is the whole point of the
+// scale — this is the number the first version got wrong (1.42 / 1.10 / 1.00).
+console.log("\n  -- fill separation (not a WCAG rule; the scan test) --");
+console.log(
+  row("2× fill vs the 1× baseline", ratio(strongFill, hex("elevated")), 2.0),
+);
+console.log(
+  row(
+    "½×/0× fill vs the 1× baseline",
+    ratio(hex("base"), hex("elevated")),
+    1.15,
+  ),
+);
 
 console.log(`\n── ${fails.length} failure(s) ─────────────────────────────`);
 for (const f of fails) console.log(`  ✗ ${f}`);

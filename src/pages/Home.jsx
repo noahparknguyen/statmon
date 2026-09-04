@@ -4,6 +4,7 @@ import Button from "../components/Button";
 import FeaturedComparison from "../components/FeaturedComparison";
 import FeaturePreview from "../components/FeaturePreview";
 import FeaturedDex from "../components/FeaturedDex";
+import MatchupSummary from "../components/MatchupSummary";
 import { getBySlug, artworkFor } from "../lib/pokemon";
 
 // Home (D-023): product-as-hero. The header frames the whole site (a small suite
@@ -19,7 +20,7 @@ const C = getBySlug("chandelure");
 const TOOLS = [
   { label: "Comparison", to: "/compare" },
   { label: "Dex table", to: "/dex" },
-  { label: "Type chart · soon" },
+  { label: "Type chart", to: "/types" },
   { label: "Games · soon" },
 ];
 
@@ -82,6 +83,22 @@ export default function Home() {
         cta="Open the dex"
       >
         <FeaturedDex />
+      </FeaturePreview>
+
+      {/* The third tool preview. Bug / Fire is Volcarona's typing — the site's
+          mascot (D-023) — so the preview happens to show the 4× Rock weakness
+          every player who has raised one knows about. Same easter-egg spirit as
+          the dex preview's Black & White team (D-044), and the same rule: it is
+          the real MatchupSummary against the real chart, not a mockup. */}
+      <FeaturePreview
+        title="Types"
+        description="Every matchup, including dual types."
+        to="/types/bug/fire"
+        cta="Open the type chart"
+      >
+        <div className="mx-auto max-w-xl">
+          <MatchupSummary types={["bug", "fire"]} />
+        </div>
       </FeaturePreview>
 
       {/* Labelled so a screen reader announces what the list is; without it

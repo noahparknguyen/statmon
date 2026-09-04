@@ -73,7 +73,11 @@ export default function Layout() {
         className="sticky top-0 border-b border-border-subtle bg-base/85 backdrop-blur"
         style={{ zIndex: "var(--z-sticky)" }}
       >
-        <div className="max-w-content mx-auto flex items-center justify-between gap-4 px-4 h-14">
+        {/* Gaps tighten on a phone: a fourth tool (D-051) put the nav 1px over
+            a 390px viewport, which scrolled every page on the site sideways.
+            The labels all stay visible — it is the space between them that
+            gives. */}
+        <div className="max-w-content mx-auto flex items-center justify-between gap-2 px-4 h-14 sm:gap-4">
           <Link to="/" className="flex items-center gap-2 text-h3 text-primary">
             <img
               src="/favicon.svg"
@@ -82,16 +86,26 @@ export default function Layout() {
               height="24"
               className="shrink-0"
             />
-            <span>
+            {/* Below 360px the flame mark carries the brand alone — the four
+                nav items and the wordmark cannot both fit, and a header that
+                overflows scrolls the whole page sideways (D-054). The mark is
+                still the link home, and still the logo (D-026). */}
+            <span className="hidden xs:inline">
               Statmon<span className="text-accent">.</span>
             </span>
           </Link>
-          <nav aria-label="Primary" className="flex items-center gap-5">
+          <nav
+            aria-label="Primary"
+            className="flex items-center gap-3 sm:gap-5"
+          >
             <NavLink to="/compare" className={navClass}>
               Compare
             </NavLink>
             <NavLink to="/dex" className={navClass}>
               Dex
+            </NavLink>
+            <NavLink to="/types" className={navClass}>
+              Types
             </NavLink>
             <NavLink to="/credits" className={navClass}>
               Credits
