@@ -23,9 +23,26 @@
 //   d  0            — present only for non-default forms
 //   ns 1            — present only when there is no pixel sprite
 //   na 1            — present only when there is no official artwork
+//   se [stat eras]  — only for the 193 entries whose base stats ever changed
+//   te [type eras]  — only for the 29 entries whose typing ever changed
+//   in introducedIn — only when it differs from the species generation
+//
+// The three era fields are the D-045 addition. `se`/`te` store one record per
+// change as [until, payload], where `until` is the LAST generation those values
+// applied in — PokéAPI's own `past_stats` semantics, kept rather than converted
+// so the stored data reads the same as its source. Stat keys are indices into
+// ERA_STAT_KEYS, which is STAT_ORDER plus Gen 1's `special` at the end; the
+// six-stat `st` array above is untouched by that extension.
+//
 // Explicit .js extension (unlike the rest of src/, which relies on Vite's
 // resolver) because scripts/*.mjs import this module under plain Node ESM.
-import { STAT_ORDER } from "./stats.js";
+import { STAT_ORDER, SPECIAL } from "./stats.js";
+
+// Index space for era stat patches only. Appending `special` here rather than
+// to STAT_ORDER keeps the modern six — and every consumer that maps over them —
+// exactly as they were. Module-private: it is an encoding detail, and the
+// decoded objects hand consumers real stat keys.
+const ERA_STAT_KEYS = [...STAT_ORDER, SPECIAL];
 
 // Canonical slug → display-name derivation. Exported because the same rule has
 // to hold in three places: the decoder, form-chip labels, and the build script.
@@ -49,6 +66,14 @@ export function encodeEntry(e) {
   if (e.spriteUrl == null) row.ns = 1;
   // "No official artwork" means artworkUrl fell back to the pixel sprite.
   if (e.artworkUrl !== `/artwork/${e.id}.webp`) row.na = 1;
+  if (e.statEras?.length)
+    row.se = e.statEras.map(({ until, stats }) => [
+      until,
+      Object.entries(stats).map(([k, v]) => [ERA_STAT_KEYS.indexOf(k), v]),
+    ]);
+  if (e.typeEras?.length)
+    row.te = e.typeEras.map(({ until, types }) => [until, types]);
+  if (e.introducedIn !== e.generation) row.in = e.introducedIn;
   return row;
 }
 
@@ -69,6 +94,18 @@ export function decodeEntry(r) {
     forms: r.f ?? [r.s],
     spriteUrl,
     artworkUrl: r.na ? spriteUrl : `/artwork/${r.i}.webp`,
+    // Decoded to empty arrays rather than left undefined, so every consumer can
+    // map over them without a guard — the same reason `forms` always includes
+    // self. Encoding drops them again, so the round trip is unaffected.
+    statEras: (r.se ?? []).map(([until, patch]) => ({
+      until,
+      stats: Object.fromEntries(patch.map(([i, v]) => [ERA_STAT_KEYS[i], v])),
+    })),
+    typeEras: (r.te ?? []).map(([until, types]) => ({ until, types })),
+    // The generation this exact entry first existed in. Equal to the species
+    // generation for every default form, later for alt forms: Alolan Raichu is
+    // a Gen 1 species introduced in Gen 7, and Mega Alakazam in Gen 6.
+    introducedIn: r.in ?? r.g,
   };
 }
 

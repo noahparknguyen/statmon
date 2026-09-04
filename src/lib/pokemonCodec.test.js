@@ -77,6 +77,40 @@ describe("decodeEntry", () => {
   });
 });
 
+describe("era fields (D-045)", () => {
+  it("decodes stat eras oldest-first, with Gen 1's Special as its own key", () => {
+    const butterfree = decodeEntry(ROWS.find((r) => r.s === "butterfree"));
+    expect(butterfree.statEras).toEqual([
+      { until: 1, stats: { special: 80 } },
+      { until: 5, stats: { spAtk: 80 } },
+    ]);
+  });
+
+  it("decodes type eras", () => {
+    const clefairy = decodeEntry(ROWS.find((r) => r.s === "clefairy"));
+    expect(clefairy.typeEras).toEqual([{ until: 5, types: ["normal"] }]);
+  });
+
+  it("gives an entry with no history empty era lists, not undefined", () => {
+    const volcarona = decodeEntry(ROWS.find((r) => r.s === "volcarona"));
+    expect(volcarona.statEras).toEqual([]);
+    expect(volcarona.typeEras).toEqual([]);
+  });
+
+  it("dates an alternate form to its own debut, not its species'", () => {
+    // A Gen 1 species introduced in Gen 7 — the case that would otherwise let
+    // an era selector offer Gen 1 for a form that did not exist yet.
+    const alolan = decodeEntry(ROWS.find((r) => r.s === "raichu-alola"));
+    expect(alolan.generation).toBe(1);
+    expect(alolan.introducedIn).toBe(7);
+  });
+
+  it("defaults introducedIn to the species generation", () => {
+    const volcarona = decodeEntry(ROWS.find((r) => r.s === "volcarona"));
+    expect(volcarona.introducedIn).toBe(5);
+  });
+});
+
 describe("round trip", () => {
   // The invariant D-036 verified by hand before shipping the compact dataset.
   // Asserting it here means a future field change cannot quietly break it.

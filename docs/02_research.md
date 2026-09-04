@@ -36,6 +36,8 @@ _Answers to the open questions from [00_brainstorm](00_brainstorm.md) and extern
 
 **→ Recommendation.** **Normalize to the modern six-stat schema** everywhere; it's what PokéAPI gives me, what current players expect, and what keeps every comparison apples-to-apples. The single-Special quirk becomes, at most, a `[Someday]` trivia footnote — not a data-model concern. This resolves the brainstorm's Gen-1 open question cleanly.
 
+> **Revisited 2026-09-03 — the finding above was wrong on one point, and the recommendation is now superseded.** PokéAPI _does_ serve the historical Special, in `pokemon.past_stats` (stat id 9, `special`), for all 151 Gen 1 species. See [§12](#12-historical-stats-types-and-charts-past_-fields) for what is actually available; the six-stat schema remains the canonical shape, with history layered on top rather than replacing it ([D-045](03_decisions.md#d-045)).
+
 ---
 
 ## 4. React Router v7 on Cloudflare Workers
@@ -134,6 +136,48 @@ Checked before committing the vendored images ([D-025](03_decisions.md#d-025)).
 **Caveat.** The same license opens by noting the images are **© The Pokémon Company**, and §4 clarifies CC0 waives only the _affirmer's_ (PokéAPI's) rights — it does **not** clear TPC's underlying copyright or any trademarks, and PokéAPI "disclaims responsibility for clearing rights of other persons." In practice this is the standard fan-project posture: game assets used under de-facto tolerance, with clear attribution and an "unofficial fan project" disclaimer (Statmon carries both in the footer + Credits). _This is a summary of the license text, not legal advice._
 
 **→ Recommendation (decided).** Vendor + commit both image types (they're static, so no git-history churn); keep the PokéAPI attribution + fan-project disclaimer. Locked in [D-025](03_decisions.md#d-025).
+
+---
+
+## 12. Historical Stats, Types and Charts (`past_*` fields)
+
+Researched 2026-09-03, before building generation-accurate comparisons ([D-045](03_decisions.md#d-045)).
+
+**Finding.** PokéAPI exposes history through three fields that all share one rule: **a record's `generation` is the last generation those values applied in**, and only the values that differ are listed.
+
+| Field                   | Where                | Coverage in our 1,259 entries                  |
+| ----------------------- | -------------------- | ---------------------------------------------- |
+| `past_stats`            | `/pokemon/{id}`      | **193** entries, 213 records                   |
+| `past_types`            | `/pokemon/{id}`      | **29** entries                                 |
+| `past_damage_relations` | `/type/{name}`       | 8 of 18 types, with Gen 1 and Gen 5 boundaries |
+| `version_group`         | `/pokemon-form/{id}` | the debut of every alternate form              |
+
+**Gen 1 Special is real data, not a formula.** Every one of the 151 Gen 1 species carries a `generation-i` record holding a `special` stat. This matters more than it looks: the folk rule "Gen 1 Special became Sp. Attack in Gen 2" is **wrong for 43 of the 151** — Chansey 105 → 35, Gyarados 100 → 60, Hypno 115 → 73, Charizard 85 → 109. Deriving it would have been confidently wrong for 28% of the generation.
+
+**Two traps.** (1) PokéAPI also emits a `past_stats` record when only the **EV yield** (`effort`) changed; seven Pokémon carry one whose base stat is identical, and they must be filtered or they become UI controls that do nothing. (2) A species' generation is not its forms' — Alolan Raichu is a Gen 1 species introduced in Gen 7 — so alternate forms need dating from `pokemon-form.version_group`, via a version-group → generation map.
+
+**Type charts.** Three have existed: Gen 1, Gen 2–5, Gen 6+. Once types that did not exist yet are excluded, only four attacking rows differ in Gen 1 and two in Gen 2–5. PokéAPI encodes Gen 1's Ghost-vs-Psychic as 0× — the bug the games shipped, rather than the printed chart's 2×.
+
+**→ Recommendation (decided).** Take all of it from PokéAPI at build time and store it as `until` records without converting the semantics; keep the effectiveness chart hardcoded but **verify** it against `/type` on every data build. Locked in [D-045](03_decisions.md#d-045) and [D-047](03_decisions.md#d-047).
+
+---
+
+## 13. Abilities (for the planned abilities feature)
+
+Researched 2026-09-04, ahead of the work itself — the point is to know what the data can and cannot do before designing around it.
+
+**What PokéAPI gives us, for free.**
+
+- `pokemon.abilities` — the roster per Pokémon, each with `is_hidden` and `slot`, so the two-or-three-way choice a Pokémon has is machine-readable.
+- `pokemon.past_abilities` — **the same `until` shape as `past_stats` and `past_types`** ([§12](#12-historical-stats-types-and-charts-past_-fields)), so the era machinery in `lib/eras.js` already covers abilities changing hands between generations.
+- `ability.generation` — and this is the one that shapes the feature: abilities were introduced in **Generation III**. In a Gen 1 or Gen 2 view there are no abilities at all, which the existing `?asof=` lens can express without inventing anything.
+- `ability.effect_changes` — abilities whose behaviour was revised later (Flash Fire has one).
+
+**What it does not give us, which is the whole difficulty.** The mechanical effect is **prose only**. Levitate's entry reads _"Evades Ground moves."_ — there is no structured field anywhere on the resource saying "immune to Ground". So the part Statmon actually needs for the matchup maths has to be **hardcoded**, the way `lib/typeChart.js` is.
+
+**And unlike the type chart, it cannot be verified against PokéAPI.** [D-047](03_decisions.md#d-047) hardcodes the chart but `npm run build:data` re-checks every cell against `damage_relations`; there is no equivalent for "Levitate ⇒ Ground 0×". Roughly twenty of the 374 abilities alter type effectiveness (Levitate, Flash Fire, Water/Volt Absorb, Lightning Rod, Storm Drain, Motor Drive, Sap Sipper, Dry Skin, Thick Fat, Heatproof, Water Bubble, Fluffy, Purifying Salt, Earth Eater, Well-Baked Body, Wind Rider, Wonder Guard, Delta Stream…), so the table is small — but it is a hand-maintained list with no automated guard behind it, and that should be a conscious decision rather than a surprise.
+
+**→ Recommendation (for the future session).** Take the roster and its history from the API; hardcode the ~20 effectiveness-modifying abilities as a small table beside the type chart, with unit tests standing in for the verification the chart gets from the build. Scope the mechanic to type effectiveness only — damage calc, weather and stat-stage abilities are a different and much larger feature.
 
 ---
 

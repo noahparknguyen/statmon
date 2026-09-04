@@ -39,3 +39,11 @@ export const typeColorVar = (slug) => `var(--color-type-${slug})`;
 export const typeTextVar = () => "var(--color-base)";
 
 export const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+// Three-letter column header for the type chart's grid, where eighteen full
+// names would not fit. Derived rather than a hand-written map — the first three
+// letters happen to be unique across all eighteen (GRAss/GROund, DRAgon/DARk,
+// FIRe/FIGhting all differ), and a test asserts it stays that way, so a
+// nineteenth type that collided would fail rather than render two identical
+// headers. Always paired with the full name for screen readers. (D-051)
+export const typeAbbr = (slug) => slug.slice(0, 3).toUpperCase();

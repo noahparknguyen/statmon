@@ -1,9 +1,16 @@
 // Type effectiveness (Gen 6+ / current, includes Fairy). Attacking type → the
-// defending types it deviates from 1× against. Anything unlisted is 1×.
+// defending types it deviates from 1× against. Anything unlisted is 1× — a
+// shape the grid on /types renders literally, leaving 1× cells empty so the
+// deviations are the thing you see (D-051).
 // This is canonical, static data — safe to hardcode.
 //
 // Exported so a test can assert its keys match TYPES in lib/types.js exactly.
 // Two hand-maintained lists of the 18 types is precisely the pair that drifts.
+//
+// Explicit .js extension on the import below, like pokemonCodec: scripts/*.mjs
+// load this module under plain Node ESM to verify it against PokéAPI.
+import { TYPES } from "./types.js";
+
 export const CHART = {
   normal: { rock: 0.5, ghost: 0, steel: 0.5 },
   fire: {
@@ -131,21 +138,102 @@ export const CHART = {
   },
 };
 
+/* -------------------------------------------------------------------------
+   The chart as it was (D-045). Reading a Pokémon at an earlier generation and
+   scoring its matchup on today's chart would be a board that mixes Gen 1
+   typings with Gen 9 maths, so the chart moves with the era.
+
+   Only three charts have ever existed, and the differences are small:
+   Generation 1, Generations 2–5, and Generation 6 onward (`CHART` above).
+   Same `until` semantics as the dataset's stat and type eras: the last
+   generation those relations applied in.
+   ---------------------------------------------------------------------- */
+
+// Dark and Steel arrived in Gen 2, Fairy in Gen 6; the other fifteen have
+// always been here. A type that does not exist yet is simply not part of a
+// matchup, which is what lets most rows below be inherited unchanged — Fire's
+// modern row mentions Steel, but in Gen 1 that entry can never be reached.
+export const TYPE_INTRODUCED_IN = { dark: 2, steel: 2, fairy: 6 };
+
+export const typeExistsIn = (type, gen) =>
+  gen == null || (TYPE_INTRODUCED_IN[type] ?? 1) <= gen;
+
+// The types that existed at `gen`, in canonical order — 15 in Gen 1, 17 through
+// Gen 5, 18 since. This is what makes a Gen 1 chart a 15×15 grid rather than an
+// 18×18 one with three empty rows and columns (D-051).
+export const typesIn = (gen) => TYPES.filter((t) => typeExistsIn(t, gen));
+
+// Only the attacking rows that genuinely differ once types that did not exist
+// are excluded — four in Gen 1, two in Gen 2–5. Whole rows rather than cell
+// patches, because a patch cannot express a relation that is simply absent
+// (Gen 1 Ice is not resisted by Fire).
+//
+// Derived from PokéAPI's `past_damage_relations` rather than transcribed, and
+// `npm run build:data` re-verifies both these and `CHART` against it — the
+// hardcode-canonical-data call of D-018, with the claim actually checked.
+export const CHART_ERAS = [
+  {
+    until: 1,
+    chart: {
+      // Fire did not yet resist Ice.
+      ice: { water: 0.5, ice: 0.5, flying: 2, ground: 2, grass: 2, dragon: 2 },
+      // Poison and Bug were super effective on each other.
+      poison: {
+        poison: 0.5,
+        ground: 0.5,
+        rock: 0.5,
+        ghost: 0.5,
+        grass: 2,
+        bug: 2,
+      },
+      bug: {
+        fighting: 0.5,
+        flying: 0.5,
+        ghost: 0.5,
+        fire: 0.5,
+        grass: 2,
+        psychic: 2,
+        poison: 2,
+      },
+      // Ghost did nothing to Psychic — the famous Gen 1 bug, and what the
+      // games actually did.
+      ghost: { normal: 0, psychic: 0, ghost: 2 },
+    },
+  },
+  {
+    until: 5,
+    chart: {
+      // Steel resisted Ghost and Dark until Gen 6.
+      ghost: { normal: 0, dark: 0.5, steel: 0.5, ghost: 2, psychic: 2 },
+      dark: { fighting: 0.5, dark: 0.5, steel: 0.5, ghost: 2, psychic: 2 },
+    },
+  },
+];
+
+// The chart in force at `gen`; `null` means today.
+export function chartAsOf(gen = null) {
+  if (gen == null) return CHART;
+  const era = CHART_ERAS.find((e) => e.until >= gen);
+  return era ? { ...CHART, ...era.chart } : CHART;
+}
+
 // Multiplier of a single attacking type vs a defender's full typing (product
-// over each defending type → 0, ¼, ½, 1, 2, or 4).
-export function effectiveness(attackType, defenderTypes) {
-  return defenderTypes.reduce(
-    (mult, def) => mult * (CHART[attackType]?.[def] ?? 1),
-    1,
-  );
+// over each defending type → 0, ¼, ½, 1, 2, or 4), on the chart in force at
+// `gen`.
+export function effectiveness(attackType, defenderTypes, gen = null) {
+  const chart = chartAsOf(gen);
+  return defenderTypes
+    .filter((def) => typeExistsIn(def, gen))
+    .reduce((mult, def) => mult * (chart[attackType]?.[def] ?? 1), 1);
 }
 
 // For an attacker vs a defender: each of the attacker's types is a STAB move
-// type. Returns [{ type, mult }] for each.
-export function stabMatchup(attacker, defender) {
+// type. Returns [{ type, mult }] for each. Both arguments are anything with a
+// `types` array — a dataset entry, or an era view of one (lib/eras.js).
+export function stabMatchup(attacker, defender, gen = null) {
   return attacker.types.map((type) => ({
     type,
-    mult: effectiveness(type, defender.types),
+    mult: effectiveness(type, defender.types, gen),
   }));
 }
 
