@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
-  SORT_KEYS,
+  sortKeysFor,
+  statKeysFor,
+  setAsOf,
+  typesFor,
+  generationsFor,
   SORT_LABEL,
   SORT_LONG_LABEL,
   GENERATIONS,
@@ -19,16 +23,31 @@ import {
   activeFilterCount,
 } from "./dexTable";
 import { ALL_POKEMON, getBySlug } from "./pokemon";
-import { STAT_ORDER } from "./stats";
+import { CURRENT_GEN, eraView } from "./eras";
+import { GEN1_STAT_ORDER, STAT_ORDER } from "./stats";
 
 const slugs = (rows) => rows.map((p) => p.slug);
 
 describe("column config", () => {
   it("covers identity columns plus the six stats and BST", () => {
-    expect(SORT_KEYS).toEqual(["dex", "name", ...STAT_ORDER, "bst"]);
-    for (const key of SORT_KEYS) {
+    expect(sortKeysFor(null)).toEqual(["dex", "name", ...STAT_ORDER, "bst"]);
+    for (const key of sortKeysFor(null)) {
       expect(SORT_LABEL[key]).toBeTruthy();
       expect(SORT_LONG_LABEL[key]).toBeTruthy();
+    }
+  });
+
+  it("swaps the two special stats for one Special in a Gen 1 dex", () => {
+    expect(statKeysFor(1)).toEqual(GEN1_STAT_ORDER);
+    expect(sortKeysFor(1)).toEqual(["dex", "name", ...GEN1_STAT_ORDER, "bst"]);
+    // Every Gen 1 column is still labelled, including the one only it has.
+    for (const key of sortKeysFor(1)) {
+      expect(SORT_LABEL[key]).toBeTruthy();
+      expect(SORT_LONG_LABEL[key]).toBeTruthy();
+    }
+    // Any other generation is the modern six.
+    for (const asof of [2, 5, 9, null]) {
+      expect(statKeysFor(asof)).toEqual(STAT_ORDER);
     }
   });
 
@@ -243,6 +262,7 @@ describe("view state <-> URL", () => {
       types: ["fire", "fighting"],
       gens: [1, 3, 5],
       includeForms: false,
+      asof: null,
     };
     expect(parse(viewToSearch(view).slice(1))).toEqual(view);
   });
@@ -353,7 +373,8 @@ describe("filter mutations", () => {
         q: "char",
         types: ["fire", "fighting"],
         gens: [1, 3, 5],
-        includeForms: false,
+        // A deviation from the default, which is now "hidden" (D-056).
+        includeForms: true,
       }),
     ).toBe(7);
     // Sorting is not a filter.
@@ -384,5 +405,152 @@ describe("toggleSort", () => {
       type: "fire",
       gen: 5,
     });
+  });
+});
+
+describe("the generation lens (D-049)", () => {
+  // Forms on, explicitly: these test the era ceiling, and the default now
+  // hides forms (D-056), which would silently narrow what they measure.
+  const at = (asof, view = {}) =>
+    filterRows(ALL_POKEMON, {
+      ...DEFAULT_VIEW,
+      includeForms: true,
+      asof,
+      ...view,
+    });
+
+  it("caps the table at what existed by that generation", () => {
+    // Counted from the dataset rather than from memory — the D-039 lesson,
+    // where the wrong half of a failing assertion was my expectation.
+    for (const asof of [1, 3, 5, 8]) {
+      const expected = ALL_POKEMON.filter((p) => p.introducedIn <= asof).length;
+      expect(at(asof)).toHaveLength(expected);
+    }
+    expect(at(1)).toHaveLength(151); // the Gen 1 dex, exactly
+    expect(at(null)).toHaveLength(ALL_POKEMON.length);
+  });
+
+  it("excludes a later form of an earlier species", () => {
+    // Alolan Raichu is a Gen 1 species that arrived in Gen 7 — the case a
+    // `generation <= asof` ceiling would get wrong.
+    expect(slugs(at(3))).not.toContain("raichu-alola");
+    expect(slugs(at(3))).not.toContain("volcarona");
+    expect(slugs(at(3))).toContain("raichu");
+    expect(slugs(at(7))).toContain("raichu-alola");
+  });
+
+  it("sorts on the generation's own values", () => {
+    const gen1 = sortRows(at(1), "special", "desc", 1);
+    expect(gen1[0].slug).toBe("mewtwo"); // Special 154
+    // The ranking is genuinely Gen 1's, not today's Sp. Atk wearing its name:
+    // Tentacruel's Special of 120 puts it 9th of the 151, where its modern
+    // Sp. Atk of 80 leaves it 471st of the whole dex.
+    expect(slugs(gen1.slice(0, 10))).toContain("tentacruel");
+    const today = sortRows(ALL_POKEMON, "spAtk", "desc");
+    expect(slugs(today.slice(0, 200))).not.toContain("tentacruel");
+  });
+
+  it("ranks by a stat that changed, differently in each generation", () => {
+    // Pidgeot's Speed went 91 → 101 in Gen 6. Sorting the SAME rows on the two
+    // generations isolates the stat change from the changing size of the dex.
+    const rows = at(5);
+    const rank = (asof) =>
+      slugs(sortRows(rows, "speed", "desc", asof)).indexOf("pidgeot");
+    expect(rank(5)).toBeGreaterThan(rank(null));
+  });
+
+  it("totals a Gen 1 BST over five stats", () => {
+    const alakazam = sortRows(at(1), "bst", "desc", 1).find(
+      (p) => p.slug === "alakazam",
+    );
+    expect(alakazam).toBeTruthy();
+    // 55 + 50 + 45 + 135 + 120 — one fewer stat to add up than today's 500.
+    expect(eraView(alakazam, 1).bst).toBe(405);
+  });
+
+  it("matches types as they were in that generation", () => {
+    // Clefairy was Normal until Gen 6.
+    expect(slugs(at(5, { types: ["normal"] }))).toContain("clefairy");
+    expect(slugs(at(9, { types: ["normal"] }))).not.toContain("clefairy");
+    expect(slugs(at(9, { types: ["fairy"] }))).toContain("clefairy");
+    // Fairy did not exist in Gen 5, so filtering by it there finds nothing.
+    expect(at(5, { types: ["fairy"] })).toHaveLength(0);
+  });
+
+  it("offers only the types and origin generations the lens can hold", () => {
+    expect(typesFor(1)).not.toContain("dark");
+    expect(typesFor(1)).not.toContain("steel");
+    expect(typesFor(2)).toContain("steel");
+    expect(typesFor(5)).not.toContain("fairy");
+    expect(typesFor(6)).toContain("fairy");
+    expect(typesFor(null)).toHaveLength(18);
+    expect(generationsFor(3)).toEqual([1, 2, 3]);
+    expect(generationsFor(null)).toEqual(GENERATIONS);
+  });
+});
+
+describe("switching the lens", () => {
+  it("carries a sort across the Special split rather than dropping it", () => {
+    expect(setAsOf({ ...DEFAULT_VIEW, sort: "spAtk" }, 1).sort).toBe("special");
+    expect(setAsOf({ ...DEFAULT_VIEW, sort: "spDef" }, 1).sort).toBe("special");
+    // …and back the other way when leaving Gen 1.
+    expect(setAsOf({ ...DEFAULT_VIEW, sort: "special" }, 5).sort).toBe("spAtk");
+    expect(setAsOf({ ...DEFAULT_VIEW, sort: "special" }, null).sort).toBe(
+      "spAtk",
+    );
+  });
+
+  it("keeps a sort that both generations share", () => {
+    expect(setAsOf({ ...DEFAULT_VIEW, sort: "speed" }, 1).sort).toBe("speed");
+    expect(setAsOf({ ...DEFAULT_VIEW, sort: "name" }, 1).sort).toBe("name");
+  });
+
+  it("drops filters the new lens cannot express", () => {
+    const view = { ...DEFAULT_VIEW, types: ["fire", "fairy"], gens: [1, 7] };
+    expect(setAsOf(view, 3)).toMatchObject({
+      types: ["fire"], // Fairy did not exist yet
+      gens: [1], // nothing originated in Gen 7 yet
+      asof: 3,
+    });
+  });
+
+  it("restores the full range on the way back to today", () => {
+    expect(setAsOf({ ...DEFAULT_VIEW, asof: 1 }, null)).toMatchObject({
+      asof: null,
+    });
+  });
+});
+
+describe("the lens in the URL", () => {
+  const parse = (qs) => parseView(new URLSearchParams(qs));
+
+  it("round-trips", () => {
+    expect(parse("asof=3").asof).toBe(3);
+    expect(viewToSearch({ ...DEFAULT_VIEW, asof: 3 })).toBe("?asof=3");
+  });
+
+  it("spells today as no parameter", () => {
+    expect(parse("").asof).toBeNull();
+    expect(parse(`asof=${CURRENT_GEN}`).asof).toBeNull();
+    expect(viewToSearch(DEFAULT_VIEW)).toBe("");
+  });
+
+  it("degrades rather than rendering an impossible view", () => {
+    expect(parse("asof=99").asof).toBeNull();
+    expect(parse("asof=0").asof).toBeNull();
+    expect(parse("asof=banana").asof).toBeNull();
+  });
+
+  it("self-heals a filter the lens cannot hold", () => {
+    // Without the cap this would be a table with nothing in it.
+    expect(parse("asof=3&gen=7").gens).toEqual([]);
+    expect(parse("asof=3&gen=2,7").gens).toEqual([2]);
+    expect(parse("asof=5&type=fairy").types).toEqual([]);
+  });
+
+  it("maps a stale sort key across the split instead of losing it", () => {
+    expect(parse("asof=1&sort=spAtk").sort).toBe("special");
+    expect(parse("sort=special").sort).toBe("spAtk");
+    expect(parse("asof=1&sort=nonsense").sort).toBe("dex");
   });
 });

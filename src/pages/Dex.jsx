@@ -2,11 +2,11 @@ import { useNavigate, useSearchParams } from "react-router";
 import DexFilters from "../components/DexFilters";
 import DexTable from "../components/DexTable";
 import { ALL_POKEMON } from "../lib/pokemon";
-import { STAT_ORDER } from "../lib/stats";
 import {
   filterRows,
   parseView,
   sortRows,
+  statKeysFor,
   toggleSort,
   viewToSearch,
 } from "../lib/dexTable";
@@ -27,7 +27,26 @@ export default function Dex() {
   // DexTable — and filtering plus sorting all 1,259 rows measures under 1ms, so
   // a useMemo here would buy nothing and fight the React Compiler's own
   // memoisation (react-hooks/preserve-manual-memoization).
-  const rows = sortRows(filterRows(ALL_POKEMON, view), view.sort, view.dir);
+  const rows = sortRows(
+    filterRows(ALL_POKEMON, view),
+    view.sort,
+    view.dir,
+    view.asof,
+  );
+
+  // The stat columns this lens shows — five in a Gen 1 dex, six otherwise.
+  const keys = statKeysFor(view.asof);
+  // The denominator for the count line. In a lens it is the size of that
+  // generation's dex, not all 1,259: a Gen 1 view reads "151 Pokémon", because
+  // 151 IS every Pokémon there was.
+  // The denominator is everything that existed in this era, forms included,
+  // stated explicitly rather than leaning on filterRows' own default — with
+  // forms hidden by default the resting count reads "1,025 of 1,259", which is
+  // how anyone learns the other 234 are one toggle away (D-056).
+  const total = filterRows(ALL_POKEMON, {
+    asof: view.asof,
+    includeForms: true,
+  }).length;
 
   const setView = (next) =>
     navigate(`/dex${viewToSearch(next)}`, { replace: true });
@@ -36,7 +55,7 @@ export default function Dex() {
   // being sorted by instead — sort by Speed on a phone and Speed is the number
   // you see. Sorting by name, dex or BST leaves it out rather than picking an
   // arbitrary stat to show.
-  const mobileStat = STAT_ORDER.includes(view.sort) ? view.sort : null;
+  const mobileStat = keys.includes(view.sort) ? view.sort : null;
 
   return (
     <div className="max-w-content mx-auto px-4 py-8">
@@ -52,14 +71,15 @@ export default function Dex() {
       <DexFilters view={view} onChange={setView} />
 
       <p aria-live="polite" className="mt-4 mb-1 text-caption text-tertiary">
-        {rows.length === ALL_POKEMON.length
-          ? `${ALL_POKEMON.length.toLocaleString()} Pokémon`
-          : `${rows.length.toLocaleString()} of ${ALL_POKEMON.length.toLocaleString()} Pokémon`}
+        {rows.length === total
+          ? `${total.toLocaleString()} Pokémon`
+          : `${rows.length.toLocaleString()} of ${total.toLocaleString()} Pokémon`}
       </p>
 
       <DexTable
         rows={rows}
         view={view}
+        keys={keys}
         onSort={(key) => setView(toggleSort(view, key))}
         mobileStat={mobileStat}
       />

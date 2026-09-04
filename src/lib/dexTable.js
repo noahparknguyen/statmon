@@ -5,18 +5,37 @@
 // so it is unit-tested directly (dexTable.test.js) rather than through the UI.
 // The page component is left as thin as possible on top of it.
 import { ALL_POKEMON, formsOf } from "./pokemon";
-import { STAT_ORDER, STAT_LABEL } from "./stats";
+import { CURRENT_GEN, eraView } from "./eras";
+import { GEN1_STAT_ORDER, SPECIAL, STAT_ORDER, STAT_LABEL } from "./stats";
 import { TYPES } from "./types";
+import { typeExistsIn } from "./typeChart";
 
-// Sortable columns, in display order. The six stats come from STAT_ORDER rather
-// than being restated, so a change there flows through to the table.
-export const SORT_KEYS = ["dex", "name", ...STAT_ORDER, "bst"];
+// The stat columns a given lens shows: the modern six, or Gen 1's five with a
+// single Special in place of Sp. Atk and Sp. Def (D-049).
+export const statKeysFor = (asof) =>
+  asof === 1 ? GEN1_STAT_ORDER : STAT_ORDER;
 
+// Sortable columns, in display order. The stats come from statKeysFor rather
+// than being restated, so a change there flows through to the table — and so a
+// Gen 1 dex offers Special as a sortable column and drops the two that did not
+// exist yet.
+export const sortKeysFor = (asof) => [
+  "dex",
+  "name",
+  ...statKeysFor(asof),
+  "bst",
+];
+
+// Every key any lens can sort by. `special` is here because a Gen 1 dex really
+// can rank by it — the reason it was kept OUT of this map earlier in the same
+// session was that no header could reach it, and now one can.
 export const SORT_LABEL = {
   dex: "#",
   name: "Name",
-  ...STAT_LABEL,
   bst: "BST",
+  ...Object.fromEntries(
+    [...STAT_ORDER, SPECIAL].map((k) => [k, STAT_LABEL[k]]),
+  ),
 };
 
 // Longer names for the mobile sort <select> and for screen readers, where "SpA"
@@ -30,10 +49,12 @@ export const SORT_LONG_LABEL = {
   spAtk: "Sp. Attack",
   spDef: "Sp. Defense",
   speed: "Speed",
+  [SPECIAL]: "Special",
   bst: "Base stat total",
 };
 
-export const isStatKey = (key) => key === "bst" || STAT_ORDER.includes(key);
+export const isStatKey = (key) =>
+  key === "bst" || key === SPECIAL || STAT_ORDER.includes(key);
 
 // The generations actually present in the dataset, so a new one appearing in a
 // rebuilt dex shows up in the filter without a code change.
@@ -53,22 +74,29 @@ export function dexNumberOf(pokemon) {
 // asked); identity columns sort low-to-high.
 export const defaultDir = (key) => (isStatKey(key) ? "desc" : "asc");
 
-const sortValue = (p, key) => {
+const sortValue = (p, key, view) => {
   if (key === "name") return p.name;
   if (key === "dex") return dexNumberOf(p);
-  if (key === "bst") return p.bst;
-  return p.stats[key];
+  if (key === "bst") return view.bst;
+  return view.stats[key];
 };
 
 // Decorate-sort-undecorate: sortValue and dexNumberOf are computed once per row
 // rather than once per comparison, and the tiebreak is explicit rather than
 // relying on input order, so an equal-value run renders identically every time.
-export function sortRows(rows, key, dir) {
+//
+// `asof` sorts on the generation's own values, which is the point of putting the
+// lens on a *table*: ranking is what the dex is for, so history that the sort
+// cannot reach would be trivia (D-049). `null` is today and costs nothing —
+// eraView returns the entry's own stats untouched. Measured at ~1ms to resolve a
+// whole era-filtered dex, the same order as the filter and sort themselves, so
+// this stays unmemoised for the reasons Dex.jsx already documents.
+export function sortRows(rows, key, dir, asof = null) {
   const sign = dir === "asc" ? 1 : -1;
   const byName = key === "name";
   const decorated = rows.map((p) => ({
     p,
-    v: sortValue(p, key),
+    v: sortValue(p, key, eraView(p, asof)),
     dex: dexNumberOf(p),
   }));
   decorated.sort((a, b) => {
@@ -90,15 +118,27 @@ const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 // have no other sensible reading — a Pokemon belongs to exactly one, so ANDing
 // them would always match nothing — and types follow the same rule so the two
 // groups behave alike. An empty group is not a constraint at all. (D-040)
+// `asof` is the lens, and it filters as well as re-reads: a table claiming to be
+// the Gen 3 dex while listing Pokémon that had not been invented is simply
+// wrong, so anything that debuted later is out (D-049). The ceiling is
+// `introducedIn`, not `generation` — Alolan Raichu is a Gen 1 *species* that
+// arrived in Gen 7, and it has no business in a Gen 3 dex.
+//
+// Types match the era's typing too, so a Gen 5 dex filtered by Fairy is
+// correctly empty and Clefairy answers to Normal there.
 export function filterRows(
   rows,
-  { q = "", types = [], gens = [], includeForms = true } = {},
+  { q = "", types = [], gens = [], includeForms = true, asof = null } = {},
 ) {
   const nq = normalize(q);
   return rows.filter((p) => {
     if (!includeForms && !p.isDefault) return false;
+    if (asof != null && p.introducedIn > asof) return false;
     if (gens.length && !gens.includes(p.generation)) return false;
-    if (types.length && !types.some((t) => p.types.includes(t))) return false;
+    if (types.length) {
+      const own = asof == null ? p.types : eraView(p, asof).types;
+      if (!types.some((t) => own.includes(t))) return false;
+    }
     if (
       nq &&
       !normalize(p.name).includes(nq) &&
@@ -122,16 +162,43 @@ export const DEFAULT_VIEW = {
   q: "",
   types: [],
   gens: [],
-  includeForms: true,
+  // Alternate forms are hidden by default (D-056): the resting state of the dex
+  // is the clean National Dex, and the 234 Megas and battle forms are a step
+  // away rather than mixed into it. Reverses the lean D-039 shipped with.
+  includeForms: false,
+  asof: null,
 };
+
+// Sp. Atk and Sp. Def are what Gen 1's Special became, so a sort across that
+// boundary maps rather than being discarded: switch a Sp. Atk ranking to the
+// Gen 1 dex and you get the Special ranking, which is the same question asked
+// of the generation that had one stat for it. Anything with no counterpart
+// falls back to the default column.
+const ACROSS_THE_SPLIT = {
+  spAtk: SPECIAL,
+  spDef: SPECIAL,
+  [SPECIAL]: "spAtk",
+};
+
+function parseSort(raw, asof) {
+  const keys = sortKeysFor(asof);
+  if (keys.includes(raw)) return raw;
+  const mapped = ACROSS_THE_SPLIT[raw];
+  return mapped && keys.includes(mapped) ? mapped : DEFAULT_VIEW.sort;
+}
 
 // Anything unrecognised falls back to its default rather than throwing, so a
 // hand-edited or stale URL degrades to a sensible view instead of a blank page.
 export function parseView(searchParams) {
   const get = (k) => searchParams.get(k);
-  const sort = SORT_KEYS.includes(get("sort"))
-    ? get("sort")
-    : DEFAULT_VIEW.sort;
+  const rawAsOf = Number(get("asof"));
+  // The newest generation is the current view, spelled as no parameter — the
+  // same rule parseAsOf follows on the comparison tool.
+  const asof =
+    Number.isInteger(rawAsOf) && rawAsOf >= 1 && rawAsOf < CURRENT_GEN
+      ? rawAsOf
+      : null;
+  const sort = parseSort(get("sort"), asof);
   const dir =
     get("dir") === "asc" || get("dir") === "desc"
       ? get("dir")
@@ -140,11 +207,26 @@ export function parseView(searchParams) {
     sort,
     dir,
     q: get("q") ?? "",
-    types: parseList(get("type"), TYPES),
-    gens: parseList(get("gen"), GENERATIONS),
-    includeForms: get("forms") !== "0",
+    types: parseList(get("type"), typesFor(asof)),
+    // Capped at the lens, so a stale ?asof=3&gen=7 self-heals to no generation
+    // filter instead of a table with nothing in it.
+    gens: parseList(get("gen"), generationsFor(asof)),
+    // Reads `forms=1` as "show them". Links written under the old default
+    // still mean what they said: `forms=0` was an explicit hide and still
+    // hides, and a bare /dex now simply adopts the new default.
+    includeForms: get("forms") === "1",
+    asof,
   };
 }
+
+// The types and origin generations that exist within a lens — Dark and Steel
+// arrive in Gen 2, Fairy in Gen 6, and nothing originates after the lens itself.
+// Both the filter controls and the URL parse read these, so a control cannot
+// offer a value the parse would reject, and vice versa.
+export const typesFor = (asof) => TYPES.filter((t) => typeExistsIn(t, asof));
+
+export const generationsFor = (asof) =>
+  asof == null ? GENERATIONS : GENERATIONS.filter((g) => g <= asof);
 
 // Reads a comma-separated multi-select param. Driven by the canonical list
 // rather than by the URL's order, which drops unknown values, removes
@@ -165,10 +247,23 @@ export function viewToSearch(view) {
   if (view.q) params.set("q", view.q);
   if (view.types.length) params.set("type", view.types.join(","));
   if (view.gens.length) params.set("gen", view.gens.join(","));
-  if (!view.includeForms) params.set("forms", "0");
+  if (view.includeForms) params.set("forms", "1");
+  if (view.asof != null) params.set("asof", String(view.asof));
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }
+
+// Switching the lens keeps everything else, but re-reads the sort across the
+// Special split and drops any filter the new lens cannot express — the same
+// clamping parseView does, so clicking a chip and hand-editing the URL land in
+// the same state.
+export const setAsOf = (view, asof) => ({
+  ...view,
+  asof,
+  sort: parseSort(view.sort, asof),
+  types: view.types.filter((t) => typeExistsIn(t, asof)),
+  gens: view.gens.filter((g) => asof == null || g <= asof),
+});
 
 // One place that answers "what does clicking this column header do?": a new
 // column adopts its natural direction, the active column flips.

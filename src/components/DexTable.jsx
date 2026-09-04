@@ -2,7 +2,6 @@ import { FaCaretDown, FaCaretUp } from "react-icons/fa6";
 import DexRow from "./DexRow";
 import { useWindowedRows } from "../lib/useWindowedRows";
 import { SORT_LABEL, SORT_LONG_LABEL } from "../lib/dexTable";
-import { STAT_ORDER } from "../lib/stats";
 import { COL, ROW_HEIGHT, ROW_HEIGHT_CLASS } from "./dexColumns";
 
 // The full-dex table. A real <table> rather than a grid of divs, so the browser
@@ -79,7 +78,10 @@ function Spacer({ height }) {
   );
 }
 
-export default function DexTable({ rows, view, onSort, mobileStat }) {
+// `keys` is the lens's stat columns — the modern six, or Gen 1's five with a
+// single Special (D-049) — passed in rather than read from STAT_ORDER, so the
+// header, the rows and the sort controls cannot disagree about what is shown.
+export default function DexTable({ rows, view, keys, onSort, mobileStat }) {
   const { ref, start, end, padTop, padBottom } = useWindowedRows({
     count: rows.length,
     rowHeight: ROW_HEIGHT,
@@ -102,7 +104,9 @@ export default function DexTable({ rows, view, onSort, mobileStat }) {
         className="w-full table-fixed border-collapse"
       >
         <caption className="sr-only">
-          Base stats for every Pokémon, sorted by {SORT_LONG_LABEL[view.sort]},{" "}
+          Base stats for every Pokémon
+          {view.asof == null ? "" : ` as of Generation ${view.asof}`}, sorted by{" "}
+          {SORT_LONG_LABEL[view.sort]},{" "}
           {view.dir === "asc" ? "ascending" : "descending"}.
         </caption>
         <thead>
@@ -128,7 +132,7 @@ export default function DexTable({ rows, view, onSort, mobileStat }) {
             >
               Types
             </th>
-            {STAT_ORDER.map((key) => (
+            {keys.map((key) => (
               <SortHeader
                 key={key}
                 colKey={key}
@@ -161,6 +165,8 @@ export default function DexTable({ rows, view, onSort, mobileStat }) {
               key={p.slug}
               pokemon={p}
               rowIndex={start + i}
+              keys={keys}
+              asof={view.asof}
               mobileStat={mobileStat}
               heightClass={ROW_HEIGHT_CLASS}
             />

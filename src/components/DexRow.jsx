@@ -4,7 +4,8 @@ import TypeBadge from "./TypeBadge";
 import { spriteFor } from "../lib/pokemon";
 import { compareUrl } from "../lib/compareUrl";
 import { dexNumberOf } from "../lib/dexTable";
-import { STAT_ORDER, statPct } from "../lib/stats";
+import { eraView } from "../lib/eras";
+import { statPct } from "../lib/stats";
 import { typeColorVar } from "../lib/types";
 
 // One dex row. Memoised because the windowing hook re-renders the table on every
@@ -37,8 +38,14 @@ function StatCell({ value, color, className = "" }) {
   );
 }
 
-function DexRow({ pokemon, rowIndex, mobileStat, heightClass }) {
-  const primary = pokemon.types[0];
+// `asof` is passed as a plain number rather than a resolved view object on
+// purpose: this component is memoised because the windowing hook re-renders the
+// table on every scroll frame, and a fresh object would give it a new prop
+// identity each time and re-render every visible row. A primitive keeps the memo
+// working, and resolving one row's view here costs nothing. (D-049)
+function DexRow({ pokemon, rowIndex, keys, asof, mobileStat, heightClass }) {
+  const view = eraView(pokemon, asof);
+  const primary = view.types[0];
   const dex = dexNumberOf(pokemon);
 
   return (
@@ -71,7 +78,9 @@ function DexRow({ pokemon, rowIndex, mobileStat, heightClass }) {
             <Link
               // Built through the shared helper rather than by hand, so the
               // partial one-slot URL shape lives in exactly one place (D-022).
-              to={compareUrl(pokemon.slug)}
+              // Carries the lens through, so a name clicked in a Gen 3 dex opens
+              // a Gen 3 comparison rather than silently jumping to today.
+              to={compareUrl(pokemon.slug, null, asof)}
               className="block truncate text-body-sm text-primary transition-colors hover:text-accent"
             >
               {pokemon.name}
@@ -79,7 +88,7 @@ function DexRow({ pokemon, rowIndex, mobileStat, heightClass }) {
             {/* Types have no column of their own until lg, so they ride along
                 under the name at narrower widths. */}
             <span className="mt-0.5 flex gap-1 lg:hidden">
-              {pokemon.types.map((t) => (
+              {view.types.map((t) => (
                 <TypeBadge key={t} type={t} size="sm" />
               ))}
             </span>
@@ -89,16 +98,16 @@ function DexRow({ pokemon, rowIndex, mobileStat, heightClass }) {
 
       <td className="hidden px-2 lg:table-cell">
         <span className="flex gap-1">
-          {pokemon.types.map((t) => (
+          {view.types.map((t) => (
             <TypeBadge key={t} type={t} size="sm" />
           ))}
         </span>
       </td>
 
-      {STAT_ORDER.map((key) => (
+      {keys.map((key) => (
         <StatCell
           key={key}
-          value={pokemon.stats[key]}
+          value={view.stats[key]}
           color={primary}
           className="hidden md:table-cell"
         />
@@ -106,14 +115,14 @@ function DexRow({ pokemon, rowIndex, mobileStat, heightClass }) {
 
       {mobileStat && (
         <StatCell
-          value={pokemon.stats[mobileStat]}
+          value={view.stats[mobileStat]}
           color={primary}
           className="md:hidden"
         />
       )}
 
       <td className="px-2 text-right">
-        <span className="text-stat-sm text-primary">{pokemon.bst}</span>
+        <span className="text-stat-sm text-primary">{view.bst}</span>
       </td>
     </tr>
   );

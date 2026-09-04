@@ -1,26 +1,48 @@
 import { useState } from "react";
 import { LuSearch, LuX, LuSlidersHorizontal } from "react-icons/lu";
 import { FaCaretDown, FaCaretUp } from "react-icons/fa6";
+import GenerationStrip from "./GenerationStrip";
+import { allGenerations } from "../lib/eras";
 import {
-  GENERATIONS,
-  SORT_KEYS,
   SORT_LONG_LABEL,
+  setAsOf,
   activeFilterCount,
   clearFilters,
+  generationsFor,
   panelFilterCount,
+  sortKeysFor,
   toggleGen,
   toggleType,
+  typesFor,
 } from "../lib/dexTable";
-import { TYPES, capitalize, typeColorVar, typeTextVar } from "../lib/types";
+import { capitalize, typeColorVar, typeTextVar } from "../lib/types";
+import {
+  CHIP as CHIP_LOOK,
+  CHIP_OFF,
+  CHIP_ON,
+  CHIP_ON_FILLED,
+} from "./chipStyles";
 
-// Filter + sort controls for the dex. Holds no view state of its own: it renders
-// the view parsed from the URL and reports the next one up, which the page
-// writes back to the URL (D-022). The only local state is whether the panel is
-// expanded on a phone, which is ephemeral UI, not something worth a link.
+// The dex's controls. Holds no view state of its own: it renders the view
+// parsed from the URL and reports the next one up, which the page writes back to
+// the URL (D-022). The only local state is whether the panel is expanded on a
+// phone, which is ephemeral UI, not something worth a link.
 //
-// Three labelled groups — Types, Generations, Options. The labels are what stop
-// the lone "Alternate forms" toggle reading as a stray control: it is a peer
-// group rather than an orphan in a bar of controls. (D-040)
+// The generation lens leads, above a divider, because it is not a peer of the
+// filters — it decides which Pokémon exist here at all, and therefore which
+// types and generations the filters below it can even offer (D-049). Reading top
+// to bottom is the actual relationship: choose the dex, then narrow it. It lives
+// inside this panel but OUTSIDE the collapsible region, like the name box, so it
+// stays on screen when the chip groups fold away on a phone. (D-050)
+//
+// Three labelled groups — Types, Introduced in, Options. The labels are what
+// stop the lone "Alternate forms" toggle reading as a stray control: it is a
+// peer group rather than an orphan in a bar of controls. (D-040)
+//
+// "Introduced in" rather than "Generations", because two generation controls now
+// share this panel and one bare label cannot serve both: the strip above chooses
+// *which dex you are looking at*, this chooses *where a Pokémon came from*.
+// Naming the second for what it actually filters keeps them apart. (D-050)
 
 // Height is deliberately NOT part of this: the mobile sort row wants a compact
 // control, and appending "h-9" to a string already carrying "h-11" does not
@@ -31,16 +53,13 @@ const FIELD_LOOK =
   "rounded-sm border border-border-subtle bg-elevated px-3 text-body-sm text-primary transition-colors focus-within:border-border-strong";
 const FIELD = `h-11 ${FIELD_LOOK}`;
 
-// Inactive chips deliberately reuse the neutral FormChips styling and active
-// ones the TypeBadge pairing, so every colour combination here was already
-// audited (D-027) rather than introducing new ones.
+// Colour comes from the shared chip vocabulary (chipStyles.jsx), so the active
+// pairing is the audited TypeBadge one (D-027) and the inactive pairing is the
+// same neutral every other chip uses. Only geometry is local.
 // min-h-9 (36px) matches Button's compact size (04_design §6). Without it the
 // chips came out 25px tall — above the WCAG 2.5.8 AA floor of 24px, but a mean
 // target for a thumb, and inconsistent with every other compact control.
-const CHIP =
-  "text-badge inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 transition-colors";
-const CHIP_OFF =
-  "border-border-strong bg-elevated text-secondary hover:text-primary";
+const CHIP = `${CHIP_LOOK} min-h-9 gap-1.5 px-3 py-1.5 transition-colors`;
 
 // No aria-label: the visible text is the accessible name. Spelling the action
 // out ("Filter by Generation 1") would replace the name with a string that does
@@ -54,11 +73,7 @@ function Chip({ active, onClick, label, color }) {
       aria-pressed={active}
       onClick={onClick}
       className={`${CHIP} ${
-        active
-          ? color
-            ? "border-transparent"
-            : "border-transparent bg-accent text-accent-contrast"
-          : CHIP_OFF
+        active ? (color ? CHIP_ON_FILLED : CHIP_ON) : CHIP_OFF
       }`}
       style={
         active && color
@@ -98,9 +113,23 @@ export default function DexFilters({ view, onChange }) {
   // clearing does include the name box.
   const panelCount = panelFilterCount(view);
   const totalCount = activeFilterCount(view);
+  // Both lists narrow with the lens: no Fairy chip in a Gen 5 dex, no Gen 7
+  // origin chip in a Gen 3 one. A control that offers a value the view cannot
+  // hold would just produce an empty table (D-049).
+  const types = typesFor(view.asof);
+  const generations = generationsFor(view.asof);
 
   return (
     <div className="rounded-lg border border-border-subtle bg-surface p-4">
+      <div className="mb-4 border-b border-border-subtle pb-4">
+        <GenerationStrip
+          label="Dex as of"
+          options={allGenerations()}
+          asof={view.asof}
+          onSelect={(asof) => onChange(setAsOf(view, asof))}
+        />
+      </div>
+
       <div className={`flex items-center gap-2 ${FIELD}`}>
         <LuSearch aria-hidden className="shrink-0 text-tertiary" />
         <input
@@ -124,9 +153,13 @@ export default function DexFilters({ view, onChange }) {
           id="dex-sort"
           value={view.sort}
           onChange={(e) => onChange({ ...view, sort: e.target.value })}
-          className={`h-9 flex-1 ${FIELD_LOOK}`}
+          // min-w-0 because a flex item will not shrink below its content's
+          // intrinsic width by default, and this select's longest option is
+          // "Sort: Base stat total" — without it the row pushed the Filters
+          // button off the side of a 320px screen. (D-055)
+          className={`h-9 min-w-0 flex-1 ${FIELD_LOOK}`}
         >
-          {SORT_KEYS.map((key) => (
+          {sortKeysFor(view.asof).map((key) => (
             <option key={key} value={key}>
               Sort: {SORT_LONG_LABEL[key]}
             </option>
@@ -138,7 +171,7 @@ export default function DexFilters({ view, onChange }) {
             onChange({ ...view, dir: view.dir === "asc" ? "desc" : "asc" })
           }
           aria-label={`Sorted ${view.dir === "asc" ? "ascending" : "descending"}; reverse the order`}
-          className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border-strong bg-elevated text-secondary transition-colors hover:text-primary"
+          className={`flex size-9 shrink-0 items-center justify-center rounded-full border transition-colors ${CHIP_OFF}`}
         >
           {view.dir === "asc" ? (
             <FaCaretUp aria-hidden />
@@ -151,11 +184,7 @@ export default function DexFilters({ view, onChange }) {
           aria-expanded={open}
           aria-controls="dex-filter-groups"
           onClick={() => setOpen((o) => !o)}
-          className={`${CHIP} h-9 shrink-0 ${
-            panelCount > 0
-              ? "border-transparent bg-accent text-accent-contrast"
-              : CHIP_OFF
-          }`}
+          className={`${CHIP} h-9 shrink-0 ${panelCount > 0 ? CHIP_ON : CHIP_OFF}`}
         >
           <LuSlidersHorizontal aria-hidden />
           Filters{panelCount > 0 && ` (${panelCount})`}
@@ -170,7 +199,7 @@ export default function DexFilters({ view, onChange }) {
         className={`${open ? "" : "hidden"} mt-4 flex flex-col gap-4 md:mt-3 md:flex`}
       >
         <Group label="Types">
-          {TYPES.map((t) => (
+          {types.map((t) => (
             <Chip
               key={t}
               active={view.types.includes(t)}
@@ -182,16 +211,22 @@ export default function DexFilters({ view, onChange }) {
         </Group>
 
         <div className="flex flex-col gap-4 md:flex-row md:gap-10">
-          <Group label="Generations">
-            {GENERATIONS.map((g) => (
-              <Chip
-                key={g}
-                active={view.gens.includes(g)}
-                onClick={() => onChange(toggleGen(view, g))}
-                label={`Gen ${g}`}
-              />
-            ))}
-          </Group>
+          {/* Hidden when the lens leaves it only one option: filtering the Gen 1
+              dex down to "introduced in Gen 1" is every row it already has, so
+              the control could only ever be a no-op sitting under a strip that
+              looks just like it. */}
+          {generations.length > 1 && (
+            <Group label="Introduced in">
+              {generations.map((g) => (
+                <Chip
+                  key={g}
+                  active={view.gens.includes(g)}
+                  onClick={() => onChange(toggleGen(view, g))}
+                  label={`Gen ${g}`}
+                />
+              ))}
+            </Group>
+          )}
 
           <Group label="Options">
             <Chip

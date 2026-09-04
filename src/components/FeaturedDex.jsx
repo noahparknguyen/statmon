@@ -100,6 +100,8 @@ export default function FeaturedDex() {
               key={p.slug}
               pokemon={p}
               rowIndex={i}
+              keys={STAT_ORDER}
+              asof={null}
               mobileStat={PREVIEW_SORT}
               heightClass={ROW_HEIGHT_CLASS}
             />
