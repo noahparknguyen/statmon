@@ -78,7 +78,7 @@ export default function SearchBar({ label, onSelect }) {
           screen reader user typing here got no feedback that 1,259 Pokémon had
           narrowed to eight — or to none. The list itself is not a live region
           (a combobox's options should not be announced one by one as you type),
-          so the count is reported separately and politely. */}
+          so the count is reported separately and politely. (D-065) */}
       <span aria-live="polite" className="sr-only">
         {showList
           ? results.length === 0

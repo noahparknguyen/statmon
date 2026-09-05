@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The four pages a visitor is meant to land on. Deep links (/compare/a/vs/b,
+  /types/water/flying, /dex?sort=speed) are generated from the dataset and are
+  effectively unbounded, so they are deliberately not enumerated here — they are
+  shareable links, not pages to index. /style is excluded, as in robots.txt.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://statmon.noahparknguyen.workers.dev/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://statmon.noahparknguyen.workers.dev/compare</loc>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://statmon.noahparknguyen.workers.dev/dex</loc>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://statmon.noahparknguyen.workers.dev/types</loc>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://statmon.noahparknguyen.workers.dev/credits</loc>
+    <priority>0.3</priority>
+  </url>
+</urlset>

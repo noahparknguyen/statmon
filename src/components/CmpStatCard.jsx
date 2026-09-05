@@ -52,7 +52,7 @@ function StatLine({ name, value, color, win, ready }) {
       {/* No `title` tooltip on the truncation. It was the third `title=` on the
           site and the same anti-pattern as the other two — unreachable by
           keyboard, invisible on touch — and it was buying nothing here: this
-          card only ever renders below md, where the full name is already on
+          card only ever renders below md (D-065), where the full name is already on
           screen in the Pokémon card's own heading a short scroll away. */}
       <span className="text-caption text-secondary truncate">
         {name ?? "–"}

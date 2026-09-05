@@ -1,10 +1,14 @@
 # Statmon
 
-A simple set of Pokémon tools, built for myself. Three so far: a head-to-head comparison of two Pokémon's base stats, a full-dex table of every Pokémon sortable by any stat, and a type chart that handles dual types on the same page.
+A simple set of Pokémon tools, built for myself. Three so far — and each of them can be read **as of any generation**:
+
+- **[Compare](https://statmon.noahparknguyen.workers.dev/compare)** — two Pokémon's base stats head to head, with the type matchup and a straight answer about who moves first.
+- **[Dex](https://statmon.noahparknguyen.workers.dev/dex)** — all 1,259 entries in one table, sortable by any stat and filterable by type and generation.
+- **[Types](https://statmon.noahparknguyen.workers.dev/types)** — the full effectiveness chart, and a dual-type readout on the same page.
 
 **Live at [statmon.noahparknguyen.workers.dev](https://statmon.noahparknguyen.workers.dev/).**
 
-![Statmon comparing Volcarona and Chandelure](docs/home.png)
+![Statmon's home page: a live Volcarona vs Chandelure comparison board](docs/home.png)
 
 ## Why
 
@@ -16,11 +20,15 @@ That reading applies to the dex too, where it does a bit more: pick a generation
 
 The dex table came next, for the other half of the same question: not "which of these two", but "who has the highest Speed in the whole game". All 1,259 entries in one sortable table, filterable by any combination of types and generations, with the sort and filters kept in the URL so a view is a link you can send someone.
 
+![The Statmon dex: every Pokémon in one sortable, filterable table](docs/dex.png)
+
 The type chart came from the same itch. Every other one I found either stops at single types or gives each dual-type pairing its own page, so answering "what beats Water/Flying" means going somewhere else. Here you pick up to two types and the eighteen attacking types sort themselves into tiers, with the full grid still on screen underneath. It's generation-aware too — the chart really has changed, six times, and Gen 1 is a 15×15 grid where Ghost does nothing to Psychic.
+
+![The Statmon type chart answering Water / Flying, with the full grid below it](docs/types.png)
 
 ## How it works
 
-Everything comes from PokéAPI, pulled once at build time into a local JSON file; the sprites and artwork are downloaded and committed to the repo. So the site makes zero API calls at runtime — it's just static files. Search, the stat math, and the type matchups all run against that local dataset.
+Everything comes from PokéAPI, pulled once at build time into a local JSON file; the sprites and artwork are downloaded and committed to the repo, and so are the two webfonts. So the site makes **zero** network requests to anyone at runtime — it's just static files. Search, the stat math, and the type matchups all run against that local dataset.
 
 ## Stack
 
@@ -33,9 +41,19 @@ npm install
 npm run dev
 ```
 
-`npm run build:data` regenerates the dataset from PokéAPI and `npm run vendor:images` fetches the images — both only needed when a new generation ships, and both cache aggressively so re-runs are free. The data build also re-checks the hardcoded type chart against PokéAPI across all three of its historical eras, so a typo in 18×18 of hand-written data fails the build instead of reaching a user.
+`npm run build:data` regenerates the dataset from PokéAPI, `npm run vendor:images` fetches the sprites and artwork, and `npm run vendor:fonts` fetches the two webfonts — all three only needed when something upstream changes, and all three cache or commit their output so re-runs are free. The data build also re-checks the hardcoded type chart against PokéAPI across all three of its historical eras, so a typo in 18×18 of hand-written data fails the build instead of reaching a user.
 
-The checks that keep things honest are `lint`, `format:check`, `test:run` (Vitest — the stat math, the dataset codec round-trip, the dex sort/filter logic, the generation-era resolution, and a server-render smoke test of every route), `audit:contrast` (WCAG AA across all 18 type colours, in five pairing groups) and `check:docs` (every link and anchor in `docs/`).
+The checks that keep things honest, all seven of which run in CI:
+
+- `lint`, `format:check`, `build`
+- `test:run` — Vitest: the stat math, the dataset codec round-trip, the dex sort/filter logic, the generation-era resolution, a server-render smoke test of every route, and a set of accessibility regressions
+- `audit:contrast` — WCAG AA across all 18 type colours, in seven pairing groups
+- `check:docs` — every link and anchor in `docs/`
+- `sweep:widths` — headless Chrome across 11 routes × 14 widths, asserting no page ever scrolls sideways and every touch target meets WCAG 2.5.8
+
+That last one exists because I kept doing it by hand and kept doing it wrong: the type grid leaked horizontal overflow onto every page for as long as it had shipped, and I missed it three times because 390, 768 and 1280 are all clean while 600 and 700 are not. It has since caught a breakpoint that broke the header on every width between 360 and 383, and disproved a WCAG failure I had been asserting in two documents without ever measuring it.
+
+`npm run shoot:docs` regenerates the screenshots in this README from the built site, for the same reason.
 
 ## Docs
 

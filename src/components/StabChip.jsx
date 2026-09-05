@@ -94,7 +94,7 @@ export default function StabChip({ type, mult, dense = false }) {
 // under it. Both surfaces used to hang this on a `title=` attribute of a plain
 // <span>: invisible to keyboards, invisible on touch, and inconsistently
 // exposed by screen readers — a tooltip nobody who needed it could reach. The
-// expansion is `sr-only` text instead, which every one of them can.
+// expansion is `sr-only` text instead, which every one of them can. (D-065)
 export function StabLabel({ children }) {
   return (
     <span className="text-overline text-tertiary">

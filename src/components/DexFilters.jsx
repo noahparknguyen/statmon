@@ -52,7 +52,7 @@ import FilterChip from "./FilterChip";
 // which also made these the site's two search inputs at two different sizes.
 // A responsive variant is not an option here: the named text styles are
 // hand-written `@layer components` classes, so `md:text-body-sm` generates no
-// CSS (06_style_guide §13).
+// CSS (06_style_guide §13). (D-065)
 const FIELD_LOOK =
   "rounded-sm border border-border-subtle bg-elevated px-3 text-body text-primary transition-colors focus-within:border-border-strong";
 const FIELD = `h-11 ${FIELD_LOOK}`;

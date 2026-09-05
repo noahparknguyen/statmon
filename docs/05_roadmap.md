@@ -6,7 +6,49 @@ _The phased build plan / task checklist: what to implement, in order. Sequenced 
 
 ---
 
-## Current status (2026-09-04 — Sessions 12–13, the grid made readable)
+## Current status (2026-09-04 — Session 15, the consistency & accessibility sweep)
+
+**Done — the site is one system again, and its claims are measured.** A full pass
+over consistency, accessibility, responsiveness and the writing.
+
+- **Consistency.** Six page rhythms became two (`pageChrome.jsx`) behind one
+  `PageHeader`; `/compare` gained the controls panel the other two tools had; the
+  dex's filter chip and the type picker became one `FilterChip`; the two STAB
+  pills became one `StabChip`; the dex's real and preview header rows now share
+  their geometry. ([D-058](03_decisions.md#d-058))
+- **A real AA failure**, found only because merging the two STAB pills put their
+  colour pairing in front of `audit:contrast`: the resisted/immune multiplier was
+  below AA on **17 of 18 types** and had shipped that way on both surfaces since
+  the chip was written. Fixed, and added as group 7 of the audit.
+  ([D-058](03_decisions.md#d-058))
+- **Three accessibility defects**: the type grid could not be scrolled from a
+  keyboard, the nav links had a ~17px hit box, and the dex's controls force-zoomed
+  iOS. Plus three `title` tooltips removed, duplicate alt text, and a live region
+  for search results. Five regression tests. ([D-065](03_decisions.md#d-065))
+- **The comparison board no longer repeats itself on a phone** — one stats
+  surface instead of three, verdict first: 2,727px → 2,343px, and the answer moves
+  from ~1,550px down the page to ~450px. ([D-057](03_decisions.md#d-057))
+- **`npm run sweep:widths`** replaces the manual browser pass: 11 routes × 14
+  widths, asserting no horizontal overflow, plus WCAG 2.5.8 target sizes. It
+  proved `FormChips` **passes** 2.5.8 (27.1px against 24px needed) — a "likely
+  failure" this repo had asserted without measuring for three sessions — and it
+  caught the `xs` breakpoint being wrong. ([D-059](03_decisions.md#d-059),
+  [D-062](03_decisions.md#d-062))
+- **Routes are code-split** and **the fonts are self-hosted**, so the site now
+  genuinely makes zero third-party requests. Home: 140.3 → 128.7 kB gzipped.
+  ([D-060](03_decisions.md#d-060), [D-061](03_decisions.md#d-061))
+- **The writing caught up with the product.** Title, description, OG/Twitter,
+  `package.json` and the manifest all named a stat-comparison site with a dex
+  bolted on; the type chart appeared in none of them. Plus `robots.txt`,
+  `sitemap.xml`, and screenshots that are now **generated** rather than taken by
+  hand — `docs/preview.png` was still the launch image, from before two of the
+  three tools existed. ([D-063](03_decisions.md#d-063),
+  [D-064](03_decisions.md#d-064))
+- **CI**: GitHub Actions runs every check on push and PR.
+
+Vitest is at **213 tests**.
+
+## Session 12–13 (the grid made readable)
 
 **Done — the type chart reads at a glance.** The grid's four cell states had measured 1.00–1.42 apart as fills, so it had to be read rather than scanned; the scale is now one loud state for 2× and three quiet ones, every cell is filled, both axes are colour-coded and square off into the grid, and hovering lights a cell's row and column ([D-052](03_decisions.md#d-052), [D-053](03_decisions.md#d-053)). Marking a selected column is done at its edges rather than with a wash, because a wash strong enough to see puts the multiplier under AA. Fixing it also uncovered a page-level horizontal scroll the grid had leaked since it shipped, which only `contain: paint` stops — the browser sweep now runs **ten widths** instead of three, because 390 / 768 / 1280 were all clean while 600 and 700 were not. Vitest is at **206 tests**.
 
@@ -39,13 +81,13 @@ _The phased build plan / task checklist: what to implement, in order. Sequenced 
 
 **Launch-pass leftovers:** all done — personal-credit line + `LICENSE` ([D-029](03_decisions.md#d-029)), the OG image (`public/og-image.png`), and the production deploy ([D-030](03_decisions.md#d-030)). _(The 1280×640 GitHub social frame is already exported to `docs/preview.png`; it still needs uploading by hand at repo Settings → Social preview, which is a GitHub-side setting and not something the repo can carry.)_
 
-**npm scripts:** `dev` · `build` · `test` / `test:run` · `build:data` · `vendor:images` (after `build:data`) · `audit:contrast` · `check:docs` · `lint` · `format` · `format:check` · `preview` · `deploy` (`build` + `wrangler deploy`).
+**npm scripts:** `dev` · `build` · `test` / `test:run` · `build:data` · `vendor:images` (after `build:data`) · `vendor:fonts` · `audit:contrast` · `check:docs` · `sweep:widths` · `shoot:docs` · `lint` · `format` · `format:check` · `preview` · `deploy` (`build` + `wrangler deploy`).
 
-**The six checks that must stay green:** `npm run lint && npm run format:check && npm run test:run && npm run build && npm run audit:contrast && npm run check:docs`.
+**The seven checks that must stay green:** `npm run lint && npm run format:check && npm run test:run && npm run build && npm run audit:contrast && npm run check:docs && npm run sweep:widths`. All seven run in CI on every push and PR (`.github/workflows/ci.yml`); the sweep needs `build` first and a Chrome binary (`CHROME_PATH` to override).
 
 **Reading a past generation (D-045, D-049):** all of the resolution logic is pure functions in `src/lib/eras.js` — `eraView(pokemon, gen)` returns `{ gen, keys, stats, bst, types }`, `generationOptions([p1, p2])` returns the generations both existed in (each flagged for whether it differs from today), and `dexGenerations()` is the dex's plainer equivalent. The dex layers `statKeysFor` / `sortKeysFor` / `typesFor` / `generationsFor` / `setAsOf` on top in `lib/dexTable.js`, so the columns, the sort keys and the filter chips all narrow together. The lens is `?asof=` on both tools; the dex's `?gen=` is the unrelated origin filter. Home and `/style` stay current-generation. `STAT_ORDER` is still exactly the modern six; Gen 1's `special` lives outside it because the stored stat array's order depends on it. The dex, Home and `/style` are all deliberately current-generation.
 
-**Notes:** `StatBar.jsx` is used only by the `/style` playground. It was kept "for the future stats table", but the dex table did **not** use it — a table cell is not a label·bar·value row ([D-039](03_decisions.md#d-039)) — so it is now genuinely only a playground specimen and is a candidate for deletion if nothing claims it. The dataset ships in the compact form defined by `src/lib/pokemonCodec.js` and is decoded at import ([D-036](03_decisions.md#d-036)) — read/write it through the codec, never as raw JSON. Shared primitives as of [D-032](03_decisions.md#d-032): `CmpRow` (desktop mirrored row + diff cell) and `CmpStatCard` (mobile per-stat card) are used by **both** `ComparisonCard` and Home's `FeaturedComparison`; `SpeedBanner` and `Button` are shared across the site. The dex adds `DexRow` (used by both the table and Home's preview) with its geometry in `components/dexColumns.jsx`, and `FeaturePreview` — the shell every Home preview is built from ([D-043](03_decisions.md#d-043)). Shared _styling_ constants live in their own `.jsx` modules for the reasons in [D-048](03_decisions.md#d-048): `components/dexColumns.jsx` (table geometry) and `components/chipStyles.jsx` (the one colour pair behind all three chip families). New tools should build on these rather than re-rolling them.
+**Notes:** `StatBar.jsx` is **deleted**. It was kept "for the future stats table", but the dex table did not use it — a table cell is not a label·bar·value row ([D-039](03_decisions.md#d-039)) — leaving it a playground specimen with no claimant, which is what this note flagged. Its `/style` section went with it. The dataset ships in the compact form defined by `src/lib/pokemonCodec.js` and is decoded at import ([D-036](03_decisions.md#d-036)) — read/write it through the codec, never as raw JSON. Shared primitives as of [D-032](03_decisions.md#d-032): `CmpRow` (desktop mirrored row + diff cell) and `CmpStatCard` (mobile per-stat card) are used by **both** `ComparisonCard` and Home's `FeaturedComparison`; `SpeedBanner` and `Button` are shared across the site. The dex adds `DexRow` (used by both the table and Home's preview) with its geometry in `components/dexColumns.jsx`, and `FeaturePreview` — the shell every Home preview is built from ([D-043](03_decisions.md#d-043)). Shared _styling_ constants live in their own `.jsx` modules for the reasons in [D-048](03_decisions.md#d-048): `components/dexColumns.jsx` (table geometry) and `components/chipStyles.jsx` (the one colour pair behind all three chip families). New tools should build on these rather than re-rolling them.
 
 ---
 
@@ -152,7 +194,7 @@ _Goal: a complete, showcase-ready site. This is where the **Cloudflare Workers/W
 
 _Goal: sharpen the core and add the low-cost, high-value extras._
 
-- [ ] **`FormChips` touch targets** — 21px tall with 6px gaps, the one likely WCAG 2.5.8 (AA) spacing failure on the site. Needs `PokemonCard`'s fixed 40px chip band reworked first, since eight forms (Minior) already wrap to two rows inside it. ([D-042](03_decisions.md#d-042), [04_design §9](04_design.md))
+- [x] ~~**`FormChips` touch targets** — the one likely WCAG 2.5.8 (AA) spacing failure on the site.~~ **Closed as not-a-failure.** Measured rather than assumed, the chips pass via 2.5.8's spacing exception: 45–59 × 21px with a tightest neighbouring centre of **27.1px** against the 24px required, including Minior's eight-form wrapped worst case. It was a guess that had propagated into two documents and this checklist. `npm run sweep:widths` measures it every run, since the margin is only 3px. ([D-059](03_decisions.md#d-059), [D-042](03_decisions.md#d-042))
 - [ ] Attacker-identity read (physical vs. special).
 - [ ] Biggest-gap highlight.
 - [x] **Type-effectiveness** between the two Pokémon — **shipped early** in Phase 3 as the attacker-STAB matchup on the comparison card, on the hardcoded `src/lib/typeChart.js` matrix ([D-018](03_decisions.md#d-018)).
@@ -161,7 +203,7 @@ _Goal: sharpen the core and add the low-cost, high-value extras._
 - [ ] Copy-link button, **random matchup**, full keyboard flow.
 - [ ] Search **filters** (type / generation), recently-compared list.
 - [ ] **About** page; **light-mode** toggle.
-- [~] Tooling — **ESLint + Prettier are both in** (flat ESLint config + `npm run lint`; Prettier as a devDependency with `npm run format` / `format:check`, whole tree passing on stock config). **Vitest is in** ([D-038](03_decisions.md#d-038)): 94 tests across six files — the stat math, the type-matchup engine, dataset queries, the codec (including the whole-dataset round-trip), the dex sort/filter/URL logic, and a `react-dom/server` smoke test of every route — node environment, no jsdom. **Playwright** and **GitHub Actions → Cloudflare** CI/CD are still outstanding — CI is the natural home for `lint` + `format:check` + `test:run` + `check:docs` + `audit:contrast`.
+- [~] Tooling — **ESLint + Prettier are both in** (flat ESLint config + `npm run lint`; Prettier as a devDependency with `npm run format` / `format:check`, whole tree passing on stock config). **Vitest is in** ([D-038](03_decisions.md#d-038)): 94 tests across six files — the stat math, the type-matchup engine, dataset queries, the codec (including the whole-dataset round-trip), the dex sort/filter/URL logic, and a `react-dom/server` smoke test of every route — node environment, no jsdom. **GitHub Actions CI is in** (`.github/workflows/ci.yml`): every check runs on push and PR, cheapest-first, ending with the browser sweep. **Playwright** and auto-deploy to Cloudflare are still outstanding — though `scripts/sweep-widths.mjs` now covers, headlessly and without a framework, the specific thing Playwright was wanted for: real layout measurement across widths.
 
 **Exit:** the comparison tool feels finished and the repo has real engineering rigor.
 

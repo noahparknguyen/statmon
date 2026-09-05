@@ -119,6 +119,7 @@ export default function TypeGrid({ asof = null, highlight = [] }) {
     // Focusable + named makes it a region a keyboard user can tab to and then
     // pan with the arrow keys; the global :focus-visible ring shows where they
     // are. The grid has no focusable children, so nothing is shadowed by this.
+    // (D-065)
     <div
       tabIndex={0}
       role="region"

@@ -6,7 +6,7 @@ _The tangible plan parsed out of [00_brainstorm](00_brainstorm.md): what's actua
 
 ## 1. Product Definition
 
-**Statmon** is a minimalist, dark-mode set of Pokémon stat tools. The flagship is a head-to-head comparison of **two** Pokémon, deliberately narrow: fast search, two slots, three columns (Pokémon 1 · Pokémon 2 · difference), color-coded bars. The modular foundation was always meant to carry more tools without a rewrite, and the **full-dex stats table** (§2.3) is the first proof that it does.
+**Statmon** is a minimalist, dark-mode set of Pokémon tools — three of them as of this writing: a head-to-head **stat comparison**, a sortable **full-dex table**, and a **type chart** that answers dual types on one page. The flagship is the comparison, deliberately narrow: fast search, two slots, three columns (Pokémon 1 · Pokémon 2 · difference), color-coded bars. The modular foundation was always meant to carry more tools without a rewrite, and the other two (§2.3) are the proof that it does. Every one of them can be read **as of any generation**.
 
 **Primary goal:** answer "which of these two is faster / hits harder / is bulkier?" in seconds, and look good doing it.
 
@@ -59,6 +59,17 @@ The MVP is done when a user can land on the site, search two Pokémon, and read 
 
 ### 2.3 Shipped since launch
 
+- **A consistency, accessibility and responsive sweep** — the pages were built in
+  different sessions and had drifted into six page rhythms, two components that
+  were each really one, and a comparison board that rendered the same six stats
+  three times on a phone. All consolidated, with the deviations that survive
+  stated rather than left looking accidental. It also turned up a **WCAG AA
+  contrast failure** shipping on two surfaces, a scroll region no keyboard could
+  reach, nav links with a 17px hit box, and an `xs` breakpoint that broke the
+  header on every width from 360 to 383. Claims that used to be asserted are now
+  measured: `npm run sweep:widths` checks horizontal overflow and target size
+  across 11 routes × 14 widths. See [D-057](03_decisions.md#d-057) through
+  [D-065](03_decisions.md#d-065).
 - **Home feature previews** — every tool gets a live preview on Home, built from its own components against real data ([D-043](03_decisions.md#d-043)).
 - **Type chart** (`/types`) — the third tool: the full effectiveness matrix plus a **dual-type readout**, so one page answers "what beats Water/Flying" instead of a page per pairing. Generation-aware like the rest ([D-051](03_decisions.md#d-051)).
 - **Generation-accurate comparisons** — one control on `/compare` re-reads the whole board as of an earlier generation: Gen 1's five stats with a single **Special**, historical base stats and typings, and that generation's own type chart. The strip offers every generation the two Pokémon both existed in — which is also what keeps a five-stat Gen 1 board from ever facing a six-stat modern one. See [D-045](03_decisions.md#d-045), [D-046](03_decisions.md#d-046) and [D-047](03_decisions.md#d-047).

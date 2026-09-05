@@ -122,6 +122,8 @@ The intent: **Space Grotesk** carries display/heading weight; **Inter** carries 
 
 A **three-card board**: two Pokémon cards flanking a center comparison card. All three share one **8pt vertical spec** (top zone 272 + stats 240 + footer 56 = **568px**) so they're equal height with **row-aligned stats**. **P1 is the attacker, P2 the defender**; a **Swap** button flips them. ([D-017](03_decisions.md#d-017), [D-018](03_decisions.md#d-018), [D-019](03_decisions.md#d-019))
 
+**Below `md` a card is 360px and carries no stats** — head 56 + body 224 + chips 40 + footer 56 ([D-057](03_decisions.md#d-057)). The equal-height invariant is a ≥`md` concern: below it the three cards are stacked, not side by side.
+
 **A Generation 1 board is 532px.** Gen 1 had five stats, not six — one **Special** in place of Sp. Atk and Sp. Def — so the stats band is 204 instead of 240 ([D-045](03_decisions.md#d-045)). All three cards switch generation together, so they stay equal height and the rows stay aligned at either total; the empty card takes the board's stat list rather than assuming six.
 
 **Control row** — above the board, one line: the **generation strip** (§6) takes the width it needs on the left and **Swap** sits opposite it on the right, rather than two stacked centred rows leaving the middle of a 1,120px page empty. Below `sm` they stack. ([D-046](03_decisions.md#d-046))
@@ -139,11 +141,13 @@ A **three-card board**: two Pokémon cards flanking a center comparison card. Al
 - **Stats** — **mirrored bars** (P1 grows leftward from center, P2 rightward) with a **centered cell**: small **stat label** on top, the **signed difference** below, and a **caret** to the winner's side.
 - **Footer** — a **full-width flame speed banner** ("X moves first").
 
-### Responsive (D-010)
+### Responsive (D-010, [D-057](03_decisions.md#d-057))
 
 - **≥ 1024px (lg):** three equal columns (card · comparison · card).
 - **768–1023px (md):** the two Pokémon cards side-by-side with the comparison card spanning **below**.
-- **< 768px:** single column, stacked.
+- **< 768px:** single column — **comparison card first**, then the two Pokémon cards, which drop their stat bars.
+
+That last line is the correction. D-010 answered "the mirrored row does not fit below 768px" and was never revisited as the board grew: stacked, you scrolled past two 568px cards each carrying its own six bars, then met the same six stats a third time as per-stat cards, with the verdict last on a 2,727px page. Below `md` there is now **one** stats surface and it leads; the cards keep what only they have (identity, artwork, forms, total) and are **360px** tall. Measured at 390px the page is 2,343px, and the verdict moves from ~1,550px down it to ~450px. See [D-057](03_decisions.md#d-057).
 
 ---
 
@@ -189,7 +193,15 @@ Selected is `--color-accent` with `--color-accent-contrast` text, or — where t
 
 **Type badge** — pill, `rounded-full`, background = type color, text = near-black (`--color-base`) for all types (§3, [D-027](03_decisions.md#d-027)).
 
-**Cards / panels** — `--color-surface`, `--color-border-subtle`, `--radius-lg`, generous padding (`p-6`).
+**Cards / panels** — `--color-surface`, `--color-border-subtle`, `--radius-lg`, `p-4`.
+
+> **Corrected.** This line specified `p-6` and nothing ever used it: all three control panels (`/compare`, `/dex`, `/types`) ship `p-4`, and at 390px `p-6` leaves the chips inside them noticeably cramped for width. The doc now states the value in the code ([D-058](03_decisions.md#d-058)).
+
+**Page shell** ([D-058](03_decisions.md#d-058)) — every page opens with `PageHeader`: the name in the `Word.` motif with the accent dot, and a one-line description in `text-body-sm text-secondary`, centred, `mb-8`. `as` selects the heading level, so a Home feature section renders the same block as an `<h2>` one rung down the outline. Containers come from `pageChrome.jsx` — `PAGE_TOOL` (`py-8`) for the three working surfaces, `PAGE_CONTENT` (`py-16`) for Credits and the 404. Home's hero and the 404's numeral are exempt by design, as one-off treatments at a different size.
+
+**Filter chip** ([D-058](03_decisions.md#d-058)) — one `FilterChip` serves the dex's type/generation filters **and** the type chart's picker; they had been two components with byte-identical geometry. Colour and shape come from `chipStyles.jsx`, the shared geometry (`min-h-9`, `px-3 py-1.5`, `gap-1.5`) with them. The type chart's two-type cap is the one behavioural prop: capped chips take `aria-disabled` and 40% opacity rather than the real `disabled` attribute, so a keyboard user is told they are unavailable instead of skipping them silently.
+
+**STAB chip** ([D-058](03_decisions.md#d-058)) — one `StabChip` for the comparison card and Home's board, which had drifted to different fills and borders. The fill (14% of the attacking type over `elevated`), the tier icon and the border strength are the encoding and are identical on both; `dense` changes geometry only. **2× is the only tier with a colour of its own** — the resisted and immune tiers moved from `text-tertiary` to `text-secondary` because tertiary failed AA on 17 of 18 type fills, audited as group 7 of `npm run audit:contrast`.
 
 ---
 
@@ -215,11 +227,23 @@ Dark is canonical and the only mode at MVP. Light mode is a **[V2]** deliverable
 - **Not color alone:** type identity is always paired with the type name/badge text; advantage is conveyed by number, sign, and caret (§2); the generation strip's "differs from today" dot is paired with screen-reader text on the same control (§6).
 - **Focus:** every interactive element has a visible 2px `--color-accent` focus ring with offset.
 - **Motion:** reduced-motion fully honored (§7).
-- **Targets:** the binding standard is **WCAG 2.5.8 (AA) — 24×24 CSS px**, or smaller where spacing keeps a 24px circle centred on one target clear of the next. Primary CTAs use `Button` `md` (44px); compact controls — `Button` `sm`, the dex filter chips, the generation strip — are **36px**.
+- **Targets:** the binding standard is **WCAG 2.5.8 (AA) — 24×24 CSS px**, or smaller where spacing keeps a 24px circle centred on one target clear of the next. Primary CTAs use `Button` `md` (44px); compact controls — `Button` `sm`, the dex filter chips, the generation strip — are **36px**. Nav links fill the header's 56px height.
 
-  > **Correction ([D-042](03_decisions.md#d-042)).** This line previously read "interactive hit areas ≥ 44×44px on touch". That was never true **anywhere** on the site — nav links are 14px, Swap is 36px, form chips 21px, and the dex chips shipped at 25px. 44×44 is WCAG **2.5.5**, a **AAA** criterion; Statmon targets AA ([D-027](03_decisions.md#d-027)). The rule now states the standard actually being met, so it can be checked instead of admired.
+  > **Correction ([D-042](03_decisions.md#d-042)).** This line previously read "interactive hit areas ≥ 44×44px on touch". That was never true **anywhere** on the site — Swap is 36px, form chips 21px, and the dex chips shipped at 25px. 44×44 is WCAG **2.5.5**, a **AAA** criterion; Statmon targets AA ([D-027](03_decisions.md#d-027)). The rule now states the standard actually being met, so it can be checked instead of admired.
 
-- **Known exception:** `FormChips` in the comparison card are 21px tall with 6px gaps — the one place on the site likely to fail 2.5.8's spacing test. Raising them needs the card's fixed 40px chip band reworked first: at eight forms (Minior) they already wrap to two rows and overflow it. Tracked in [05_roadmap Phase 5](05_roadmap.md) rather than patched blind. ([D-042](03_decisions.md#d-042))
+  > **And it is checked.** `npm run sweep:widths` measures every interactive element at 320px and fails on any that is under 24×24 _and_ within 24px of its neighbour's centre ([D-059](03_decisions.md#d-059)). A criterion the docs assert is a criterion nobody verifies.
+
+- **The nav links were the outstanding failure, and are fixed.** The D-042 correction above wrote down "nav links are 14px" and left it there: bare text with no padding gave them a ~17px hit box inside a 56px bar. They now fill the header's height, which changes nothing visually since only their colour reacts to hover. ([D-065](03_decisions.md#d-065))
+
+- **`FormChips` are not an exception after all.** This doc carried them for three sessions as "the one place on the site likely to fail 2.5.8's spacing test". Measured, they pass: 45–59 × 21px, and in Minior's eight-form wrapped worst case the tightest neighbouring centre is **27.1px** against the 24px the spacing exception requires. It was a guess, not a measurement, and it propagated into a roadmap item. The margin is only 3px, so the sweep keeps measuring it. ([D-059](03_decisions.md#d-059))
+
+- **Scrollable regions are keyboard-reachable.** The type chart's panel is the site's one sideways-scrolling surface ([D-052](03_decisions.md#d-052)); it is a focusable, named `role="region"`, because a scroll container that cannot take focus cannot be scrolled without a pointer — at 390px that stranded ten of the eighteen columns. ([D-065](03_decisions.md#d-065))
+
+- **No `title` tooltips.** `title` is unreachable by keyboard, invisible on touch and inconsistently exposed by screen readers, so explanations are visible or `sr-only` text instead. ([D-065](03_decisions.md#d-065))
+
+- **Form controls are 16px.** Below that, iOS Safari zooms the page on focus and does not zoom back. ([D-065](03_decisions.md#d-065))
+
+- **Safe areas.** `viewport-fit=cover` with `env(safe-area-inset-*)` on the body and the footer, so a notched phone held sideways does not run the header, nav and gutter under the notch.
 - **Semantics:** stat rows use proper labels/structure so a screen reader announces "Speed, Pokémon 1 100, Pokémon 2 55, difference 45 in favor of Pokémon 1."
 
 ---

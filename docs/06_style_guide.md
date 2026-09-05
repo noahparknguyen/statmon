@@ -266,21 +266,27 @@ is not inline emphasis and needs a named style.
 | `--shadow-overlay` | `0 8px 24px rgba(0,0,0,0.5)` |
 | `--shadow-art`     | `0 8px 22px rgba(0,0,0,0.5)` |
 
+Panels and cards use `p-4`, not the `p-6` [04_design §6](04_design.md) used to specify — nothing ever shipped `p-6`, and at 390px it leaves the chips inside a control panel cramped for width ([D-058](03_decisions.md#d-058)).
+
 `--shadow-overlay` is for floating layers (the search dropdown). `--shadow-art` is the lift under official artwork, applied via the `.drop-shadow-art` utility — it is a `filter: drop-shadow()`, not a `box-shadow`, so it follows the artwork's transparent silhouette rather than its bounding box. (No `--shadow-none` token — omit the shadow instead.)
 
 ---
 
 ## 8. Breakpoints & Layout
 
-| Token             | Min-width | Note                                                                                      |
-| ----------------- | --------- | ----------------------------------------------------------------------------------------- |
-| `--breakpoint-xs` | 360px     | **the wordmark drops to the bare flame mark below this** ([D-054](03_decisions.md#d-054)) |
-| `--breakpoint-sm` | 480px     | large phone                                                                               |
-| `--breakpoint-md` | 768px     | **comparison collapses to per-stat cards below this** ([D-010](03_decisions.md#d-010))    |
-| `--breakpoint-lg` | 1024px    | tablet / small laptop                                                                     |
-| `--breakpoint-xl` | 1280px    | desktop                                                                                   |
+| Token             | Min-width | Note                                                                                                                                                                                          |
+| ----------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--breakpoint-xs` | 384px     | **the wordmark drops to the bare flame mark below this** ([D-054](03_decisions.md#d-054), corrected by [D-062](03_decisions.md#d-062))                                                        |
+| `--breakpoint-sm` | 480px     | large phone                                                                                                                                                                                   |
+| `--breakpoint-md` | 768px     | **the comparison board collapses below this** — per-stat cards, the Pokémon cards drop their bars, the comparison card leads ([D-010](03_decisions.md#d-010), [D-057](03_decisions.md#d-057)) |
+| `--breakpoint-lg` | 1024px    | tablet / small laptop                                                                                                                                                                         |
+| `--breakpoint-xl` | 1280px    | desktop                                                                                                                                                                                       |
 
-Content max-width `--container-content: 1120px` (utility: `max-w-content`), centered. **Gutters are a uniform `px-4` (16px) at every width as built** — the responsive 24px desktop gutter originally specified here was never implemented; see [04_design §5](04_design.md).
+Content max-width `--container-content: 1120px` (utility: `max-w-content`), centered. **Gutters are a uniform `px-4` (16px) at every width as built** — the responsive 24px desktop gutter originally specified here was never implemented; see [04_design §5](04_design.md). `/style` was the one page breaking that rule with its own `px-6`, in the one file whose stated job is not to have drift; it now renders through the shared shell ([D-058](03_decisions.md#d-058)).
+
+**`xs` was wrong for three sessions.** [D-054](03_decisions.md#d-054) set it to 360 after finding the header broken at 320 and never measured 360 itself; the header needs 385px, so every width from 360 to 383 turned the wordmark on into a header that scrolled the whole site sideways. No round device width lands in that range, which is why nobody hit it. `xs` is 384 and the nav's sub-`sm` gap tightened to `gap-2` to keep the wordmark on a 390px phone. `npm run sweep:widths` brackets the boundary at 360 / 375 / 383 / 384. ([D-062](03_decisions.md#d-062))
+
+**Page containers.** Two rhythms, from `components/pageChrome.jsx`: `PAGE_TOOL` (`py-8`) for `/compare`, `/dex` and `/types`, where the controls are the reason you came; `PAGE_CONTENT` (`py-16`) for `/credits`, the 404 and `/style`. Home sets its own. Before this there were six, none of them a decision ([D-058](03_decisions.md#d-058)).
 
 ---
 
@@ -344,7 +350,11 @@ Vector icons via **`react-icons`** — primarily the Lucide set (`react-icons/lu
 5. **Accent is chrome-only.** The purple accent is for brand/actions/focus — never a stat/type color (§2, [04_design §2](04_design.md)).
 6. **Never color alone.** Meaning always pairs color with text/number/icon (accessibility).
 7. **Spacing from the scale.** All spacing uses §6 tokens; no arbitrary margins.
-8. **Shared look lives in one module.** When two components should look alike, the class strings go in a shared constants module and the components add only what genuinely differs. `Button` is the component form of this; `components/chipStyles.jsx` is the constants form — one colour pair behind the three chip geometries ([04_design §6](04_design.md)), after the same four strings had been hand-copied into a third component. Note the constraint: such a module **must be `.jsx`** — Tailwind only scans `.jsx` (§13), so class strings in `lib/` are invisible to it, and `react-refresh` requires a component file to export only components. `components/dexColumns.jsx` is the other one.
+8. **Shared look lives in one module.** When two components should look alike, the class strings go in a shared constants module and the components add only what genuinely differs. `Button` is the component form of this; `components/chipStyles.jsx` is the constants form — one colour pair behind the three chip geometries ([04_design §6](04_design.md)), after the same four strings had been hand-copied into a third component. Note the constraint: such a module **must be `.jsx`** — Tailwind only scans `.jsx` (§13), so class strings in `lib/` are invisible to it, and `react-refresh` requires a component file to export only components. `components/dexColumns.jsx` and `components/pageChrome.jsx` are the others.
+
+   **Go all the way up.** Extracting the _colours_ two components share and leaving their _markup_ duplicated is where this rule gets applied halfway, and it happened twice: the dex's filter chip and the type picker were the same component after `chipStyles` unified their palette, and the two STAB pills stayed two components with different fill percentages. Both are now single components (`FilterChip`, `StabChip`), and merging the second is what finally put its colour pairing in front of `audit:contrast` — where it failed AA on 17 of 18 types ([D-058](03_decisions.md#d-058)). Duplication does not just drift; it hides.
+
+9. **A consistency claim that is not checked is decoration.** Every rule this document states that _can_ be measured, is: `audit:contrast` for colour, `check:docs` for links and anchors, `sweep:widths` for horizontal overflow and WCAG 2.5.8 target size, `/style`'s own stylesheet walk for missing text styles. Two claims survived for three sessions purely because nobody measured them — `FormChips` "likely fails" 2.5.8 (it passes, [D-059](03_decisions.md#d-059)) and `xs: 360` fits the header (it does not, [D-062](03_decisions.md#d-062)).
 
 ---
 
@@ -355,6 +365,10 @@ The route at `/style` is the executable half of this document: it renders the
 Swatches read their values out of the live stylesheet, badges are `TypeBadge`,
 the sample board is the actual `FeaturedComparison`, and all three chip
 geometries sit side by side so a divergence is visible rather than theoretical.
+It also renders through the shared page shell now, rather than its own gutter
+and title size ([D-058](03_decisions.md#d-058)) — the page that demonstrates the
+system should not be the page opting out of it. Its `StatBar` specimen is gone
+with the component: nothing outside this page ever used it.
 
 It also **checks itself**. `readMissingTextStyles` walks the stylesheet for every
 `.text-*` rule that bundles a font-family — i.e. a §5 named style rather than a

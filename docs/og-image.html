@@ -3,12 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <title>Statmon — social image generator</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
+    <!-- The vendored faces, not Google's (D-061), so this generator renders the
+         same letterforms the site ships and works with no network. -->
+    <style>
+      @font-face {
+        font-family: "Space Grotesk";
+        font-weight: 700;
+        font-display: block;
+        src: url("../public/fonts/space-grotesk-700-latin.woff2")
+          format("woff2");
+      }
+      @font-face {
+        font-family: "Space Grotesk";
+        font-weight: 500;
+        font-display: block;
+        src: url("../public/fonts/space-grotesk-500-latin.woff2")
+          format("woff2");
+      }
+      @font-face {
+        font-family: "Inter";
+        font-weight: 400;
+        font-display: block;
+        src: url("../public/fonts/inter-400-latin.woff2") format("woff2");
+      }
+    </style>
     <style>
       :root {
         --base: #0b0c0f;
@@ -144,5 +162,22 @@
         </div>
       </div>
     </div>
+    <script>
+      // `?only=og` or `?only=gh` strips everything except that one frame and
+      // removes the body's padding, so a headless window sized to the frame
+      // captures it exactly. scripts/shoot-docs.mjs uses this; without it the
+      // only way to get these images was a manual "Capture node screenshot",
+      // which is why they went stale (D-064).
+      const only = new URLSearchParams(location.search).get("only");
+      if (only) {
+        document.body.style.padding = "0";
+        document.body.style.gap = "0";
+        document.body.style.background = "#0b0c0f";
+        for (const el of document.querySelectorAll(".note, .cap")) el.remove();
+        for (const sec of document.querySelectorAll("section")) {
+          if (!sec.querySelector(`.frame.${only}`)) sec.remove();
+        }
+      }
+    </script>
   </body>
 </html>

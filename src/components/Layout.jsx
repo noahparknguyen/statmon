@@ -24,6 +24,7 @@ const SITE_TITLE = "Statmon — Pokémon stat tools";
 // noted "nav links are 14px" and left it at that. Filling the bar vertically
 // puts every nav item far past WCAG 2.5.8's 24px floor and costs nothing
 // visually — only text colour changes on hover, so there is no box to see.
+// (D-065)
 function navClass({ isActive }) {
   return [
     "inline-flex h-14 items-center text-button transition-colors hover:text-primary",

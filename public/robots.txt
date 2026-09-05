@@ -1,0 +1,11 @@
+# Statmon — https://statmon.noahparknguyen.workers.dev/
+#
+# Everything is public and worth indexing except /style, which is the design
+# system playground: it renders every token and component on one page, so it
+# would rank for the site's own vocabulary while telling a visitor nothing.
+
+User-agent: *
+Allow: /
+Disallow: /style
+
+Sitemap: https://statmon.noahparknguyen.workers.dev/sitemap.xml

@@ -4,6 +4,324 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ---
 
+## 2026-09-04 — Session 15 (the consistency, accessibility & responsive sweep)
+
+<a id="d-065"></a>
+
+### D-065 · Three accessibility defects the docs had not caught — **Firm**
+
+**Decision.** Fix them, and add a test for each, because none of the three throw
+and nothing in the suite would have noticed any of them regressing.
+
+**The type chart could not be scrolled from a keyboard.** `TypeGrid`'s panel is
+the one thing on the site that scrolls sideways ([D-052](#d-052)), and it was a
+plain `overflow-x-auto` container. A scroll container that cannot take focus
+cannot be scrolled without a pointer — at 390px eight of the eighteen columns
+are visible, so the other ten were unreachable. It is now a focusable
+`role="region"` with a name (WCAG 2.1.1), and the global focus ring shows where
+you are.
+
+**The nav links had no hit area.** Bare 14px text with no padding: a clickable
+box about 17px tall inside a 56px header. [04_design §9](04_design.md)'s own
+[D-042](#d-042) correction wrote down "nav links are 14px" and stopped there.
+They now fill the header's height, which is invisible — only the text colour
+changes on hover — and puts them far past WCAG 2.5.8's floor.
+
+**The dex's controls force-zoomed iOS.** The name filter and the sort select
+inherited `text-body-sm` (14px), and Safari zooms the page whenever a focused
+control is under 16px, and does not zoom back. `SearchBar` was already 16px, so
+the site also had its two search inputs at two different sizes. Both are now
+`text-body`. A responsive variant was not available: the named text styles are
+hand-written `@layer components` rules, so `md:text-body-sm` generates no CSS
+([06_style_guide §13](06_style_guide.md)).
+
+**Also, three `title=` tooltips are gone.** `title` is unreachable by keyboard,
+invisible on touch and inconsistently exposed by screen readers. The STAB
+expansion is `sr-only` text beside the label it explains, shared by both boards;
+the truncated name in the mobile stat card drops its tooltip entirely, since
+that card only renders below `md`, where the full name is on screen anyway.
+
+**And two smaller ones.** The Pokémon artwork sat directly beside an `<h2>` of
+the same name while also carrying it as `alt` text, so a screen reader said it
+twice — both are decorative now. And search results are announced politely, the
+way the dex already announced its count; typing used to narrow 1,259 entries to
+eight in silence.
+
+See also [D-058](#d-058), where consolidating two components exposed a contrast
+failure that had been shipping on two surfaces.
+
+<a id="d-064"></a>
+
+### D-064 · Screenshots are generated, not taken — **Firm**
+
+**Decision.** `npm run shoot:docs` (`scripts/shoot-docs.mjs`) renders every
+documentation image from the built site.
+
+**Why.** `docs/preview.png` — the repo's social preview — was still the launch
+image, captured **before the dex and the type chart existed**. `docs/home.png`
+predated the type chart's preview landing on Home. Both are the front door of
+the repo, and a screenshot showing two thirds of the product is worse than no
+screenshot, because it is confidently wrong.
+
+They went stale because taking them was manual. `docs/og-image.html` literally
+instructed a human to right-click a frame and choose _Capture node screenshot_.
+That file now accepts `?only=og` / `?only=gh`, which strips everything but one
+frame so a headless window sized to the frame captures it exactly — the same
+source of truth, scripted. It also reads the vendored faces ([D-061](#d-061))
+rather than Google's, so it renders the letterforms the site actually ships and
+works with no network.
+
+The README gained one image per tool for the same reason the copy changed
+([D-063](#d-063)): it describes three tools and used to show one.
+
+<a id="d-063"></a>
+
+### D-063 · The site says what it is — **Firm**
+
+**Decision.** The title, description, Open Graph and Twitter copy, the
+`package.json` description and the web manifest all name the three tools.
+
+**Why.** Every one of them still described a stat-comparison site with a dex
+bolted on: _"Compare two Pokémon's base stats side by side, or sort the whole dex
+by any stat."_ The type chart — a third of the product, and the only page of its
+kind that handles dual types without a page per pairing ([D-051](#d-051)) — did
+not appear in the site's own description, its social preview, or its package
+metadata. The `<title>` said "Pokémon stat tools", which stopped being true two
+tools ago.
+
+Per-route meta still awaits SSR ([D-005](#d-005)), which is exactly why the
+site-level copy has to describe the whole site rather than whichever tool
+happened to be flagship when it was written.
+
+The manifest also gained `id`, `scope`, `lang`, `dir` and `categories`. Its icons
+are declared `"purpose": "any"` rather than `"maskable"` — they are not designed
+for a maskable safe zone, and labelling them so would just get them cropped.
+
+`robots.txt` and `sitemap.xml` are new. Both exclude `/style`: the playground
+renders every token and component on one page, so it would rank for the site's
+own vocabulary while telling a visitor nothing. The sitemap lists the four real
+pages and deliberately does not enumerate deep links — those are shareable URLs
+generated from the dataset, effectively unbounded, not pages to index.
+
+<a id="d-062"></a>
+
+### D-062 · The `xs` breakpoint was wrong — **Firm** _(corrects [D-054](#d-054))_
+
+**Decision.** `--breakpoint-xs` moves from **360px to 384px**, and the nav's gap
+below `sm` tightens from `gap-3` to `gap-2`.
+
+**What was broken.** [D-054](#d-054) added `xs` so the wordmark drops to the bare
+flame mark on phones too narrow for it and the four nav items. It set the
+boundary to 360 after finding the header broken at **320**, and never measured
+360 itself. Measured, the header needs **385px**: 32 gutter + 121 brand + 8 gap
+
+- 214 nav. So every width from **360 to 383** switched the wordmark on into a
+  header that did not fit — clipping "Credits" and scrolling the entire site
+  sideways, which is the exact failure D-054 exists to prevent, at the boundary it
+  chose.
+
+It survived because no round device width lands in that range (320, 375, 390,
+430 are all outside it) and because the fallback font is narrower than Space
+Grotesk — so it only reproduced reliably once the fonts were served locally and
+started landing fast enough to be measured ([D-061](#d-061)).
+
+**Why both halves.** 385 alone would push `xs` past **390**, the most common
+phone width there is, and hiding the wordmark on an iPhone 14 to satisfy a
+boundary is the tail wagging the dog. Taking 4px off each of the three nav gaps
+brings the requirement to 373 — the same lever D-054 pulled the first time, and
+for the same stated reason: the labels all stay visible, the space between them
+gives. `xs` at 384 then clears it with room for platforms that render the
+wordmark slightly wider.
+
+`npm run sweep:widths` tests 360, 375, 383 and 384 so this cannot drift back.
+
+<a id="d-061"></a>
+
+### D-061 · The fonts are self-hosted — **Firm**
+
+**Decision.** Both families are vendored into `public/fonts/` by
+`npm run vendor:fonts`, which also generates the `@font-face` rules into
+`src/fonts.css`. `index.html` no longer talks to Google.
+
+**Why.** The rest of the site makes **zero** runtime requests — the dataset is
+bundled and every sprite is committed ([D-002](#d-002), [D-025](#d-025)) — and
+then `index.html` opened two `preconnect`s and a **render-blocking stylesheet**
+to a third party before first paint. One external dependency, on the critical
+path, standing in front of a page that otherwise has none: the browser cannot
+paint text until Google's CSS arrives and names the font files. Self-hosted, the
+rules ship in the stylesheet the page already downloads, the fetch starts a round
+trip earlier, and no third party sees the request.
+
+Same shape as `vendor:images` ([D-025](#d-025)): run on demand, commit the
+output, never fetch at runtime. Only **latin** and **latin-ext** are kept —
+Google serves ten subsets per weight, and the widest character this UI renders is
+the é in "Pokémon". Two faces are preloaded from `index.html`: body copy and
+headings, the ones that paint first.
+
+`src/fonts.css` is in `.prettierignore`, like `src/data/`. It is generated, and
+if Prettier reformatted it then `npm run format` and `npm run vendor:fonts` would
+each undo the other's output forever.
+
+<a id="d-060"></a>
+
+### D-060 · Every route but Home is code-split — **Firm**
+
+**Decision.** React Router's own `lazy` on every route except the index.
+
+**Why.** The site shipped as one 482 kB bundle, so someone who only opened the
+comparison tool still downloaded the dex table, the 18×18 grid, and the
+400-line `/style` playground — a page that exists for the person building the
+site, not the person using it.
+
+**Home stays eager**, deliberately. It is the common entry, and making it lazy
+only moves its download behind an extra round trip after the main chunk. It also
+anchors the shared chunk: Home previews both other tools with their own
+components ([D-043](#d-043)), so `DexRow`, `MatchupSummary` and the dataset are
+shared code either way.
+
+**The honest number is modest.** Measured with real resource timing, Home goes
+**140.3 kB → 128.7 kB gzipped**, about 8%. The shared React + router + dataset
+core is most of the weight and every route needs it. The clearer win is that no
+visitor downloads `/style` any more, and each tool now pulls only its own code.
+
+`lazy` is the router's mechanism rather than `React.lazy` + `Suspense`: in data
+mode the router awaits the module as part of the navigation, so there is no
+fallback to design and no flash of an empty shell.
+
+**One consequence worth naming.** `routes.test.jsx` builds its own route table
+with `element:`, because `createBrowserRouter` needs a browser history. That was
+a harmless duplication while `router.jsx` also used `element:`; with `lazy:` it
+meant a typo'd dynamic import could reach production with the suite green. The
+route table is now exported separately, `createRouter` is a factory — building
+the router at module scope touches `document`, which is what made the table
+unreadable from a node test — and a test resolves every lazy route to a real
+component.
+
+<a id="d-059"></a>
+
+### D-059 · The width sweep, and target size measured instead of assumed — **Firm**
+
+**Decision.** `npm run sweep:widths` (`scripts/sweep-widths.mjs`) loads all 11
+routes at 14 widths and asserts the document never scrolls sideways, and measures
+every interactive target against WCAG 2.5.8.
+
+**Why a script.** This check kept being done by hand and kept being done
+incompletely. The type grid leaked overflow into the document for as long as it
+had shipped, and three rounds of width testing missed it because 390 / 768 / 1280
+are all clean while 600 and 700 are not ([D-052](#d-052), [D-055](#d-055)). A bug
+you can only see at 600px is a bug you will not find by dragging a window.
+
+It serves `dist/` with the production SPA fallback and loads each route in an
+iframe sized to the width under test — an iframe establishes its own viewport, so
+media queries respond to it and one browser launch covers every width. It reports
+page height per route too, which is what made [D-057](#d-057) measurable.
+
+**Two things had to be right before it could be believed.** It models **overlay
+scrollbars**, or every route appears to overflow by exactly a scrollbar's width.
+And it waits for `document.fonts.ready` and then takes two readings a frame
+apart: an early version measured on a fixed timer and reported a phantom 385px
+overflow about one run in six, caught mid-font-swap. A flaky checker is worse
+than no checker, because you learn to ignore it.
+
+**What it found about `FormChips`.** [04_design §9](04_design.md) and
+[05_roadmap Phase 5](05_roadmap.md) both carried them as "the one likely WCAG
+2.5.8 spacing failure on the site" since [D-042](#d-042). Measured, **they pass.**
+The chips are 45–59 × 21px, and in Minior's eight-form wrapped worst case the
+tightest neighbouring centre is **27.1px** against the 24px the spacing exception
+requires. It was never a failure; it was an unverified guess that had been
+carried in two documents and a roadmap item for three sessions. The margin is
+only 3px, so the sweep keeps measuring it rather than the docs going back to
+asserting it.
+
+<a id="d-058"></a>
+
+### D-058 · One page shell, one filter chip, one STAB chip — **Firm**
+
+**Decision.** Three more shared modules, and the deviations that survive are
+stated rather than left looking like oversights.
+
+**The page shell.** Six routes had six vertical rhythms and two header
+treatments: Credits left-aligned with an 18px description against the three
+tools' centred 14px one, `/style` on its own `px-6` gutter against the uniform
+`px-4` [06_style_guide §8](06_style_guide.md) documents, and the accent dot
+hand-copied seven times. `PageHeader` renders that block for the tools, Credits,
+`/style` and Home's feature sections — `as` picks the heading level, so a Home
+section is the same block one rung down the outline without a second `<h1>`.
+`pageChrome.jsx` holds the two container rhythms that remain: `PAGE_TOOL` for
+working surfaces, `PAGE_CONTENT` for read-and-leave pages. Home's hero and the
+404's numeral stay exempt, as one-off treatments at a different size.
+
+`/compare` also gains the controls panel `/dex` and `/types` already had — it was
+the only tool leaving its controls bare on the page background, and it is the
+flagship. The lens sits **below** the divider there where the other two put it
+above, and that is the real relationship rather than drift: elsewhere the
+generation decides what the controls below may offer, here the selection decides
+what the strip may offer ([D-045](#d-045)).
+
+**`FilterChip`.** The dex's filters and the type picker were two components that
+were the same component: same `CHIP` base, a byte-identical geometry string, the
+same colour dot when off, the same type fill and trailing × when on.
+[D-048](#d-048) unified their colours and stopped one rung short. The type
+chart's two-type cap is the only prop that survived as behaviour.
+
+**`StabChip`, and a real AA failure.** `ComparisonCard`'s `EffChip` and
+`FeaturedComparison`'s `StabPill` drew the same data at 14% vs 16% fill and
+28–55% vs a flat 32% border — drift on exactly the two surfaces
+[D-032](#d-032) exists to keep aligned. Merging them put the pairing in front of
+`audit:contrast` for the first time, and it **failed**: the resisted and immune
+multiplier at `text-tertiary` measured **3.59–4.38** over the type fill, below AA
+on **17 of the 18 types**, and had been shipping that way on both surfaces since
+the chip was written. Neither copy looked like a text-on-fill pairing worth
+auditing, which is how it hid.
+
+Lightening the fill cannot rescue it — `tertiary` needs the fill near 5% to clear
+4.5, which is no tint at all — so the muting moves off the text. `secondary`
+clears every type at 5.17+, and the tier still reads from its icon and its border
+strength, which is the direction [04_design §9](04_design.md) points anyway: the
+multiplier should never have leaned on colour to say "resisted". Added as group 7
+of `npm run audit:contrast`.
+
+**The deviation that stays.** The type picker does **not** collapse behind a
+disclosure on a phone, where the dex's type chips do. They look like the same
+control at the same width, and only one folds away — which reads as drift until
+you ask what each is for. On `/dex` the chips are one optional filter among
+several with the payload below them, so hiding them lifts the answer up the
+screen. On `/types` the picker **is** the tool, and collapsing it puts a tap in
+front of the page's only interaction.
+
+The dex's real table and Home's preview of it also drew the same header row at
+two heights (`h-10` vs `py-2`) with two alignment mechanisms; both now read
+`HEAD_CELL` / `HEAD_INNER` / `HEAD_ALIGN` from `dexColumns.jsx`.
+
+<a id="d-057"></a>
+
+### D-057 · The comparison board stops repeating itself on a phone — **Firm** _(extends [D-010](#d-010))_
+
+**Decision.** Below `md`, the two Pokémon cards drop their six stat bars, and the
+comparison card is reordered **above** them.
+
+**What was wrong.** [D-010](#d-010) answered "the mirrored row does not fit below
+768px" and was never revisited as the board grew. Stacked in one column you
+scrolled past two 568px Pokémon cards — each carrying its own six stat bars —
+before reaching the comparison card, which then showed **the same six stats a
+third time** as per-stat cards, with the verdict last on a 2,727px page. The
+numbers were rendered three times on one screen, and the answer was furthest from
+the top.
+
+**Measured.** 2,727px → 2,343px. The height is a 14% cut, which is real but not
+the headline; the number that matters is where the verdict sits, which moves from
+roughly 1,550px down the page to roughly 450px.
+
+The cards keep what only they have — identity, artwork, forms, total — and their
+portrait grows into some of the freed space, because with the bars gone the
+artwork is what the card is for at that width. **A Gen 1 board is unaffected**:
+the stats band is hidden wholesale, so the five-vs-six question does not arise.
+The equal-height invariant ([04_design §5](04_design.md)) is a ≥`md` concern
+anyway — below it the three cards are stacked, not side by side, and nothing has
+to line up.
+
+---
+
 ## 2026-09-04 — Session 14 (pre-push review)
 
 <a id="d-056"></a>
