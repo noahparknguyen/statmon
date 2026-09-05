@@ -39,9 +39,11 @@ export default function PokemonCard({ pokemon, view, keys, onSelectForm }) {
 
   return (
     <div className="relative flex flex-col overflow-hidden bg-surface border border-border-subtle rounded-lg">
+      {/* Decorative: the <h2> below carries the same name, so alt text here
+          only makes a screen reader announce it twice. */}
       <img
         src={artworkFor(pokemon)}
-        alt={pokemon.name}
+        alt=""
         loading="lazy"
         className="pointer-events-none absolute inset-x-0 top-7 z-0 w-full aspect-square object-contain drop-shadow-art"
       />

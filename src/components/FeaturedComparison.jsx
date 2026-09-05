@@ -2,7 +2,7 @@ import TypeBadge from "./TypeBadge";
 import CmpStatCard from "./CmpStatCard";
 import CmpRow from "./CmpRow";
 import SpeedBanner from "./SpeedBanner";
-import StabChip from "./StabChip";
+import StabChip, { StabLabel } from "./StabChip";
 import { STAT_ORDER, STAT_LABEL } from "../lib/stats";
 import { spriteFor } from "../lib/pokemon";
 import { stabMatchup } from "../lib/typeChart";
@@ -102,9 +102,11 @@ function MonHead({ p, right = false }) {
       className={`flex items-center justify-center gap-3 min-w-0 md:justify-normal ${right ? "md:flex-row-reverse md:text-right" : ""}`}
     >
       <div className="w-14 h-14 shrink-0 rounded-md bg-elevated overflow-hidden flex items-center justify-center">
+        {/* Decorative: the name is the next thing in the DOM, so alt text here
+            just makes a screen reader say it twice. */}
         <img
           src={spriteFor(p)}
-          alt={p.name}
+          alt=""
           loading="lazy"
           className="w-full h-full object-contain [image-rendering:pixelated]"
         />
@@ -130,12 +132,7 @@ function MonHead({ p, right = false }) {
 function StabCenter({ attacker, defender }) {
   return (
     <div className="flex flex-col items-center gap-1.5">
-      <span
-        className="text-overline text-tertiary"
-        title="Same Type Attack Bonus — damage from moves matching the attacker's own type"
-      >
-        STAB
-      </span>
+      <StabLabel>STAB</StabLabel>
       <div className="flex flex-col gap-1">
         {stabMatchup(attacker, defender).map(({ type, mult }) => (
           <StabChip key={type} type={type} mult={mult} dense />

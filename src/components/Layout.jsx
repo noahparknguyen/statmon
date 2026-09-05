@@ -18,9 +18,15 @@ const REPO_URL = "https://github.com/noahparknguyen/statmon";
 // and get "<name> — Statmon"; the index route declares none and keeps this.
 const SITE_TITLE = "Statmon — Pokémon stat tools";
 
+// `h-14` is the header's own height, and it is a target-size fix rather than a
+// layout one: these were bare 14px text with no padding, so the clickable box
+// was about 17px tall inside a 56px bar. 04_design §9's D-042 correction already
+// noted "nav links are 14px" and left it at that. Filling the bar vertically
+// puts every nav item far past WCAG 2.5.8's 24px floor and costs nothing
+// visually — only text colour changes on hover, so there is no box to see.
 function navClass({ isActive }) {
   return [
-    "text-button transition-colors hover:text-primary",
+    "inline-flex h-14 items-center text-button transition-colors hover:text-primary",
     isActive ? "text-primary" : "text-secondary",
   ].join(" ");
 }

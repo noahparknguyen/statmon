@@ -111,7 +111,20 @@ export default function TypeGrid({ asof = null, highlight = [] }) {
     // p-1.5 is not decoration: with the table flush to the edge, the panel's own
     // 16px corner radius cut across the corner badges and made them look
     // differently rounded from the rest of the axis.
-    <div className="type-grid-panel overflow-x-auto overflow-y-hidden rounded-lg border border-border-subtle bg-surface p-1.5">
+    // `tabIndex` and `role` are the fix for a real WCAG 2.1.1 failure, not
+    // decoration: this panel is the one thing on the site that scrolls
+    // sideways, and a scroll container that cannot take focus cannot be
+    // scrolled from a keyboard at all. At 390px eight of the eighteen columns
+    // are visible, so the other ten were simply unreachable without a pointer.
+    // Focusable + named makes it a region a keyboard user can tab to and then
+    // pan with the arrow keys; the global :focus-visible ring shows where they
+    // are. The grid has no focusable children, so nothing is shadowed by this.
+    <div
+      tabIndex={0}
+      role="region"
+      aria-label="Type effectiveness chart, scrollable"
+      className="type-grid-panel overflow-x-auto overflow-y-hidden rounded-lg border border-border-subtle bg-surface p-1.5"
+    >
       {/* w-full lets the grid spread into the panel when there is room, instead
           of leaving a strip of dead space to the right of the last column on a
           wide screen. The minimum width that makes it scroll on a phone comes

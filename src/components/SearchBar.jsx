@@ -74,6 +74,19 @@ export default function SearchBar({ label, onSelect }) {
         />
       </div>
 
+      {/* The dex announces its result count as it filters; this did not, so a
+          screen reader user typing here got no feedback that 1,259 Pokémon had
+          narrowed to eight — or to none. The list itself is not a live region
+          (a combobox's options should not be announced one by one as you type),
+          so the count is reported separately and politely. */}
+      <span aria-live="polite" className="sr-only">
+        {showList
+          ? results.length === 0
+            ? "No matches"
+            : `${results.length} ${results.length === 1 ? "result" : "results"} available`
+          : ""}
+      </span>
+
       {showList && (
         <ul
           id={listId}

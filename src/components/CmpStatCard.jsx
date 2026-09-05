@@ -49,10 +49,12 @@ export default function CmpStatCard({
 function StatLine({ name, value, color, win, ready }) {
   return (
     <div className="grid grid-cols-[5rem_1fr_2.25rem] items-center gap-2">
-      <span
-        className="text-caption text-secondary truncate"
-        title={name ?? undefined}
-      >
+      {/* No `title` tooltip on the truncation. It was the third `title=` on the
+          site and the same anti-pattern as the other two — unreachable by
+          keyboard, invisible on touch — and it was buying nothing here: this
+          card only ever renders below md, where the full name is already on
+          screen in the Pokémon card's own heading a short scroll away. */}
+      <span className="text-caption text-secondary truncate">
         {name ?? "–"}
       </span>
       <div className="h-2 rounded-full bg-elevated overflow-hidden">

@@ -89,3 +89,21 @@ export default function StabChip({ type, mult, dense = false }) {
     </div>
   );
 }
+
+// The label above a group of StabChips, and the expansion of the abbreviation
+// under it. Both surfaces used to hang this on a `title=` attribute of a plain
+// <span>: invisible to keyboards, invisible on touch, and inconsistently
+// exposed by screen readers — a tooltip nobody who needed it could reach. The
+// expansion is `sr-only` text instead, which every one of them can.
+export function StabLabel({ children }) {
+  return (
+    <span className="text-overline text-tertiary">
+      {children}
+      <span className="sr-only">
+        {" "}
+        — same type attack bonus, the damage from moves matching the attacker's
+        own type
+      </span>
+    </span>
+  );
+}

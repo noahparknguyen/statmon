@@ -467,3 +467,58 @@ describe("the compare route", () => {
     expect(html).toContain("Chandelure");
   });
 });
+
+// Accessibility fixes that only manifest in a real browser — a keyboard trying
+// to scroll, a thumb trying to hit a nav link, an iPhone deciding to zoom. None
+// of them throw, so nothing else in this file would notice them regressing.
+describe("accessibility guarantees", () => {
+  it("makes the type grid's scroll region reachable from a keyboard", () => {
+    // The one sideways-scrolling panel on the site. Without tabindex it cannot
+    // take focus, and a keyboard user simply cannot reach the columns off the
+    // right edge — ten of the eighteen at phone width. (WCAG 2.1.1)
+    const html = render("/types");
+    expect(html).toMatch(/<div[^>]*tabindex="0"[^>]*role="region"/);
+    expect(html).toContain("Type effectiveness chart, scrollable");
+  });
+
+  it("gives every primary nav link the header's full height", () => {
+    // These were bare 14px text with no padding: a ~17px target in a 56px bar.
+    // (WCAG 2.5.8)
+    // Scoped to the <nav> itself: the skip link also carries `text-button` and
+    // is correctly not full height — it is a focus-only control with its own
+    // padding, not a bar item.
+    const nav = render("/").match(/<nav\b[\s\S]*?<\/nav>/)?.[0] ?? "";
+    const navLinks = nav.match(/<a\b[^>]*>/g) ?? [];
+    expect(navLinks.length).toBeGreaterThanOrEqual(4);
+    for (const link of navLinks) expect(link).toContain("h-14");
+  });
+
+  it("keeps every form control at 16px, so iOS does not force-zoom", () => {
+    // Safari zooms the page when a control under 16px takes focus and does not
+    // zoom back. `text-body` is 16px; `text-body-sm` is 14px. A responsive
+    // variant cannot help — the named text styles are @layer components rules,
+    // so `md:text-body-sm` generates nothing (06_style_guide §13).
+    for (const path of ["/dex", "/compare"]) {
+      const controls = render(path).match(/<(?:input|select)\b[^>]*>/g) ?? [];
+      expect(controls.length).toBeGreaterThan(0);
+      for (const c of controls) expect(c).not.toContain("text-body-sm");
+    }
+  });
+
+  it("explains STAB in text rather than a title tooltip", () => {
+    // `title=` is unreachable by keyboard, invisible on touch, and unreliably
+    // exposed by screen readers — so the expansion is sr-only text now.
+    for (const path of ["/", "/compare/volcarona/vs/chandelure"]) {
+      const html = render(path);
+      expect(html).not.toContain("title=");
+      expect(html).toContain("same type attack bonus");
+    }
+  });
+
+  it("does not make a screen reader say a Pokémon's name twice", () => {
+    // The artwork sits beside an <h2> of the same name, so it is decorative.
+    const html = render("/compare/volcarona/vs/chandelure");
+    expect(html).not.toMatch(/<img[^>]*alt="Volcarona"/);
+    expect(html).toMatch(/<img[^>]*alt=""/);
+  });
+});

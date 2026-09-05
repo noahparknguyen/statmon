@@ -2,7 +2,7 @@ import { STAT_LABEL } from "../lib/stats";
 import { capitalize } from "../lib/types";
 import { stabMatchup } from "../lib/typeChart";
 import CmpStatCard from "./CmpStatCard";
-import StabChip from "./StabChip";
+import StabChip, { StabLabel } from "./StabChip";
 import CmpRow from "./CmpRow";
 import SpeedBanner from "./SpeedBanner";
 
@@ -117,12 +117,7 @@ function TypeMatchup({ attacker, attack, defend }) {
   const stab = stabMatchup(attack, defend, attack.gen);
   return (
     <div className="flex flex-col items-center gap-2.5 w-full">
-      <span
-        className="text-overline text-tertiary"
-        title="Same Type Attack Bonus — damage from moves matching the attacker's own type"
-      >
-        {attacker.name}&apos;s STAB
-      </span>
+      <StabLabel>{attacker.name}&apos;s STAB</StabLabel>
       <div className="flex flex-col gap-2 w-full">
         {stab.map(({ type, mult }) => (
           <StabChip key={type} type={type} mult={mult} />

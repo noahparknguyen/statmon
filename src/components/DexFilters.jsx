@@ -45,8 +45,16 @@ import FilterChip from "./FilterChip";
 // override it — Tailwind resolves that conflict by stylesheet order, not by the
 // order the classes are written, so the select silently rendered 44px next to
 // its 36px neighbours. Each call site sets its own height instead.
+// `text-body` (16px), not `text-body-sm`. Two reasons, and the first is a real
+// bug: **iOS Safari force-zooms the page when a control smaller than 16px takes
+// focus**, and never zooms back — so tapping this filter or the sort select on
+// an iPhone left the site zoomed in. `SearchBar` was already 16px and safe,
+// which also made these the site's two search inputs at two different sizes.
+// A responsive variant is not an option here: the named text styles are
+// hand-written `@layer components` classes, so `md:text-body-sm` generates no
+// CSS (06_style_guide §13).
 const FIELD_LOOK =
-  "rounded-sm border border-border-subtle bg-elevated px-3 text-body-sm text-primary transition-colors focus-within:border-border-strong";
+  "rounded-sm border border-border-subtle bg-elevated px-3 text-body text-primary transition-colors focus-within:border-border-strong";
 const FIELD = `h-11 ${FIELD_LOOK}`;
 
 function Group({ label, children }) {
@@ -91,7 +99,7 @@ export default function DexFilters({ view, onChange }) {
           placeholder="Filter by name"
           value={view.q}
           onChange={(e) => onChange({ ...view, q: e.target.value })}
-          className="w-full bg-transparent text-body-sm text-primary outline-none placeholder:text-tertiary"
+          className="w-full bg-transparent text-body text-primary outline-none placeholder:text-tertiary"
         />
       </div>
 
