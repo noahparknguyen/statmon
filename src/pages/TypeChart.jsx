@@ -92,6 +92,14 @@ export default function TypeChart() {
         <p className="mb-3 text-caption text-tertiary">
           Rows attack, columns defend. Blank is 1× — only the matchups that
           deviate are marked.
+          {/* Said out loud only where it is true. The cut-off column at the
+              panel's edge is the affordance for a pointer, and the focus ring
+              is the one for a keyboard, but neither tells you the grid is
+              wider than the screen before you try. */}
+          <span className="lg:hidden">
+            {" "}
+            Scroll the chart sideways for the rest.
+          </span>
         </p>
         <TypeGrid asof={asof} highlight={types} />
       </section>

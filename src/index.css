@@ -241,6 +241,15 @@
     font-family: var(--font-body);
     font-size: var(--text-base);
     line-height: var(--leading-base);
+
+    /* The other half of `viewport-fit=cover` (index.html). Without these, a
+       notched phone held sideways runs the header, the nav and the page gutter
+       underneath the notch and the home indicator. Applied once on the body so
+       every route inherits it — the sticky header included, since it is inside
+       the body's padding box — rather than being remembered per page.
+       Zero on every device that has no insets, so nothing else changes. */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
 
   /* v4 borders default to currentColor; make our subtle border the default. */

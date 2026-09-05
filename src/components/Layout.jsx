@@ -132,7 +132,13 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      <footer className="border-t border-border-subtle">
+      {/* The bottom inset is the footer's alone: it is the only thing that ends
+          up under a home indicator, and putting it on the body would add dead
+          space to every page on devices that have one. */}
+      <footer
+        className="border-t border-border-subtle"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
         <div className="max-w-content mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-5">
           <p className="text-caption text-tertiary">
             Data from PokéAPI. Statmon is an unofficial fan project, not

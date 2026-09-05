@@ -11,6 +11,13 @@ import { dexNumberOf } from "../lib/dexTable";
 // aligned stat rows: head 56 + body 176 + chips 40 (= 272 top zone),
 // stats (pt-2 + 6×h-9 + pb-4 = 240), footer 56 → 568 total.
 //
+// **Below md the card is 360 and carries no stats at all** (D-057): head 56 +
+// body 224 + chips 40 + footer 56. At that width the board is one column with
+// the comparison card above, which already shows all six stats as per-stat
+// cards naming both Pokémon — so the bars here were the same numbers a second
+// time. The equal-height invariant is a ≥md concern anyway: below md the three
+// cards are stacked, not side by side, and nothing has to line up.
+//
 // In a Generation 1 view there are five stat rows, not six — Gen 1 had a single
 // Special where the modern schema has Sp. Atk and Sp. Def (D-045) — so the
 // stats band is 204 and the card 532. All three cards switch era together, so
@@ -73,16 +80,23 @@ export default function PokemonCard({ pokemon, view, keys, onSelectForm }) {
           </div>
         </div>
 
-        {/* Body — the boldest part of the artwork shows here */}
-        <div className="h-44" />
+        {/* Body — the boldest part of the artwork shows here. Taller below md,
+            where the stat band is gone: the portrait is what the card is FOR at
+            that width, and at h-44 the square artwork was being clipped by the
+            BST rule. Costs 32px against the 240 the bars gave back. */}
+        <div className="h-56 md:h-44" />
 
         {/* Form chips */}
         <div className="h-10 flex items-end justify-center px-3">
           <FormChips pokemon={pokemon} onSelect={onSelectForm} />
         </div>
 
-        {/* Stats over the lower artwork */}
-        <div className="px-4 pt-2 pb-4" style={statsShadow}>
+        {/* Stats over the lower artwork. Hidden below md: at that width the
+            comparison card above already shows all six as per-stat cards naming
+            both Pokémon, so these were the second of three copies of the same
+            numbers on one screen (D-057). What the card keeps is what only it
+            has — the identity, the artwork, the forms and the total. */}
+        <div className="hidden md:block px-4 pt-2 pb-4" style={statsShadow}>
           {view.keys.map((k) => (
             <div
               key={k}
@@ -121,11 +135,11 @@ function EmptyCard({ keys = STAT_ORDER }) {
   return (
     <div className="flex flex-col overflow-hidden bg-surface border border-dashed border-border-subtle rounded-lg">
       <div className="h-14" />
-      <div className="h-44 flex items-center justify-center">
+      <div className="h-56 md:h-44 flex items-center justify-center">
         <span className="text-body-sm text-tertiary">No Pokémon selected</span>
       </div>
       <div className="h-10" />
-      <div className="px-4 pt-2 pb-4">
+      <div className="hidden md:block px-4 pt-2 pb-4">
         {keys.map((k) => (
           <div
             key={k}

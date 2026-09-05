@@ -101,10 +101,19 @@ export default function Compare() {
         </div>
       </div>
 
-      {/* Board: source order card1, card2, comparison. On lg the comparison
-        is reordered into the middle; below lg it spans below the two cards. */}
+      {/* Board: source order card1, card2, comparison, reordered per width.
+          On lg the comparison sits in the middle; at md the two cards share a
+          row and it spans below them; **below md it comes first**.
+
+          That last one is the fix for a board that had quietly become three
+          copies of itself on a phone (D-057). Stacked single-column, you used
+          to scroll past two 568px Pokémon cards — each with its own six stat
+          bars — before reaching the comparison card, which then showed the same
+          six stats a third time as per-stat cards, with the actual verdict last
+          at ~2,400px. The cards now drop their bars below md (PokemonCard), so
+          there is one stats surface, and it leads. */}
       <div className="grid gap-5 items-start grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        <div className="lg:order-1">
+        <div className="order-2 md:order-1">
           <PokemonCard
             pokemon={p1}
             view={v1}
@@ -112,7 +121,7 @@ export default function Compare() {
             onSelectForm={selectP1}
           />
         </div>
-        <div className="lg:order-3">
+        <div className="order-3 md:order-2 lg:order-3">
           <PokemonCard
             pokemon={p2}
             view={v2}
@@ -120,7 +129,7 @@ export default function Compare() {
             onSelectForm={selectP2}
           />
         </div>
-        <div className="md:col-span-2 lg:col-span-1 lg:order-2">
+        <div className="order-1 md:order-3 md:col-span-2 lg:col-span-1 lg:order-2">
           <ComparisonCard p1={p1} p2={p2} v1={v1} v2={v2} keys={keys} />
         </div>
       </div>
