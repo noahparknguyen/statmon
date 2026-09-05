@@ -1,0 +1,22 @@
+# Line endings are LF in the repo AND in the working tree, on every platform.
+#
+# Without this, `core.autocrlf=true` (the Windows/WSL default) rewrites text
+# files to CRLF on checkout while storing them as LF. The stored content is
+# fine, so `build` and the tests pass — but Prettier defaults to `endOfLine:
+# "lf"`, so `npm run format:check` fails on all 43 source files the moment you
+# switch branches. A gate that breaks on `git checkout` teaches people to ignore
+# the gate.
+#
+# `eol=lf` (not just `text=auto`) is the part that matters: `text=auto`
+# normalizes what gets *stored*, which was already correct here; `eol=lf` also
+# pins what gets *checked out*.
+* text=auto eol=lf
+
+# Binaries git must never touch. Sprites, artwork, the vendored fonts and the
+# generated social images are all byte-exact — a line-ending "fix" applied to a
+# woff2 or a png corrupts it.
+*.png binary
+*.webp binary
+*.ico binary
+*.woff2 binary
+*.svg text eol=lf
