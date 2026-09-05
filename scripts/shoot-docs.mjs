@@ -25,6 +25,7 @@ import { readFile, stat } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { requireChrome } from "./chrome.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DIST = path.join(ROOT, "dist");
@@ -106,7 +107,7 @@ const port = await new Promise((resolve) => {
 });
 const origin = `http://127.0.0.1:${port}`;
 
-const CHROME = process.env.CHROME_PATH ?? "/usr/bin/google-chrome";
+const CHROME = await requireChrome("shoot:docs");
 
 const shoot = (url, width, height, out) =>
   new Promise((resolve, reject) => {

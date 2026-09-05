@@ -42,11 +42,10 @@ jobs:
       - name: Docs links and anchors
         run: npm run check:docs
 
-      # Needs dist/ from the Build step above, and Chrome, which is preinstalled
-      # on the ubuntu-latest image. Catches horizontal overflow and WCAG 2.5.8
-      # target sizes across 14 widths — the class of bug that is invisible to
-      # every check above it (D-059).
+      # Needs dist/ from the Build step above, and Chrome. The script locates a
+      # binary itself (scripts/chrome.mjs) rather than this pinning a path that
+      # may move between runner images; CHROME_PATH overrides it if needed.
+      # Catches horizontal overflow and WCAG 2.5.8 target sizes across 14 widths
+      # — the class of bug that is invisible to every check above it (D-059).
       - name: Responsive width sweep
         run: npm run sweep:widths
-        env:
-          CHROME_PATH: /usr/bin/google-chrome

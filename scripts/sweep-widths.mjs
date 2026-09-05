@@ -29,6 +29,7 @@ import { readFile, writeFile, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { requireChrome } from "./chrome.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DIST = path.join(ROOT, "dist");
@@ -259,9 +260,7 @@ const harnessPath = path.join(DIST, "__sweep.html");
 await writeFile(harnessPath, HARNESS);
 
 /* ---- drive headless Chrome and read the harness back out ---- */
-const CHROME =
-  process.env.CHROME_PATH ??
-  ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable"].find(Boolean);
+const CHROME = await requireChrome("sweep:widths");
 
 const dom = await new Promise((resolve, reject) => {
   const child = spawn(
