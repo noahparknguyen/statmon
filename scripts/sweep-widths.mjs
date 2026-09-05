@@ -35,7 +35,13 @@ const DIST = path.join(ROOT, "dist");
 
 // Every breakpoint boundary, the common device widths, and — deliberately — the
 // awkward middles between them, which is where the bugs have actually been.
-const WIDTHS = [320, 360, 390, 430, 600, 700, 768, 900, 1024, 1280, 1440];
+//
+// 360 / 375 / 383 / 384 bracket the `xs` wordmark boundary specifically: the
+// header overflowed on every width in [360, 374] for as long as xs was 360,
+// and no round device width lands in that range to catch it (D-062).
+const WIDTHS = [
+  320, 360, 375, 383, 384, 390, 430, 600, 700, 768, 900, 1024, 1280, 1440,
+];
 
 const ROUTES = [
   "/",
@@ -113,15 +119,31 @@ const load = (src, width) => new Promise((resolve) => {
     d.style.scrollbarWidth = "none";
     // Read once to force the reflow before measuring.
     void d.clientWidth;
-    setTimeout(() => {
-      resolve({
-        scrollWidth: d.scrollWidth,
-        clientWidth: d.clientWidth,
-        scrollHeight: d.scrollHeight,
-        targets: targetFailures(f.contentDocument),
+    // Wait for the webfonts, then settle, then read. Text laid out in the
+    // fallback stack is a different width from text laid out in Inter or Space
+    // Grotesk, so measuring before the swap measures a page nobody is ever
+    // shown. One reading on a timer is still a race — an early version of this
+    // reported a phantom 385px overflow on /types about one run in six, taken
+    // while layout was still reacting to the swap. Two readings a frame apart,
+    // after the fonts have landed, is what makes the checker worth believing.
+    const settle = (ms) => new Promise((r) => setTimeout(r, ms));
+    const read = () => ({
+      scrollWidth: d.scrollWidth,
+      clientWidth: d.clientWidth,
+      scrollHeight: d.scrollHeight,
+      targets: targetFailures(f.contentDocument),
+    });
+    // Timers rather than requestAnimationFrame: under Chrome's virtual clock a
+    // headless page with nothing animating may not schedule a frame at all, and
+    // the sweep hangs instead of measuring.
+    f.contentDocument.fonts.ready
+      .then(() => settle(200))
+      .then(read)
+      .then(() => settle(80))
+      .then(() => {
+        resolve(read());
+        f.remove();
       });
-      f.remove();
-    }, 150);
   };
   document.body.appendChild(f);
 });
@@ -191,7 +213,7 @@ const dom = await new Promise((resolve, reject) => {
       "--headless",
       "--disable-gpu",
       "--no-sandbox",
-      "--virtual-time-budget=60000",
+      "--virtual-time-budget=180000",
       "--dump-dom",
       `${origin}/__sweep.html`,
     ],

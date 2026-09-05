@@ -100,9 +100,17 @@ export default function Layout() {
               Statmon<span className="text-accent">.</span>
             </span>
           </Link>
+          {/* gap-2 below sm, not gap-3. The header needs 385px to show the
+              wordmark beside four nav items, which put the `xs` boundary above
+              390 — the most common phone width there is — and hiding the
+              wordmark on an iPhone 14 to satisfy a boundary is the tail wagging
+              the dog. Taking 4px off each of the three nav gaps brings the
+              requirement to 373 and lets `xs` sit at 384 with room to spare.
+              This is the same lever D-054 pulled the first time: the labels all
+              stay visible, the space between them gives. (D-062) */}
           <nav
             aria-label="Primary"
-            className="flex items-center gap-3 sm:gap-5"
+            className="flex items-center gap-2 sm:gap-5"
           >
             <NavLink to="/compare" className={navClass}>
               Compare

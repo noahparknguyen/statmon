@@ -32,6 +32,7 @@
     "test:run": "vitest run",
     "build:data": "node scripts/build-data.mjs",
     "vendor:images": "node scripts/vendor-images.mjs",
+    "vendor:fonts": "node scripts/vendor-fonts.mjs",
     "audit:contrast": "node scripts/contrast-audit.mjs",
     "check:docs": "node scripts/check-docs.mjs",
     "sweep:widths": "node scripts/sweep-widths.mjs",

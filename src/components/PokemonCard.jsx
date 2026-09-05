@@ -48,10 +48,20 @@ export default function PokemonCard({ pokemon, view, keys, onSelectForm }) {
     <div className="relative flex flex-col overflow-hidden bg-surface border border-border-subtle rounded-lg">
       {/* Decorative: the <h2> below carries the same name, so alt text here
           only makes a screen reader announce it twice. */}
+      {/* Eager and high priority, against the site's usual `loading="lazy"`.
+          This is the largest element on /compare and sits at the top of the
+          board on every width from md up, so it IS the LCP — and a lazy LCP
+          image is the classic way to make a page measure slower than it is:
+          the browser defers the one fetch the paint is waiting on.
+          Below md the comparison card is above these (D-057), so on a phone
+          this fetches slightly earlier than it is needed. That is the right
+          side to err on for a desktop-first tool, and it is two images. */}
       <img
         src={artworkFor(pokemon)}
         alt=""
-        loading="lazy"
+        loading="eager"
+        fetchPriority="high"
+        decoding="async"
         className="pointer-events-none absolute inset-x-0 top-7 z-0 w-full aspect-square object-contain drop-shadow-art"
       />
       <div

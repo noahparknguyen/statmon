@@ -60,11 +60,25 @@
       content="https://statmon.noahparknguyen.workers.dev/og-image.png"
     />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Fonts are self-hosted (D-061); the @font-face rules ship inside the
+         app's own stylesheet, so there is no third-party request and nothing
+         render-blocking here. These two preloads are the faces that paint
+         first — body copy and headings — started before the CSS is parsed
+         rather than after. The other eight faces (other weights, latin-ext)
+         load on demand. -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/inter-400-latin.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/space-grotesk-700-latin.woff2"
+      crossorigin
     />
   </head>
   <body>

@@ -10,7 +10,6 @@ import Button from "../components/Button";
 import PageHeader from "../components/PageHeader";
 import { PAGE_CONTENT } from "../components/pageChrome";
 import TypeBadge from "../components/TypeBadge";
-import StatBar from "../components/StatBar";
 import FeaturedComparison from "../components/FeaturedComparison";
 import SearchBar from "../components/SearchBar";
 import FormChips from "../components/FormChips";
@@ -24,7 +23,6 @@ import {
   CHIP_ON,
   CHIP_ON_FILLED,
 } from "../components/chipStyles";
-import { STAT_ORDER, STAT_LABEL } from "../lib/stats";
 
 const noop = () => {};
 
@@ -386,27 +384,6 @@ export default function StyleGuide() {
             </div>
           </ChipRow>
         </div>
-      </Section>
-
-      <Section title="StatBar — reusable stat row">
-        <div className="bg-surface border border-border-subtle rounded-lg p-6 max-w-md">
-          {volcarona ? (
-            STAT_ORDER.map((k) => (
-              <StatBar
-                key={k}
-                label={STAT_LABEL[k]}
-                value={volcarona.stats[k]}
-                colorType={volcarona.types[0]}
-              />
-            ))
-          ) : (
-            <p className="text-body-sm text-tertiary">Data not loaded.</p>
-          )}
-        </div>
-        <p className="text-caption text-tertiary mt-4">
-          Bars scale to a fixed max of 255 (D-011); colored by the primary type.
-          Kept for the future full-dex stats table.
-        </p>
       </Section>
 
       <Section title="FeaturedComparison — the live comparison board">

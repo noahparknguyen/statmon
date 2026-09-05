@@ -1,12 +1,23 @@
 import { createBrowserRouter } from "react-router";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
-import Compare from "./pages/Compare";
-import Dex from "./pages/Dex";
-import TypeChart from "./pages/TypeChart";
-import Credits from "./pages/Credits";
-import StyleGuide from "./pages/StyleGuide";
-import NotFound from "./pages/NotFound";
+
+// Every route except Home is code-split. The whole site used to ship as one
+// 482 kB bundle, which meant a visitor who only ever opened the comparison tool
+// still downloaded the dex table, the 18×18 type grid and — the clearest waste
+// — the 400-line `/style` playground, a page that exists for the person
+// building the site rather than the person using it.
+//
+// Home stays eager on purpose. It is the entry point for most visits, and
+// making it lazy only moves its download behind an extra round trip after the
+// main chunk lands. It also anchors the shared chunk: Home previews both other
+// tools with their own components (D-043), so `DexRow`, `MatchupSummary` and
+// the dataset are shared code either way rather than duplicated per route.
+//
+// `lazy` is the router's own mechanism, not React.lazy + Suspense: in data mode
+// the router awaits the module as part of the navigation, so there is no
+// fallback state to design and no flash of an empty shell between pages.
+const lazyPage = (load) => () => load().then((m) => ({ Component: m.default }));
 
 // Data-mode router (D-022). Client-side only — the app shipped as a static-assets
 // SPA on Cloudflare Workers (D-030), with `not_found_handling: single-page-application`
@@ -21,43 +32,71 @@ import NotFound from "./pages/NotFound";
 // `handle.title` is the page name; Layout turns it into "<name> — Statmon". The
 // index route declares none so Home keeps index.html's site title. This is the
 // data-mode stand-in for framework mode's route `meta` export.
-export const router = createBrowserRouter([
+// The route table is exported separately from the router it feeds, so tests can
+// read it without a browser history — `createBrowserRouter` needs one, which is
+// why routes.test.jsx builds its own element-based table for the render smoke
+// tests. That copy cannot exercise `lazy`, so the real table is what the
+// lazy-resolution test walks.
+export const routes = [
   {
     element: <Layout />,
     children: [
       { index: true, element: <Home /> },
-      { path: "compare", element: <Compare />, handle: { title: "Compare" } },
       {
-        path: "compare/:p1/vs/:p2",
-        element: <Compare />,
+        path: "compare",
+        lazy: lazyPage(() => import("./pages/Compare")),
         handle: { title: "Compare" },
       },
-      { path: "dex", element: <Dex />, handle: { title: "Dex" } },
+      {
+        path: "compare/:p1/vs/:p2",
+        lazy: lazyPage(() => import("./pages/Compare")),
+        handle: { title: "Compare" },
+      },
+      {
+        path: "dex",
+        lazy: lazyPage(() => import("./pages/Dex")),
+        handle: { title: "Dex" },
+      },
       // Three routes for one page, the same shape as the compare deep link: the
       // defending typing is what the page is about, so it lives in the path
       // rather than a query param (D-051).
-      { path: "types", element: <TypeChart />, handle: { title: "Types" } },
+      {
+        path: "types",
+        lazy: lazyPage(() => import("./pages/TypeChart")),
+        handle: { title: "Types" },
+      },
       {
         path: "types/:t1",
-        element: <TypeChart />,
+        lazy: lazyPage(() => import("./pages/TypeChart")),
         handle: { title: "Types" },
       },
       {
         path: "types/:t1/:t2",
-        element: <TypeChart />,
+        lazy: lazyPage(() => import("./pages/TypeChart")),
         handle: { title: "Types" },
       },
-      { path: "credits", element: <Credits />, handle: { title: "Credits" } },
+      {
+        path: "credits",
+        lazy: lazyPage(() => import("./pages/Credits")),
+        handle: { title: "Credits" },
+      },
       {
         path: "style",
-        element: <StyleGuide />,
+        lazy: lazyPage(() => import("./pages/StyleGuide")),
         handle: { title: "Style guide" },
       },
       {
         path: "*",
-        element: <NotFound />,
+        lazy: lazyPage(() => import("./pages/NotFound")),
         handle: { title: "Page not found" },
       },
     ],
   },
-]);
+];
+
+// A factory rather than a module-level `router`, so importing this file does
+// not construct a browser history. That construction is what made the route
+// table untestable: `createBrowserRouter` touches `document` at import time, so
+// any test that wanted to read the routes crashed in the node environment.
+// App.jsx calls this once at its own module scope.
+export const createRouter = () => createBrowserRouter(routes);

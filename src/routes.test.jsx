@@ -522,3 +522,29 @@ describe("accessibility guarantees", () => {
     expect(html).toMatch(/<img[^>]*alt=""/);
   });
 });
+
+// The smoke tests above build their own route table with `element:`, because
+// createBrowserRouter needs a browser history. That was a harmless duplication
+// while router.jsx also used `element:`; now that every route but Home is
+// `lazy:`, it means a typo'd import path in router.jsx would reach production
+// with the whole suite green. So the real router is imported and its lazy
+// routes are actually resolved.
+describe("the real router's lazy routes (D-060)", () => {
+  it("resolves every split route to a component", async () => {
+    // The route table, not the router: createBrowserRouter needs a browser
+    // history, and this test has no DOM.
+    const { routes: realRoutes } = await import("./router");
+    const children = realRoutes[0].children;
+    const lazyRoutes = children.filter((r) => r.lazy);
+
+    // Home is deliberately eager; everything else is split.
+    expect(lazyRoutes.length).toBe(children.length - 1);
+
+    for (const route of lazyRoutes) {
+      const mod = await route.lazy();
+      expect(typeof mod.Component, `${route.path} did not resolve`).toBe(
+        "function",
+      );
+    }
+  });
+});
