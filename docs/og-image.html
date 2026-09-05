@@ -163,19 +163,30 @@
       </div>
     </div>
     <script>
-      // `?only=og` or `?only=gh` strips everything except that one frame and
-      // removes the body's padding, so a headless window sized to the frame
-      // captures it exactly. scripts/shoot-docs.mjs uses this; without it the
-      // only way to get these images was a manual "Capture node screenshot",
-      // which is why they went stale (D-064).
+      // `?only=og` or `?only=gh` reduces the page to that one frame, so a
+      // headless window sized to the frame captures it exactly.
+      // scripts/shoot-docs.mjs uses this; without it the only way to get these
+      // images was a manual "Capture node screenshot", which is why they went
+      // stale (D-064).
+      //
+      // It hoists the frame to be the body's only child rather than pruning
+      // wrappers, because the first version pruned `section` elements and the
+      // wrappers here are `div`s — so it matched nothing, removed nothing, and
+      // both captures silently photographed whichever frame came first in the
+      // DOM. That shipped a `preview.png` that was the 1200px OG frame sitting
+      // in a 1280px window, with the wordmark 40px left of centre. Targeting the
+      // frame itself cannot go wrong that way. (D-066)
       const only = new URLSearchParams(location.search).get("only");
       if (only) {
-        document.body.style.padding = "0";
-        document.body.style.gap = "0";
-        document.body.style.background = "#0b0c0f";
-        for (const el of document.querySelectorAll(".note, .cap")) el.remove();
-        for (const sec of document.querySelectorAll("section")) {
-          if (!sec.querySelector(`.frame.${only}`)) sec.remove();
+        const frame = document.querySelector(".frame." + only);
+        if (!frame) {
+          // Loud, not silent: a wrong social image is worse than a missing one.
+          document.title = "SHOOT_ERROR: no .frame." + only;
+          document.body.replaceChildren();
+        } else {
+          document.body.replaceChildren(frame);
+          document.body.style.cssText =
+            "margin:0;padding:0;background:#0b0c0f;display:block";
         }
       }
     </script>

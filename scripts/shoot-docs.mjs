@@ -21,7 +21,7 @@
  */
 
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -41,19 +41,37 @@ const MIME = {
   ".woff2": "font/woff2",
 };
 
-// Each shot is [url, width, height, output]. Heights are chosen to frame the
-// thing the shot is *about* — the hero board, the table, the tier readout —
-// rather than to capture a whole page, which at 1,259 rows is not a screenshot.
+// Each shot is [url, width, height, output].
+//
+// The three app screenshots are **16:9, all at 1600×900**. They were 1280×1000
+// and 1280×820, sized per-shot to frame their subject, which left the set
+// looking squarish and mismatched side by side in the README. One ratio and one
+// size reads as a set. 1600×900 rather than 1280×720 because 720px is not enough
+// page for two of the three: it halves the hero board's speed banner, and it
+// leaves the dex showing two rows of a table whose whole point is that it holds
+// 1,259.
+//
+// The two social frames are NOT 16:9 and must not be: 1280×640 is the 2:1 GitHub
+// requires for a social preview, and 1200×630 is the Open Graph standard. They
+// are platform sizes, not aesthetic ones.
 const SHOTS = [
   // The repo's social preview (GitHub Settings → Social preview) and the OG
   // image, both rendered from the one generator so they cannot disagree.
   ["/docs/og-image.html?only=gh", 1280, 640, "docs/preview.png"],
   ["/docs/og-image.html?only=og", 1200, 630, "public/og-image.png"],
   // The README's images, one per tool, so it shows the site it describes.
-  ["/", 1280, 1000, "docs/home.png"],
-  ["/dex", 1280, 820, "docs/dex.png"],
-  ["/types/water/flying", 1280, 1000, "docs/types.png"],
+  ["/", 1600, 900, "docs/home.png"],
+  ["/dex", 1600, 900, "docs/dex.png"],
+  ["/types/water/flying", 1600, 900, "docs/types.png"],
 ];
+
+// The two social frames must come out centred. This check exists because they
+// did not: the generator's frame-isolation matched nothing, so both captures
+// photographed the 1200px OG frame, and `preview.png` shipped as that frame in a
+// 1280px window with the wordmark 40px left of centre. It rendered fine in a
+// browser, which is exactly why nobody caught it. (D-066)
+const CENTRED = new Set(["docs/preview.png", "public/og-image.png"]);
+const CENTRE_TOLERANCE = 2; // px
 
 /* ---- serve the repo root, with the app's SPA fallback under it ---- */
 const server = createServer(async (req, res) => {
@@ -121,15 +139,64 @@ try {
   process.exit(1);
 }
 
+// Horizontal centre of everything brighter than the near-black background.
+// sharp is already a devDependency (it resizes the vendored artwork).
+async function contentOffset(file) {
+  const { default: sharp } = await import("sharp");
+  const { data, info } = await sharp(file)
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const { width, height, channels } = info;
+  let minX = width;
+  let maxX = -1;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * channels;
+      const lum =
+        0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+      if (lum <= 60) continue; // background
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+    }
+  }
+  if (maxX < 0) return null; // nothing rendered at all
+  return (minX + maxX) / 2 - width / 2;
+}
+
+const problems = [];
+
 for (const [url, width, height, out] of SHOTS) {
   await shoot(url, width, height, out);
-  const { size } = await import("node:fs/promises").then((fs) =>
-    fs.stat(path.join(ROOT, out)),
-  );
+  const file = path.join(ROOT, out);
+  const { size } = await stat(file);
+
+  let note = "";
+  if (CENTRED.has(out)) {
+    const offset = await contentOffset(file);
+    if (offset === null) {
+      problems.push(`${out} is blank — did the frame fail to render?`);
+      note = "  ✗ blank";
+    } else if (Math.abs(offset) > CENTRE_TOLERANCE) {
+      problems.push(
+        `${out} content is ${offset.toFixed(1)}px off centre (tolerance ±${CENTRE_TOLERANCE})`,
+      );
+      note = `  ✗ ${offset.toFixed(1)}px off centre`;
+    } else {
+      note = "  centred ✓";
+    }
+  }
+
   console.log(
-    `  ${out.padEnd(22)} ${width}×${height}  ${(size / 1024).toFixed(0)} kB`,
+    `  ${out.padEnd(22)} ${String(width).padStart(4)}×${height}  ${(size / 1024).toFixed(0).padStart(4)} kB${note}`,
   );
 }
 
 server.close();
+
+if (problems.length) {
+  console.error(`\n── ${problems.length} problem(s) ──────────────`);
+  for (const p of problems) console.error(`  ✗ ${p}`);
+  process.exit(1);
+}
+
 console.log(`\n${SHOTS.length} screenshots regenerated ✓`);

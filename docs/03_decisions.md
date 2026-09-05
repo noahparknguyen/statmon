@@ -6,6 +6,36 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ## 2026-09-04 — Session 15 (the consistency, accessibility & responsive sweep)
 
+<a id="d-066"></a>
+
+### D-066 · The social preview was the wrong frame — **Firm** _(fixes [D-064](#d-064))_
+
+**What was wrong.** `docs/preview.png` shipped as the **1200×630 Open Graph
+frame sitting inside a 1280×640 window**, leaving 80px of dead space on the
+right and the wordmark 40px left of centre.
+
+**Why it happened.** [D-064](#d-064) added `?only=og` / `?only=gh` to
+`docs/og-image.html` so the frames could be captured by a script instead of by
+hand. That code pruned `document.querySelectorAll("section")` — and the wrappers
+in that file are `div`s. It matched nothing, removed nothing, and **both**
+captures photographed whichever frame came first in the DOM, which is the OG one.
+`og-image.png` was therefore correct by accident, and `preview.png` was not.
+
+Nothing caught it because the page still rendered perfectly in a browser: the
+bug lived entirely in the isolation step, which only runs during a capture. The
+generator's own instructions ("right-click the frame → Capture node screenshot")
+had always produced the right image, so automating it is what introduced the
+defect — a fair reminder that replacing a manual step with a script moves the
+error, it does not remove it.
+
+**The fix, both halves.** The script now hoists the target frame to be the body's
+only child rather than pruning wrappers, so it cannot depend on markup structure;
+and `shoot:docs` **measures** the result. It reads the rendered PNG with `sharp`
+(already a devDependency), finds the horizontal centre of everything brighter
+than the background, and fails if either social frame is more than 2px off
+centre. A wrong social image is worse than a missing one, because it is the
+first thing anyone sees and nothing about it looks broken.
+
 <a id="d-065"></a>
 
 ### D-065 · Three accessibility defects the docs had not caught — **Firm**
@@ -73,6 +103,17 @@ works with no network.
 
 The README gained one image per tool for the same reason the copy changed
 ([D-063](#d-063)): it describes three tools and used to show one.
+
+**The three app shots are 16:9, all at 1600×900.** They were first sized per
+shot to frame their subject — 1280×1000 and 1280×820 — which made the set look
+squarish and mismatched sitting next to each other in the README. One ratio and
+one size reads as a set. 1600 rather than 1280 because 720px of page is not
+enough for two of the three: it cuts the hero board's speed banner in half, and
+it leaves the dex showing two rows of a table whose entire point is that it holds
+1,259. The two social frames are deliberately **not** 16:9 — 1280×640 is the 2:1
+GitHub requires and 1200×630 is the Open Graph standard. Those are platform
+sizes, not aesthetic ones. See [D-066](#d-066) for what went wrong with one of
+them.
 
 <a id="d-063"></a>
 

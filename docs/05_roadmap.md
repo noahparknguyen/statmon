@@ -42,8 +42,12 @@ over consistency, accessibility, responsiveness and the writing.
   bolted on; the type chart appeared in none of them. Plus `robots.txt`,
   `sitemap.xml`, and screenshots that are now **generated** rather than taken by
   hand — `docs/preview.png` was still the launch image, from before two of the
-  three tools existed. ([D-063](03_decisions.md#d-063),
-  [D-064](03_decisions.md#d-064))
+  three tools existed. Scripting that capture then shipped a **wrong** social
+  preview (the 1200px OG frame inside a 1280px window, wordmark 40px off centre),
+  which is now fixed and, more usefully, **asserted**: `shoot:docs` measures the
+  rendered PNG and fails if either social frame is off centre.
+  ([D-063](03_decisions.md#d-063), [D-064](03_decisions.md#d-064),
+  [D-066](03_decisions.md#d-066))
 - **CI**: GitHub Actions runs every check on push and PR.
 
 Vitest is at **213 tests**.
