@@ -4,6 +4,429 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ---
 
+## 2026-09-05 — Session 16 (the home page: naming the flagship, framing the previews, and a greeting)
+
+<a id="d-072"></a>
+
+### D-072 · Flanking art points at what it flanks — **Firm** _(refines [D-069](#d-069))_
+
+The dex preview's two figures were symmetric ([D-069](#d-069)) and still read as
+ornaments parked near the heading rather than as a frame around it. Three causes,
+all the same idea: **everything about a flanking figure should point inward.**
+
+- **Facing.** Both artworks face left. On the right-hand side that means Archeops
+  looks back at the content; on the left it meant Samurott looked **off the
+  page**. A figure at the edge of a layout directs the eye, and one of the two was
+  directing it away — which is why symmetry alone did not finish the job in
+  [D-069](#d-069). `-scale-x-100` turns Samurott around and the pair now faces each
+  other. The flagship board has always done this to Chandelure; the dex pair
+  simply never got it.
+- **Lean.** Both were rotated **away** from centre as well. They now tilt inward.
+  Worth writing down because it is not obvious: the flip mirrors the rotation, so
+  the left figure's `-rotate-6` renders as a clockwise, inward lean.
+- **Anchoring.** They were pinned to the container's edges, so their distance from
+  the heading grew with the viewport — a composition that read well at 1024px
+  drifted into two corner ornaments at 1600px. They now hang off the **centre**
+  (`right-1/2 mr-40` / `left-1/2 ml-40`), so the gap to the heading is identical
+  at every width. _This is the actual reason the placement kept feeling arbitrary:
+  it was arbitrary at most widths, and only correct at one._
+
+**And the clip moved below the body mass.** More of each figure shows now, but the
+fix was never simply "more" — it was **where the cut lands**. A figure cut across
+the torso by a hard horizontal edge reads as pasted on; one whose legs disappear
+behind an object reads as standing behind it. Same amount of Pokémon, different
+sentence.
+
+---
+
+<a id="d-071"></a>
+
+### D-071 · The caption goes; the screenshot bends instead of the page — **Firm** _(completes [D-070](#d-070))_
+
+**`1,259 entries · 18 types · 9 generations` is gone.** It read as out of place
+because it was: it began as a **caption for the type band** ([D-068](#d-068)),
+explaining what a stripe of colour meant, and carried over to the ribbon
+([D-069](#d-069)) doing the same job. The wall needs no explaining — sprites are
+self-evident — so the line lost its subject two designs ago and kept its seat. It
+survived three redesigns because it was cheap, not because any of them wanted it.
+
+Three costs it was charging: a register clash, small precise data text
+immediately after a large atmospheric hero; a structural orphan, belonging to
+neither the hero above nor the section below; and it occupied the strip just
+under the fold, which is the exact band 72vh exists to leave for the comparison
+board. The claim it made is not lost — `/dex` prints "1,025 of 1,259 Pokémon"
+where the number is attached to something you can act on.
+
+`GENERATION_COUNT` went with it. **That is the second helper invented for an
+intro treatment that did not survive** (after `typeCounts()`, [D-069](#d-069)),
+and the pattern is the lesson rather than the deletion: a derived number is cheap
+to add and feels principled — "counted, not typed" — which made it easy to carry
+a caption forward three times without asking whether the design still wanted one.
+Deriving a value is only a virtue once something needs the value.
+
+---
+
+**The hero stays 72vh, and `docs/home.png` is cropped instead.** The request was
+to make the hero fill the viewport so the screenshot would frame it cleanly, and
+the reason given was the screenshot. That is a documentation concern reaching
+into the product, which is the exact inversion [D-064](#d-064) was written to
+prevent — the docs bend to the site.
+
+The crest is worth keeping on its own merits: a hero that fills the viewport with
+nothing visible beneath it is a well-known drop-off pattern, and this page exists
+to get people into the tools. Leaving the top of the live board showing is the
+whole reason 72vh was chosen over 100vh in [D-070](#d-070).
+
+**The arithmetic that gets both.** The hero is `72vh`, so at _any_ window height
+it leaves 28% of the viewport to whatever is below — there is no size at which it
+fills a frame by itself. Solving for one that crops cleanly instead: header (56)
+
+- 0.72H = 900 gives **H = 1172**, so the top 900px of a 1600×1172 capture is
+  exactly the header and the hero, no bleed and nothing cut. `shoot:docs` now takes
+  a per-shot `cropTo` and trims with `sharp`, which it already imports for
+  [D-066](#d-066)'s centring check.
+
+**And the flagship got its screenshot back.** With `home.png` showing the hero
+alone, the README displayed the dex and the type chart but not the comparison
+board — two of three tools, which is precisely the failure [D-064](#d-064)
+exists to prevent, arrived at from the opposite direction. `docs/compare.png`
+(`/compare/volcarona/vs/chandelure`, 1600×900 like the rest of the set) restores
+it, and `home.png`'s alt text — still describing "a live Volcarona vs Chandelure
+comparison board" — is now true of the image that actually contains one.
+
+---
+
+<a id="d-070"></a>
+
+### D-070 · The wall — nostalgia as the hero, and D-023 reversed on purpose — **Firm** _(reverses part of [D-023](#d-023); supersedes [D-069](#d-069))_
+
+**Home opens on a full-bleed wall of pixel sprites**, 72vh, drifting slowly
+diagonally, with the wordmark and tagline on a scrim over it and the counted
+caption on solid base beneath.
+
+**This reverses [D-023](#d-023)'s product-as-hero, and that is the decision.**
+D-023 argued the comparison tool's own UI is Statmon's strongest, most specific
+asset, and that showing it beats a generic "tell" — it explicitly rejected the
+stock dark-SaaS hero. A dimmed image field with centred text over it **is** that
+generic pattern. The reason it is still the right call: D-023's real objection
+was to borrowing a generic _solution_ (radial glow, gradient-filled wordmark,
+twin pill CTAs), and its stated rule was _"derive the visuals from the product's
+own domain, which no template can generically reproduce."_ A wall of 98 real
+sprites read out of the real dataset is the most domain-specific content the
+project owns. The frame is borrowed; the substance cannot be.
+
+**And the board still crests the fold.** 72vh rather than 100vh is what keeps
+most of what D-023 was protecting: the first screen is the wall, and the top of
+the live comparison board is visible under it, so the hero promises the product
+rather than hiding it. Checked by rendering at 900px, which is what `shoot:docs`
+captures.
+
+**The scrim depth was not a taste call.** The worst backdrop a sprite can put
+behind the text is a pure-white pixel. Under a scrim of `--color-base`:
+
+| Scrim | Backdrop  | `primary` | `secondary` |
+| ----- | --------- | --------- | ----------- |
+| 65%   | `#606163` | **5.68**  | 2.78        |
+| 80%   | `#3c3d3f` | 9.97      | **4.88**    |
+
+Two ways to clear AA, and they trade against each other: an 80% scrim keeps the
+type hierarchy and leaves the wall at 20% visibility — mostly scrim, which is
+what the page already had too much of. A 65% scrim shows the wall at 35% and
+requires the **tagline to move from `secondary` to `primary`**. That is
+defensible on its own terms rather than as a workaround: the hero is the one
+place on the site where the tagline is the wordmark's partner rather than
+supporting text, and D-023 already treats the hero as typographically exempt.
+
+**So `--hero-scrim: 65%` is a token, and group 8 of `npm run audit:contrast`
+reads it.** The audit composites base over pure white at exactly that value and
+checks `primary`, so the guarantee holds for any sprite, any sample, forever —
+and prints `secondary`'s 2.78 beside it, so the reason the tagline is what it is
+stays visible rather than becoming folklore. `routes.test.jsx` asserts the
+tagline still carries `text-primary`: the audit proves the number, the test
+proves the site still uses it. Two gradients sit over the flat scrim — a radial
+pool behind the wordmark, a fade into the page at the bottom — and both only
+ever **add** base, so the audited value stays the true floor everywhere.
+
+**Two implementation notes worth keeping.**
+
+- **The block is sized by the worst case for repetition, not by what looked like
+  enough.** A seam-free diagonal loop needs the layer to be four identical copies
+  of one block translated exactly `-50%/-50%`, so any viewport taller or wider
+  than one block shows the same Pokémon twice. 14 columns covers 2688px of
+  desktop at 2× tiles; **7 rows is set by a 390px phone**, where tiles halve to
+  96px and 72vh is over six rows tall — at 4 rows the top of the wall visibly
+  repeated a third of the way down the screen, which only showed up by rendering
+  it at that width.
+- **Tiles are 2× native at `md`+.** Sprites are 96px, and `image-rendering:
+pixelated` at exactly double is nearest-neighbour — crisper than any
+  intermediate size. Below `md` they drop to native 96px, or a phone shows two
+  columns of a grid.
+
+**Not a pre-generated mosaic.** One image instead of 98 requests was the obvious
+optimisation, and [D-064](#d-064) is the entire story of why not: generated
+assets go stale, and catching that took writing a script and then
+[D-066](#d-066) to fix the script. A wall read from the live dataset cannot go
+stale. 98 sprites is ~108KB, and every one is already cached by the dex.
+
+---
+
+<a id="d-069"></a>
+
+### D-069 · Sprites, not a chart; symmetry, not a rationale — **Firm** _(revises [D-068](#d-068))_
+
+**The band was right about the job and wrong about the answer.** It represented
+the dataset honestly and nobody could tell what it was. Two separate failures,
+worth keeping apart: it was **small** (a 12px stripe), and it was **unreadable**
+(a proportional stripe of type frequency needs a key nobody arriving at a
+Pokémon site is going to look for). Enlarging it would have fixed one.
+
+**So the greeting is sprites.** A ribbon of pixel sprites drifting slowly
+sideways, fading out at both edges, with the same count line underneath. It
+needs no key — sprites read as Pokémon instantly — and it is the one asset the
+project has that nothing else on the page uses at size, in a project whose
+stated origin is nostalgia ([00_brainstorm §1](00_brainstorm.md)). The scale is
+now felt and stated at once: the ribbon shows how many, the line says how many.
+
+- **Sampled, not listed.** 44 entries taken at even intervals across the
+  **default forms in dex order**, so the walk crosses all nine generations at a
+  steady rate. Forms are excluded deliberately: they sit after the 1,025 species
+  in the dataset, so sampling everything would spend the last fifth of the
+  ribbon on Megas. A test asserts the sample count and that it starts at the
+  beginning of the dex, so a refactor cannot quietly turn it into "the first 44".
+- **Drawn at their native 96px.** Pixel art resampled to any other size loses
+  the crispness that is the only reason to use sprites, and each sprite carries
+  generous transparent padding, so the character reads at about half its box —
+  at 64px the ribbon looked like a dotted line. This was measured by rendering
+  it at three sizes, not reasoned about.
+- **The loop is seam-free by construction.** The track holds the sample twice
+  and the animation translates it exactly `-50%`. That only works if every item
+  occupies identical width _including_ its spacing, so the 8px gap is padding on
+  each item rather than a flex `gap` — a flex gap leaves n−1 gaps across the
+  doubled track, making half of it half a gap short, which shows up as a hitch
+  once every cycle.
+- **Reduced motion needs no special case.** The global rule collapses animation
+  duration and caps iteration count, so the ribbon lands on `-50%` — which is
+  pixel-identical to `0`. `--dur-drift: 80s` is two orders of magnitude slower
+  than the rest of the motion scale because it is ambient rather than a response
+  to anything.
+- **`typeCounts()` is gone**, along with its four tests. It existed for the band
+  and nothing else; an exported helper kept alive only by the tests that cover
+  it is upkeep for nothing.
+
+_Superseded the same day by [D-070](#d-070): the ribbon was readable and
+genuinely fun, and still a 96px strip in a page of centred text. The brief was
+never "make the greeting legible", it was "make the first screen arresting", and
+three attempts in, a strip was not going to get there. The sampling, the seam
+maths and the counted caption all survive in the wall._
+
+**The dex figures were placed by a rationale nobody could see.** They sat
+diagonally, each at the corner nearest its own row, which is a genuinely nice
+mapping and completely invisible: what a reader gets is two differently-sized
+Pokémon at opposite corners, which reads as stickers rather than composition.
+They now flank the table's **top edge symmetrically** — same size, mirrored
+rotation, clipped by the same edge, which was the treatment that already worked
+for the single figure. The derivation still decides **who** (`ROWS[0]` and
+`ROWS[ROWS.length - 1]`, read off the comparator, never named); it no longer
+tries to decide **where**. _The general lesson: a rule that only exists in the
+code is decoration in the render._
+
+**Spacing is a ratio, not two numbers.** A section's CTA sat 24px from its own
+preview and 80px from the next section's heading — technically the right
+ordering, but a button that heavy needs more than 3× to stop reading as the
+kicker for the heading below it. Now 32px to its own content and 112px to the
+next section (`mt-6`/`mt-20` → `mt-8`/`mt-28`), applied in `FeaturePreview` so
+every section and the tools row move together. This is [D-019](#d-019)'s
+proximity rule applied to a page that has grown from two sections to four.
+
+**The page kept paying for its own additions.** Top padding went `pt-12` →
+`pt-8` and the flagship's gap `mt-10` → `mt-8`, so the ribbon — which is taller
+than the band it replaced — does not push the comparison board further down than
+it already sits. Verified by rendering at 900px, which is what `shoot:docs`
+captures, rather than by adding up margins.
+
+---
+
+<a id="d-068"></a>
+
+### D-068 · A greeting under the wordmark, and one Pokémon per job — **Firm** _(revises [D-067](#d-067))_
+
+**Naming the flagship cost the page its opening image.** [D-067](#d-067) was
+right that the comparison board needed a heading, but the heading pushed the
+board down: what greeted you became the wordmark, a tagline, and a second
+heading — three lines of centred text where there used to be a live, colourful
+board. Correct outline, worse front door.
+
+**So the dataset itself is the greeting.** A single proportional stripe under the
+tagline, one segment per type, each as wide as that type is common across all
+1,259 entries — Water is visibly the widest and Ice a sliver — with three counts
+beneath it: entries, types, generations. It is the shape of the thing every tool
+on the site runs on, and it is **counted, not typed**: `typeCounts()` and
+`GENERATION_COUNT` come out of `lib/pokemon.js` with unit tests, so a dataset
+rebuild moves the band instead of quietly making it wrong. `routes.test.jsx`
+asserts the rendered numbers against the dataset for the same reason.
+
+It is **not a tool preview**, which is why it may be a new component rather than
+someone else's: [D-067](#d-067)'s "flare in the frame" rule governs previews, and
+this advertises the dataset rather than any tool. Colour carries nothing on its
+own here — the count line is the statement and the band is marked decorative —
+so "never colour alone" ([04_design §9](04_design.md)) is satisfied without
+eighteen labels that could never fit at 8px.
+
+_Replaced the next day by [D-069](#d-069). It was accurate and unreadable: a
+proportional stripe of the type distribution is not something anybody landing on
+the site can decode, and at 12px of height it did not read as a greeting either.
+The count line below it survives — it was never the problem._
+
+**The page paid for most of its height rather than just growing.** Top padding
+went `pt-16` → `pt-12` and the flagship's gap `mt-14` → `mt-10`, so the board
+sits about 110px lower than before [D-067](#d-067) rather than the ~190px the
+band would otherwise have cost. It still clears a 900px viewport, speed banner
+included — checked against the render, not estimated.
+
+**Art: one Pokémon per job, and one held back.** The Black & White team is six
+([D-044](#d-044)), and they are now allocated rather than reached for:
+
+| Where     | Who                       | Why that one                                     |
+| --------- | ------------------------- | ------------------------------------------------ |
+| Hero      | Volcarona + Chandelure    | the site's mascots ([D-023](#d-023))             |
+| Dex       | Archeops + Samurott       | the top and bottom rows of its own sort          |
+| Types     | Krookodile                | the only dual type left, which the section needs |
+| **Games** | **Mienshao** — _reserved_ | so the tool that ships next has a face waiting   |
+
+Reserving one is the point of writing this down. Every preview so far has wanted
+a figure, the next one will too, and a roster picked one section at a time ends
+with the same Pokémon twice — which is exactly what the first pass did, putting
+Volcarona in both the hero and the type preview.
+
+**The dex gets both ends of its sort.** One figure left the composition lopsided.
+The second is `ROWS[ROWS.length - 1]` — read off the comparator like `ROWS[0]`
+was, never named — so the pair marks the fastest and the slowest of the six at
+the corners nearest their own rows. They are deliberately **not** mirror images:
+the top figure is clipped across its middle and reads from the head down, while
+the bottom one clipped the same way would lose its head, so it is smaller and
+sits lower, with only its crown behind the table.
+
+_Placement revised by [D-069](#d-069): the pair is still the two ends of the
+sort, but it now flanks the table's top edge symmetrically. Mapping each figure
+to the corner nearest its own row is a better idea than it is a picture._
+
+**The type preview needs a dual type, so it is Krookodile.** The section promises
+"every matchup, including dual types" — the one thing the tool exists for that a
+page-per-type chart cannot do ([D-051](#d-051)) — so previewing it with a single
+typing would advertise the wrong capability. Ground/Dark also reads well as a
+shape: six attacking types at 2× and two that do nothing at all, so the
+dropped-empty-tiers behaviour ([D-051](#d-051)) is visible rather than described.
+A test asserts the previewed typing has two types, so a future swap to a
+single-type Pokémon fails instead of quietly under-selling the tool.
+
+**And it sits beside the tiers, not behind them.** The hero board and the dex
+table are each one card with one clean edge, so art behind them is framed. The
+tier list is five thin rows with gaps between: art behind it is sliced five
+times. So the section stops being centred — tiers left, Krookodile right — which
+also gives the run of three sections a rhythm instead of a column.
+
+---
+
+<a id="d-067"></a>
+
+### D-067 · The flagship gets a name; flare goes in the frame — **Firm** _(amends [D-023](#d-023), [D-043](#d-043))_
+
+**The comparison tool had no name on Home.** `/compare` has a title and a
+one-liner, and both feature sections already reuse their tool page's title and
+subtitle **verbatim** — "Every Pokémon, sorted by any stat.", "Every matchup,
+including dual types." The flagship was the one tool Home would not label, which
+left the site's own tagline ("A simple set of Pokémon tools") sitting where the
+comparison's description should be, reading as though it described the board.
+
+It was not headingless to a screen reader. It carried an `sr-only` **h2** that
+said _"Example comparison: Volcarona vs Chandelure"_ — so the outline was intact
+but the heading named the mascots rather than the tool, and nobody sighted got
+anything at all. It is gone; Home's section now opens with the same `PageHeader`
+block as the other two, carrying `/compare`'s own copy, and `routes.test.jsx`
+asserts the subtitle against both surfaces so the two cannot drift.
+
+**What made the hero a hero was never the missing label.** [D-023](#d-023) firmed
+an "unlabelled, mascot-flanked treatment" and [D-043](#d-043) restated the
+exemption, but what those decisions were protecting is the board's _visual_
+weight — the flanking mascots, its size, its place at the top, its own CTA copy
+("Try it out" where the others say "Open the …"). It keeps every one of those.
+What it loses is an accident.
+
+**And the site called one tool three things:** **Compare** in the nav,
+**Comparison** in the Home tools row, **Compare.** on the page. The row now says
+Compare. One tool with three names is three chances to look like three tools.
+
+---
+
+**The rule for previews, which the hero was already following unwritten: flare
+goes in the frame, never in the components.** Every difference between the hero
+board and the real comparison tool is either a _subtraction of interactivity_ (no
+search, no generation strip, no swap) or _framing_ (art behind it, layering, bars
+growing in on mount). Not one is a restyle. That is what makes
+[D-032](#d-032)/[D-043](#d-043)'s "a preview is the real thing, not a mockup"
+survivable in practice — you can make a section exciting without giving it a
+second implementation that goes stale, which is the failure [D-064](#d-064) had
+just finished cleaning up in the screenshots.
+
+So the two flat sections got frames, and neither component changed.
+
+**The type preview is the defensive read, and now says so.** `MatchupSummary`
+answers "what does every attacking type do to this typing", so what is on screen
+is _what beats Bug / Fire_ — the 4× Rock row every Volcarona owner has been burned
+by. That was never stated: the section showed a column of tinted type names with
+nothing declaring what was under attack, which is unreadable — "4× Rock" means
+nothing until you know what the Rock is hitting. `/types` had a label for exactly
+this and wrote it inline; a second caller is when page markup becomes a
+component ([D-058](#d-058)), so it moved to `MatchupHeading`, exported beside
+`MatchupSummary` the way `StabLabel` sits beside `StabChip`. Its reasoning
+travelled with it: coloured text and not badges, because an 11px pill beside 18px
+display text is two type sizes on one line ([D-053](#d-053)). `id` and `as`
+became props — `/types` labels a section with the id and is the page, so it is an
+h2; Home needs no handle and sits one rung down at h3.
+
+An illustration then joins it, on the hero's exact rules (`hidden lg:block`,
+`aria-hidden`, `pointer-events-none`, `drop-shadow-art`) — plus `loading="lazy"`,
+which the hero's art deliberately is not, because this one is below the fold and
+Home is the only route that is not code-split ([D-060](#d-060)).
+
+_Revised the same day by [D-068](#d-068): it was Volcarona peeking from behind
+the tiers, and it is now Krookodile beside them. Behind did not work here — the
+tier list is five thin rows with gaps, so art behind it is sliced by five edges
+where the hero board and the dex table each frame it with one clean card._
+
+**The dex preview got motion and one Pokémon.** The hero's bars grow in on mount
+and the dex's proportional fills — the same idea, the same `animate-grow-w` —
+did not. `DexRow` now takes an `animate` prop, mirroring the one `CmpRow` already
+has, and only Home's preview passes it: the real table windows its rows, so rows
+mount continuously as you scroll and every one of them would animate on arrival.
+Motion that says nothing, on the surface that can least afford it.
+
+**Why one illustration and not four.** The obvious idea was the other four
+members of the Black & White team ([D-044](#d-044)) beside the table. Two things
+ruled it out. The table fills the content width — there is no margin to sit in,
+which is the whole reason the hero board (`max-w-2xl`) can be flanked and this
+cannot. And four figures announce an easter egg whose charm is that nothing marks
+it on screen; all six are already there, as the row sprites. So it is one figure
+rising from behind the **top-right corner**, clipped by the table's own opaque
+body — and it is **whoever the sort put in the top row**, read off `ROWS[0]`
+rather than named, so it stays the winner if the dataset or the team changes.
+Today that is Archeops at 110 Speed. It crowns the winning row, which makes the
+section's promise ("sorted by any stat") visible rather than merely stated.
+
+_Revised the same day by [D-068](#d-068): one figure left the composition
+lopsided, so the other end of the sort now sits at the opposite corner. The
+reasoning above is why it is two and not four._
+
+**One test-file cleanup fell out of it.** `routes.test.jsx` had two identical
+copies of a `text()` helper — strip tags, strip React's comment nodes — in two
+describes. A third caller wanted it, so it is hoisted once beside `render`.
+
+**Measured, not assumed:** `npm run sweep:widths` passes with both new images —
+they are `lg`-only for the reason the hero's are, and Home's root already clips
+overflow, so nothing scrolls sideways at any of the 14 widths.
+
+---
+
 ## 2026-09-04 — Session 15 (the consistency, accessibility & responsive sweep)
 
 <a id="d-066"></a>
@@ -1960,11 +2383,14 @@ consistency called out in [D-023](#d-023). Resolves the last open item on
 
 <a id="d-023"></a>
 
-### D-023 · Home = product-as-hero; Volcarona + Chandelure mascots; blunt suite copy; type-colored diffs — **Firm**
+### D-023 · Home = product-as-hero; Volcarona + Chandelure mascots; blunt suite copy; type-colored diffs — **Firm** _(product-as-hero reversed by [D-070](#d-070); the board named by [D-067](#d-067))_
 
 **Decision.**
 
-- **Product-as-hero.** The Home hero **is** the product: a live, fixed featured comparison rendered by `FeaturedComparison.jsx` (**Volcarona vs Chandelure**, pulled from the real dataset via `getBySlug`), reusing the comparison tool's exact visual language (mirrored type-colored bars, type-tinted center diffs, the flame "Higher total +N" delta, the flame speed banner, and — in the head center — the attacker's **STAB** effectiveness as compact type-tinted pills). Bars grow in once on mount (pure-CSS `animate-grow-w`, no effect). **Volcarona + Chandelure are adopted as the site's pseudo-mascots**: their **pixel sprites sit inside the comparison cards**, while their **official-art illustrations peek out from behind** the board's left/right edges (soft drop-shadow, `lg`+ only) for a nostalgic feel.
+- **Product-as-hero.** _(No longer true — [D-070](#d-070) put a sprite wall above
+  the board. The board is still on Home, still built this way, and still crests
+  the fold; it is no longer the first thing on the page.)_ The Home hero **is**
+  the product: a live, fixed featured comparison rendered by `FeaturedComparison.jsx` (**Volcarona vs Chandelure**, pulled from the real dataset via `getBySlug`), reusing the comparison tool's exact visual language (mirrored type-colored bars, type-tinted center diffs, the flame "Higher total +N" delta, the flame speed banner, and — in the head center — the attacker's **STAB** effectiveness as compact type-tinted pills). Bars grow in once on mount (pure-CSS `animate-grow-w`, no effect). **Volcarona + Chandelure are adopted as the site's pseudo-mascots**: their **pixel sprites sit inside the comparison cards**, while their **official-art illustrations peek out from behind** the board's left/right edges (soft drop-shadow, `lg`+ only) for a nostalgic feel.
 - **Anti-generic direction.** I explicitly rejected the stock dark-SaaS hero — radial purple **glow**, gradient-fill wordmark, centered "one clear answer" pitch + twin pill CTAs — because those are the hallmarks of AI-generated sites (I flagged the glow specifically). The rule going forward: **derive the visuals from the product's own domain** (stat bars, type colors, the comparison mechanic itself), which no template can generically reproduce. Genericness comes from borrowing generic solutions; distinctiveness comes from the subject matter.
 - **Blunt, suite-framed copy.** Home header **"Statmon."** + sub **"A simple set of Pokémon tools."** — frames the whole **site** (a small growing suite), not just the comparison tool. Each page H1 follows the same "Word**.**" motif with the accent dot (Compare page: **"Compare."** + "Visualizes the difference between two Pokémon."). No corporate/pitch language anywhere; the Home CTA is **"Try it out."**, and a "tools" row (Comparison live; Dex table / Type chart / Games — soon) backs the promise. The shared header pairs the flame Poké Ball **favicon** with the wordmark.
 - **Gradient budget.** The Chandelure flame gradient stays reserved to the **two** spots the tool already uses it (BST delta + speed banner); Home reuses exactly those and adds none. Sparing use is intentional (my call: gradients OK if rare).

@@ -97,6 +97,9 @@ The per-type primitives, tuned for the dark background. Full table with badge-te
 | `--color-accent-contrast` | _(primitive; no alias)_    | Text/icon on a solid accent fill                                                      |
 | `--color-diff-tie`        | `--color-neutral-400`      | Zero-difference state                                                                 |
 | `--color-track-glass`     | `--color-neutral-50` @ 16% | Translucent stat-bar track over artwork                                               |
+| `--hero-scrim`            | `--color-base` @ 65%       | How much base sits over Home's sprite wall ([D-070](03_decisions.md#d-070))           |
+
+**`--hero-scrim` is the one token here that exists to be audited.** Home's wordmark and tagline sit on a wall of sprites, so their backdrop is not a token — it is whatever pixel happens to be behind them. Group 8 of `npm run audit:contrast` reads this value out of the stylesheet, composites base over **pure white** (the worst a sprite can produce), and checks `--color-primary` against it: 5.68:1. Lowering the scrim fails the audit rather than quietly failing a reader. It is also why the hero tagline is `primary` where every other tagline on the site is `secondary` — `secondary` on that same backdrop is 2.78:1. ([D-070](03_decisions.md#d-070))
 
 ---
 
@@ -122,21 +125,23 @@ Stat numbers always add tabular figures: `font-feature-settings: "tnum" 1;`.
 
 ### 4.3 Font-size ramp (primitive)
 
+`--text-5xl` read "home marketing hero (optional)" until the home hero was actually built and used `text-display-hero` (48px) instead — on a full-bleed sprite wall, at 60px, the wordmark would crowd the tagline under it. Labelled as an unconsumed rung now, the way `--dur-base` and `--dur-slow` are in §9, rather than describing a use it does not have.
+
 Anchored at `--text-base: 1rem` (16px, the accessibility floor), stepping at ≈1.2 (compact enough for a data UI, with room for a dramatic hero). **All sizes in `rem`** so they honor user zoom. This is the complete set — no size exists outside this ramp.
 
-| Token         | rem       | px  | Step role                      |
-| ------------- | --------- | --- | ------------------------------ |
-| `--text-2xs`  | 0.6875rem | 11  | micro / overline               |
-| `--text-xs`   | 0.75rem   | 12  | caption / badge                |
-| `--text-sm`   | 0.875rem  | 14  | small UI / labels              |
-| `--text-base` | 1rem      | 16  | body (base)                    |
-| `--text-md`   | 1.125rem  | 18  | large body / stat value        |
-| `--text-lg`   | 1.25rem   | 20  | h3 / card title                |
-| `--text-xl`   | 1.5rem    | 24  | h2                             |
-| `--text-2xl`  | 1.875rem  | 30  | h1                             |
-| `--text-3xl`  | 2.25rem   | 36  | display                        |
-| `--text-4xl`  | 3rem      | 48  | hero display                   |
-| `--text-5xl`  | 3.75rem   | 60  | home marketing hero (optional) |
+| Token         | rem       | px  | Step role               |
+| ------------- | --------- | --- | ----------------------- |
+| `--text-2xs`  | 0.6875rem | 11  | micro / overline        |
+| `--text-xs`   | 0.75rem   | 12  | caption / badge         |
+| `--text-sm`   | 0.875rem  | 14  | small UI / labels       |
+| `--text-base` | 1rem      | 16  | body (base)             |
+| `--text-md`   | 1.125rem  | 18  | large body / stat value |
+| `--text-lg`   | 1.25rem   | 20  | h3 / card title         |
+| `--text-xl`   | 1.5rem    | 24  | h2                      |
+| `--text-2xl`  | 1.875rem  | 30  | h1                      |
+| `--text-3xl`  | 2.25rem   | 36  | display                 |
+| `--text-4xl`  | 3rem      | 48  | hero display            |
+| `--text-5xl`  | 3.75rem   | 60  | scale rung, unconsumed  |
 
 ### 4.4 Line-height tokens
 
@@ -298,9 +303,12 @@ Content max-width `--container-content: 1120px` (utility: `max-w-content`), cent
 | `--dur-base`      | 180ms                        | most transitions      | scale rung, unconsumed        |
 | `--dur-slow`      | 300ms                        | selection cross-fades | scale rung, unconsumed        |
 | `--dur-bar`       | 450ms                        | stat-bar fill         | ✅ `.animate-grow-w`          |
+| `--dur-wall`      | 120s                         | Home's hero wall      | ✅ `.animate-wall`            |
 | `--ease-standard` | `cubic-bezier(0.2, 0, 0, 1)` | default               | ✅ `.animate-grow-w`          |
 
 `--dur-fast` is wired as `--default-transition-duration`, so **every** `transition-*` utility picks it up with no per-component opt-in — write `transition-colors` and you get the documented 120ms. Override per element with `duration-*` when a specific motion needs it. ([D-033](03_decisions.md#d-033))
+
+`--dur-wall` is deliberately three orders of magnitude off the rest of the scale: every other duration answers something the user just did, while the hero wall is ambient — a field that large only needs to creep for the movement to register. It is linear rather than eased, because easing an endless loop reads as a stutter. ([D-070](03_decisions.md#d-070))
 
 A second easing (`--ease-out-soft`) was specified here and referenced by nothing; it has been removed. The bar fill uses `--ease-standard`. Add an easing when a component actually needs one.
 

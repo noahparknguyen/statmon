@@ -21,7 +21,7 @@
  */
 
 import { createServer } from "node:http";
-import { readFile, stat } from "node:fs/promises";
+import { readFile, stat, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -61,7 +61,23 @@ const SHOTS = [
   ["/docs/og-image.html?only=gh", 1280, 640, "docs/preview.png"],
   ["/docs/og-image.html?only=og", 1200, 630, "public/og-image.png"],
   // The README's images, one per tool, so it shows the site it describes.
-  ["/", 1600, 900, "docs/home.png"],
+  //
+  // Home is captured TALL and cropped, and the arithmetic is the point (D-071).
+  // The hero is `72vh`, so at any window height it leaves 28% of the viewport to
+  // whatever is below it — there is no window size at which it fills the frame
+  // by itself. Solving for one that crops cleanly: header (56) + 0.72H = 900
+  // gives H = 1172, so the top 900px of a 1600x1172 shot is exactly the header
+  // and the hero, with no bleed and nothing cut off.
+  //
+  // Doing it here rather than by making the hero `100vh` is deliberate: the
+  // crest of the comparison board below the fold is a usability affordance for
+  // real visitors, and a documentation image is not a reason to spend it. The
+  // whole point of this script (D-064) is that the docs bend to the site.
+  ["/", 1600, 1172, "docs/home.png", { cropTo: 900 }],
+  // The flagship needs a shot of its own now that home.png is the hero alone —
+  // otherwise the README shows two of the three tools, which is the exact
+  // failure D-064 exists to prevent.
+  ["/compare/volcarona/vs/chandelure", 1600, 900, "docs/compare.png"],
   ["/dex", 1600, 900, "docs/dex.png"],
   ["/types/water/flying", 1600, 900, "docs/types.png"],
 ];
@@ -141,6 +157,17 @@ try {
 }
 
 // Horizontal centre of everything brighter than the near-black background.
+// Keep the top of a shot and discard the rest. Written to a buffer first and
+// then over the original, because sharp will not read and write the same path
+// in one pipeline.
+async function cropTop(file, width, height) {
+  const { default: sharp } = await import("sharp");
+  const buf = await sharp(file)
+    .extract({ left: 0, top: 0, width, height })
+    .toBuffer();
+  await writeFile(file, buf);
+}
+
 // sharp is already a devDependency (it resizes the vendored artwork).
 async function contentOffset(file) {
   const { default: sharp } = await import("sharp");
@@ -166,9 +193,10 @@ async function contentOffset(file) {
 
 const problems = [];
 
-for (const [url, width, height, out] of SHOTS) {
+for (const [url, width, height, out, opts = {}] of SHOTS) {
   await shoot(url, width, height, out);
   const file = path.join(ROOT, out);
+  if (opts.cropTo) await cropTop(file, width, opts.cropTo);
   const { size } = await stat(file);
 
   let note = "";
@@ -188,7 +216,7 @@ for (const [url, width, height, out] of SHOTS) {
   }
 
   console.log(
-    `  ${out.padEnd(22)} ${String(width).padStart(4)}×${height}  ${(size / 1024).toFixed(0).padStart(4)} kB${note}`,
+    `  ${out.padEnd(22)} ${String(width).padStart(4)}×${opts.cropTo ?? height}  ${(size / 1024).toFixed(0).padStart(4)} kB${note}`,
   );
 }
 

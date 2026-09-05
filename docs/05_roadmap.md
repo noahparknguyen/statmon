@@ -79,7 +79,7 @@ Vitest is at **213 tests**.
 - **Phases 0–2:** plain Vite + React (JS) + Tailwind v4 CSS-first tokens; build-time data pipeline → **1,259 entries**; design-system primitives (22 named text styles, shared `Button` / `CmpRow` / `CmpStatCard` / `SpeedBanner`).
 - **Phase 3 — comparison tool:** search, two hero cards with form switching, the comparison card (BST summary, STAB matchup, mirrored **type-colored** diffs, speed banner), swap.
 - **Phase 3.5 — routing:** React Router **v8** (data mode); shared `Layout` (header/nav/footer + `main`); routes `/` Home, `/compare` (+ `/compare/<p1>/vs/<p2>`), `/dex`, `/credits`, `/style`, `*` 404; **URL is the single source of truth** ([D-022](03_decisions.md#d-022), `src/lib/compareUrl.js`).
-- **Phase 4:** **Home** product-as-hero (live Volcarona-vs-Chandelure board, blunt suite copy, corner mascot sprites, tools row) + blunt **Credits** ([D-023](03_decisions.md#d-023)); **image vendoring** — 2,513 sprites/artwork self-hosted + committed ([D-025](03_decisions.md#d-025)); **meta/favicons/OG** incl. the HTML-rendered OG generator `docs/og-image.html` ([D-026](03_decisions.md#d-026)); **accessibility** — skip link + landmarks ([D-024](03_decisions.md#d-024)) and a full **WCAG-AA contrast audit** with a reproducible checker ([D-027](03_decisions.md#d-027)); **mobile per-stat layout** — `ComparisonCard` + `FeaturedComparison` collapse to stacked per-stat cards below 768px ([D-010](03_decisions.md#d-010), [D-029](03_decisions.md#d-029)); the MIT `LICENSE` and a personal-credit footer line are in ([D-029](03_decisions.md#d-029)); **deployed** to Cloudflare Workers as static assets, with absolute OG URLs set ([D-030](03_decisions.md#d-030)).
+- **Phase 4:** **Home** product-as-hero (live Volcarona-vs-Chandelure board, blunt suite copy, corner mascot sprites, tools row — _the hero has since been replaced by a sprite wall, [D-070](03_decisions.md#d-070)_) + blunt **Credits** ([D-023](03_decisions.md#d-023)); **image vendoring** — 2,513 sprites/artwork self-hosted + committed ([D-025](03_decisions.md#d-025)); **meta/favicons/OG** incl. the HTML-rendered OG generator `docs/og-image.html` ([D-026](03_decisions.md#d-026)); **accessibility** — skip link + landmarks ([D-024](03_decisions.md#d-024)) and a full **WCAG-AA contrast audit** with a reproducible checker ([D-027](03_decisions.md#d-027)); **mobile per-stat layout** — `ComparisonCard` + `FeaturedComparison` collapse to stacked per-stat cards below 768px ([D-010](03_decisions.md#d-010), [D-029](03_decisions.md#d-029)); the MIT `LICENSE` and a personal-credit footer line are in ([D-029](03_decisions.md#d-029)); **deployed** to Cloudflare Workers as static assets, with absolute OG URLs set ([D-030](03_decisions.md#d-030)).
 
 **Deferred (optional, post-MVP):** the React Router **framework/SSR mode** upgrade ([D-005](03_decisions.md#d-005), [D-022](03_decisions.md#d-022)) — the data-mode config migrates cleanly. It would add **per-route `<title>`/meta**; the site-level OG/meta is already set with absolute URLs. Not required for the MVP — revisit if per-comparison social unfurls become worth it.
 
@@ -179,7 +179,7 @@ _Goal: introduce React Router now that a second page/route is actually needed. (
 
 _Goal: a complete, showcase-ready site. This is where the **Cloudflare Workers/Wrangler** deploy layer is added (and React Router's Cloudflare/SSR mode, if adopted) — the end-state from [D-005](03_decisions.md#d-005)._
 
-- [x] **Home** page: product-as-hero (live Volcarona vs Chandelure board), blunt suite-framed copy, corner mascot sprites, tools row. ([D-023](03_decisions.md#d-023))
+- [x] **Home** page: product-as-hero (live Volcarona vs Chandelure board), blunt suite-framed copy, corner mascot sprites, tools row. ([D-023](03_decisions.md#d-023)) _Since rebuilt: every tool is named ([D-067](03_decisions.md#d-067)) and the page now opens on a full-bleed sprite wall, which reverses product-as-hero ([D-070](03_decisions.md#d-070)). The board and the mascots are still there, one section down._
 - [x] **Credits** page: PokéAPI + sprite attribution, GitHub link (blunt pass). ([D-023](03_decisions.md#d-023))
 - [x] **404** page, on-brand (built in Phase 3.5).
 - [x] **Meta/SEO** (site-level): favicons + web manifest + theme-color, description, Open Graph + Twitter tags; OG image generated from `docs/og-image.html` → `public/og-image.png`. ([D-026](03_decisions.md#d-026)) — absolute OG/Twitter URLs set at deploy ([D-030](03_decisions.md#d-030)); _per-route titles/meta still await SSR_
@@ -203,7 +203,7 @@ _Goal: sharpen the core and add the low-cost, high-value extras._
 - [ ] Biggest-gap highlight.
 - [x] **Type-effectiveness** between the two Pokémon — **shipped early** in Phase 3 as the attacker-STAB matchup on the comparison card, on the hardcoded `src/lib/typeChart.js` matrix ([D-018](03_decisions.md#d-018)).
 - [x] **Generation-accurate stats** — Gen 1's single Special, historical base stats and typings, and per-generation type charts, behind one generation strip on `/compare` ([D-045](03_decisions.md#d-045), [D-046](03_decisions.md#d-046), [D-047](03_decisions.md#d-047)). _Not on the original V2 list — it came out of actually playing the games the project is about._
-- [~] Bar-fill **animation** (reduced-motion aware) — **partially shipped:** `.animate-grow-w` runs on Home's `FeaturedComparison` only ([D-023](03_decisions.md#d-023)). The `/compare` tool's own bars still render instantly; extending it there is what remains.
+- [~] Bar-fill **animation** (reduced-motion aware) — **partially shipped:** `.animate-grow-w` runs on Home, on both the `FeaturedComparison` board ([D-023](03_decisions.md#d-023)) and now the dex preview's stat fills, via a `DexRow` `animate` prop the real table deliberately does not pass ([D-067](03_decisions.md#d-067)). The `/compare` tool's own bars still render instantly; extending it there is what remains.
 - [ ] Copy-link button, **random matchup**, full keyboard flow.
 - [ ] Search **filters** (type / generation), recently-compared list.
 - [ ] **About** page; **light-mode** toggle.
@@ -232,7 +232,7 @@ _Goal: grow Statmon into a small family of tools & games, one clean addition at 
 
   **The era interaction, free if designed in from the start:** abilities arrived in **Generation III**, so a Gen 1 or Gen 2 board should show none at all — the `?asof=` lens already expresses that. _+ Home preview, per [D-043](03_decisions.md#d-043)._
 
-- [ ] **Type-advantage quiz game** — quiz the user on the matchup between two (possibly dual) types. Sits directly on the type engine; a clean, well-scoped first game for retention + showcasing that Statmon is more than one tool. _+ Home preview._
+- [ ] **Type-advantage quiz game** — quiz the user on the matchup between two (possibly dual) types. Sits directly on the type engine; a clean, well-scoped first game for retention + showcasing that Statmon is more than one tool. _+ Home preview — **Mienshao is reserved for its artwork** ([D-068](03_decisions.md#d-068)), the last unallocated member of the Black & White team._
 
 **Later:**
 

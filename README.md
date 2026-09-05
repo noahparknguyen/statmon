@@ -8,13 +8,15 @@ A simple set of Pokémon tools, built for myself. Three so far — and each of t
 
 **Live at [statmon.noahparknguyen.workers.dev](https://statmon.noahparknguyen.workers.dev/).**
 
-![Statmon's home page: a live Volcarona vs Chandelure comparison board](docs/home.png)
+![Statmon's home page: a wall of Pokémon sprites behind the wordmark](docs/home.png)
 
 ## Why
 
 Sometimes I go on a nostalgia trip and play a ton of old childhood games. One summer that turned into playing every mainline Pokémon game end to end, generation 1 through 5. Every playthrough I'd hit a fork in the road where I had to pick between two Pokémon, and what mattered most to me was speed and attack. The sites I found for comparing them either looked a little outdated or were cluttered with features I didn't need, so I built a lighter version of my own — minimal, quick, and clear, with all the bloat and fluff stripped out.
 
 Playing the old games again also turned up something the site was quietly getting wrong. Generation 1 has no Sp. Attack or Sp. Defense — one **Special** stat covers both — and plenty of Pokémon have had their stats or typing revised since. So a comparison can now be read **as of an earlier generation**: five stats and a Special for Gen 1, the base stats and typings that were actually in the game then, and that generation's own type chart, so Gen 1 Ghost does nothing to Psychic the way it really did. The control offers every generation the two you picked both existed in, with a dot on the ones where something actually changed — so pairing a Gen 1 Pokémon with a Gen 5 one visibly starts at 5, and the generation is in the URL like everything else.
+
+![The Statmon comparison board: Volcarona against Chandelure, with the generation strip above it](docs/compare.png)
 
 That reading applies to the dex too, where it does a bit more: pick a generation and the table becomes the dex _as it was_ — Gen 3 is 392 Pokémon with their Gen 3 stats, and Gen 1 is 151 with five stat columns and a Special you can actually sort by. It filters as well as re-reads, because a table headed "Gen 3" that lists Pokémon which didn't exist yet is just wrong.
 

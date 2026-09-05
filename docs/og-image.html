@@ -126,17 +126,23 @@
   </head>
   <body>
     <div class="note">
-      <strong>How to export:</strong> open this file in Chrome, wait a second
-      for the fonts to load, then right-click a frame → <em>Inspect</em> → in
-      the Elements panel right-click the highlighted
-      <code>&lt;div class="frame …"&gt;</code> →
-      <code>Capture node screenshot</code>. That saves the frame at its exact
-      pixel size — no cropping. Save the 1200×630 OG frame as
-      <code>public/og-image.png</code> (referenced by the meta tags in
-      <code>index.html</code>). Save the 1280×640 frame as
-      <code>docs/preview.png</code> — that file is the checked-in copy of the
-      GitHub social preview, which has to be uploaded by hand under repo
-      Settings → Social preview because GitHub stores it outside the repo.
+      <strong>How to export:</strong>
+      <code>npm run build &amp;&amp; npm run shoot:docs</code>. That renders
+      both frames from this file — it loads it with <code>?only=og</code> /
+      <code>?only=gh</code>, which hoists one frame to be the body's only child
+      so a window sized to that frame captures it exactly — and writes
+      <code>public/og-image.png</code> (1200×630, referenced by the meta tags in
+      <code>index.html</code>) and <code>docs/preview.png</code> (1280×640). It
+      then measures both and fails if either is more than 2px off centre,
+      because a wrong social image is the first thing anyone sees and nothing
+      about it looks broken (D-064, D-066). <br /><br />
+      Exporting by hand is no longer the workflow, but it still works if you
+      need it: right-click a frame → <em>Inspect</em> → in the Elements panel
+      right-click the highlighted <code>&lt;div class="frame …"&gt;</code> →
+      <code>Capture node screenshot</code>. <br /><br />
+      <strong>Still manual:</strong> <code>docs/preview.png</code> is only the
+      checked-in copy of the GitHub social preview — GitHub stores that outside
+      the repo, so it has to be uploaded under repo Settings → Social preview.
     </div>
 
     <!-- OG image — 1200×630 (Open Graph / Twitter / Slack / Discord) -->
