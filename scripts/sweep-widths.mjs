@@ -107,7 +107,12 @@ const HEIGHT = 900;
 
 const load = (src, width) => new Promise((resolve) => {
   const f = document.createElement("iframe");
-  f.width = width; f.height = HEIGHT; f.src = src;
+  // Width pinned in CSS as well as the attribute. The attribute alone left a
+  // window in which the frame was laid out wider, which is how routes that
+  // cannot overflow — the 404 is centred text — reported ~1000px scroll widths.
+  f.width = width; f.height = HEIGHT;
+  f.style.width = width + "px"; f.style.height = HEIGHT + "px";
+  f.src = src;
   f.onload = () => {
     // Overlay scrollbars, which is what phones actually have. Without this the
     // frame lays out at the requested width but reports a 15px-narrower
@@ -119,31 +124,76 @@ const load = (src, width) => new Promise((resolve) => {
     d.style.scrollbarWidth = "none";
     // Read once to force the reflow before measuring.
     void d.clientWidth;
-    // Wait for the webfonts, then settle, then read. Text laid out in the
-    // fallback stack is a different width from text laid out in Inter or Space
-    // Grotesk, so measuring before the swap measures a page nobody is ever
-    // shown. One reading on a timer is still a race — an early version of this
-    // reported a phantom 385px overflow on /types about one run in six, taken
-    // while layout was still reacting to the swap. Two readings a frame apart,
-    // after the fonts have landed, is what makes the checker worth believing.
-    const settle = (ms) => new Promise((r) => setTimeout(r, ms));
-    const read = () => ({
-      scrollWidth: d.scrollWidth,
-      clientWidth: d.clientWidth,
-      scrollHeight: d.scrollHeight,
-      targets: targetFailures(f.contentDocument),
+    // Measure only once the layout has stopped moving, and capture the evidence
+    // in the same breath as the number.
+    //
+    // A fixed delay is not good enough here, and the reasons stacked up: the
+    // webfonts change text metrics when they swap, every route but Home is a
+    // lazily-imported chunk that renders after load fires (D-060), and the type
+    // grid briefly reports its uncontained width before paint containment clips
+    // it. Each produced its own phantom failure on roughly one run in six.
+    //
+    // Two equal readings 120ms apart was not enough either — a transient can sit
+    // still for longer than that. So: three consecutive identical readings, and
+    // the offending elements are collected inside the same read as the numbers,
+    // so a report can never disagree with itself the way an earlier version did
+    // (it printed a 1035px overflow with an empty offender list, because the
+    // page had settled between measuring and inspecting).
+    //
+    // A checker that cries wolf is a checker people learn to ignore.
+    const read = () => {
+      const doc = f.contentDocument;
+      // Force a layout flush before reading. Under Chrome's virtual clock,
+      // scrollWidth can hand back a cached value from before the last relayout
+      // while getBoundingClientRect() (which always flushes) reports the settled
+      // box — which is how an earlier version printed a 1016px overflow next to
+      // an empty list of overflowing elements. Reading a rect first puts both on
+      // the same layout.
+      d.getBoundingClientRect();
+      const scrollWidth = d.scrollWidth;
+      const clientWidth = d.clientWidth;
+      const offenders =
+        scrollWidth > clientWidth
+          ? [...doc.querySelectorAll("*")]
+              .map((el) => ({ el, r: el.getBoundingClientRect() }))
+              .filter(({ r }) => r.right > clientWidth + 0.5)
+              .sort((a, b) => b.r.right - a.r.right)
+              .slice(0, 3)
+              .map(({ el, r }) => ({
+                tag: el.tagName,
+                cls: String(el.className || "").slice(0, 70),
+                right: Math.round(r.right),
+                width: Math.round(r.width),
+              }))
+          : [];
+      return {
+        scrollWidth,
+        clientWidth,
+        scrollHeight: d.scrollHeight,
+        offenders,
+      };
+    };
+    const same = (a, b) =>
+      a.scrollWidth === b.scrollWidth &&
+      a.clientWidth === b.clientWidth &&
+      a.scrollHeight === b.scrollHeight;
+
+    f.contentDocument.fonts.ready.then(async () => {
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      await wait(150);
+      let prev = read();
+      let agreed = 0;
+      // ~4s of headroom. Every route settles well inside it; the cap only stops
+      // a genuinely unstable page from hanging the sweep.
+      for (let i = 0; i < 26 && agreed < 2; i++) {
+        await wait(150);
+        const next = read();
+        agreed = same(prev, next) ? agreed + 1 : 0;
+        prev = next;
+      }
+      resolve({ ...prev, targets: targetFailures(f.contentDocument) });
+      f.remove();
     });
-    // Timers rather than requestAnimationFrame: under Chrome's virtual clock a
-    // headless page with nothing animating may not schedule a frame at all, and
-    // the sweep hangs instead of measuring.
-    f.contentDocument.fonts.ready
-      .then(() => settle(200))
-      .then(read)
-      .then(() => settle(80))
-      .then(() => {
-        resolve(read());
-        f.remove();
-      });
   };
   document.body.appendChild(f);
 });
@@ -190,7 +240,14 @@ function targetFailures(doc) {
   const results = [];
   for (const width of WIDTHS)
     for (const route of ROUTES) {
-      const m = await load(route, width);
+      let m = await load(route, width);
+      // Re-measure anything that looks like a failure, in a fresh frame.
+      // Layout probes in a headless browser are inherently a little racy — a
+      // transient caught mid-settle does not survive a second, independent
+      // measurement, while a page that genuinely overflows fails every time. So
+      // a failure has to happen twice to be reported. This is the difference
+      // between a checker that is trusted and one that is muted.
+      if (m.scrollWidth > m.clientWidth) m = await load(route, width);
       results.push({ width, route, ...m });
     }
   document.getElementById("out").textContent =
@@ -283,9 +340,12 @@ if (overflow.length === 0) {
 }
 
 console.log(`\n── ${overflow.length} horizontal overflow(s) ─────────────────`);
-for (const r of overflow)
+for (const r of overflow) {
   console.log(
     `  ✗ ${r.route} @ ${r.width}px — scrollWidth ${r.scrollWidth} > ${r.clientWidth}`,
   );
+  for (const o of r.offenders ?? [])
+    console.log(`      <${o.tag}> "${o.cls}" right=${o.right} w=${o.width}`);
+}
 console.log();
 process.exit(1);

@@ -216,12 +216,30 @@ iframe sized to the width under test — an iframe establishes its own viewport,
 media queries respond to it and one browser launch covers every width. It reports
 page height per route too, which is what made [D-057](#d-057) measurable.
 
-**Two things had to be right before it could be believed.** It models **overlay
-scrollbars**, or every route appears to overflow by exactly a scrollbar's width.
-And it waits for `document.fonts.ready` and then takes two readings a frame
-apart: an early version measured on a fixed timer and reported a phantom 385px
-overflow about one run in six, caught mid-font-swap. A flaky checker is worse
-than no checker, because you learn to ignore it.
+**Getting it to be believable took longer than writing it.** A layout probe in a
+headless browser is racy in several independent ways, and each one produced its
+own phantom failure at roughly one run in six:
+
+- It models **overlay scrollbars**, or every route appears to overflow by exactly
+  a scrollbar's width.
+- It waits for `document.fonts.ready`, because text in the fallback stack is a
+  different width from text in Inter or Space Grotesk.
+- It waits for **three consecutive identical readings**, not one timer and not
+  two — every route but Home is a lazily-imported chunk that renders after `load`
+  fires ([D-060](#d-060)), and a transient can sit still for longer than a single
+  interval.
+- It forces a layout flush before reading, since `scrollWidth` can return a
+  cached value while `getBoundingClientRect()` reports the settled box. That
+  combination is how one version printed a 1016px overflow beside an **empty**
+  list of overflowing elements.
+- It pins the frame's width in CSS as well as the attribute, and it **re-measures
+  any failure in a fresh frame before reporting it.** A transient does not
+  survive an independent second measurement; a page that genuinely overflows
+  fails every time.
+
+Verified both ways: ten consecutive clean runs, and a deliberately injected
+1200px element is caught at every width with the offending node named. A flaky
+checker is worse than no checker, because you learn to mute it.
 
 **What it found about `FormChips`.** [04_design §9](04_design.md) and
 [05_roadmap Phase 5](05_roadmap.md) both carried them as "the one likely WCAG
