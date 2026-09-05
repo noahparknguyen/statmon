@@ -21,17 +21,30 @@ import { typeColorVar } from "../lib/types";
 // verified against text-primary by npm run audit:contrast.
 const FILL_ALPHA = "28%";
 
-function StatCell({ value, color, className = "" }) {
+// `animate` grows the fill in on mount, and only Home's preview passes it
+// (D-067). It is a prop rather than the default for the same reason CmpRow's is:
+// the real table windows its rows, so rows mount continuously while you scroll
+// and every one of them would animate on arrival — motion that says nothing,
+// on the surface that can least afford it. The two branches are written out
+// rather than composed because `--target` and `width` are different mechanisms;
+// reduced motion is handled globally by the rule that collapses animation
+// duration (index.css).
+function StatCell({ value, color, className = "", animate = false }) {
+  const fill = `color-mix(in srgb, ${typeColorVar(color)} ${FILL_ALPHA}, transparent)`;
   return (
     <td className={`px-1 ${className}`}>
       <div className="relative flex h-7 items-center justify-end overflow-hidden rounded-xs px-1.5">
-        <div
-          className="absolute inset-y-0 left-0"
-          style={{
-            width: statPct(value),
-            backgroundColor: `color-mix(in srgb, ${typeColorVar(color)} ${FILL_ALPHA}, transparent)`,
-          }}
-        />
+        {animate ? (
+          <div
+            className="absolute inset-y-0 left-0 animate-grow-w"
+            style={{ "--target": statPct(value), backgroundColor: fill }}
+          />
+        ) : (
+          <div
+            className="absolute inset-y-0 left-0"
+            style={{ width: statPct(value), backgroundColor: fill }}
+          />
+        )}
         <span className="relative text-stat-sm text-primary">{value}</span>
       </div>
     </td>
@@ -43,7 +56,15 @@ function StatCell({ value, color, className = "" }) {
 // table on every scroll frame, and a fresh object would give it a new prop
 // identity each time and re-render every visible row. A primitive keeps the memo
 // working, and resolving one row's view here costs nothing. (D-049)
-function DexRow({ pokemon, rowIndex, keys, asof, mobileStat, heightClass }) {
+function DexRow({
+  pokemon,
+  rowIndex,
+  keys,
+  asof,
+  mobileStat,
+  heightClass,
+  animate = false,
+}) {
   const view = eraView(pokemon, asof);
   const primary = view.types[0];
   const dex = dexNumberOf(pokemon);
@@ -110,6 +131,7 @@ function DexRow({ pokemon, rowIndex, keys, asof, mobileStat, heightClass }) {
           value={view.stats[key]}
           color={primary}
           className="hidden md:table-cell"
+          animate={animate}
         />
       ))}
 
@@ -118,6 +140,7 @@ function DexRow({ pokemon, rowIndex, keys, asof, mobileStat, heightClass }) {
           value={view.stats[mobileStat]}
           color={primary}
           className="md:hidden"
+          animate={animate}
         />
       )}
 

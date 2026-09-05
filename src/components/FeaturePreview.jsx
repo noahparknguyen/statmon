@@ -9,9 +9,14 @@ import PageHeader from "./PageHeader";
 // component rather than by memory — a new tool fills this in and is consistent
 // by construction, the same way CmpRow keeps the two comparison boards aligned.
 //
-// The hero (the comparison board) deliberately does NOT use this: it is the
-// flagship and keeps its unlabelled, mascot-flanked treatment. This is the
-// pattern for everything after it.
+// The flagship board does not use this shell: it keeps its mascot-flanked
+// treatment, though it now shares the heading block (D-067). This is the pattern
+// for everything after it.
+//
+// The two gaps are a proximity ratio, not two numbers (D-019): 32px from the
+// preview to its own CTA, 112px from that CTA to the next section's heading. At
+// mt-20/mt-6 the CTA sat close enough to the heading below it to look like that
+// section's kicker — a button belongs to what it came from.
 export default function FeaturePreview({
   title,
   description,
@@ -20,12 +25,12 @@ export default function FeaturePreview({
   children,
 }) {
   return (
-    <section className="mt-20">
+    <section className="mt-28">
       <PageHeader as="h2" title={title} subtitle={description} />
 
       <div>{children}</div>
 
-      <div className="mt-6 flex justify-center">
+      <div className="mt-8 flex justify-center">
         <Button to={to}>
           {cta}
           <LuArrowRight aria-hidden />

@@ -20,6 +20,40 @@ import { capitalize, typeColorVar } from "../lib/types";
 //
 // The whole thing is `matchupTiers` plus that; the grouping, the ordering and
 // the era's chart all live in lib/typeView.js.
+//
+// `MatchupHeading` ships beside it because the tier list is unreadable without
+// a statement of what is being attacked, and Home needs the same statement the
+// tool makes (D-067). It was written inline on /types; a second caller is
+// exactly when a block stops being page markup and becomes a component, which
+// is the D-058 rule. Two component exports from one file is the StabChip /
+// StabLabel shape already in use, so react-refresh stays happy.
+
+// The typing under attack, set as coloured text rather than as badges — an
+// 11px pill beside 18px display text is two type sizes on one line, and no
+// amount of aligning makes them sit together (D-053). The colour pairing is the
+// one group 2 of `npm run audit:contrast` covers.
+//
+// `as` is the heading level, not a style, for the same reason PageHeader takes
+// it: /types is the page, so its readout is an <h2>, while Home's sits inside a
+// feature section and is an <h3> one rung down. `id` is a prop because only
+// /types labels a section with it (aria-labelledby); Home's heading precedes
+// its list directly and needs no handle.
+export function MatchupHeading({ types, id, as: Heading = "h2" }) {
+  return (
+    <Heading id={id} className="mb-3 text-h4 text-secondary">
+      Attacking
+      <span aria-hidden className="text-tertiary">
+        {" — "}
+      </span>
+      {types.map((t, i) => (
+        <span key={t}>
+          {i > 0 && <span className="text-tertiary"> / </span>}
+          <span style={{ color: typeColorVar(t) }}>{capitalize(t)}</span>
+        </span>
+      ))}
+    </Heading>
+  );
+}
 
 // The tier's own label does the work a colour would elsewhere: 4× and 0× are the
 // two rows people are looking for, so they get the brightest treatment, and the

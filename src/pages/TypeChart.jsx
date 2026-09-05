@@ -2,12 +2,11 @@ import { useNavigate, useParams, useSearchParams } from "react-router";
 import GenerationStrip from "../components/GenerationStrip";
 import PageHeader from "../components/PageHeader";
 import { PAGE_TOOL } from "../components/pageChrome";
-import MatchupSummary from "../components/MatchupSummary";
+import MatchupSummary, { MatchupHeading } from "../components/MatchupSummary";
 import TypeGrid from "../components/TypeGrid";
 import TypePicker from "../components/TypePicker";
 import { allGenerations, parseAsOf } from "../lib/eras";
 import { parseTypes, typesUrl } from "../lib/typeView";
-import { capitalize, typeColorVar } from "../lib/types";
 
 // The type chart — Statmon's third tool (D-051).
 //
@@ -64,23 +63,11 @@ export default function TypeChart() {
 
       {types.length > 0 && (
         <section className="mt-6" aria-labelledby="matchup-heading">
-          {/* One type size on one baseline. Badges here put 11px pills beside
-              18px display text, and no amount of aligning makes those two sit
-              together — so the typing is set as text in its own colour instead,
-              which is the pairing D-023 already established for the comparison
-              board's diffs and group 2 of the contrast audit already covers. */}
-          <h2 id="matchup-heading" className="mb-3 text-h4 text-secondary">
-            Attacking
-            <span aria-hidden className="text-tertiary">
-              {" — "}
-            </span>
-            {types.map((t, i) => (
-              <span key={t}>
-                {i > 0 && <span className="text-tertiary"> / </span>}
-                <span style={{ color: typeColorVar(t) }}>{capitalize(t)}</span>
-              </span>
-            ))}
-          </h2>
+          {/* The heading moved into MatchupSummary.jsx when Home grew a preview
+              that needs the same statement of what is under attack (D-067). Its
+              reasoning — one type size on one baseline, so the typing is
+              coloured text and not badges (D-053) — travelled with it. */}
+          <MatchupHeading id="matchup-heading" types={types} />
           <MatchupSummary types={types} asof={asof} />
         </section>
       )}

@@ -7,13 +7,21 @@ import { STAT_ORDER, STAT_LABEL } from "../lib/stats";
 import { spriteFor } from "../lib/pokemon";
 import { stabMatchup } from "../lib/typeChart";
 
-// The Home hero board: a fixed, non-interactive comparison (Volcarona vs
-// Chandelure — the site's pseudo-mascots, D-023). It deliberately reuses the
+// Home's flagship board: a fixed, non-interactive comparison (Volcarona vs
+// Chandelure — the site's pseudo-mascots, D-023). It led the page until D-070
+// put the sprite wall above it; "hero" now means the wall, and this is the
+// first thing under it. It deliberately reuses the
 // comparison tool's visual language — mirrored type-colored bars, type-tinted
 // center diffs, the flame "Higher total" delta, and the flame speed banner — so
 // Home and the tool read as one site — the mirrored rows and the speed banner
 // are literally the tool's own components (CmpRow / SpeedBanner), not copies.
 // Bars grow in once on mount (`animate`), which is the only difference.
+//
+// It used to carry an sr-only <h2> reading "Example comparison: Volcarona vs
+// Chandelure" — the only heading the flagship had, and it named the mascots
+// rather than the tool. Home now heads the section with /compare's own title
+// and one-liner, visible to everyone, so this would be a second heading over
+// the same content (D-067).
 
 export default function FeaturedComparison({ p1, p2 }) {
   const delta = p1.bst - p2.bst;
@@ -21,9 +29,6 @@ export default function FeaturedComparison({ p1, p2 }) {
   const p1Leads = delta > 0;
   return (
     <div className="flex flex-col overflow-hidden bg-surface border border-border-subtle rounded-lg">
-      <h2 className="sr-only">
-        Example comparison: {p1.name} vs {p2.name}
-      </h2>
       {/* Heads — below 768px the sprite+name+badges+STAB grid crushes names to
         a few px, so it stacks (P1 head, STAB, P2 head); unchanged at ≥768px. */}
       <div className="flex flex-col gap-3 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center px-5 py-4 border-b border-border-subtle">
