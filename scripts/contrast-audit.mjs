@@ -205,6 +205,35 @@ for (const t of TYPES) {
   console.log(row(`${t} — resisted (secondary)`, ratio(secondary, fill), 4.5));
 }
 
+// Home's hero (D-070) puts the wordmark and tagline on a scrim over a wall of
+// sprites. Unlike every group above, the backdrop is not a token — it is
+// whatever pixel happens to be behind the text, which changes with the dataset.
+// So this audits the WORST backdrop a sprite can produce: a pure-white pixel
+// under `--hero-scrim` of base. Anything that passes here passes everywhere on
+// that wall, for any sample, forever.
+//
+// The scrim percentage is read from the stylesheet rather than restated, so the
+// number this proves and the number the browser paints cannot drift. This group
+// is why the tagline is `primary` on the hero and `secondary` everywhere else:
+// at 65% the secondary token lands around 2.8:1 and fails.
+console.log(
+  "\n=== 8. Home hero — text on the scrim over a worst-case white sprite pixel (AA 4.5) ===",
+);
+const scrimPct = raw.match(/--hero-scrim:\s*([\d.]+)%/);
+if (!scrimPct) {
+  fails.push("hero: --hero-scrim not found in index.css");
+} else {
+  const alpha = Number(scrimPct[1]) / 100;
+  const worst = blend(base, "#ffffff", alpha);
+  console.log(`  scrim ${scrimPct[1]}% of base over white → ${worst}`);
+  console.log(row("wordmark + tagline (primary)", ratio(primary, worst), 4.5));
+  // Recorded as the reason the tagline was promoted, not as a requirement.
+  const secondaryRatio = ratio(secondary, worst);
+  console.log(
+    `  (secondary on the same backdrop: ${secondaryRatio.toFixed(2)} — why hero text is primary)`,
+  );
+}
+
 console.log(`\n── ${fails.length} failure(s) ─────────────────────────────`);
 for (const f of fails) console.log(`  ✗ ${f}`);
 if (!fails.length) console.log("  All pairings pass. ✓");

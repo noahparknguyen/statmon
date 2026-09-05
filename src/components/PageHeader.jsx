@@ -14,7 +14,8 @@
 // the outline. Keeping the level a prop is what lets one component serve both
 // without either page growing a second `<h1>` (asserted in routes.test.jsx).
 //
-// Home's hero and the 404's numeral are deliberately NOT built from this: they
+// Home's wordmark (inside the hero wall) and the 404's numeral are deliberately
+// NOT built from this: they
 // are one-off treatments at a different size, documented as exemptions in
 // 04_design §6 rather than bent to fit.
 export default function PageHeader({ title, subtitle, as: Heading = "h1" }) {

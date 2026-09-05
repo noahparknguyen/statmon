@@ -100,6 +100,13 @@
       These generate utilities (bg-*, text-*, border-*). (06_style_guide §3)
      ------------------------------------------------------------------------ */
   --color-base: var(--color-neutral-950); /* bg-base */
+
+  /* How much of --color-base sits over Home's sprite wall (D-070). A token
+     rather than a literal because `npm run audit:contrast` reads THIS value and
+     checks text-primary against the worst backdrop a sprite can produce — a
+     pure-white pixel under this much base. Lower it and the audit fails rather
+     than the site quietly dropping below AA. */
+  --hero-scrim: 65%;
   --color-surface: var(--color-neutral-900); /* bg-surface */
   --color-elevated: var(--color-neutral-850); /* bg-elevated */
   --color-border-subtle: var(--color-neutral-700); /* border-border-subtle */
@@ -214,6 +221,10 @@
   --dur-base: 180ms;
   --dur-slow: 300ms;
   --dur-bar: 450ms;
+  /* Home's hero wall. Ambient rather than a response to anything, so it is
+     three orders of magnitude slower than the rest of the scale — a field that
+     large only needs to creep for the movement to register. */
+  --dur-wall: 120s;
 
   /* Default duration for every `transition-*` utility. Previously these ran at
      Tailwind's stock 150ms while 06_style_guide §9 documented 120ms for
@@ -578,6 +589,26 @@
   .animate-grow-w {
     width: var(--target);
     animation: grow-w var(--dur-bar) var(--ease-standard) both;
+  }
+
+  /* Home's hero wall (D-070). The layer is a 2x2 tiling of one sprite block, so
+     translating it -50% in BOTH axes puts the fourth copy exactly where the
+     first started and the diagonal loop is seamless. Percentages, so the tile
+     size can change at a breakpoint without breaking the seam. Linear, because
+     any easing in an endless drift reads as a stutter. Reduced motion needs no
+     special case: the global rule collapses the duration and caps the iteration
+     count, landing it on the loop point — pixel-identical to the start. */
+  .animate-wall {
+    animation: wall var(--dur-wall) linear infinite;
+  }
+}
+
+@keyframes wall {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(-50%, -50%);
   }
 }
 

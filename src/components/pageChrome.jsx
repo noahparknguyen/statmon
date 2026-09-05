@@ -11,7 +11,8 @@
 //   · **PAGE_CONTENT** — /credits, 404. Short read-and-leave pages with nothing
 //     below the fold to hurry toward, so they get the air.
 //
-// Home and /style are deliberately neither: Home is the hero and sets its own
+// Home and /style are deliberately neither: Home opens on a full-bleed hero and
+// sets its own
 // rhythm (04_design §6), and /style is a playground, not a page of the product.
 // Both are exemptions with a reason rather than more drift.
 //

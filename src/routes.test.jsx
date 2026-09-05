@@ -9,7 +9,8 @@ import TypeChart from "./pages/TypeChart";
 import Credits from "./pages/Credits";
 import StyleGuide from "./pages/StyleGuide";
 import NotFound from "./pages/NotFound";
-import { ALL_POKEMON, getBySlug } from "./lib/pokemon";
+import { ALL_POKEMON, getBySlug, spriteFor } from "./lib/pokemon";
+import { WALL_TILES } from "./components/SpriteWall";
 import { sortRows } from "./lib/dexTable";
 
 // Renders every route to a string and asserts it produced something. This is a
@@ -47,6 +48,16 @@ const render = (path) =>
       router={createMemoryRouter(routes, { initialEntries: [path] })}
     />,
   );
+
+// Rendered text rather than raw markup, for assertions that would otherwise trip
+// over the site's own markup: sr-only spans ("<sr-only>Generation </sr-only>5"),
+// and the comment node React inserts between text and an expression. Hoisted
+// here when a third describe wanted it.
+const text = (path) =>
+  render(path)
+    .replace(/<!-- -->/g, "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ");
 
 // A prop that quietly stopped being passed renders as "undefined" in the markup
 // rather than throwing, which every other test here would sail straight past —
@@ -90,15 +101,6 @@ describe.each([
 });
 
 describe("the compare route's generation views (D-045)", () => {
-  // The strip's chips read "<sr-only>Generation </sr-only>5", and React splits
-  // text from an expression with a comment node — so these assertions run
-  // against rendered text rather than raw markup.
-  const text = (path) =>
-    render(path)
-      .replace(/<!-- -->/g, "")
-      .replace(/<[^>]*>/g, " ")
-      .replace(/\s+/g, " ");
-
   it("renders a Gen 1 board with five stats and a Special", () => {
     const html = render("/compare/charizard/vs/blastoise?asof=1");
     expect(html).toContain("Spc");
@@ -249,12 +251,6 @@ describe("the type chart route (D-051)", () => {
     }
   });
 
-  const text = (path) =>
-    render(path)
-      .replace(/<!-- -->/g, "")
-      .replace(/<[^>]*>/g, " ")
-      .replace(/\s+/g, " ");
-
   it("renders the grid with no typing selected", () => {
     const html = render("/types");
     expect(html).toContain("Full chart");
@@ -396,9 +392,16 @@ describe("the dex route", () => {
 describe("Home's feature previews (D-043)", () => {
   const html = () => render("/");
 
-  it("still leads with the comparison hero", () => {
-    expect(html()).toContain("Volcarona");
-    expect(html()).toContain("Chandelure");
+  it("still shows the flagship board, under the hero wall", () => {
+    const page = html();
+    expect(page).toContain("Volcarona");
+    expect(page).toContain("Chandelure");
+    // The wall opens the page and the board follows it (D-070). Asserted by
+    // order rather than by presence, because "the board is on Home somewhere"
+    // was true of every layout this page has had.
+    expect(page.indexOf("A simple set of Pokémon tools")).toBeLessThan(
+      page.indexOf("Volcarona"),
+    );
   });
 
   // The dex preview is the Black & White team (D-044) — the run the project came
@@ -424,9 +427,9 @@ describe("Home's feature previews (D-043)", () => {
       (p) => p.name,
     );
     expect(expected[0]).toBe("Archeops");
-    // Scoped to the preview table: two of the six are the hero's mascots and
+    // Scoped to the preview table: two of the six are the flagship's mascots and
     // appear higher up the page, so searching the whole document would find
-    // the hero's copy of them rather than the row.
+    // the flagship board's copy of them rather than the row.
     const page = html();
     const preview = page.slice(page.indexOf(`aria-rowcount="${TEAM.length}"`));
     const positions = expected.map((name) => preview.indexOf(name));
@@ -440,7 +443,7 @@ describe("Home's feature previews (D-043)", () => {
 
   it("shows only the preview slice, never the whole dex", () => {
     const rows = (html().match(/aria-rowindex/g) ?? []).length;
-    // Six preview rows; the hero board has none.
+    // Six preview rows; the flagship board has none.
     expect(rows).toBe(TEAM.length);
     expect(html()).toContain(`aria-rowcount="${TEAM.length}"`);
   });
@@ -453,6 +456,86 @@ describe("Home's feature previews (D-043)", () => {
   it("keeps one h1 and puts the preview heading below it", () => {
     expect((html().match(/<h1/g) ?? []).length).toBe(1);
     expect(html().indexOf("<h1")).toBeLessThan(html().indexOf("<h2"));
+  });
+
+  // The flagship went unnamed on Home while every other tool reused its page's
+  // title and one-liner (D-067). These four assertions are what stop it from
+  // going quietly unnamed again, or from drifting away from the page it sells.
+  it("names the flagship, in the tool's own words", () => {
+    // The apostrophe in "who's" renders as &#x27;, so the assertion starts
+    // after it — this is still the whole of the rest of the sentence, and
+    // matching on entity encoding would be a test of React, not of the copy.
+    const SUBTITLE = "faster, hits harder, and is bulkier.";
+    // Asserted on both surfaces rather than written down once: if /compare
+    // rewrites its one-liner, this fails instead of letting Home advertise the
+    // old one.
+    expect(render("/compare")).toContain(SUBTITLE);
+    expect(html()).toContain(SUBTITLE);
+  });
+
+  it("heads all three sections, in page order", () => {
+    const page = text("/");
+    const at = (s) => page.indexOf(s);
+    expect(at("Compare")).toBeGreaterThan(-1);
+    expect(at("Compare")).toBeLessThan(at("Dex"));
+    expect(at("Dex")).toBeLessThan(at("Types"));
+    // One h1 (the wordmark) over one h2 per tool.
+    expect((html().match(/<h2/g) ?? []).length).toBe(3);
+  });
+
+  it("drops the sr-only heading that named the mascots, not the tool", () => {
+    expect(html()).not.toContain("Example comparison");
+  });
+
+  // The type preview is the defensive read — what beats Ground / Dark — and is
+  // unreadable without saying so, hence the shared MatchupHeading (D-067).
+  it("says what the type preview's tiers are attacking", () => {
+    const page = text("/");
+    expect(page).toContain("Attacking");
+    expect(page.indexOf("Attacking")).toBeGreaterThan(page.indexOf("Types"));
+    // Krookodile's typing, and the tiers the real chart computes for it:
+    // strongest first, down to the two attacking types that do nothing at all.
+    expect(page).toContain("Ground");
+    expect(page).toContain("Dark");
+    expect(page.indexOf("2×")).toBeLessThan(page.indexOf("0×"));
+    expect(page).toContain("Electric");
+    expect(page).toContain("Psychic");
+  });
+
+  // The section's promise is "every matchup, including dual types" — the one
+  // thing the tool exists for that a per-type page cannot do (D-051). Previewing
+  // it with a single type would advertise the wrong capability (D-068).
+  it("previews the type chart with a dual typing, and links to it", () => {
+    expect(getBySlug("krookodile").types).toHaveLength(2);
+    expect(html()).toContain('href="/types/ground/dark"');
+  });
+
+  // The wall is the page's greeting (D-070) and is sampled, not listed: it walks
+  // the default forms in dex order, so it must actually cross the whole series
+  // rather than showing the first 56 Pokémon.
+  it("samples the hero wall across every generation", () => {
+    const html = render("/");
+    const sprites = html.match(/image-rendering:pixelated/g) ?? [];
+    // The wall's 2x2 tiling, plus the six dex rows and the flagship board's two
+    // heads. The 2x2 is what makes the diagonal loop seam-free, so a change to
+    // it is a change to the animation and should fail here.
+    expect(sprites.length).toBe(WALL_TILES * 4 + 8);
+    // The sample starts at the top of the dex.
+    expect(html).toContain(spriteFor(getBySlug("bulbasaur")));
+  });
+
+  // The hero's tagline is `primary` where every other tagline on the site is
+  // `secondary`, and that is not a style preference: over the 65% scrim the
+  // secondary token lands at 2.78:1 and fails AA, which group 8 of
+  // `npm run audit:contrast` prints every run. This is the other half of that
+  // guarantee — the audit proves the number, this proves the site still uses it.
+  it("keeps the hero tagline on the colour the scrim was audited for", () => {
+    const tagline = render("/").match(
+      /<p[^>]*>A simple set of Pokémon tools\.<\/p>/,
+    )?.[0];
+    expect(tagline).toBeDefined();
+    expect(tagline).toContain("text-primary");
+    expect(tagline).not.toContain("text-secondary");
   });
 });
 
