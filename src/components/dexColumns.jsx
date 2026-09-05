@@ -25,3 +25,25 @@ export const COL = {
 // rows sliding out of sync while scrolling.
 export const ROW_HEIGHT = 48;
 export const ROW_HEIGHT_CLASS = "h-12"; // 48px — keep equal to ROW_HEIGHT
+
+// The header row's look, shared by the real table's sort buttons and Home's
+// static preview header. These had drifted: the table gave its header cell a
+// 40px inner button (`h-10`) and aligned with `justify-*`, while the preview
+// used `py-2` (≈27px) and aligned with `text-*` — the same row, two heights and
+// two alignment mechanisms, on the two surfaces that are supposed to look
+// identical (D-043). The preview is meant to be the tool, not a lookalike.
+//
+// HEAD_CELL goes on the <th>; HEAD_INNER on the button or span inside it, which
+// is what actually carries the height and the padding, so a cell with `p-0` and
+// a full-size child clicks anywhere in the header.
+export const HEAD_CELL = "border-b border-border-subtle bg-base p-0";
+export const HEAD_INNER =
+  "flex h-10 w-full items-center gap-0.5 px-2 text-overline";
+
+// Written out in full rather than composed, so Tailwind's scanner sees each one
+// (cf. D-028).
+export const HEAD_ALIGN = {
+  left: "justify-start",
+  center: "justify-center",
+  right: "justify-end",
+};

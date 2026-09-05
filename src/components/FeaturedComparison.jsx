@@ -2,10 +2,10 @@ import TypeBadge from "./TypeBadge";
 import CmpStatCard from "./CmpStatCard";
 import CmpRow from "./CmpRow";
 import SpeedBanner from "./SpeedBanner";
+import StabChip from "./StabChip";
 import { STAT_ORDER, STAT_LABEL } from "../lib/stats";
-import { typeColorVar, capitalize } from "../lib/types";
 import { spriteFor } from "../lib/pokemon";
-import { stabMatchup, formatMult } from "../lib/typeChart";
+import { stabMatchup } from "../lib/typeChart";
 
 // The Home hero board: a fixed, non-interactive comparison (Volcarona vs
 // Chandelure — the site's pseudo-mascots, D-023). It deliberately reuses the
@@ -138,29 +138,9 @@ function StabCenter({ attacker, defender }) {
       </span>
       <div className="flex flex-col gap-1">
         {stabMatchup(attacker, defender).map(({ type, mult }) => (
-          <StabPill key={type} type={type} mult={mult} />
+          <StabChip key={type} type={type} mult={mult} dense />
         ))}
       </div>
     </div>
-  );
-}
-
-function StabPill({ type, mult }) {
-  const tc = typeColorVar(type);
-  return (
-    <span
-      className="flex items-center gap-1.5 rounded-full px-2 py-0.5"
-      style={{
-        backgroundColor: `color-mix(in srgb, ${tc} 16%, var(--color-elevated))`,
-        border: `1px solid color-mix(in srgb, ${tc} 32%, transparent)`,
-      }}
-    >
-      <span
-        className="w-1.5 h-1.5 rounded-full shrink-0"
-        style={{ backgroundColor: tc }}
-      />
-      <span className="text-caption text-secondary">{capitalize(type)}</span>
-      <span className="text-meta text-primary">{formatMult(mult)}</span>
-    </span>
   );
 }

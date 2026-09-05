@@ -1,4 +1,6 @@
 import { LuExternalLink } from "react-icons/lu";
+import PageHeader from "../components/PageHeader";
+import { PAGE_CONTENT } from "../components/pageChrome";
 
 // Credits — blunt attribution pass (D-023). Sources, the repo link, and the
 // unofficial-fan-project disclaimer; the shared footer carries the byline.
@@ -22,15 +24,8 @@ const CREDITS = [
 
 export default function Credits() {
   return (
-    <div className="max-w-content mx-auto px-4 py-16">
-      <header className="mb-8">
-        <h1 className="text-h1">
-          Credits<span className="text-accent">.</span>
-        </h1>
-        <p className="mt-1 text-body text-secondary">
-          What Statmon is built on.
-        </p>
-      </header>
+    <div className={PAGE_CONTENT}>
+      <PageHeader title="Credits" subtitle="What Statmon is built on." />
 
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {CREDITS.map((c) => (

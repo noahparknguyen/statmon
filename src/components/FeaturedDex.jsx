@@ -1,6 +1,12 @@
 import { FaCaretDown } from "react-icons/fa6";
 import DexRow from "./DexRow";
-import { COL, ROW_HEIGHT_CLASS } from "./dexColumns";
+import {
+  COL,
+  HEAD_ALIGN,
+  HEAD_CELL,
+  HEAD_INNER,
+  ROW_HEIGHT_CLASS,
+} from "./dexColumns";
 import { getBySlug } from "../lib/pokemon";
 import { SORT_LABEL, SORT_LONG_LABEL, sortRows } from "../lib/dexTable";
 import { STAT_ORDER } from "../lib/stats";
@@ -39,8 +45,10 @@ const ROWS = sortRows(
   "desc",
 );
 
-const HEAD = "border-b border-border-subtle px-2 py-2 text-overline";
-
+// The header cell's geometry comes from dexColumns, the same constants the real
+// table's sort headers use, so the preview header and the tool's header are the
+// same row rather than two that merely resemble each other (D-043). A <span>
+// where the tool has a <button>: there is nothing to sort here.
 function Head({ colKey, className, align = "center" }) {
   const sorted = colKey === PREVIEW_SORT;
   return (
@@ -49,22 +57,17 @@ function Head({ colKey, className, align = "center" }) {
       // Accurate rather than decorative: these rows really are sorted by Speed,
       // descending. There are no sort controls here — that is what /dex is for.
       aria-sort={sorted ? "descending" : undefined}
-      className={`${HEAD} ${ALIGN[align]} ${sorted ? "text-accent" : "text-tertiary"} ${className}`}
+      className={`${HEAD_CELL} ${className}`}
     >
-      <span className="inline-flex items-center gap-0.5">
+      <span
+        className={`${HEAD_INNER} ${HEAD_ALIGN[align]} ${sorted ? "text-accent" : "text-tertiary"}`}
+      >
         {SORT_LABEL[colKey]}
         {sorted && <FaCaretDown aria-hidden />}
       </span>
     </th>
   );
 }
-
-// Written out rather than composed so Tailwind's scanner sees each one (D-028).
-const ALIGN = {
-  left: "text-left",
-  center: "text-center",
-  right: "text-right",
-};
 
 export default function FeaturedDex() {
   return (
@@ -81,11 +84,12 @@ export default function FeaturedDex() {
           <tr>
             <Head colKey="dex" className={COL.dex} align="left" />
             <Head colKey="name" className={COL.name} align="left" />
-            <th
-              scope="col"
-              className={`${HEAD} text-left text-tertiary ${COL.types}`}
-            >
-              Types
+            <th scope="col" className={`${HEAD_CELL} ${COL.types}`}>
+              <span
+                className={`${HEAD_INNER} ${HEAD_ALIGN.left} text-tertiary`}
+              >
+                Types
+              </span>
             </th>
             {STAT_ORDER.map((k) => (
               <Head key={k} colKey={k} className={COL.stat} />

@@ -2,20 +2,19 @@ import { FaCaretDown, FaCaretUp } from "react-icons/fa6";
 import DexRow from "./DexRow";
 import { useWindowedRows } from "../lib/useWindowedRows";
 import { SORT_LABEL, SORT_LONG_LABEL } from "../lib/dexTable";
-import { COL, ROW_HEIGHT, ROW_HEIGHT_CLASS } from "./dexColumns";
+import {
+  COL,
+  HEAD_ALIGN,
+  HEAD_CELL,
+  HEAD_INNER,
+  ROW_HEIGHT,
+  ROW_HEIGHT_CLASS,
+} from "./dexColumns";
 
 // The full-dex table. A real <table> rather than a grid of divs, so the browser
 // gives every cell its column header for free; windowing is done with a spacer
 // row above and below the rendered slice, which keeps that structure intact.
 //
-// Written out in full rather than composed, so Tailwind's scanner sees each
-// utility (cf. D-028).
-const ALIGN = {
-  left: "justify-start",
-  center: "justify-center",
-  right: "justify-end",
-};
-
 // The header has to out-paint the rows scrolling under it, and a background
 // alone does not achieve that: the stat cells position their fill and number
 // (relative/absolute) so the number sits over the bar, and a positioned element
@@ -41,13 +40,13 @@ function SortHeader({ colKey, view, onSort, className, align = "center" }) {
       aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}
       // top-14 is the site header's h-14; the two have to agree or the sticky
       // header either overlaps it or leaves a gap.
-      className={`sticky top-14 border-b border-border-subtle bg-base p-0 ${className}`}
+      className={`sticky top-14 ${HEAD_CELL} ${className}`}
       style={STICKY_HEAD}
     >
       <button
         type="button"
         onClick={() => onSort(colKey)}
-        className={`flex h-10 w-full items-center gap-0.5 px-2 text-overline transition-colors hover:text-primary ${ALIGN[align]} ${active ? "text-accent" : "text-tertiary"}`}
+        className={`${HEAD_INNER} transition-colors hover:text-primary ${HEAD_ALIGN[align]} ${active ? "text-accent" : "text-tertiary"}`}
       >
         {SORT_LABEL[colKey]}
         {/* The on-screen label is an abbreviation ("SpA", "#"), so the full name
@@ -127,10 +126,16 @@ export default function DexTable({ rows, view, keys, onSort, mobileStat }) {
             />
             <th
               scope="col"
-              className={`sticky top-14 border-b border-border-subtle bg-base px-2 text-left text-overline text-tertiary ${COL.types}`}
+              className={`sticky top-14 ${HEAD_CELL} ${COL.types}`}
               style={STICKY_HEAD}
             >
-              Types
+              {/* Not sortable, but the same cell geometry as its neighbours —
+                  it used its own px-2/py-0 before and sat a few px off them. */}
+              <span
+                className={`${HEAD_INNER} ${HEAD_ALIGN.left} text-tertiary`}
+              >
+                Types
+              </span>
             </th>
             {keys.map((key) => (
               <SortHeader

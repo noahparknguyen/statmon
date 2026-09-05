@@ -1,5 +1,7 @@
 import { useNavigate, useSearchParams } from "react-router";
 import DexFilters from "../components/DexFilters";
+import PageHeader from "../components/PageHeader";
+import { PAGE_TOOL } from "../components/pageChrome";
 import DexTable from "../components/DexTable";
 import { ALL_POKEMON } from "../lib/pokemon";
 import {
@@ -58,15 +60,8 @@ export default function Dex() {
   const mobileStat = keys.includes(view.sort) ? view.sort : null;
 
   return (
-    <div className="max-w-content mx-auto px-4 py-8">
-      <header className="mb-8 text-center">
-        <h1 className="text-h1">
-          Dex<span className="text-accent">.</span>
-        </h1>
-        <p className="mt-1 text-body-sm text-secondary">
-          Every Pokémon, sorted by any stat.
-        </p>
-      </header>
+    <div className={PAGE_TOOL}>
+      <PageHeader title="Dex" subtitle="Every Pokémon, sorted by any stat." />
 
       <DexFilters view={view} onChange={setView} />
 

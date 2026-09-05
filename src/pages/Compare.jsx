@@ -1,6 +1,8 @@
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { LuArrowLeftRight } from "react-icons/lu";
 import Button from "../components/Button";
+import PageHeader from "../components/PageHeader";
+import { PAGE_TOOL } from "../components/pageChrome";
 import SearchBar from "../components/SearchBar";
 import PokemonCard from "../components/PokemonCard";
 import ComparisonCard from "../components/ComparisonCard";
@@ -50,47 +52,53 @@ export default function Compare() {
   const selectAsOf = (g) => go(p1, p2, g);
 
   return (
-    <div className="max-w-content mx-auto px-4 py-8">
-      <header className="mb-8 text-center">
-        <h1 className="text-h1">
-          Compare<span className="text-accent">.</span>
-        </h1>
-        <p className="mt-1 text-body-sm text-secondary">
-          See who&apos;s faster, hits harder, and is bulkier.
-        </p>
-      </header>
+    <div className={PAGE_TOOL}>
+      <PageHeader
+        title="Compare"
+        subtitle="See who's faster, hits harder, and is bulkier."
+      />
 
-      {/* Search bars */}
-      <div role="search" className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-        <SearchBar label="Search Pokémon 1" onSelect={selectP1} />
-        <SearchBar label="Search Pokémon 2" onSelect={selectP2} />
-      </div>
+      {/* One controls panel, the same surface /dex and /types put their controls
+          on. This page used to leave the strip and Swap floating bare on the
+          page background — three tools, two treatments, and the odd one out was
+          the flagship.
 
-      {/* Board controls, on one line: the generation strip takes the width it
-          needs on the left and Swap sits opposite it, rather than stacking two
-          centred rows and leaving the middle empty. Below sm they stack, since
-          nine chips plus a button do not fit on a phone.
-          Swap is pinned right with its own `ml-auto` rather than the row using
-          `justify-between`: the strip renders nothing until a Pokémon is picked,
-          and with justify-between that left Swap sitting on the left of an empty
-          row, then jumping across the moment you chose one. */}
-      <div className="mb-3 flex flex-col items-center gap-3 sm:flex-row sm:items-end">
-        <GenerationStrip
-          label="Stats as of"
-          options={genOptions}
-          asof={asof}
-          onSelect={selectAsOf}
-        />
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={swap}
-          disabled={!p1 && !p2}
-          className="shrink-0 sm:ml-auto"
-        >
-          <LuArrowLeftRight aria-hidden />
-          Swap
-        </Button>
+          The lens sits BELOW the divider here where the other two tools put it
+          above, and that difference is the real relationship rather than drift:
+          on /dex and /types the generation decides what the controls below it
+          can even offer, so it leads. Here it is the selection that decides
+          which generations the strip may offer (D-045), so it follows. */}
+      <div className="mb-5 rounded-lg border border-border-subtle bg-surface p-4">
+        <div role="search" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <SearchBar label="Search Pokémon 1" onSelect={selectP1} />
+          <SearchBar label="Search Pokémon 2" onSelect={selectP2} />
+        </div>
+
+        {/* Board controls, on one line: the generation strip takes the width it
+            needs on the left and Swap sits opposite it, rather than stacking two
+            centred rows and leaving the middle empty. Below sm they stack, since
+            nine chips plus a button do not fit on a phone.
+            Swap is pinned right with its own `ml-auto` rather than the row using
+            `justify-between`: with justify-between, Swap sat on the left of the
+            row and jumped across the moment the strip grew. */}
+        <div className="mt-4 flex flex-col items-center gap-3 border-t border-border-subtle pt-4 sm:flex-row sm:items-end">
+          <GenerationStrip
+            label="Stats as of"
+            options={genOptions}
+            asof={asof}
+            onSelect={selectAsOf}
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={swap}
+            disabled={!p1 && !p2}
+            className="shrink-0 sm:ml-auto"
+          >
+            <LuArrowLeftRight aria-hidden />
+            Swap
+          </Button>
+        </div>
       </div>
 
       {/* Board: source order card1, card2, comparison. On lg the comparison

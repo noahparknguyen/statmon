@@ -7,6 +7,8 @@
 import { useState } from "react";
 import { LuX } from "react-icons/lu";
 import Button from "../components/Button";
+import PageHeader from "../components/PageHeader";
+import { PAGE_CONTENT } from "../components/pageChrome";
 import TypeBadge from "../components/TypeBadge";
 import StatBar from "../components/StatBar";
 import FeaturedComparison from "../components/FeaturedComparison";
@@ -215,16 +217,15 @@ export default function StyleGuide() {
   const charizard = getBySlug("charizard"); // has Mega forms → FormChips demo
 
   return (
-    <div className="max-w-content mx-auto px-6 py-10">
-      <header className="pb-8">
-        <h1 className="text-display">
-          Style guide<span className="text-accent">.</span>
-        </h1>
-        <p className="text-body text-secondary mt-2">
-          Every color, text style, and core component — rendered from the live
-          tokens and real components, so this page can't drift from the app.
-        </p>
-      </header>
+    <div className={PAGE_CONTENT}>
+      {/* This page of all pages renders through the shared shell: it had its own
+          `px-6` gutter against the uniform `px-4` every other route uses
+          (06_style_guide §8) and its own `text-display` title against their
+          `text-h1` — drift in the one file whose stated job is not to have any. */}
+      <PageHeader
+        title="Style guide"
+        subtitle="Every color, text style, and core component — rendered from the live tokens and real components, so this page can't drift from the app."
+      />
 
       <Section title="Core palette">
         <div className="flex flex-wrap gap-3">

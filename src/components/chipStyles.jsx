@@ -30,3 +30,14 @@ export const CHIP_OFF =
 // Selected, when the chip carries its own fill (a type colour, supplied inline
 // by the caller). The border gets out of the way; the fill is the state.
 export const CHIP_ON_FILLED = "border-transparent";
+
+// The filter family's geometry — the one geometry that is genuinely shared by
+// more than one call site, so it lives here with the colours rather than being
+// re-typed. `FilterChip` wears it, and so does the dex's "Filters (N)"
+// disclosure, which is not a filter chip but has to sit in a row with them.
+//
+// min-h-9 (36px) matches Button's compact size (04_design §6). Without it the
+// chips came out 25px tall — above the WCAG 2.5.8 AA floor of 24px, but a mean
+// target for a thumb, and inconsistent with every other compact control.
+export const CHIP_FILTER_GEOMETRY =
+  "min-h-9 gap-1.5 px-3 py-1.5 transition-colors";

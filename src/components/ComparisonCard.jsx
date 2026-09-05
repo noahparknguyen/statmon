@@ -1,8 +1,8 @@
-import { LuChevronsUp, LuChevronsDown, LuMinus, LuBan } from "react-icons/lu";
 import { STAT_LABEL } from "../lib/stats";
-import { typeColorVar, capitalize } from "../lib/types";
-import { stabMatchup, formatMult } from "../lib/typeChart";
+import { capitalize } from "../lib/types";
+import { stabMatchup } from "../lib/typeChart";
 import CmpStatCard from "./CmpStatCard";
+import StabChip from "./StabChip";
 import CmpRow from "./CmpRow";
 import SpeedBanner from "./SpeedBanner";
 
@@ -110,42 +110,6 @@ function Summary({ p1, p2, v1, v2 }) {
   );
 }
 
-// Effectiveness tier → icon, text color, and border strength for the chip.
-function tier(mult) {
-  if (mult === 0) return { Icon: LuBan, color: "text-tertiary", border: 28 };
-  if (mult >= 2)
-    return { Icon: LuChevronsUp, color: "text-primary", border: 55 };
-  if (mult < 1)
-    return { Icon: LuChevronsDown, color: "text-tertiary", border: 28 };
-  return { Icon: LuMinus, color: "text-secondary", border: 30 };
-}
-
-function EffChip({ type, mult }) {
-  const { Icon, color, border } = tier(mult);
-  const tc = typeColorVar(type);
-  return (
-    <div
-      className="flex items-center justify-between gap-2 w-full px-3 py-2 rounded-md"
-      style={{
-        backgroundColor: `color-mix(in srgb, ${tc} 14%, var(--color-elevated))`,
-        border: `1px solid color-mix(in srgb, ${tc} ${border}%, transparent)`,
-      }}
-    >
-      <span className="flex items-center gap-2">
-        <span
-          className="w-2.5 h-2.5 rounded-full shrink-0"
-          style={{ backgroundColor: tc }}
-        />
-        <span className="text-meta">{capitalize(type)}</span>
-      </span>
-      <span className={`flex items-center gap-1 ${color}`}>
-        <span className="text-diff">{formatMult(mult)}</span>
-        <Icon aria-hidden size={14} />
-      </span>
-    </div>
-  );
-}
-
 // The attacker's STAB into the defender, scored on the chart in force in the
 // selected era (D-045) — in Gen 1 that means no Dark, Steel or Fairy, Bug
 // hitting Poison for 2×, and Ghost doing nothing to Psychic.
@@ -161,7 +125,7 @@ function TypeMatchup({ attacker, attack, defend }) {
       </span>
       <div className="flex flex-col gap-2 w-full">
         {stab.map(({ type, mult }) => (
-          <EffChip key={type} type={type} mult={mult} />
+          <StabChip key={type} type={type} mult={mult} />
         ))}
       </div>
       <span className="text-caption text-tertiary">

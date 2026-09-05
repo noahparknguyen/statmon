@@ -10,6 +10,7 @@
  *   4. stat-bar fill vs the `elevated` track — non-text (graphical) contrast
  *   5. dex stat-cell text over its proportional type fill
  *   6. type-chart grid cells — the multiplier text on each cell fill
+ *   7. STAB chip — the type name and multiplier on the chip's own type fill
  *
  * Thresholds: AA normal text 4.5, AA large text 3.0, non-text (1.4.11) 3.0.
  * (Statmon's diff/badge/label text is small, so 4.5 applies.)
@@ -183,6 +184,26 @@ console.log(
     1.15,
   ),
 );
+
+// The STAB chip (components/StabChip.jsx) tints itself with the attacking type
+// at 14% over `elevated` and prints the type name plus its multiplier on that.
+// This pairing shipped on two surfaces for months and was audited by neither —
+// it was missed because the two copies each looked like a one-off decoration
+// rather than a text-on-fill pairing. Consolidating them is what surfaced it.
+//
+// Two rows per type: the name always takes `primary`, while the multiplier takes
+// the tier colour, of which `secondary` (everything below 2×) is the faintest
+// and therefore the only one worth testing. This group is why that tier is
+// `secondary` and not `tertiary` — tertiary failed on 17 of the 18.
+console.log(
+  "\n=== 7. STAB chip — text on a 14% type fill over elevated (AA 4.5) ===",
+);
+const secondary = hex("secondary");
+for (const t of TYPES) {
+  const fill = blend(hex(`type-${t}`), elevated, 0.14);
+  console.log(row(`${t} — name (primary)`, ratio(primary, fill), 4.5));
+  console.log(row(`${t} — resisted (secondary)`, ratio(secondary, fill), 4.5));
+}
 
 console.log(`\n── ${fails.length} failure(s) ─────────────────────────────`);
 for (const f of fails) console.log(`  ✗ ${f}`);

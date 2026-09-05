@@ -1,5 +1,7 @@
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import GenerationStrip from "../components/GenerationStrip";
+import PageHeader from "../components/PageHeader";
+import { PAGE_TOOL } from "../components/pageChrome";
 import MatchupSummary from "../components/MatchupSummary";
 import TypeGrid from "../components/TypeGrid";
 import TypePicker from "../components/TypePicker";
@@ -39,15 +41,11 @@ export default function TypeChart() {
     navigate(typesUrl(nextTypes, nextAsOf), { replace: true });
 
   return (
-    <div className="max-w-content mx-auto px-4 py-8">
-      <header className="mb-8 text-center">
-        <h1 className="text-h1">
-          Types<span className="text-accent">.</span>
-        </h1>
-        <p className="mt-1 text-body-sm text-secondary">
-          Every matchup, including dual types.
-        </p>
-      </header>
+    <div className={PAGE_TOOL}>
+      <PageHeader
+        title="Types"
+        subtitle="Every matchup, including dual types."
+      />
 
       <div className="rounded-lg border border-border-subtle bg-surface p-4">
         <div className="mb-4 border-b border-border-subtle pb-4">

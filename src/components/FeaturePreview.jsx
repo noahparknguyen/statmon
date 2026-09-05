@@ -1,5 +1,6 @@
 import { LuArrowRight } from "react-icons/lu";
 import Button from "./Button";
+import PageHeader from "./PageHeader";
 
 // The section shell every Home feature preview is built from (D-043): heading,
 // one-line description, the live preview itself, and a link into the real tool.
@@ -20,15 +21,9 @@ export default function FeaturePreview({
 }) {
   return (
     <section className="mt-20">
-      <header className="text-center">
-        <h2 className="text-h1">
-          {title}
-          <span className="text-accent">.</span>
-        </h2>
-        <p className="mt-1 text-body-sm text-secondary">{description}</p>
-      </header>
+      <PageHeader as="h2" title={title} subtitle={description} />
 
-      <div className="mt-6">{children}</div>
+      <div>{children}</div>
 
       <div className="mt-6 flex justify-center">
         <Button to={to}>

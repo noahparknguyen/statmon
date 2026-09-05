@@ -15,13 +15,9 @@ import {
   toggleType,
   typesFor,
 } from "../lib/dexTable";
-import { capitalize, typeColorVar, typeTextVar } from "../lib/types";
-import {
-  CHIP as CHIP_LOOK,
-  CHIP_OFF,
-  CHIP_ON,
-  CHIP_ON_FILLED,
-} from "./chipStyles";
+import { capitalize } from "../lib/types";
+import { CHIP, CHIP_FILTER_GEOMETRY, CHIP_OFF, CHIP_ON } from "./chipStyles";
+import FilterChip from "./FilterChip";
 
 // The dex's controls. Holds no view state of its own: it renders the view
 // parsed from the URL and reports the next one up, which the page writes back to
@@ -52,49 +48,6 @@ import {
 const FIELD_LOOK =
   "rounded-sm border border-border-subtle bg-elevated px-3 text-body-sm text-primary transition-colors focus-within:border-border-strong";
 const FIELD = `h-11 ${FIELD_LOOK}`;
-
-// Colour comes from the shared chip vocabulary (chipStyles.jsx), so the active
-// pairing is the audited TypeBadge one (D-027) and the inactive pairing is the
-// same neutral every other chip uses. Only geometry is local.
-// min-h-9 (36px) matches Button's compact size (04_design §6). Without it the
-// chips came out 25px tall — above the WCAG 2.5.8 AA floor of 24px, but a mean
-// target for a thumb, and inconsistent with every other compact control.
-const CHIP = `${CHIP_LOOK} min-h-9 gap-1.5 px-3 py-1.5 transition-colors`;
-
-// No aria-label: the visible text is the accessible name. Spelling the action
-// out ("Filter by Generation 1") would replace the name with a string that does
-// not contain the visible "Gen 1", which fails WCAG 2.5.3 (Label in Name) and
-// leaves speech control unable to act on the chip. The enclosing group's label
-// and aria-pressed already supply the context an explicit label was adding.
-function Chip({ active, onClick, label, color }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={`${CHIP} ${
-        active ? (color ? CHIP_ON_FILLED : CHIP_ON) : CHIP_OFF
-      }`}
-      style={
-        active && color
-          ? { backgroundColor: typeColorVar(color), color: typeTextVar() }
-          : undefined
-      }
-    >
-      {/* Inactive type chips still carry their colour, as a dot rather than a
-          fill — decorative, since the type's name is right beside it. */}
-      {!active && color && (
-        <span
-          aria-hidden
-          className="size-1.5 shrink-0 rounded-full"
-          style={{ backgroundColor: typeColorVar(color) }}
-        />
-      )}
-      {label}
-      {active && <LuX aria-hidden />}
-    </button>
-  );
-}
 
 function Group({ label, children }) {
   return (
@@ -184,7 +137,9 @@ export default function DexFilters({ view, onChange }) {
           aria-expanded={open}
           aria-controls="dex-filter-groups"
           onClick={() => setOpen((o) => !o)}
-          className={`${CHIP} h-9 shrink-0 ${panelCount > 0 ? CHIP_ON : CHIP_OFF}`}
+          className={`${CHIP} ${CHIP_FILTER_GEOMETRY} h-9 shrink-0 ${
+            panelCount > 0 ? CHIP_ON : CHIP_OFF
+          }`}
         >
           <LuSlidersHorizontal aria-hidden />
           Filters{panelCount > 0 && ` (${panelCount})`}
@@ -200,7 +155,7 @@ export default function DexFilters({ view, onChange }) {
       >
         <Group label="Types">
           {types.map((t) => (
-            <Chip
+            <FilterChip
               key={t}
               active={view.types.includes(t)}
               onClick={() => onChange(toggleType(view, t))}
@@ -218,7 +173,7 @@ export default function DexFilters({ view, onChange }) {
           {generations.length > 1 && (
             <Group label="Introduced in">
               {generations.map((g) => (
-                <Chip
+                <FilterChip
                   key={g}
                   active={view.gens.includes(g)}
                   onClick={() => onChange(toggleGen(view, g))}
@@ -229,7 +184,7 @@ export default function DexFilters({ view, onChange }) {
           )}
 
           <Group label="Options">
-            <Chip
+            <FilterChip
               active={!view.includeForms}
               onClick={() =>
                 onChange({ ...view, includeForms: !view.includeForms })
