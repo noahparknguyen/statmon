@@ -49,10 +49,16 @@ const ROUTES = [
   "/compare",
   "/compare/volcarona/vs/chandelure",
   "/compare/charizard/vs/blastoise?asof=1",
+  // The widest ability roster in the dex (38 characters over three chips) and
+  // the era case that renders a corrected STAB chip — the two shapes the card's
+  // 88px controls band has to hold (D-073, D-080).
+  "/compare/hydrapple/vs/happiny",
+  "/compare/krookodile/vs/gengar?asof=6",
   "/dex",
   "/dex?asof=1",
   "/types",
   "/types/water/flying",
+  "/types/electric?as=eelektross",
   "/credits",
   "/style",
   "/no-such-page",

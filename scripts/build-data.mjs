@@ -30,6 +30,7 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { encodeAll, titleCase } from "../src/lib/pokemonCodec.js";
+import { ABILITY_EFFECTS } from "../src/lib/abilities.js";
 import { TYPES } from "../src/lib/types.js";
 import {
   CHART,
@@ -230,6 +231,52 @@ function extractTypeEras(p, currentTypes) {
   return out.reverse();
 }
 
+/* ---------------------------- ABILITY HELPERS ----------------------------
+   Same `until` rule again (D-073). Two things make abilities simpler than
+   stats: the roster is small and slot-addressed, and across all 1,259 kept
+   entries the hidden ability is always slot 3 and there is never more than one
+   — so a roster is "slots 1–2, plus maybe slot 3".
+
+   `past_abilities` spells an empty slot as `ability: null`, which is how it
+   encodes an ability ARRIVING: 540 of the 568 records say "this Pokémon had no
+   hidden ability through Gen N". Only 28 are genuine substitutions (Gengar's
+   slot 1 was Levitate through Gen 6). Both are kept; the null ones are what
+   stop a Gen 4 board offering a hidden ability that did not exist yet.
+   ---------------------------------------------------------------------- */
+
+const extractAbilities = (p) =>
+  [...p.abilities]
+    .sort((a, b) => a.slot - b.slot)
+    .map((a) => ({ slug: a.ability.name, hidden: a.is_hidden }));
+
+function extractAbilityEras(p, current) {
+  // Slot → slug today, which the walk below rewinds from.
+  const resolved = new Map();
+  current.forEach((a, i) => resolved.set(a.hidden ? 3 : i + 1, a.slug));
+
+  const eras = (p.past_abilities ?? [])
+    .map((e) => ({
+      until: generationNumber(e.generation.name),
+      slots: e.abilities.map((a) => [a.slot, a.ability?.name ?? null]),
+    }))
+    .filter((e) => e.until)
+    .sort(byUntilDesc);
+
+  const out = [];
+  for (const { until, slots } of eras) {
+    const patch = {};
+    for (const [slot, slug] of slots) {
+      // Same no-op filter as the stat eras: a record that restates the value
+      // already in force would become a UI control that changes nothing.
+      if ((resolved.get(slot) ?? null) === slug) continue;
+      patch[slot] = slug;
+      resolved.set(slot, slug);
+    }
+    if (Object.keys(patch).length) out.push({ until, slots: patch });
+  }
+  return out.reverse(); // stored oldest-first
+}
+
 const sameStats = (a, b) =>
   ["hp", "attack", "defense", "spAtk", "spDef", "speed"].every(
     (k) => a[k] === b[k],
@@ -374,6 +421,7 @@ async function main() {
     for (const p of kept) {
       const stats = extractStats(p);
       const types = orderedTypes(p);
+      const abilities = extractAbilities(p);
       entries.push({
         id: p.id,
         slug: p.name,
@@ -388,6 +436,10 @@ async function main() {
         // entries that never changed.
         statEras: extractStatEras(p, stats),
         typeEras: extractTypeEras(p, types),
+        // The ability roster and its history (D-073). Empty for the 14 entries
+        // that carry no abilities at all — every one of them a speculative Mega.
+        abilities,
+        abilityEras: extractAbilityEras(p, abilities),
         // Filled in below for alternate forms; a default form always debuts
         // with its species.
         introducedIn: generation,
@@ -430,6 +482,21 @@ async function main() {
   console.log(`Verifying the type chart (${TYPES.length} types)…`);
   const chartMismatches = await verifyTypeChart(limit);
 
+  // 6b) Verify as much of the ability effect table as is verifiable (D-073).
+  // The MEANING of an entry cannot be checked — PokéAPI states Levitate's
+  // effect as the prose "Evades Ground moves." and nowhere as data — but its
+  // KEYS can be: every one has to be a real ability slug that some Pokémon in
+  // the dex actually has. That catches a typo, a rename, and an ability written
+  // down for a Pokémon this dataset does not carry, which is the failure mode a
+  // hand-maintained table actually has. The semantics are guarded by
+  // abilities.test.js instead. Hardcoded is still not the same as unverified.
+  const rostered = new Set(
+    entries.flatMap((e) => e.abilities.map((a) => a.slug)),
+  );
+  const unknownAbilities = Object.keys(ABILITY_EFFECTS).filter(
+    (slug) => !rostered.has(slug),
+  );
+
   entries.sort((a, b) => a.id - b.id);
   await writeFile(OUTPUT_FILE, JSON.stringify(encodeAll(entries)));
 
@@ -444,6 +511,11 @@ async function main() {
     e.statEras.some((era) => era.until === 1 && "special" in era.stats),
   );
   const redated = entries.filter((e) => e.introducedIn !== e.generation);
+  const withAbilityEras = entries.filter((e) => e.abilityEras.length);
+  const noAbilities = entries.filter((e) => !e.abilities.length);
+  const typeAffecting = entries.filter((e) =>
+    e.abilities.some((a) => a.slug in ABILITY_EFFECTS),
+  );
   const byGen = entries.reduce(
     (m, e) => ((m[e.generation] = (m[e.generation] ?? 0) + 1), m),
     {},
@@ -461,6 +533,12 @@ async function main() {
   );
   console.log(`Type eras       : ${withTypeEras.length} entries`);
   console.log(
+    `Abilities       : ${rostered.size} distinct, ${withAbilityEras.length} entries with history, ${typeAffecting.length} that bend a matchup${noAbilities.length ? ` (${noAbilities.length} entries have none)` : ""}`,
+  );
+  console.log(
+    `Ability table   : ${unknownAbilities.length ? `⚠ ${unknownAbilities.length} slug(s) no Pokémon has — ${unknownAbilities.join(", ")}` : `all ${Object.keys(ABILITY_EFFECTS).length} slugs are abilities in the dex ✓`}`,
+  );
+  console.log(
     `Forms re-dated  : ${redated.length}${undated.length ? ` ⚠ undated: ${undated.join(", ")}` : ""}`,
   );
   console.log(`Missing sprite  : ${missingSprite.length}`);
@@ -473,9 +551,14 @@ async function main() {
   );
   console.log(`Done in ${((Date.now() - started) / 1000).toFixed(1)}s`);
 
-  if (missingStats.length || chartMismatches.length) {
-    // Fail loudly — every entry must have all six stats, and the hardcoded
-    // chart must agree with its source.
+  if (
+    missingStats.length ||
+    chartMismatches.length ||
+    unknownAbilities.length
+  ) {
+    // Fail loudly — every entry must have all six stats, the hardcoded chart
+    // must agree with its source, and every ability the effect table names must
+    // be one a Pokémon in this dex actually has.
     process.exitCode = 1;
   }
 }

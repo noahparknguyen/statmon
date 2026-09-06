@@ -22,7 +22,18 @@
 // components — so they cannot hang off `PageHeader.jsx` either. Same shape as
 // `chipStyles.jsx` and `dexColumns.jsx`.
 
+// The vertical padding is deliberately ASYMMETRIC (D-083). Both edges used to
+// be the same number, and the two edges are not the same kind of edge: the top
+// is bounded by a sticky header that stays attached to the content as you
+// scroll, while the bottom is a terminal one — the footer's rule, and then the
+// end of the page. 32px above a heading reads as tight-but-intentional on a
+// working surface; the same 32px below the last card read as the footer
+// crowding the tool, because nothing is gained by ending close to it.
+//
+// The bottom number is `pb-20`, which is what Home already spends before its
+// own footer — so "space before the footer" is now one number across the site
+// rather than two that happened to differ.
 const PAGE = "max-w-content mx-auto px-4";
 
-export const PAGE_TOOL = `${PAGE} py-8`;
-export const PAGE_CONTENT = `${PAGE} py-16`;
+export const PAGE_TOOL = `${PAGE} pt-10 pb-20`;
+export const PAGE_CONTENT = `${PAGE} pt-16 pb-24`;

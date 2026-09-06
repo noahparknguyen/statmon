@@ -122,7 +122,7 @@ export default function FeaturedDex() {
           aria-hidden
           loading="lazy"
           decoding="async"
-          className="hidden lg:block pointer-events-none absolute z-0 left-1/2 ml-40 -top-44 w-60 -rotate-6 drop-shadow-art"
+          className="hidden lg:block pointer-events-none absolute z-0 left-1/2 ml-40 -top-36 w-60 -rotate-6 drop-shadow-art"
         />
       )}
       {TAIL && TAIL !== LEADER && (
@@ -132,7 +132,7 @@ export default function FeaturedDex() {
           aria-hidden
           loading="lazy"
           decoding="async"
-          className="hidden lg:block pointer-events-none absolute z-0 right-1/2 mr-40 -top-44 w-60 -rotate-6 -scale-x-100 drop-shadow-art"
+          className="hidden lg:block pointer-events-none absolute z-0 right-1/2 mr-40 -top-36 w-60 -rotate-6 -scale-x-100 drop-shadow-art"
         />
       )}
       <div className="relative z-10 overflow-hidden rounded-lg border border-border-subtle bg-surface">

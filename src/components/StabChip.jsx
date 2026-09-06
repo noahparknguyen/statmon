@@ -1,4 +1,5 @@
 import { LuChevronsUp, LuChevronsDown, LuMinus, LuBan } from "react-icons/lu";
+import { abilityLabel } from "../lib/abilities";
 import { capitalize, typeColorVar } from "../lib/types";
 import { formatMult } from "../lib/typeChart";
 
@@ -13,9 +14,17 @@ import { formatMult } from "../lib/typeChart";
 //
 // They are now one component with one variant, and the variant is **geometry
 // only**: the fill, the border weight, the tier colour and the tier icon are the
-// encoding, and are identical on both surfaces. `dense` is the inline pill that
-// Home's three-column head has room for; the default is the full-width row the
-// comparison card's stacked list wants.
+// encoding, and are identical on both surfaces. `size` is all that differs —
+// `sm` for Home's tight three-column head, `md` for the comparison board.
+//
+// **And the variant is now only a size, because the chip is a pill on both**
+// (D-079). It used to be a `w-full justify-between` bar here and an inline pill
+// on Home, which is why they needed different names: the bar was sized by its
+// container rather than by its content, so it stretched to **686px at 767px
+// wide and 819px at 900px** to hold about 120px of text. `ComparisonCard` is
+// `md:col-span-2`, so below `lg` it spans the whole board and the bar went with
+// it. Every other chip on this site is a content-sized pill (chipStyles.jsx);
+// this was the one stretched control, and it was the one that looked wrong.
 //
 // The tool's treatment is the one that survived the merge, because its border
 // carries information the flat 32% did not: a 2× chip is drawn more strongly
@@ -24,6 +33,14 @@ import { formatMult } from "../lib/typeChart";
 //
 // Never colour alone (04_design §9): every chip states its multiplier as text,
 // and the icon is a third cue on top of that.
+//
+// **Both new pieces of text are `secondary`, and that is the audit talking.**
+// The ability caption and the struck-through original sit on the same 14% type
+// fill as everything else in here, and `tertiary` over that fill measures
+// 3.59–4.38 — failing AA on seventeen of the eighteen types. That is precisely
+// the bug D-058 found and fixed; writing either of them in `tertiary` would
+// have reintroduced it on a surface group 7 of `npm run audit:contrast` already
+// covers. The struck value recedes by its strike, not by its colour.
 
 // Effectiveness tier → icon, text color, and border strength for the chip.
 //
@@ -56,20 +73,30 @@ function tier(mult) {
 const FILL = 14;
 
 // Written out in full rather than composed, so Tailwind's scanner sees every
-// utility (cf. D-028).
+// utility (cf. D-028). Both are pills: `rounded-full` is the shape of every
+// control on this site (04_design §6), and the chip has no reason to be the
+// exception.
 const SHAPE = {
-  full: "w-full justify-between gap-2 px-3 py-2 rounded-md",
-  dense: "gap-2 px-2 py-1 rounded-full",
+  md: "gap-2 px-3 py-1.5 rounded-full",
+  sm: "gap-2 px-2 py-1 rounded-full",
 };
-const DOT = { full: "size-2.5", dense: "size-1.5" };
+const DOT = { md: "size-2.5", sm: "size-1.5" };
 
-export default function StabChip({ type, mult, dense = false }) {
+export default function StabChip({
+  type,
+  mult,
+  baseMult = mult,
+  via = null,
+  size = "md",
+}) {
   const { Icon, color, border } = tier(mult);
-  const key = dense ? "dense" : "full";
   const tc = typeColorVar(type);
+  // `via` is set only when the defender's ability actually moved the number
+  // (lib/typeChart's stabMatchup decides that, so this does not recompute it).
+  const corrected = via != null;
   return (
     <div
-      className={`flex items-center ${SHAPE[key]}`}
+      className={`inline-flex items-center ${SHAPE[size]}`}
       style={{
         backgroundColor: `color-mix(in srgb, ${tc} ${FILL}%, var(--color-elevated))`,
         border: `1px solid color-mix(in srgb, ${tc} ${border}%, transparent)`,
@@ -77,12 +104,37 @@ export default function StabChip({ type, mult, dense = false }) {
     >
       <span className="flex items-center gap-1.5">
         <span
-          className={`${DOT[key]} shrink-0 rounded-full`}
+          className={`${DOT[size]} shrink-0 rounded-full`}
           style={{ backgroundColor: tc }}
         />
         <span className="text-meta">{capitalize(type)}</span>
       </span>
       <span className={`flex items-center gap-1 ${color}`}>
+        {/* The correction is the interesting fact — "Ground is 0×" is worth
+            less than "Ground WOULD be 2×, and is 0×" — so the chart's own
+            answer stays on screen with a line through it. Both variants show
+            it: D-058 allows them to differ in geometry, not in what they
+            encode. `line-through` is decoration, so the change is stated for a
+            screen reader too, and stated NEUTRALLY: Fluffy doubles Fire, so
+            "reduced to" would be wrong on the one entry that makes its holder
+            worse off.
+
+            **What is NOT here is the ability's name** (D-079). It used to sit
+            under the type as a second line, which made a corrected chip 43px
+            against its sibling's 32 and put 11px text under 12px text. A
+            defender has exactly one ability, so naming it per chip was
+            redundant by construction — the surface names it once instead: the
+            caption under this group on /compare, the defender's head on Home. */}
+        {corrected && (
+          <>
+            <span aria-hidden className="text-diff text-secondary line-through">
+              {formatMult(baseMult)}
+            </span>
+            <span className="sr-only">
+              {formatMult(baseMult)} on the chart, and{" "}
+            </span>
+          </>
+        )}
         <span className="text-diff">{formatMult(mult)}</span>
         <Icon aria-hidden size={14} />
       </span>
@@ -104,6 +156,46 @@ export function StabLabel({ children }) {
         — same type attack bonus, the damage from moves matching the attacker's
         own type
       </span>
+    </span>
+  );
+}
+
+// The line under a group of StabChips: what is being attacked, and — once, not
+// on every chip — the ability that bent the answer (D-079).
+//
+// A component rather than markup on the page because it has two callers, which
+// is the D-058 rule for when a block stops being page markup. The second caller
+// is `/style`, and it having a hand-copy of this was live drift within a
+// session: the copy kept the accent dot and missed the `sr-only` expansion the
+// real one grew, in the file whose entire stated purpose is rendering the real
+// components instead of copies. Three exports from one file is the shape this
+// module already had. (D-090)
+//
+// `via` is the ability slug or null; it comes from `stabMatchup`, which sets it
+// only when the ability actually moved a number, so a Levitate that changed
+// nothing is never advertised as though it had.
+export function StabCaption({ types, via = null }) {
+  return (
+    <span className="text-caption text-tertiary">
+      vs{" "}
+      <span className="text-secondary">
+        {types.map(capitalize).join(" / ")}
+      </span>
+      {via && (
+        <>
+          <span aria-hidden>{" · "}</span>
+          {/* The dot carries meaning — it is AbilityChips' "changes type
+              matchups" marker — so it says so out loud rather than leaving a
+              screen reader a bare ability name with no reason for it. Never
+              colour alone (04_design §9). */}
+          <span
+            aria-hidden
+            className="mr-1 inline-block size-1.5 rounded-full bg-accent align-middle"
+          />
+          <span className="sr-only">changed by </span>
+          <span className="text-secondary">{abilityLabel(via)}</span>
+        </>
+      )}
     </span>
   );
 }

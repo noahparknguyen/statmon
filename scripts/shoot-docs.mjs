@@ -79,7 +79,12 @@ const SHOTS = [
   // failure D-064 exists to prevent.
   ["/compare/volcarona/vs/chandelure", 1600, 900, "docs/compare.png"],
   ["/dex", 1600, 900, "docs/dex.png"],
-  ["/types/water/flying", 1600, 900, "docs/types.png"],
+  // Bronzong rather than a bare Water/Flying: the page can now be asked about a
+  // Pokémon (D-075), and it is Steel/Psychic with Levitate — so one frame shows
+  // the dual-type readout the tool exists for, the search that reaches it, and
+  // Ground dropping from 2x to 0x because of an ability (D-073). A screenshot of
+  // the typing alone would show the version before this session.
+  ["/types/psychic/steel?as=bronzong", 1600, 900, "docs/types.png"],
 ];
 
 // The two social frames must come out centred. This check exists because they

@@ -9,6 +9,7 @@
 //
 // Explicit .js extension on the import below, like pokemonCodec: scripts/*.mjs
 // load this module under plain Node ESM to verify it against PokéAPI.
+import { abilityMultiplier } from "./abilities.js";
 import { TYPES } from "./types.js";
 
 export const CHART = {
@@ -220,25 +221,51 @@ export function chartAsOf(gen = null) {
 // Multiplier of a single attacking type vs a defender's full typing (product
 // over each defending type → 0, ¼, ½, 1, 2, or 4), on the chart in force at
 // `gen`.
-export function effectiveness(attackType, defenderTypes, gen = null) {
+//
+// `ability` is the DEFENDER's, and applies on top of the chart — Ground into an
+// Electric type is 2× and Levitate takes it to 0×. It is the last word rather
+// than a special case in the reduce because that is what it is mechanically:
+// the type product happens, then the ability edits the result (D-073). Passing
+// none, or one with no effectiveness clause, returns the chart's own answer.
+export function effectiveness(
+  attackType,
+  defenderTypes,
+  gen = null,
+  ability = null,
+) {
   const chart = chartAsOf(gen);
-  return defenderTypes
+  const base = defenderTypes
     .filter((def) => typeExistsIn(def, gen))
     .reduce((mult, def) => mult * (chart[attackType]?.[def] ?? 1), 1);
+  return abilityMultiplier(base, attackType, ability, gen);
 }
 
 // For an attacker vs a defender: each of the attacker's types is a STAB move
-// type. Returns [{ type, mult }] for each. Both arguments are anything with a
-// `types` array — a dataset entry, or an era view of one (lib/eras.js).
-export function stabMatchup(attacker, defender, gen = null) {
-  return attacker.types.map((type) => ({
-    type,
-    mult: effectiveness(type, defender.types, gen),
-  }));
+// type. Returns [{ type, mult, baseMult, via }] for each. The first two
+// arguments are anything with a `types` array — a dataset entry, or an era view
+// of one (lib/eras.js); `ability` is the defender's.
+//
+// `via` is the ability slug ONLY when it actually changed the answer, and is
+// null otherwise. That is the whole of what the chip needs to render the
+// correction (2̶×̶ 0×, "via Levitate"), so no component recomputes the
+// comparison to find out whether there was one.
+export function stabMatchup(attacker, defender, gen = null, ability = null) {
+  return attacker.types.map((type) => {
+    const baseMult = effectiveness(type, defender.types, gen);
+    const mult = effectiveness(type, defender.types, gen, ability);
+    return { type, mult, baseMult, via: mult === baseMult ? null : ability };
+  });
 }
 
+// ⅛× is reachable only with an ability in play: a defender that already resists
+// twice, whose ability halves again. Four entries do it — Dewgong, Spheal,
+// Sealeo and Walrein are Water/Ice with **Thick Fat in slot 1**, so Ice into
+// them is ¼ × ½, and it is their DEFAULT reading rather than an opt-in one.
+// Without a label here it printed a raw "0.125×"; without the matching entry in
+// MULT_ORDER the tier list dropped Ice from /types altogether (D-084).
 const MULT_LABEL = {
   0: "0×",
+  0.125: "⅛×",
   0.25: "¼×",
   0.5: "½×",
   1: "1×",

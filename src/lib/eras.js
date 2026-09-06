@@ -26,6 +26,7 @@
 // Pure functions over plain data — no React, no DOM — so this is unit-tested
 // directly (eras.test.js) and the page stays thin on top of it, the same split
 // as lib/dexTable.js.
+import { ABILITIES_FROM_GEN, abilitiesAsOf } from "./abilities";
 import { ALL_POKEMON } from "./pokemon";
 import { GEN1_STAT_ORDER, STAT_ORDER } from "./stats";
 
@@ -61,13 +62,18 @@ function statAt(p, key, gen) {
 
 /**
  * One Pokémon as it was at `gen`, in the shape the comparison components read:
- * `{ gen, keys, stats, bst, types }`. Pass `gen: null` for today, which returns
- * the entry's own values untouched — so every caller handles one shape and the
- * current view costs nothing.
+ * `{ gen, keys, stats, bst, types, abilities }`. Pass `gen: null` for today,
+ * which returns the entry's own values untouched — so every caller handles one
+ * shape and the current view costs nothing.
  *
  * The BST is summed over `keys`, which is what makes a Gen 1 total a five-stat
  * total: Alakazam reads 405 there, not 500. That is correct, not a rounding
  * error — Gen 1 had one fewer stat to add up.
+ *
+ * `abilities` joins the view rather than being resolved beside it (D-073), so
+ * there is one "this Pokémon as it was" function and not two that can disagree
+ * about which generation is being read. In a Gen 1 or Gen 2 view it is empty,
+ * because abilities did not exist yet.
  */
 export function eraView(pokemon, gen = null) {
   if (!pokemon) return null;
@@ -78,6 +84,7 @@ export function eraView(pokemon, gen = null) {
       stats: pokemon.stats,
       bst: pokemon.bst,
       types: pokemon.types,
+      abilities: pokemon.abilities,
     };
   }
   const keys = keysFor(pokemon, gen);
@@ -91,6 +98,7 @@ export function eraView(pokemon, gen = null) {
     stats,
     bst: sum(Object.values(stats)),
     types: typeEra ? typeEra.types : pokemon.types,
+    abilities: abilitiesAsOf(pokemon, gen),
   };
 }
 
@@ -99,16 +107,32 @@ export function eraView(pokemon, gen = null) {
    ---------------------------------------------------------------------- */
 
 // Whether a Pokémon reads differently at `gen` than it does today — a changed
-// stat, a changed typing, or Gen 1's five-stat shape. Drives the marker on the
-// strip, so the control doubles as a map of where this matchup has history
-// (D-046) instead of nine identical-looking buttons.
+// stat, a changed typing, a changed ability roster, or Gen 1's five-stat shape.
+// Drives the marker on the strip, so the control doubles as a map of where this
+// matchup has history (D-046) instead of nine identical-looking buttons.
+//
+// Abilities count because the board visibly changes with them, and in the case
+// that matters most they change the ANSWER: Gengar carried Levitate through
+// Gen 6, so a Ground STAB into it reads 0× there and 2× today. Leaving them out
+// would have left the site's clearest era interaction unmarked (D-073).
+//
+// But NOT below Generation III, where nobody had abilities. That absence is a
+// fact about the games, not about this Pokémon, so marking it would put a dot
+// on Gen 2 for every entry in the dex and say nothing — the D-049 reason the
+// dex has no dots at all. Confined to Gen 3 up, an ability change marks 18% of
+// the strip's chips; counting the universal ones took it to 27%.
 export function differsFromToday(pokemon, gen) {
   const view = eraView(pokemon, gen);
+  const sameAbilities =
+    gen < ABILITIES_FROM_GEN ||
+    (view.abilities.length === pokemon.abilities.length &&
+      view.abilities.every((a, i) => a.slug === pokemon.abilities[i].slug));
   return (
     view.keys !== STAT_ORDER ||
     STAT_ORDER.some((k) => view.stats[k] !== pokemon.stats[k]) ||
     view.types.length !== pokemon.types.length ||
-    view.types.some((t, i) => t !== pokemon.types[i])
+    view.types.some((t, i) => t !== pokemon.types[i]) ||
+    !sameAbilities
   );
 }
 

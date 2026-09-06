@@ -562,7 +562,21 @@
 
      The column bar is deliberately taller than the table and clipped by the
      panel's own overflow — that is what lets one cell paint a full-height bar
-     without knowing how tall the table is. */
+     without knowing how tall the table is.
+
+     **Both overlays need an explicit z-index, and the reason is paint order,
+     not layering taste** (D-088). Each cell's fill is a `position: relative`
+     <div> INSIDE the td, and the td itself is positioned with `z-index: auto`,
+     so it is not a stacking context: the pseudo-elements and every cell's fill
+     all compete in the same one and resolve by tree order. That produced two
+     halves of one bug. The row tint (::before) comes before its own cell's
+     fill, so the fill painted over it and only the 1px gutter around each cell
+     lit up — the rounded square stayed dark while the background behind it
+     changed. The column bar (::after) comes after its own cell but before every
+     LATER row's, so it covered the cells above the pointer and was painted over
+     by the ones below. Lifting both out of tree order fixes both symptoms at
+     once. The td must NOT get a z-index of its own: that would make it a
+     stacking context and trap the column bar inside one cell. */
   .type-grid td {
     position: relative;
   }
@@ -575,12 +589,16 @@
   }
   .type-grid tbody tr:hover td::before {
     inset: 0;
+    z-index: var(--z-raised);
   }
   .type-grid td:hover::after {
     top: -100vh;
     bottom: -100vh;
     left: 0;
     right: 0;
+    /* Above the row tint, so their overlap at the hovered cell reads as one
+       crossing rather than two stacked washes. */
+    z-index: calc(var(--z-raised) + 1);
   }
 
   /* Bar grow-in for the Home featured board (D-023). Animates width from 0 to

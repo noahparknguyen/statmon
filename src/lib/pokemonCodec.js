@@ -26,6 +26,9 @@
 //   se [stat eras]  — only for the 193 entries whose base stats ever changed
 //   te [type eras]  — only for the 29 entries whose typing ever changed
 //   in introducedIn — only when it differs from the species generation
+//   ab [ability slugs]  — the normal abilities, slots 1–2, in slot order
+//   ah ability slug     — the hidden ability (slot 3), when there is one
+//   ae [ability eras]   — only for the 464 entries whose roster ever changed
 //
 // The three era fields are the D-045 addition. `se`/`te` store one record per
 // change as [until, payload], where `until` is the LAST generation those values
@@ -33,6 +36,25 @@
 // so the stored data reads the same as its source. Stat keys are indices into
 // ERA_STAT_KEYS, which is STAT_ORDER plus Gen 1's `special` at the end; the
 // six-stat `st` array above is untouched by that extension.
+//
+// The three ability fields are the D-073 addition, on the same `until` rule.
+// `ab`/`ah` are split rather than stored as one list with a flag because the
+// dataset makes it free: across all 1,259 entries the hidden ability is ALWAYS
+// slot 3, there is never more than one, and there are never more than two
+// normal ones. Two flat fields therefore carry the same information as slot
+// tuples, and cost less.
+//
+// `ae` stores slot PATCHES — [until, [[slot, slug], …]] — where `0` means the
+// slot was empty then. That is the `se` shape rather than the `te` one, and
+// deliberately: 540 of the 566 stored records are a single empty slot ("no
+// hidden ability yet"), so patching measured 1.5 kB gzip cheaper than restating
+// the whole roster. (PokéAPI serves 568 records over these entries; the build's
+// no-op filter drops two that restate a value already in force — the Hisuian
+// Sliggoo and Goodra, each re-stating Shell Armor in slot 2. The counts here
+// are the STORED ones, like `se` and `te` above.)
+//
+// `0` rather than `null` for the same reason JSON nulls are avoided elsewhere
+// here — it is one byte instead of four, on the field that occurs most.
 //
 // Explicit .js extension (unlike the rest of src/, which relies on Vite's
 // resolver) because scripts/*.mjs import this module under plain Node ESM.
@@ -74,6 +96,17 @@ export function encodeEntry(e) {
   if (e.typeEras?.length)
     row.te = e.typeEras.map(({ until, types }) => [until, types]);
   if (e.introducedIn !== e.generation) row.in = e.introducedIn;
+  const normal = (e.abilities ?? []).filter((a) => !a.hidden);
+  const hidden = (e.abilities ?? []).find((a) => a.hidden);
+  if (normal.length) row.ab = normal.map((a) => a.slug);
+  if (hidden) row.ah = hidden.slug;
+  if (e.abilityEras?.length)
+    row.ae = e.abilityEras.map(({ until, slots }) => [
+      until,
+      // Object keys that are integer-like enumerate in ascending numeric order,
+      // so this is stable without sorting — which the round-trip test relies on.
+      Object.entries(slots).map(([slot, slug]) => [Number(slot), slug ?? 0]),
+    ]);
   return row;
 }
 
@@ -102,6 +135,18 @@ export function decodeEntry(r) {
       stats: Object.fromEntries(patch.map(([i, v]) => [ERA_STAT_KEYS[i], v])),
     })),
     typeEras: (r.te ?? []).map(([until, types]) => ({ until, types })),
+    // Slot order, normal then hidden — the order the chips are rendered in and
+    // the order `defaultAbility` reads slot 1 from.
+    abilities: [
+      ...(r.ab ?? []).map((slug) => ({ slug, hidden: false })),
+      ...(r.ah ? [{ slug: r.ah, hidden: true }] : []),
+    ],
+    abilityEras: (r.ae ?? []).map(([until, patch]) => ({
+      until,
+      slots: Object.fromEntries(
+        patch.map(([slot, slug]) => [slot, slug || null]),
+      ),
+    })),
     // The generation this exact entry first existed in. Equal to the species
     // generation for every default form, later for alt forms: Alolan Raichu is
     // a Gen 1 species introduced in Gen 7, and Mega Alakazam in Gen 6.

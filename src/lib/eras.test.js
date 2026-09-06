@@ -118,7 +118,33 @@ describe("generationOptions", () => {
     // The old change-boundary model rendered nothing here, which is what made
     // the control feel like it came and went for no visible reason (D-046).
     expect(gens([p("volcarona"), p("chandelure")])).toEqual([5, 6, 7, 8, 9]);
-    expect(marked([p("volcarona"), p("chandelure")])).toEqual([]);
+    // Volcarona and Samurott have no history of any kind — no stat era, no
+    // type era, no ability era — so the strip is nine unmarked chips and the
+    // control is still there. (The mascot pair above no longer qualifies:
+    // Chandelure's hidden ability changed, which is the next test.)
+    expect(marked([p("volcarona"), p("samurott")])).toEqual([]);
+  });
+
+  it("marks a generation whose ability roster differs, not just its stats", () => {
+    // Chandelure's hidden ability was Shadow Tag through Gen 5 and is
+    // Infiltrator now, so a Gen 5 board is genuinely a different board — and
+    // the dot has to say so, or the one era interaction this feature turns on
+    // would be invisible on the control that selects it (D-073).
+    expect(marked([p("chandelure")])).toEqual([5]);
+    expect(p("chandelure").abilityEras).toEqual([
+      { until: 5, slots: { 3: "shadow-tag" } },
+    ]);
+    // Gengar carried Levitate through Gen 6 — the clearest era interaction on
+    // the site — so 3 through 6 are marked. Gen 1 is marked too, for the older
+    // reason: the five-stat Special shape.
+    //
+    // **Gen 2 is the interesting one, because it is NOT marked.** Gengar had no
+    // ability then and has one now, which is a difference — but it is a fact
+    // about the games rather than about Gengar, true of every entry in the dex.
+    // Counting it would put a dot on Gen 2 for all 1,259 of them and say
+    // nothing, which is the D-049 reason the dex has no dots at all. The floor
+    // in differsFromToday is what this gap measures.
+    expect(marked([p("gengar")])).toEqual([1, 3, 4, 5, 6]);
   });
 
   it("starts at the later debut, which is why Gen 1 is off the table for a mixed pair", () => {

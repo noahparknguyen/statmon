@@ -8,6 +8,7 @@ import {
   useMatches,
 } from "react-router";
 import { LuGithub } from "react-icons/lu";
+import { toolOf } from "../lib/toolKey";
 
 // Shared shell across all routes (D-022): a sticky brand/nav header, the routed
 // page in the <main> landmark, and a muted footer with attribution. Token-driven
@@ -48,8 +49,14 @@ function useDocumentTitle() {
 // <ScrollRestoration> closes. Skips the initial render (nothing navigated yet)
 // and uses preventScroll so it cannot fight ScrollRestoration's restored
 // position on a Back navigation.
+//
+// Keyed on the tool rather than the pathname, because the pathname changes on
+// every selection: firing per-pathname yanked focus out of the very chip you
+// had just clicked, so a keyboard user picking a form or hitting Swap lost their
+// place and had to tab back in. Announcing a page change on a state change is
+// also simply wrong — nothing changed page. (D-087)
 function useFocusOnNavigate(ref) {
-  const { pathname } = useLocation();
+  const tool = toolOf(useLocation().pathname);
   const firstRender = useRef(true);
   useEffect(() => {
     if (firstRender.current) {
@@ -57,7 +64,7 @@ function useFocusOnNavigate(ref) {
       return;
     }
     ref.current?.focus({ preventScroll: true });
-  }, [pathname, ref]);
+  }, [tool, ref]);
 }
 
 export default function Layout() {
@@ -68,8 +75,23 @@ export default function Layout() {
   return (
     <div className="min-h-screen flex flex-col bg-base text-primary">
       {/* Data mode does not reset scroll on navigation on its own; without this
-          a deep link out of a long page lands part-way down the next one. */}
-      <ScrollRestoration />
+          a deep link out of a long page lands part-way down the next one.
+
+          **Keyed by tool, not by `location.key`** (D-087). The default keys each
+          history entry separately, and every control on this site navigates —
+          the URL is the single source of truth (D-022), so picking a Pokémon,
+          swapping, choosing a generation or toggling a type is a `navigate()`.
+          Each one minted a fresh key with no saved position, and the fallback
+          for that is scrolling to the top: the board you were reading jumped
+          away under you on every single click. Measured before the fix — Swap
+          and a form chip both went from 327px to 0.
+
+          Sharing one key across a tool's URLs means an in-tool change restores
+          the position it just saved, which is a no-op, while moving between
+          tools still has no entry to restore and still lands at the top. Coming
+          BACK to a tool returns you to where you were, which is what the browser
+          would have done anyway. */}
+      <ScrollRestoration getKey={(location) => toolOf(location.pathname)} />
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-1300 focus:rounded-md focus:border focus:border-border-strong focus:bg-elevated focus:px-3 focus:py-2 focus:text-button focus:text-primary"

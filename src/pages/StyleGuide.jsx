@@ -13,10 +13,12 @@ import TypeBadge from "../components/TypeBadge";
 import FeaturedComparison from "../components/FeaturedComparison";
 import SearchBar from "../components/SearchBar";
 import FormChips from "../components/FormChips";
+import AbilityChips from "../components/AbilityChips";
+import StabChip, { StabCaption, StabLabel } from "../components/StabChip";
 import GenerationStrip from "../components/GenerationStrip";
 import { getBySlug } from "../lib/pokemon";
 import { generationOptions } from "../lib/eras";
-import { TYPES, typeColorVar, typeTextVar } from "../lib/types";
+import { TYPES, capitalize, typeColorVar, typeTextVar } from "../lib/types";
 import {
   CHIP,
   CHIP_OFF,
@@ -213,6 +215,14 @@ export default function StyleGuide() {
   const volcarona = getBySlug("volcarona");
   const chandelure = getBySlug("chandelure");
   const charizard = getBySlug("charizard"); // has Mega forms → FormChips demo
+  // Chandelure is the AbilityChips demo because it shows all three states at
+  // once: Flash Fire is in the effect table (dot), Flame Body is not, and
+  // Infiltrator is hidden (icon). A one-ability Pokémon demonstrates neither
+  // marker, which is the whole point of the row.
+  // Derived, never listed: three quoted type names in a row is exactly what the
+  // "only one list of the 18" guard in types.test.js fails on, and this page is
+  // the file that already broke that rule once (D-048).
+  const [t0, t1, t2, t3] = TYPES;
 
   return (
     <div className={PAGE_CONTENT}>
@@ -339,18 +349,19 @@ export default function StyleGuide() {
         </div>
       </Section>
 
-      {/* All three chip families side by side. They share one colour pair
+      {/* All four chip families side by side. They share one colour pair
           (components/chipStyles.jsx) and differ only in geometry, so seeing
           them together is the check that they still agree — the same reason
           this page renders real components instead of copies. */}
-      <Section title="Chips — one colour pair, three geometries">
+      <Section title="Chips — one colour pair, four geometries">
         <div className="flex flex-col gap-6">
           <ChipRow
-            label="Form chips · compact, inside the card's 40px band"
+            label="Form chips · compact, sharing the card's 88px controls band"
             note="The one known WCAG 2.5.8 spacing exception (D-042)."
           >
             {/* Shown at roughly the width of the card band they live in, so
-                their centring reads as the real layout it is. */}
+                the wrapping reads as the real layout it is. Left-aligned since
+                D-080 put them in a labelled column beside FORM. */}
             <div className="max-w-72 rounded-md border border-dashed border-border-subtle p-2">
               {charizard ? (
                 <FormChips pokemon={charizard} onSelect={noop} />
@@ -377,10 +388,92 @@ export default function StyleGuide() {
             note="Selected type chips take the audited TypeBadge pairing (D-027)."
           >
             <div className="flex flex-wrap gap-1.5">
-              <DemoChip label="Fire" color="fire" />
-              <DemoChip label="Water" color="water" active />
+              <DemoChip label={capitalize(t1)} color={t1} />
+              <DemoChip label={capitalize(t2)} color={t2} active />
               <DemoChip label="Gen 5" />
               <DemoChip label="Gen 6" active />
+            </div>
+          </ChipRow>
+
+          <ChipRow
+            label="Ability chips · compact, exactly one always selected"
+            note="A dot marks an ability that changes type matchups; the icon marks the hidden one (D-073)."
+          >
+            {chandelure ? (
+              <AbilityChips
+                abilities={chandelure.abilities}
+                selected={chandelure.abilities[0]?.slug}
+                onSelect={noop}
+                label="Ability (demo)"
+              />
+            ) : null}
+          </ChipRow>
+
+          <ChipRow
+            label="Ability chips · read-only, as Home renders them"
+            note="No onSelect ⇒ pills, not buttons: a button that does nothing is worse than a label (D-078)."
+          >
+            {chandelure ? (
+              <AbilityChips
+                abilities={chandelure.abilities}
+                selected={chandelure.abilities[0]?.slug}
+                label="Ability (read-only demo)"
+              />
+            ) : null}
+          </ChipRow>
+        </div>
+      </Section>
+
+      {/* StabChip only ever appeared on this page incidentally, inside the
+          FeaturedComparison below — so its four tiers and its corrected state
+          had no reference anywhere. That is the drift this page exists to
+          prevent, in the file whose job is preventing it (D-079). */}
+      <Section title="STAB chips — the four effectiveness tiers">
+        <div className="flex flex-col gap-6">
+          <ChipRow
+            label="md · the comparison board"
+            note="Content-sized pills; never colour alone, so every chip states its multiplier as text and carries a tier icon."
+          >
+            <div className="flex flex-wrap gap-2">
+              <StabChip type={t1} mult={2} />
+              <StabChip type={t2} mult={1} />
+              <StabChip type={t3} mult={0.5} />
+              <StabChip type={t0} mult={0} />
+            </div>
+          </ChipRow>
+
+          <ChipRow
+            label="md · corrected by the defender's ability"
+            note="The chart's own answer stays on screen, struck through. The ability is named by the surface, never on the chip (D-079)."
+          >
+            <div className="flex flex-col items-start gap-2">
+              <div className="flex flex-wrap gap-2">
+                <StabChip type={t0} mult={0} baseMult={2} via="levitate" />
+                <StabChip type={t1} mult={2} baseMult={1} via="fluffy" />
+              </div>
+              {/* The real component, not a copy of its markup — which is this
+                  page's whole contract, and which a hand-copy here had already
+                  broken inside one session (D-090). */}
+              <StabCaption types={[t2]} via="levitate" />
+            </div>
+          </ChipRow>
+
+          <ChipRow
+            label="sm · Home's three-column head"
+            note="Geometry only — the fill, border weight, tier colour and icon are identical to md (D-058)."
+          >
+            <div className="flex flex-col items-start gap-1.5">
+              <StabLabel>STAB</StabLabel>
+              <div className="flex flex-wrap gap-1">
+                <StabChip type={t1} mult={2} size="sm" />
+                <StabChip
+                  type={t0}
+                  mult={0}
+                  baseMult={2}
+                  via="levitate"
+                  size="sm"
+                />
+              </div>
             </div>
           </ChipRow>
         </div>

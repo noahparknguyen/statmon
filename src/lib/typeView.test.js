@@ -2,11 +2,14 @@ import { describe, it, expect } from "vitest";
 import {
   MULT_ORDER,
   matchupTiers,
+  parseDefender,
   parseTypes,
   toggleType,
   typesUrl,
 } from "./typeView";
-import { effectiveness, typesIn } from "./typeChart";
+import { effectiveness, formatMult, typesIn } from "./typeChart";
+import { abilitiesAsOf } from "./abilities";
+import { ALL_POKEMON, getBySlug } from "./pokemon";
 import { TYPES } from "./types";
 
 // Tier expectations are checked against a direct `effectiveness` computation as
@@ -76,6 +79,66 @@ describe("matchupTiers", () => {
     expect(tier(["poison"], 0.5)).toContain("bug");
   });
 
+  it("moves an attacker between tiers when the defender's ability says so", () => {
+    // Eelektross is a plain Electric type, so Ground is its one weakness — and
+    // Levitate is the whole reason that is not true (D-073).
+    expect(tier(["electric"], 2)).toEqual(["ground"]);
+    const withLevitate = (mult) =>
+      matchupTiers(["electric"], null, "levitate").find((t) => t.mult === mult)
+        ?.types ?? [];
+    expect(withLevitate(2)).toEqual([]);
+    expect(withLevitate(0)).toEqual(["ground"]);
+  });
+
+  it("has a tier for every multiplier the dex can actually produce", () => {
+    // The guard that would have caught D-084. An ability MULTIPLIES the chart's
+    // own answer, so a defender that already resists twice and then halves again
+    // lands on ⅛× — a value typing alone can never reach. Because this function
+    // filters by exact equality against MULT_ORDER, a multiplier missing from it
+    // does not render wrong, it renders *not at all*: the attacking type
+    // silently vanishes from every tier.
+    //
+    // Swept across the whole dex rather than sampled, because the four entries
+    // that reach it (Dewgong, Spheal, Sealeo and Walrein — Water/Ice with Thick
+    // Fat in slot 1, so it is their DEFAULT reading) are not ones anybody would
+    // have thought to write down.
+    const missing = new Set();
+    for (const mon of ALL_POKEMON) {
+      for (const gen of [null, 3, 5, 9]) {
+        for (const { slug } of abilitiesAsOf(mon, gen)) {
+          for (const attack of TYPES) {
+            const mult = effectiveness(attack, mon.types, gen, slug);
+            if (!MULT_ORDER.includes(mult)) {
+              missing.add(`${mon.slug} + ${slug} vs ${attack} = ${mult}`);
+            }
+          }
+        }
+      }
+    }
+    expect([...missing]).toEqual([]);
+  });
+
+  it("has a printable label for every tier it can render", () => {
+    // The other half of the same bug: a value in MULT_ORDER with no entry in
+    // MULT_LABEL falls through to `${m}×` — a bare "0.125×" where the scale
+    // everywhere else reads "⅛×". Every real label is a whole numeral or a
+    // vulgar fraction, so a decimal point is the tell.
+    for (const mult of MULT_ORDER) {
+      expect(formatMult(mult), `${mult}× has no label`).not.toContain(".");
+    }
+  });
+
+  it("still groups every attacking type exactly once under an ability", () => {
+    // A tier list that loses or duplicates an attacker is worse than one that
+    // is merely wrong, and Wonder Guard is the entry most likely to do it.
+    for (const ability of ["levitate", "wonder-guard", "thick-fat"]) {
+      const grouped = matchupTiers(["bug", "ghost"], null, ability).flatMap(
+        (t) => t.types,
+      );
+      expect([...grouped].sort(), ability).toEqual([...TYPES].sort());
+    }
+  });
+
   it("only groups attackers that existed in the era", () => {
     for (const gen of [1, 5, 9]) {
       const grouped = matchupTiers(["water"], gen).flatMap((t) => t.types);
@@ -132,8 +195,29 @@ describe("typesUrl", () => {
     expect(typesUrl([])).toBe("/types");
     expect(typesUrl(["water"])).toBe("/types/water");
     expect(typesUrl(["water", "flying"])).toBe("/types/water/flying");
-    expect(typesUrl(["water", "flying"], 3)).toBe("/types/water/flying?asof=3");
-    expect(typesUrl([], 1)).toBe("/types?asof=1");
+    expect(typesUrl(["water", "flying"], { asof: 3 })).toBe(
+      "/types/water/flying?asof=3",
+    );
+    expect(typesUrl([], { asof: 1 })).toBe("/types?asof=1");
+  });
+
+  it("carries the Pokémon that named the typing, and its ability", () => {
+    expect(typesUrl(["electric"], { as: "eelektross" })).toBe(
+      "/types/electric?as=eelektross",
+    );
+    expect(
+      typesUrl(["ghost", "poison"], {
+        asof: 6,
+        as: "gengar",
+        ability: "levitate",
+      }),
+    ).toBe("/types/ghost/poison?asof=6&as=gengar&ab=levitate");
+  });
+
+  it("omits every parameter at its default, so the common case is a path", () => {
+    expect(typesUrl(["water"], { asof: null, as: null, ability: null })).toBe(
+      "/types/water",
+    );
   });
 
   it("round-trips through parseTypes", () => {
@@ -144,6 +228,55 @@ describe("typesUrl", () => {
         .filter(Boolean);
       expect(parseTypes(path)).toEqual(types);
     }
+  });
+});
+
+describe("parseDefender", () => {
+  const at = (qs) => new URLSearchParams(qs);
+
+  it("reads the Pokémon that named the typing", () => {
+    expect(parseDefender(["electric"], at("as=eelektross"))?.name).toBe(
+      "Eelektross",
+    );
+  });
+
+  it("compares canonically, not by slot order", () => {
+    // Volcarona is stored Bug/Fire and canonicalises to Fire/Bug. Comparing
+    // position by position would reject the very Pokémon that produced the URL.
+    expect(parseTypes(getBySlug("volcarona").types)).toEqual(["fire", "bug"]);
+    expect(parseDefender(["fire", "bug"], at("as=volcarona"))?.name).toBe(
+      "Volcarona",
+    );
+  });
+
+  it("drops a Pokémon whose typing is not the one on screen", () => {
+    // This is what makes clicking a type chip off drop the Pokémon for free:
+    // the parameter simply stops validating, with no cleanup branch anywhere.
+    expect(parseDefender(["electric"], at("as=volcarona"))).toBeNull();
+    expect(parseDefender(["fire"], at("as=volcarona"))).toBeNull();
+  });
+
+  it("drops anything it cannot use rather than throwing", () => {
+    expect(parseDefender(["electric"], at(""))).toBeNull();
+    expect(parseDefender(["electric"], at("as=not-a-pokemon"))).toBeNull();
+    expect(parseDefender([], at("as=eelektross"))).toBeNull();
+  });
+
+  it("reads the typing the Pokémon had in the generation being shown", () => {
+    // Clefairy was Normal until Gen 6 and is Fairy now, so each typing is
+    // valid in its own era and neither is valid in the other's.
+    expect(parseDefender(["normal"], at("as=clefairy"), 5)?.name).toBe(
+      "Clefairy",
+    );
+    expect(parseDefender(["fairy"], at("as=clefairy"), 5)).toBeNull();
+    expect(parseDefender(["fairy"], at("as=clefairy"))?.name).toBe("Clefairy");
+  });
+
+  it("drops a Pokémon that did not exist that far back", () => {
+    // An Alolan form of a Gen 1 species: Gen 1 Raichu was not this Raichu.
+    expect(
+      parseDefender(["electric", "psychic"], at("as=raichu-alola"), 1),
+    ).toBeNull();
   });
 });
 

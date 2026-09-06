@@ -156,15 +156,25 @@ describe("the compare route's generation views (D-045)", () => {
   it("marks the generations whose board differs from today", () => {
     // Butterfree's Sp. Atk changed after Gen 5; Volcarona debuted in Gen 5, so
     // the shared strip is 5–9 with exactly one generation marked.
-    const marked = render("/compare/butterfree/vs/volcarona").match(
-      /stats differ from today/g,
+    const marked = (path) => render(path).match(/differs from today/g) ?? [];
+    expect(marked("/compare/butterfree/vs/volcarona")).toHaveLength(1);
+    // Neither Pokémon here has history of any kind — no stat era, no type era,
+    // no ability era — so the strip is five unmarked chips.
+    expect(marked("/compare/volcarona/vs/samurott")).toHaveLength(0);
+  });
+
+  it("marks a generation an ability changed in, not only a stat (D-073)", () => {
+    // Chandelure's hidden ability was Shadow Tag through Gen 5 and is
+    // Infiltrator now, so a Gen 5 board is a different board — and the mascot
+    // matchup, which used to be the site's example of "nothing ever changed",
+    // now has exactly one marked chip because of it.
+    const marked = (path) => render(path).match(/differs from today/g) ?? [];
+    expect(marked("/compare/volcarona/vs/chandelure")).toHaveLength(1);
+    // The wording is deliberately not "stats differ": on this board no stat
+    // does. It said that until abilities could mark a generation too.
+    expect(render("/compare/volcarona/vs/chandelure")).not.toContain(
+      "stats differ from today",
     );
-    expect(marked).toHaveLength(1);
-    expect(
-      render("/compare/volcarona/vs/chandelure").match(
-        /stats differ from today/g,
-      ),
-    ).toBeNull();
   });
 
   it("scores the STAB matchup on the era's own chart", () => {
@@ -308,6 +318,134 @@ describe("the type chart route (D-051)", () => {
 
   it("survives an unknown type without blowing up", () => {
     expect(render("/types/plastic")).toContain("Full chart");
+  });
+});
+
+// Abilities on both tools (D-073, D-074, D-075). The maths is unit-tested in
+// abilities.test.js; these are the things only a rendered page can go wrong at
+// — a band that collapses, a URL parameter that survives when it should not,
+// and the correction actually reaching the chip.
+describe("abilities", () => {
+  it("scores the STAB block through the defender's first ability", () => {
+    // The roadmap's own example: Ground is 2× into an Electric type, and
+    // Eelektross has Levitate, so the board must not say 2×.
+    const board = text("/compare/krookodile/vs/eelektross");
+    expect(board).toContain("Levitate");
+    expect(board).toContain("0×");
+    // The chart's own answer stays on screen beside the corrected one, because
+    // the correction is the interesting part.
+    expect(board).toContain("2× on the chart");
+    // Stated once by the caption, not repeated on the chip (D-079).
+    expect(board.match(/Levitate/g) ?? []).toHaveLength(2); // card chip + caption
+  });
+
+  it("changes the answer with the generation, not just the roster", () => {
+    // Gengar carried Levitate through Gen 6, so the same matchup reads 0× there
+    // and 2× today. This is the interaction the era machinery buys for free.
+    const gen6 = text("/compare/krookodile/vs/gengar?asof=6");
+    expect(gen6).toContain("2× on the chart");
+    // The ability is named once by the group's caption rather than on every
+    // corrected chip (D-079), beside what is being attacked.
+    // "· changed by Levitate" — the separator is aria-hidden and the accent dot
+    // carries an sr-only expansion, because the dot means "this ability changes
+    // type matchups" and colour alone does not say that (04_design §9).
+    expect(gen6).toMatch(/vs Ghost \/ Poison\s*·?\s*changed by\s*Levitate/);
+    expect(text("/compare/krookodile/vs/gengar")).not.toContain(
+      "2× on the chart",
+    );
+  });
+
+  it("degrades a bad ability parameter rather than throwing", () => {
+    // `?as=` had this test and `?a1`/`?a2` did not, which is the half of the
+    // forgiving-parse claim in Compare.jsx nothing was holding to account.
+    // An ability the Pokémon does not have, an empty one, and a junk one all
+    // fall back to the era's slot 1 rather than rendering or crashing.
+    for (const qs of ["a2=not-an-ability", "a2=", "a1=levitate&a2=%%%"]) {
+      const html = render(`/compare/krookodile/vs/gengar?${qs}`);
+      expect(html, qs).toContain("Cursed Body");
+      expect(html, qs).not.toContain("undefined");
+    }
+    // And one it DOES have is kept.
+    expect(render("/compare/krookodile/vs/gengar?asof=6&a1=moxie")).toContain(
+      "Moxie",
+    );
+  });
+
+  it("names the ability only when it actually changed something", () => {
+    // Gengar's Cursed Body is not in the effect table at all, so nothing is
+    // corrected and the caption stays a plain statement of the defender's
+    // typing — an ability that changed nothing must not be advertised as if it
+    // had. Krookodile's Ground STAB is 2× either way here.
+    const today = text("/compare/krookodile/vs/gengar");
+    expect(today).toContain("vs Ghost / Poison");
+    expect(today).not.toContain("Cursed Body ·");
+  });
+
+  it("keeps the ability band on the board where there are no abilities", () => {
+    // Below Gen 3 nobody had one. The band says so rather than vanishing: a
+    // control that comes and goes shoves the board around and teaches nobody
+    // why it went (D-050).
+    const gen1 = text("/compare/charizard/vs/blastoise?asof=1");
+    expect(gen1).toContain("Abilities arrived in Gen 3");
+    expect(text("/compare/charizard/vs/blastoise")).not.toContain(
+      "Abilities arrived in Gen 3",
+    );
+  });
+
+  it("marks the abilities that change a matchup, and only those", () => {
+    // Shedinja's Wonder Guard is marked; Krookodile's three are not.
+    expect(text("/compare/gengar/vs/shedinja")).toContain(
+      "Changes type matchups",
+    );
+    expect(text("/compare/gengar/vs/krookodile")).not.toContain(
+      "Changes type matchups",
+    );
+  });
+
+  it("answers the type chart for a Pokémon, not just a typing", () => {
+    const board = text("/types/electric?as=eelektross");
+    expect(board).toContain("Eelektross");
+    // Ground is Electric's one weakness, and Levitate is why that is not true
+    // here: it leaves the 2× tier and joins the 0× one. Bounded at "Full
+    // chart", since the 18×18 grid below the readout is full of 2× cells and
+    // is not what this is asserting about.
+    const tiers = board.slice(
+      board.indexOf("Attacking"),
+      board.indexOf("Full chart"),
+    );
+    expect(tiers).not.toContain("2×");
+    expect(tiers.slice(tiers.indexOf("0×"))).toContain("Ground");
+  });
+
+  it("lets Wonder Guard rewrite the whole tier list", () => {
+    // Shedinja: five attacking types do anything at all, and the other
+    // thirteen do nothing — which the tier list shows rather than describes.
+    const board = text("/types/bug/ghost?as=shedinja");
+    expect(board).toContain("Shedinja");
+    const tiers = board.slice(
+      board.indexOf("Attacking"),
+      board.indexOf("Full chart"),
+    );
+    expect(tiers.indexOf("2×")).toBeLessThan(tiers.indexOf("0×"));
+    // Bug/Ghost has a 4× row on the chart (Ghost and Dark both stack); Wonder
+    // Guard flattens everything above 1× to a single 2× tier, so its absence
+    // is the assertion.
+    expect(tiers).not.toContain("4×");
+  });
+
+  it("drops a Pokémon whose typing is not the one on screen", () => {
+    // The URL is one source of truth, not two: `?as=` is validated against the
+    // path rather than trusted, so a stale or hand-edited link degrades to a
+    // plainer view of the same page instead of claiming a Volcarona that is
+    // somehow Electric.
+    const board = text("/types/electric?as=volcarona");
+    expect(board).not.toContain("Volcarona");
+    expect(board).toContain("Attacking");
+  });
+
+  it("keeps the plain typing readout when no Pokémon is named", () => {
+    expect(text("/types/water/flying")).toContain("Attacking");
+    expect(render("/types/water/flying")).toContain("matchup-heading");
   });
 });
 
@@ -487,19 +625,27 @@ describe("Home's feature previews (D-043)", () => {
     expect(html()).not.toContain("Example comparison");
   });
 
-  // The type preview is the defensive read — what beats Ground / Dark — and is
-  // unreadable without saying so, hence the shared MatchupHeading (D-067).
+  // The type preview is the defensive read — what beats Krookodile — and is
+  // unreadable without saying so, hence the shared heading (D-067, D-075).
   it("says what the type preview's tiers are attacking", () => {
     const page = text("/");
     expect(page).toContain("Attacking");
     expect(page.indexOf("Attacking")).toBeGreaterThan(page.indexOf("Types"));
-    // Krookodile's typing, and the tiers the real chart computes for it:
-    // strongest first, down to the two attacking types that do nothing at all.
-    expect(page).toContain("Ground");
-    expect(page).toContain("Dark");
-    expect(page.indexOf("2×")).toBeLessThan(page.indexOf("0×"));
-    expect(page).toContain("Electric");
-    expect(page).toContain("Psychic");
+    // Scoped to the preview, the way the dex preview's ordering test is: the
+    // flagship board above now prints a 0× of its own (Chandelure's Flash Fire,
+    // D-074), so searching the whole document for the tier order would find
+    // that one instead of these.
+    const preview = page.slice(page.indexOf("Attacking"));
+    // Krookodile is named, not just its typing — the preview advertises the
+    // Pokémon search the tool grew (D-075).
+    expect(preview).toContain("Krookodile");
+    // Its typing, and the tiers the real chart computes for it: strongest
+    // first, down to the two attacking types that do nothing at all.
+    expect(preview).toContain("Ground");
+    expect(preview).toContain("Dark");
+    expect(preview.indexOf("2×")).toBeLessThan(preview.indexOf("0×"));
+    expect(preview).toContain("Electric");
+    expect(preview).toContain("Psychic");
   });
 
   // The section's promise is "every matchup, including dual types" — the one
@@ -516,10 +662,11 @@ describe("Home's feature previews (D-043)", () => {
   it("samples the hero wall across every generation", () => {
     const html = render("/");
     const sprites = html.match(/image-rendering:pixelated/g) ?? [];
-    // The wall's 2x2 tiling, plus the six dex rows and the flagship board's two
-    // heads. The 2x2 is what makes the diagonal loop seam-free, so a change to
-    // it is a change to the animation and should fail here.
-    expect(sprites.length).toBe(WALL_TILES * 4 + 8);
+    // The wall's 2x2 tiling, plus the six dex rows, the flagship board's two
+    // heads, and Krookodile's in the type preview's heading (D-075). The 2x2 is
+    // what makes the diagonal loop seam-free, so a change to it is a change to
+    // the animation and should fail here.
+    expect(sprites.length).toBe(WALL_TILES * 4 + 9);
     // The sample starts at the top of the dex.
     expect(html).toContain(spriteFor(getBySlug("bulbasaur")));
   });

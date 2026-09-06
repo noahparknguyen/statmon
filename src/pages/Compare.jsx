@@ -10,6 +10,7 @@ import GenerationStrip from "../components/GenerationStrip";
 import { getBySlug } from "../lib/pokemon";
 import { compareUrl } from "../lib/compareUrl";
 import { eraView, generationOptions, parseAsOf } from "../lib/eras";
+import { abilityParam, resolveAbility } from "../lib/abilities";
 import { STAT_ORDER } from "../lib/stats";
 
 // The core comparison page. The URL is the single source of truth (D-022): the
@@ -23,6 +24,18 @@ import { STAT_ORDER } from "../lib/stats";
 // switching to a Mega while reading a Gen 1 board — a form that did not exist
 // then — falls back to the current generation instead of rendering a view that
 // never existed.
+//
+// So are the two abilities (D-073), from `?a1=`/`?a2=`, and for the same reason:
+// an ability a Pokémon does not have at the generation being read degrades to
+// its first one rather than rendering a board that never existed. Only P2's can
+// change what the comparison card says — P1 is the attacker — but both are part
+// of the view, and Swap turns the board around.
+
+// `abilityParam` (lib/abilities.js) is what keeps a slug out of the URL when it
+// is simply the Pokémon's first at that generation — the site-wide "defaults
+// stay out of the URL" rule. It lives there rather than here because /types
+// needs the identical rule, and the copy that page kept was subtly wrong.
+
 export default function Compare() {
   const navigate = useNavigate();
   const params = useParams();
@@ -41,15 +54,33 @@ export default function Compare() {
   // available in Gen 1 is one of the 151 Gen 1 species — but the empty card has
   // no view of its own to read, and the three cards must stay the same height.
   const keys = v1?.keys ?? v2?.keys ?? STAT_ORDER;
+  // Resolved against the era's roster, so this is always an ability the card
+  // can actually show — or null, for a Gen 1 board and the handful of entries
+  // that have none.
+  const a1 = resolveAbility(p1, asof, searchParams.get("a1"));
+  const a2 = resolveAbility(p2, asof, searchParams.get("a2"));
 
   // Selection lives in the URL; `replace` keeps history uncluttered while
   // building/toggling forms so Back returns to where the user came from.
-  const go = (a, b, g = asof) =>
-    navigate(compareUrl(a?.slug, b?.slug, g), { replace: true });
-  const selectP1 = (p) => go(p, p2);
-  const selectP2 = (p) => go(p1, p);
-  const swap = () => go(p2, p1);
+  // Abilities are omitted at their default so the common case stays a clean
+  // path, and dropped entirely when the Pokémon or the generation changes under
+  // them — `resolveAbility` would only discard them on the next render anyway,
+  // and carrying a dead parameter through the URL bar is worse than not.
+  const go = (a, b, g = asof, x = a1, y = a2) =>
+    navigate(
+      compareUrl(a?.slug, b?.slug, {
+        asof: g,
+        a1: abilityParam(a, g, x),
+        a2: abilityParam(b, g, y),
+      }),
+      { replace: true },
+    );
+  const selectP1 = (p) => go(p, p2, asof, null);
+  const selectP2 = (p) => go(p1, p, asof, a1, null);
+  const swap = () => go(p2, p1, asof, a2, a1);
   const selectAsOf = (g) => go(p1, p2, g);
+  const selectA1 = (slug) => go(p1, p2, asof, slug);
+  const selectA2 = (slug) => go(p1, p2, asof, a1, slug);
 
   return (
     <div className={PAGE_TOOL}>
@@ -118,7 +149,9 @@ export default function Compare() {
             pokemon={p1}
             view={v1}
             keys={keys}
+            ability={a1}
             onSelectForm={selectP1}
+            onSelectAbility={selectA1}
           />
         </div>
         <div className="order-3 md:order-2 lg:order-3">
@@ -126,11 +159,20 @@ export default function Compare() {
             pokemon={p2}
             view={v2}
             keys={keys}
+            ability={a2}
             onSelectForm={selectP2}
+            onSelectAbility={selectA2}
           />
         </div>
         <div className="order-1 md:order-3 md:col-span-2 lg:col-span-1 lg:order-2">
-          <ComparisonCard p1={p1} p2={p2} v1={v1} v2={v2} keys={keys} />
+          <ComparisonCard
+            p1={p1}
+            p2={p2}
+            v1={v1}
+            v2={v2}
+            keys={keys}
+            ability={a2}
+          />
         </div>
       </div>
     </div>

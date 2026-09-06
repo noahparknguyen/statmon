@@ -1,31 +1,66 @@
 import TypeBadge from "./TypeBadge";
 import FormChips from "./FormChips";
+import AbilityChips from "./AbilityChips";
 import { STAT_ORDER, STAT_LABEL, statPct } from "../lib/stats";
 import { typeColorVar } from "../lib/types";
-import { artworkFor } from "../lib/pokemon";
+import { artworkFor, formsOf } from "../lib/pokemon";
 import { dexNumberOf } from "../lib/dexTable";
 
 // TCG-inspired card. Artwork is a bold square backdrop bleeding behind the
 // stat bars; a scrim keeps them legible. Vertical spec is on an 8pt rhythm and
 // is shared with ComparisonCard so all three cards are equal height with
-// aligned stat rows: head 56 + body 176 + chips 40 (= 272 top zone),
-// stats (pt-2 + 6×h-9 + pb-4 = 240), footer 56 → 568 total.
+// aligned stat rows: head 56 + controls 88 + body 176 (= 320 top zone),
+// stats (pt-2 + 6×h-9 + pb-4 = 240), footer 56 → 616 total.
 //
-// **Below md the card is 360 and carries no stats at all** (D-057): head 56 +
-// body 224 + chips 40 + footer 56. At that width the board is one column with
-// the comparison card above, which already shows all six stats as per-stat
-// cards naming both Pokémon — so the bars here were the same numbers a second
-// time. The equal-height invariant is a ≥md concern anyway: below md the three
-// cards are stacked, not side by side, and nothing has to line up.
+// **Below md the card is 424 and carries no stats at all** (D-057): head 56 +
+// controls 88 + body 224 + footer 56. At that width the board is
+// one column with the comparison card above, which already shows all six stats
+// as per-stat cards naming both Pokémon — so the bars here were the same
+// numbers a second time. The equal-height invariant is a ≥md concern anyway:
+// below md the three cards are stacked, not side by side, and nothing has to
+// line up.
 //
 // In a Generation 1 view there are five stat rows, not six — Gen 1 had a single
 // Special where the modern schema has Sp. Atk and Sp. Def (D-045) — so the
-// stats band is 204 and the card 532. All three cards switch era together, so
+// stats band is 204 and the card 580. All three cards switch era together, so
 // they stay equal height and the mirrored rows stay aligned either way.
 //
-// Stats, typing and BST come from the era view (lib/eras.js) rather than
-// straight off the entry, so the card renders whichever generation is selected.
-// `view` is always supplied; `eraView(p, null)` is today's values untouched.
+// **The controls band is 88 and sits ABOVE the portrait** (D-080, moved by
+// D-082). 88 is the same total the two separate form and ability bands used to
+// occupy (40 + 48), so relabelling and then relocating them moved none of their
+// outsides: the card stays 616, the comparison card's top zone stays 320, and
+// every height in 04_design stays true.
+//
+// It is above the portrait because form and ability are **identity** — which
+// Pokémon this card is, and which version of it is in play — so they belong
+// with the name, the dex number and the type badges. Below the portrait they
+// sat on the artwork, and unlike the stat bars (2px, sparse) a row of 21px
+// opaque pills does not read as bleeding behind anything: it reads as covering.
+//
+// **The artwork box starts at 144px — exactly where the controls band ends —
+// and is capped at 280px** (D-081, re-derived by D-082, corrected by D-085).
+// It is `w-full aspect-square`, so its height follows the card's WIDTH while
+// the space that shows it is fixed: uncapped it measured 718px at a 767px
+// viewport and 476px at 1023px, clipping every subject to its top third.
+//
+// **The position is the guarantee; the size is only a budget.** An earlier
+// derivation sized the artwork so that its SUBJECT would start below the chips,
+// using the tightest-cropped decile — which was unsound, because PokéAPI's
+// official artwork is cropped to the subject and the tightest of them
+// (Blacephalon) touches the very edge of its square. At 0% inset no size clears
+// anything: the box top is the subject top. Starting the box AT the band's
+// bottom edge instead makes the guarantee absolute and independent of the crop,
+// and needs no statistics at all.
+//
+// 280 is then just how far the art may bleed. It reaches 424 — the full card
+// below md, and 104px behind the stat bars above it — with the scrim taking
+// over from 90% of the card's height, which is the fade the scrim exists for
+// (04_design §6).
+
+// Stats, typing, BST and the ability roster come from the era view
+// (lib/eras.js) rather than straight off the entry, so the card renders
+// whichever generation is selected. `view` is always supplied; `eraView(p,
+// null)` is today's values untouched.
 const SCRIM =
   "linear-gradient(180deg, transparent 0%, transparent 38%," +
   " color-mix(in srgb, var(--color-surface) 35%, transparent) 52%," +
@@ -34,12 +69,20 @@ const SCRIM =
 const shadowText = { textShadow: "0 1px 8px rgba(0,0,0,0.75)" };
 const statsShadow = { textShadow: "0 1px 5px rgba(0,0,0,0.75)" };
 
-export default function PokemonCard({ pokemon, view, keys, onSelectForm }) {
+export default function PokemonCard({
+  pokemon,
+  view,
+  keys,
+  ability,
+  onSelectForm,
+  onSelectAbility,
+}) {
   // The empty card takes the board's stat list rather than assuming six, so a
   // half-filled Gen 1 board keeps both cards the same height.
   if (!pokemon) return <EmptyCard keys={keys} />;
 
   const primary = view.types[0];
+  const forms = formsOf(pokemon);
   // Alternate forms (Mega/regional/…) share their species' National Dex number
   // — see dexNumberOf, which the dex table needs for every row.
   const dex = dexNumberOf(pokemon);
@@ -62,7 +105,7 @@ export default function PokemonCard({ pokemon, view, keys, onSelectForm }) {
         loading="eager"
         fetchPriority="high"
         decoding="async"
-        className="pointer-events-none absolute inset-x-0 top-7 z-0 w-full aspect-square object-contain drop-shadow-art"
+        className="pointer-events-none absolute inset-x-0 top-36 z-0 mx-auto w-full max-w-70 aspect-square object-contain drop-shadow-art"
       />
       <div
         className="pointer-events-none absolute inset-0 z-1"
@@ -90,16 +133,87 @@ export default function PokemonCard({ pokemon, view, keys, onSelectForm }) {
           </div>
         </div>
 
-        {/* Body — the boldest part of the artwork shows here. Taller below md,
-            where the stat band is gone: the portrait is what the card is FOR at
-            that width, and at h-44 the square artwork was being clipped by the
-            BST rule. Costs 32px against the 240 the bars gave back. */}
-        <div className="h-56 md:h-44" />
+        {/* Controls. One 88px band holding both chip groups, each named by a
+            `text-overline` label in its own column (D-080).
 
-        {/* Form chips */}
-        <div className="h-10 flex items-end justify-center px-3">
-          <FormChips pokemon={pokemon} onSelect={onSelectForm} />
+            They used to be two unlabelled bands of visually identical chips,
+            stacked, with nothing on screen saying which was which — "Base /
+            Mega" and "Flame Body / Swarm" read as one blob of controls. Naming
+            a control group is the site's own pattern everywhere else
+            (GenerationStrip, TypePicker, DexFilters), and this was the one
+            place it was missing.
+
+            Left-aligned rather than centred, because that is what the stat rows
+            immediately below do: the card now reads as one spec sheet with a
+            label column instead of a portrait with chips floating on it.
+
+            **Rows align on the BASELINE, so a label sits on the first line of
+            its chips** (D-089). A label names a group, and a reader enters a
+            two-column block at the top of the right-hand column — which is why
+            a `<dt>` sits at the top of its `<dd>` and a form label sits on the
+            first line of its control. Centring instead put "Ability" beside the
+            gutter BETWEEN two wrapped chip rows, pointing at nothing. Baseline
+            rather than `items-start` because the label is 11px against a 21px
+            chip: aligning the boxes would sit it 5px high, and aligning the text
+            is what the eye actually reads. It also needs no number — the other
+            way round is a hardcoded offset that breaks the moment either type
+            style changes.
+
+            Shadowed like those stat rows, and for the same reason: this sits
+            over the artwork, and while the chips carry their own fill, the
+            labels and both empty states are bare text — "Abilities arrived in
+            Gen 3" landed unreadable across Charizard's tail on a Gen 1 board.
+
+            **Top-aligned, not bottom-aligned** (D-083). The band is a fixed 88px
+            but its content is 48px for the two thirds of the dex that fit on two
+            rows, so 40px of it is slack — and bottom-aligning put that slack
+            between the name and the chips, where it is a visible gap that
+            changes size with the roster. Volcarona showed 40px of it and
+            Chandelure 13, for no reason a reader could see. Top-aligned, the
+            chips always sit the same distance below the name and the slack falls
+            between them and the portrait, where the artwork's own transparent
+            margin already lives and nothing marks the edge. The four-row Tauros case still
+            overflows the band, ending at 162px — 18px into the artwork box. It
+            lands on that artwork's transparent margin, but unlike the band's
+            own position that is a property of the crop rather than a
+            guarantee. Four entries of 1,259. */}
+        <div
+          className="h-22 grid grid-cols-[auto_1fr] content-start items-baseline gap-x-3 gap-y-1.5 px-4 pt-1"
+          style={statsShadow}
+        >
+          {/* The FORM row holds its space even for the 845 entries with one
+              form, where `FormChips` renders nothing. A row that disappears
+              would slide the ability row up and change the card's height for
+              two thirds of the dex — the D-050 rule, and here it is also what
+              keeps the three cards equal. */}
+          <span className="text-overline text-tertiary">Form</span>
+          <div className="min-w-0">
+            {forms.length > 1 ? (
+              <FormChips pokemon={pokemon} onSelect={onSelectForm} />
+            ) : (
+              <span className="text-caption text-tertiary">&mdash;</span>
+            )}
+          </div>
+
+          <span className="text-overline text-tertiary">Ability</span>
+          <div className="min-w-0">
+            <AbilityChips
+              abilities={view.abilities}
+              selected={ability}
+              onSelect={onSelectAbility}
+              gen={view.gen}
+              // Named per card, the way the two search fields are: /compare
+              // renders this control twice, and two groups both called
+              // "Ability" tell a screen reader nothing about which board they
+              // belong to.
+              label={`${pokemon.name}'s ability`}
+            />
+          </div>
         </div>
+
+        {/* Body — the clear portrait window. Taller below md, where the stat
+            band is gone: the portrait is what the card is FOR at that width. */}
+        <div className="h-56 md:h-44" />
 
         {/* Stats over the lower artwork. Hidden below md: at that width the
             comparison card above already shows all six as per-stat cards naming
@@ -144,11 +258,16 @@ export default function PokemonCard({ pokemon, view, keys, onSelectForm }) {
 function EmptyCard({ keys = STAT_ORDER }) {
   return (
     <div className="flex flex-col overflow-hidden bg-surface border border-dashed border-border-subtle rounded-lg">
-      <div className="h-14" />
-      <div className="h-56 md:h-44 flex items-center justify-center">
+      {/* Head, controls and portrait as ONE zone (56 + 88 + 176/224), rather
+          than three empty bands mirroring the filled card's. Nothing here needs
+          their boundaries — but the message does need to sit where
+          ComparisonCard's "Pick two Pokémon to compare." sits, and that one is
+          centred in the whole 320px top zone. Kept as three bands, this text
+          centred inside the 176px portrait alone and hung 72px lower than its
+          pair (D-083). */}
+      <div className="h-92 md:h-80 flex items-center justify-center">
         <span className="text-body-sm text-tertiary">No Pokémon selected</span>
       </div>
-      <div className="h-10" />
       <div className="hidden md:block px-4 pt-2 pb-4">
         {keys.map((k) => (
           <div

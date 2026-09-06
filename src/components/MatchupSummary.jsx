@@ -1,3 +1,5 @@
+import AbilityChips from "./AbilityChips";
+import { spriteFor } from "../lib/pokemon";
 import { formatMult } from "../lib/typeChart";
 import { matchupTiers } from "../lib/typeView";
 import { capitalize, typeColorVar } from "../lib/types";
@@ -55,14 +57,85 @@ export function MatchupHeading({ types, id, as: Heading = "h2" }) {
   );
 }
 
+// The same statement when a **Pokémon** named the typing rather than the chips
+// (D-075): its sprite and name, then the typing in exactly the treatment above,
+// then its abilities.
+//
+// A sibling export rather than a branch inside `MatchupHeading`, because Home
+// calls that one and has no Pokémon to show — and because this is a different
+// shape (an image and a control alongside the heading) rather than a different
+// wording. Two component exports from one file is the StabChip / StabLabel
+// arrangement already in use, so react-refresh stays happy.
+//
+// The heading is the Pokémon's name and the typing is inside it, so a screen
+// reader gets "Attacking — Eelektross, Electric" as one statement. The sprite
+// is decorative: the name is right beside it.
+export function DefenderHeading({
+  pokemon,
+  types,
+  abilities,
+  ability,
+  onSelectAbility = null,
+  gen = null,
+  id,
+  as: Heading = "h2",
+}) {
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+      <img
+        src={spriteFor(pokemon)}
+        alt=""
+        width="40"
+        height="40"
+        className="shrink-0 [image-rendering:pixelated]"
+      />
+      <Heading id={id} className="text-h4 text-secondary">
+        Attacking
+        <span aria-hidden className="text-tertiary">
+          {" — "}
+        </span>
+        <span className="text-primary">{pokemon.name}</span>
+        {/* Not aria-hidden, unlike the em dash above it: a comma is a pause a
+            screen reader should get, where a dash between a label and its value
+            is punctuation it should not read out. */}
+        <span className="text-tertiary">{", "}</span>
+        {types.map((t, i) => (
+          <span key={t}>
+            {i > 0 && <span className="text-tertiary"> / </span>}
+            <span style={{ color: typeColorVar(t) }}>{capitalize(t)}</span>
+          </span>
+        ))}
+      </Heading>
+      {/* Directly after the typing, not pushed to the far edge. An `ml-auto`
+          here read as a page action rather than as part of the subject — at
+          1400px it stranded "Levitate" some 700px from the Pokémon it belongs
+          to, which is the proximity rule working against the meaning rather
+          than for it. The whole line is one statement: Eelektross, Electric,
+          Levitate. */}
+      <div>
+        <AbilityChips
+          abilities={abilities}
+          selected={ability}
+          onSelect={onSelectAbility}
+          gen={gen}
+        />
+      </div>
+    </div>
+  );
+}
+
 // The tier's own label does the work a colour would elsewhere: 4× and 0× are the
 // two rows people are looking for, so they get the brightest treatment, and the
 // middle of the list recedes. Never colour alone — the multiplier is text.
 const TIER_TONE = (mult) =>
   mult > 1 || mult === 0 ? "text-primary" : "text-tertiary";
 
-export default function MatchupSummary({ types, asof = null }) {
-  const tiers = matchupTiers(types, asof);
+export default function MatchupSummary({ types, asof = null, ability = null }) {
+  // `ability` is the defending Pokémon's, when one named this typing (D-075).
+  // It moves attackers between tiers rather than annotating them — Ground
+  // leaves the 2× row and joins the 0× one for a Levitate holder, which is what
+  // "what beats this" actually means for that Pokémon.
+  const tiers = matchupTiers(types, asof, ability);
   if (tiers.length === 0) return null;
 
   return (

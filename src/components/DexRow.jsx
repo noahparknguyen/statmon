@@ -101,7 +101,7 @@ function DexRow({
               // partial one-slot URL shape lives in exactly one place (D-022).
               // Carries the lens through, so a name clicked in a Gen 3 dex opens
               // a Gen 3 comparison rather than silently jumping to today.
-              to={compareUrl(pokemon.slug, null, asof)}
+              to={compareUrl(pokemon.slug, null, { asof })}
               className="block truncate text-body-sm text-primary transition-colors hover:text-accent"
             >
               {pokemon.name}

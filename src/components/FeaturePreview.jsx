@@ -14,9 +14,16 @@ import PageHeader from "./PageHeader";
 // for everything after it.
 //
 // The two gaps are a proximity ratio, not two numbers (D-019): 32px from the
-// preview to its own CTA, 112px from that CTA to the next section's heading. At
+// preview to its own CTA, 144px from that CTA to the next section's heading. At
 // mt-20/mt-6 the CTA sat close enough to the heading below it to look like that
 // section's kicker — a button belongs to what it came from.
+//
+// **144 rather than 112 because a section's flanking art rises above its own
+// heading** (D-083). Measured from the previous section's bottom, the gap to the
+// Dex preview's Samurott was **17px** while Compare's was 167 and Types' 205 —
+// the margin was uniform and the space it produced was not, because only that
+// preview has figures that climb into it. The number is now set by the art
+// rather than by the heading, which is the thing a reader actually sees first.
 export default function FeaturePreview({
   title,
   description,
@@ -25,7 +32,7 @@ export default function FeaturePreview({
   children,
 }) {
   return (
-    <section className="mt-28">
+    <section className="mt-36">
       <PageHeader as="h2" title={title} subtitle={description} />
 
       <div>{children}</div>

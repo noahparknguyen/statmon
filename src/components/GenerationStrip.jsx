@@ -66,8 +66,14 @@ export default function GenerationStrip({ label, options, asof, onSelect }) {
                     }`}
                   />
                   {/* The dot is a second cue, not the only one: the fact it
-                      carries is also said out loud here (04_design §1 rule 4). */}
-                  <span className="sr-only">, stats differ from today</span>
+                      carries is also said out loud here (04_design §1 rule 4).
+                      It used to say "stats differ from today", which stopped
+                      being true when a changed ability roster started marking
+                      a generation too (D-073) — Gengar's Gen 6 board differs
+                      by its ability alone. A screen reader user was being told
+                      something specific and wrong; the visible dot never made
+                      that claim. */}
+                  <span className="sr-only">, differs from today</span>
                 </>
               )}
             </button>

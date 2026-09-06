@@ -1,13 +1,14 @@
 // The shared look of a toggle chip: the pill shape and the on/off colour pair.
 //
-// Statmon has three chip families — form chips on a Pokémon card, the dex's
-// type/generation filters, and the comparison board's generation strip. They
-// differ in geometry, because each sits in a different space: form chips are
-// compact enough to fit a fixed 40px band, filter chips carry a dot and an ×,
-// and generation chips are near-square around a single numeral. What they do
-// NOT differ in is colour — and before this file the same four class strings
-// were hand-copied into all three, which is precisely how variants drift apart
-// (the [D-032] lesson that produced `Button`).
+// Statmon has four chip families — form and ability chips on a Pokémon card,
+// the dex's type/generation filters, and the comparison board's generation
+// strip. They differ in geometry, because each sits in a different space: form
+// and ability chips share the card's 88px controls band and stay compact enough
+// for two rows in it, filter chips carry a dot and an ×, and generation chips
+// are near-square around a single numeral. What they do NOT differ in is colour
+// — and before this file the same four class strings were hand-copied into
+// three of them, which is precisely how variants drift apart (the [D-032]
+// lesson that produced `Button`).
 //
 // So: colour and shape here, geometry at the call site.
 //
@@ -26,6 +27,14 @@ export const CHIP_ON = "border-transparent bg-accent text-accent-contrast";
 // row of chips does not shimmer as the pointer crosses it.
 export const CHIP_OFF =
   "border-border-strong bg-elevated text-secondary hover:text-primary";
+
+// Unselected, for a chip that is NOT interactive: `CHIP_OFF` without its hover,
+// since a <span> that lights up under the pointer promises a click it does not
+// accept. Home's read-only ability pills are the case (D-078); it lives here
+// with the rest of the vocabulary rather than in that component, because a
+// fourth colour pair defined at a call site is the drift this module exists to
+// stop (06_style_guide §12 rule 8).
+export const CHIP_STATIC = "border-border-strong bg-elevated text-secondary";
 
 // Selected, when the chip carries its own fill (a type colour, supplied inline
 // by the caller). The border gets out of the way; the fill is the state.

@@ -5,6 +5,7 @@ import SpeedBanner from "./SpeedBanner";
 import StabChip, { StabLabel } from "./StabChip";
 import { STAT_ORDER, STAT_LABEL } from "../lib/stats";
 import { spriteFor } from "../lib/pokemon";
+import { defaultAbility, abilityLabel } from "../lib/abilities";
 import { stabMatchup } from "../lib/typeChart";
 
 // Home's flagship board: a fixed, non-interactive comparison (Volcarona vs
@@ -126,6 +127,13 @@ function MonHead({ p, right = false }) {
             <TypeBadge key={t} type={t} size="sm" />
           ))}
         </div>
+        {/* Named, not chips: this board is not interactive, so a control would
+            be a lie. It is here because the STAB pills beside it now read
+            through this ability, and a 0× with no visible cause is the kind of
+            thing that reads as a bug. */}
+        <div className="text-caption text-tertiary mt-1 truncate">
+          {abilityLabel(defaultAbility(p))}
+        </div>
       </div>
     </div>
   );
@@ -134,14 +142,36 @@ function MonHead({ p, right = false }) {
 // Center of the head: the attacker's STAB effectiveness into the defender —
 // the one thing the full ComparisonCard shows that this preview otherwise drops.
 // (attacker = p1 by convention; the pills match p1's type badges on the left.)
+//
+// **It scores through the defender's first ability, exactly as /compare does**
+// (D-074). Not doing so would have left Home showing ½× where the tool it
+// advertises shows 0×, on the one board D-032 exists to keep from drifting —
+// Chandelure's first ability is Flash Fire, so Volcarona's Fire STAB does
+// nothing to it. The board is a live preview of the tool, and a live preview
+// that disagrees with the tool is a mockup.
 function StabCenter({ attacker, defender }) {
+  const ability = defaultAbility(defender);
   return (
     <div className="flex flex-col items-center gap-1.5">
       <StabLabel>STAB</StabLabel>
-      <div className="flex flex-col gap-1">
-        {stabMatchup(attacker, defender).map(({ type, mult }) => (
-          <StabChip key={type} type={type} mult={mult} dense />
-        ))}
+      {/* `items-center`, because a flex COLUMN stretches its children to the
+          widest by default — which padded the shorter pill out to the corrected
+          one's width and left dead space inside it. On /compare the group is a
+          wrapping ROW, where stretch affects height rather than width, so only
+          this surface had it (D-083). */}
+      <div className="flex flex-col items-center gap-1">
+        {stabMatchup(attacker, defender, null, ability).map(
+          ({ type, mult, baseMult, via }) => (
+            <StabChip
+              key={type}
+              type={type}
+              mult={mult}
+              baseMult={baseMult}
+              via={via}
+              size="sm"
+            />
+          ),
+        )}
       </div>
     </div>
   );

@@ -111,6 +111,47 @@ describe("era fields (D-045)", () => {
   });
 });
 
+describe("ability fields (D-073)", () => {
+  const decode = (slug) => decodeEntry(ROWS.find((r) => r.s === slug));
+
+  it("splits the roster into normal slots and the hidden one", () => {
+    // The two-field encoding rests on an invariant that holds across all 1,259
+    // entries: the hidden ability is always slot 3 and there is never more
+    // than one (asserted over the whole dex in abilities.test.js).
+    expect(decode("pikachu").abilities).toEqual([
+      { slug: "static", hidden: false },
+      { slug: "lightning-rod", hidden: true },
+    ]);
+    expect(decode("eelektross").abilities).toEqual([
+      { slug: "levitate", hidden: false },
+    ]);
+  });
+
+  it("decodes an empty slot as null, which is how a slot arriving is spelled", () => {
+    // Pikachu had no hidden ability through Gen 4 — the shape 540 of the 566
+    // stored era records take, and the reason `0` is stored rather than `null`.
+    expect(decode("pikachu").abilityEras).toEqual([
+      { until: 4, slots: { 3: null } },
+    ]);
+  });
+
+  it("decodes a genuine substitution", () => {
+    // Only 26 of the stored records are one ability replacing another. This is
+    // the one that changes a matchup: Gengar was Ground-immune through Gen 6.
+    expect(decode("gengar").abilityEras).toEqual([
+      { until: 6, slots: { 1: "levitate" } },
+    ]);
+  });
+
+  it("gives an entry with no abilities empty arrays, not undefined", () => {
+    // Fourteen entries carry none at all, so every consumer can map over them
+    // without a guard — the same reason `forms` always includes self.
+    const bare = decode("zygarde-mega");
+    expect(bare.abilities).toEqual([]);
+    expect(bare.abilityEras).toEqual([]);
+  });
+});
+
 describe("round trip", () => {
   // The invariant D-036 verified by hand before shipping the compact dataset.
   // Asserting it here means a future field change cannot quietly break it.
