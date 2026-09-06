@@ -358,7 +358,7 @@ Vector icons via **`react-icons`** — primarily the Lucide set (`react-icons/lu
 5. **Accent is chrome-only.** The purple accent is for brand/actions/focus — never a stat/type color (§2, [04_design §2](04_design.md)).
 6. **Never color alone.** Meaning always pairs color with text/number/icon (accessibility).
 7. **Spacing from the scale.** All spacing uses §6 tokens; no arbitrary margins.
-8. **Shared look lives in one module.** When two components should look alike, the class strings go in a shared constants module and the components add only what genuinely differs. `Button` is the component form of this; `components/chipStyles.jsx` is the constants form — one colour pair behind the three chip geometries ([04_design §6](04_design.md)), after the same four strings had been hand-copied into a third component. Note the constraint: such a module **must be `.jsx`** — Tailwind only scans `.jsx` (§13), so class strings in `lib/` are invisible to it, and `react-refresh` requires a component file to export only components. `components/dexColumns.jsx` and `components/pageChrome.jsx` are the others.
+8. **Shared look lives in one module.** When two components should look alike, the class strings go in a shared constants module and the components add only what genuinely differs. `Button` is the component form of this; `components/chipStyles.jsx` is the constants form — one colour pair behind the four chip geometries ([04_design §6](04_design.md)), after the same four strings had been hand-copied into a third component. Note the constraint: such a module **must be `.jsx`** — Tailwind only scans `.jsx` (§13), so class strings in `lib/` are invisible to it, and `react-refresh` requires a component file to export only components. `components/dexColumns.jsx` and `components/pageChrome.jsx` are the others.
 
    **Go all the way up.** Extracting the _colours_ two components share and leaving their _markup_ duplicated is where this rule gets applied halfway, and it happened twice: the dex's filter chip and the type picker were the same component after `chipStyles` unified their palette, and the two STAB pills stayed two components with different fill percentages. Both are now single components (`FilterChip`, `StabChip`), and merging the second is what finally put its colour pairing in front of `audit:contrast` — where it failed AA on 17 of 18 types ([D-058](03_decisions.md#d-058)). Duplication does not just drift; it hides.
 
@@ -371,8 +371,12 @@ Vector icons via **`react-icons`** — primarily the Lucide set (`react-icons/lu
 The route at `/style` is the executable half of this document: it renders the
 **real** tokens and components, never copies, so it cannot drift from the app.
 Swatches read their values out of the live stylesheet, badges are `TypeBadge`,
-the sample board is the actual `FeaturedComparison`, and all three chip
+the sample board is the actual `FeaturedComparison`, and all four chip
 geometries sit side by side so a divergence is visible rather than theoretical.
+The `StabChip`'s four tiers and its corrected state sit there too — they used to
+appear only incidentally, inside that sample board, which is the drift this page
+exists to prevent happening in the page whose job is preventing it
+([D-079](03_decisions.md#d-079)).
 It also renders through the shared page shell now, rather than its own gutter
 and title size ([D-058](03_decisions.md#d-058)) — the page that demonstrates the
 system should not be the page opting out of it. Its `StatBar` specimen is gone

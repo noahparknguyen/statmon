@@ -2,9 +2,9 @@
 
 A simple set of Pokémon tools, built for myself. Three so far — and each of them can be read **as of any generation**:
 
-- **[Compare](https://statmon.noahparknguyen.workers.dev/compare)** — two Pokémon's base stats head to head, with the type matchup and a straight answer about who moves first.
+- **[Compare](https://statmon.noahparknguyen.workers.dev/compare)** — two Pokémon's base stats head to head, with the type matchup, their abilities, and a straight answer about who moves first.
 - **[Dex](https://statmon.noahparknguyen.workers.dev/dex)** — all 1,259 entries in one table, sortable by any stat and filterable by type and generation.
-- **[Types](https://statmon.noahparknguyen.workers.dev/types)** — the full effectiveness chart, and a dual-type readout on the same page.
+- **[Types](https://statmon.noahparknguyen.workers.dev/types)** — the full effectiveness chart, and a dual-type readout on the same page — searchable by Pokémon, not just by type.
 
 **Live at [statmon.noahparknguyen.workers.dev](https://statmon.noahparknguyen.workers.dev/).**
 
@@ -25,6 +25,12 @@ The dex table came next, for the other half of the same question: not "which of 
 ![The Statmon dex: every Pokémon in one sortable, filterable table](docs/dex.png)
 
 The type chart came from the same itch. Every other one I found either stops at single types or gives each dual-type pairing its own page, so answering "what beats Water/Flying" means going somewhere else. Here you pick up to two types and the eighteen attacking types sort themselves into tiers, with the full grid still on screen underneath. It's generation-aware too — the chart really has changed, six times, and Gen 1 is a 15×15 grid where Ghost does nothing to Psychic.
+
+You can also just search a Pokémon, which is how the question actually gets asked. "What beats Corviknight" used to mean looking up that it's Steel/Flying somewhere else first — the exact complaint I had about everyone else's chart, sitting in my own. The typing is still what the page is about; the Pokémon is a way to name one, and it gets dropped automatically if you change a type or a generation out from under it.
+
+And a Pokémon is more than its typing, which is the other half of this. Ground is strong against Electric types — unless the Electric type is Eelektross, which has **Levitate** and takes nothing at all. Every Pokémon's abilities are now on its card, and the ~20 that change type effectiveness feed the matchup, so the comparison board stops being confidently wrong in exactly the cases people look up. That's generation-aware as well, and it turns up things I didn't know: **Gengar had Levitate until Gen 7**, so read the same matchup as of Gen 6 and Ground does nothing to it.
+
+The one part that isn't automatic is the effect itself. PokéAPI gives me the roster and its whole history for free, but it describes what an ability _does_ only in prose — Levitate's entry reads "Evades Ground moves." — so the twenty-odd that matter are a hand-written table. The build can't check that Levitate means Ground 0×, but it does check that every ability I've named is real and actually appears in the dex, and the rest is unit tests.
 
 ![The Statmon type chart answering Water / Flying, with the full grid below it](docs/types.png)
 
@@ -48,10 +54,10 @@ npm run dev
 The checks that keep things honest, all seven of which run in CI:
 
 - `lint`, `format:check`, `build`
-- `test:run` — Vitest: the stat math, the dataset codec round-trip, the dex sort/filter logic, the generation-era resolution, a server-render smoke test of every route, and a set of accessibility regressions
+- `test:run` — Vitest: the stat math, the dataset codec round-trip, the dex sort/filter logic, the generation-era resolution, the ability effect table, a server-render smoke test of every route, and a set of accessibility regressions
 - `audit:contrast` — WCAG AA across all 18 type colours, in seven pairing groups
 - `check:docs` — every link and anchor in `docs/`
-- `sweep:widths` — headless Chrome across 11 routes × 14 widths, asserting no page ever scrolls sideways and every touch target meets WCAG 2.5.8
+- `sweep:widths` — headless Chrome across 14 routes × 14 widths, asserting no page ever scrolls sideways and every touch target meets WCAG 2.5.8
 
 That last one exists because I kept doing it by hand and kept doing it wrong: the type grid leaked horizontal overflow onto every page for as long as it had shipped, and I missed it three times because 390, 768 and 1280 are all clean while 600 and 700 are not. It has since caught a breakpoint that broke the header on every width between 360 and 383, and disproved a WCAG failure I had been asserting in two documents without ever measuring it.
 

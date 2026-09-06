@@ -179,6 +179,22 @@ Researched 2026-09-04, ahead of the work itself — the point is to know what th
 
 **→ Recommendation (for the future session).** Take the roster and its history from the API; hardcode the ~20 effectiveness-modifying abilities as a small table beside the type chart, with unit tests standing in for the verification the chart gets from the build. Scope the mechanic to type effectiveness only — damage calc, weather and stat-stage abilities are a different and much larger feature.
 
+> **Built 2026-09-05 ([D-073](03_decisions.md#d-073)). The recommendation held; the candidate list above did not.** Four corrections and three measurements, recorded here because this section is what the next reader will trust.
+>
+> **The list was wrong about Wind Rider.** It grants immunity to _wind_ moves — Tailwind, Bleakwind Storm — and **not** to Flying-type ones. It is out, alongside Bulletproof, Soundproof and Queenly Majesty, which are the same category: move properties, not types. Fluffy is in for one clause only (it doubles Fire, a real type relation) and out for the other (halving _contact_ moves is not).
+>
+> **The list was also over-inclusive on multipliers.** Dry Skin's Fire **×1.25** and Filter / Solid Rock / Prism Armor's **×0.75** are outside the chart's own vocabulary (0, ¼, ½, 1, 2, 4) and would create a 2.5× tier with no row to put it in. Dry Skin's Water immunity is in; its Fire clause is not. The rule that replaced the list: _an ability is in the table when its effect is `defending type → multiplier` within that vocabulary._ Wonder Guard is the single documented exception, being a rule over the final product.
+>
+> **Two abilities needed a date the roster could not supply.** Lightning Rod and Storm Drain only _redirected_ until Gen 5; the immunity came later. Rhyhorn and Electrike have carried Lightning Rod in an ordinary slot since Gen 3, and Gastrodon has had Storm Drain since Gen 4, so a Gen 3 board reading either as an immunity would have been wrong about a real Pokémon. Each table entry therefore carries a `since`.
+>
+> **And `past_abilities` is only half a record of when hidden abilities exist.** They arrived in **Gen 5**, which the 540 empty-slot records mostly say — but **not where the hidden slot was later replaced**. Zapdos is stored as a single substitution, `{until: 5, slots: {3: "lightning-rod"}}`, whose `until` reaches back to Gen 3 with nothing to stop it. Read literally that hands 21 entries a hidden ability in Ruby and Sapphire, five of them one that bends a matchup. So `HIDDEN_FROM_GEN = 5` is stated in `lib/abilities.js` the same way the Gen 3 floor is: **the API records which hidden ability was held, never that one could be held at all.** ([D-078](03_decisions.md#d-078))
+>
+> **`ability: null` is the shape that matters most.** Of the 568 `past_abilities` records across 466 entries, **540 say a slot was empty then** — that is how PokéAPI encodes an ability _arriving_, and it is why `/ability/{name}` never had to be fetched for generation metadata. Only **28** are one ability replacing another; the best of them is **Gengar's Levitate, held through Gen 6**.
+>
+> **What it cost, measured:** **zero new network requests** (the roster was already in the build cache for all 1,259 entries) and **+8.2 kB gzip**, of which era history is only 0.8 kB. A slug dictionary would have saved another 0.8 kB and was not worth a container-format change.
+>
+> **And the verification gap is narrower than this section assumed.** The semantics genuinely cannot be checked against PokéAPI — but the **keys** can, and `npm run build:data` now fails if any slug in the table is not a real ability some Pokémon in the dex has. Unit tests carry the rest.
+
 ---
 
 ## Sources

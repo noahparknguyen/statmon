@@ -4,6 +4,770 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ---
 
+## 2026-09-06 — Session 22 (three faults from using it)
+
+<a id="d-090"></a>
+
+### D-090 · `/style` had a hand-copy, and it drifted inside one session — **Firm** _(enforces [D-048](#d-048))_
+
+The STAB group's caption — "vs Ghost / Poison · ● Levitate" — was written inline
+on the comparison card and **copied by hand into `/style`** as a specimen. Within
+the same session the real one grew an `sr-only` expansion for its accent dot
+([D-087](#d-087)'s sibling fix), and the copy did not. So the page whose entire
+stated contract is _"renders the real tokens and components, never copies, so it
+cannot drift from the app"_ was shipping a drifted copy of the thing it was
+demonstrating — the second time that page has been the offender ([D-048](#d-048)).
+
+It is now `StabCaption`, exported beside `StabChip` and `StabLabel` and used by
+both callers. Two callers is the [D-058](#d-058) threshold for when a block stops
+being page markup and becomes a component; `/style` counts as a caller, which is
+the part that was missed.
+
+_Worth logging rather than fixing quietly, because the failure mode is
+specific: a specimen page makes copies feel legitimate. The rule is that a
+specimen is a **call site**, not a rendering of what the call site looks like._
+
+---
+
+<a id="d-089"></a>
+
+### D-089 · A label belongs on the first line of what it labels — **Firm** _(refines [D-080](#d-080))_
+
+The card's controls band aligned its rows `items-center`, so on a two-row
+ability roster "ABILITY" sat beside the **gutter between the rows**, pointing at
+nothing. The rows now align on the **baseline**.
+
+The convention is not a preference: a `<dt>` sits at the top of its `<dd>`, and
+a form label sits on the first line of its control, because a reader enters a
+two-column block at the top of the right-hand column. Every other labelled group
+on this site already does it by construction — `GenerationStrip`, `TypePicker`
+and `DexFilters` all put the label _above_ their chips.
+
+**Baseline rather than `items-start`**, because the label is 11px against a 21px
+chip: aligning the boxes sits it 5px high, and it is the text a reader lines up,
+not the box. It also needs no number, where the alternative is a hardcoded
+offset that breaks the moment either type style changes.
+
+---
+
+<a id="d-088"></a>
+
+### D-088 · The grid's cross-hair was fighting paint order — **Firm** _(fixes [D-052](#d-052))_
+
+Two halves of one bug, reported as "the rounded square doesn't get the
+highlight, the background does" and "the cells above light up, the ones below
+don't".
+
+Both are **tree order**. Each cell's fill is a `position: relative` `<div>`
+_inside_ the `<td>`, and the td is positioned with `z-index: auto` — so it is
+**not** a stacking context, and the pseudo-elements and every cell's fill all
+compete in the same one, resolving by document order:
+
+- the row tint (`::before`) comes before its own cell's fill, so the fill
+  painted over it and only the 1px gutter around each cell lit up;
+- the column bar (`::after`) comes after its own cell but before every **later**
+  row's, so it covered the cells above the pointer and was painted over by the
+  ones below.
+
+Both now carry an explicit `z-index`. The `<td>` deliberately does **not** — a
+z-index there would make it a stacking context and trap the full-height column
+bar inside one cell, which is the thing [D-052](#d-052) built it to escape.
+
+_Reproduced in isolation before and after, because "it looks wrong on hover" is
+not a thing the test suite can hold._
+
+---
+
+<a id="d-087"></a>
+
+### D-087 · Scroll restoration keyed by tool, not by history entry — **Firm** _(fixes [D-024](#d-024))_
+
+**Every click threw the page back to the top.** Measured: Swap and a form chip
+both took the scroll position from 327px to 0.
+
+The cause is the collision of two decisions that were each right. [D-022](#d-022)
+makes the URL the single source of truth, so **every control navigates** —
+picking a Pokémon, swapping, choosing a generation, toggling a type. And
+`<ScrollRestoration>` keys saved positions by `location.key`, which
+`navigate(…, { replace: true })` mints fresh every time. A new key has no saved
+position, and the fallback for that is scrolling to the top. The tools that keep
+state in the **path** were worst hit, because there the URL changes most.
+
+`getKey` now returns the **tool** — the first path segment — so a tool's URLs
+share one entry. An in-tool change restores the position it just saved, which is
+a no-op; moving between tools still has nothing to restore and still lands at
+the top; and returning to a tool comes back where you were, which is what the
+browser would have done anyway. All three verified in a real browser.
+
+**The same fix was owed to focus.** `useFocusOnNavigate` fired on every
+_pathname_ change, so on `/compare` it yanked focus to `<main>` out of the very
+chip you had just clicked — a keyboard user lost their place on every pick, and
+was told the page had changed when it had not. It is keyed on the tool now too.
+
+_`toolOf` earns its own module and a test that walks the real route table, since
+it answers "which URLs are the same page" for two behaviours at once, and would
+regress silently — a route added later that broke the rule would look fine._
+
+---
+
+## 2026-09-06 — Session 21 (the pre-commit review)
+
+<a id="d-086"></a>
+
+### D-086 · Four numbers in the prose were wrong, and no check reads prose — **Firm**
+
+An independent review of the diff before committing. The seven CI checks were
+all green throughout; every fault below is in **prose** — comments and docs —
+which is the one artefact nothing in the pipeline validates.
+
+- **"Seven of them bend a matchup" is five.** Stated in `lib/abilities.js`,
+  `abilities.test.js`, `02_research` and [D-078](#d-078). The 21 is right; the
+  subset is Zapdos, Raikou, Entei, Suicune and Hisuian Typhlosion.
+- **The `ae` counts cited PokéAPI's raw totals where their siblings cite stored
+  ones** — 466/568/28 against an actual 464/566/26. The build's own no-op filter
+  drops two records (Hisuian Sliggoo and Goodra each restate Shell Armor), which
+  is exactly the drop `se` and `te` document. Wrong in five places.
+- **`abilityLabel("good-as-gold")` rendered "Good As Gold".** The exception list
+  covered six prepositions and missed the seventh. The guard test matches
+  `/-[a-z]/`, so it can catch a raw slug leaking through but is structurally
+  blind to a casing error; each exception is now asserted by name.
+- **`abilityLabel(null)` threw.** `defaultAbility` returns null for the fourteen
+  ability-less entries, and Home called it unguarded — safe only because its
+  mascots are hardcoded. It now returns `""`.
+
+Plus a real accessibility regression: the caption's accent dot on `/compare`
+carries the "changes type matchups" meaning and was `aria-hidden` with no
+`sr-only` expansion — **the same defect [D-065](#d-065) fixed on the generation
+strip, reintroduced one file over.** And `AbilityChips` had grown a fourth chip
+colour pair locally instead of in `chipStyles.jsx`, which is the drift that
+module exists to stop.
+
+_Worth writing down because of what it says about the checks: `audit:contrast`,
+`sweep:widths` and `check:docs` between them measure colour, layout and links,
+and all three were green while four factual claims in the documentation were
+false. A number in a sentence is not covered by anything. The dataset counts are
+now re-derivable in one command, which is the closest this gets to a check._
+
+---
+
+<a id="d-085"></a>
+
+### D-085 · The artwork's position is the guarantee; its size never was — **Firm** _(corrects [D-082](#d-082))_
+
+[D-082](#d-082) sized the artwork so its **subject** would clear the controls
+band, deriving `N ≤ 280` from the tightest-cropped decile. The review found the
+derivation did not hold at the value shipped — `top-33` (132px) misses its own
+second constraint by 2px, and no 4px-grid position satisfies both at N = 280.
+
+Re-measuring is what showed the derivation was not merely mis-solved but
+**unsound**. It mixed statistical bases — a 10th percentile for the top, a mean
+for the bottom — and, worse, the top constraint cannot be satisfied by sizing at
+all: across a 180-artwork sample the minimum subject inset is **0.0%**.
+Blacephalon's art touches the very edge of its square, so for that entry the box
+top _is_ the subject top and no `N` clears anything.
+
+**So the box now starts at 144px — exactly where the controls band ends.** The
+guarantee becomes positional and absolute, holds for every crop including the
+0% one, and needs no percentile reasoning whatsoever. 280 stops being a
+derivation and becomes what it always should have been: a **budget** for how far
+the art may bleed behind the stat bars.
+
+_The lesson: a guarantee that depends on the distribution of the content is not
+a guarantee. The constraint was expressible in geometry alone, and geometry
+alone is what it should have been written in._
+
+---
+
+<a id="d-084"></a>
+
+### D-084 · ⅛× exists, and the tier list was dropping it — **Firm** _(fixes [D-073](#d-073))_
+
+**A real bug, found by fuzzing rather than by reading.** An ability
+**multiplies** the chart's answer ([D-073](#d-073)), so a defender that already
+resists an attacking type twice and then halves it again lands on **⅛×** — a
+value the type chart alone can never produce. `MULT_ORDER` and `MULT_LABEL` were
+both written against the six values typing can reach, so:
+
+- `matchupTiers` filters attackers by **exact equality** against `MULT_ORDER`.
+  A multiplier missing from that list does not render wrong — it renders **not at
+  all**. The attacking type silently vanished from every tier on `/types`.
+- `formatMult` fell through to `` `${m}×` ``, printing a bare **`0.125×`** on the
+  STAB chip where the whole scale elsewhere reads `⅛×`.
+
+**Four entries reach it, and it is their DEFAULT reading, not an opt-in one:**
+Dewgong, Spheal, Sealeo and Walrein are Water/Ice with **Thick Fat in slot 1** —
+Ice is ¼× into Water/Ice, and Thick Fat halves Ice. Nothing about that is exotic;
+it simply is not a case anybody would think to write down, which is why the
+sweep found it and four rounds of reading did not.
+
+**⅛× is correct, so it is added rather than clamped.** The games really do stack
+damage this way; rounding it back to ¼× would be a lie told to protect a
+constant. `MULT_ORDER` gains `0.125` and `MULT_LABEL` gains `⅛×`.
+
+**The guard is a sweep, not an example.** `typeView.test.js` now walks **every
+entry × every ability × every attacking type × four generations** and asserts no
+multiplier falls outside `MULT_ORDER`, plus that every value in it has a label
+without a decimal point. Verified non-vacuous: reverting the one-line fix fails
+it, naming Dewgong and Walrein.
+
+_The lesson: [D-073](#d-073)'s membership rule bounded the **table's entries** to
+the chart's vocabulary and quietly assumed that bounded the **products** too. A
+rule about inputs is not a rule about outputs._
+
+---
+
+## 2026-09-06 — Session 20 (four spacing faults, each with a different cause)
+
+<a id="d-083"></a>
+
+### D-083 · Four gaps that looked like taste and were not — **Firm** _(refines [D-080](#d-080), [D-079](#d-079), [D-019](#d-019))_
+
+Four "this looks a bit off" reports. Each had a mechanical cause, and none of
+them was the number it appeared to be.
+
+**1 · The controls band was bottom-aligned, so its slack showed at the top.**
+The band is a fixed 88px, but 960 of 1,259 entries need only two chip rows —
+48px — so **40px of it is slack**. `content-end` put that slack _between the name
+and the chips_, where it is a visible gap that changes size with the roster:
+Volcarona showed 40px of it, Chandelure 13, for no reason a reader could see.
+Top-aligned, the chips always sit the same distance below the name and the slack
+falls between them and the portrait, where the artwork's own transparent margin
+already lives and no edge marks it. The four-row Tauros case still overflows, ending at 162px — on the
+artwork's transparent margin for that crop, though unlike the band's position
+(D-085) that is not a guarantee. Four entries of 1,259.
+
+**2 · Home's STAB pills were stretched, not spaced.** Both measured **122px**
+though "Bug ¼×" is visibly shorter than "Fire 2̶×̶ 0×" — because a flex **column**
+stretches its children to the widest by default, padding the shorter pill out
+and leaving dead space inside it. `items-center` sizes each to its content
+(Bug is now 100px). Only Home had it: `/compare` lays the same pills out in a
+wrapping **row**, where `stretch` governs height rather than width — which is
+also why [D-079](#d-079)'s change did not surface it.
+
+**3 · The page's two edges were the same number and are not the same kind of
+edge.** `py-8` gave 32px above the heading and 32px below the last card. The top
+is bounded by a **sticky** header that stays attached to the content as you
+scroll; the bottom is **terminal** — a rule, then the end of the page. Nothing is
+gained by ending close to it. Now `pt-10 pb-20`, and the bottom number is the
+`pb-20` Home already spent, so "space before the footer" is one number across the
+site instead of two that happened to differ.
+
+**4 · Home's section margins were uniform and the space they produced was
+not.** The gap from a section's bottom to the _next section's artwork_ measured
+**167px (Compare), 17px (Dex), 205px (Types)** — a tenfold spread from a single
+`mt-28`, because only the dex preview has figures that climb above their own
+heading ([D-072](#d-072) pins them at `-top-44`, 95px above the section top). The
+margin was measuring the wrong thing: a reader sees the art before the heading.
+`mt-36` plus pulling those figures to `-top-36` gives **167 / 81 / 237**.
+
+**And one real bug the alignment complaint exposed.** "No Pokémon selected" hung
+72px below "Pick two Pokémon to compare." Collapsing `EmptyCard`'s three mirrored
+bands into one centred zone fixed the centring — and revealed that the card was
+**674px against the other two at 618**, a stray 56px head spacer left behind by
+[D-082](#d-082)'s reorder that nothing else had caught. The three cards are equal
+again, and all three messages centre at 161.
+
+_The lesson the four share: **a spacing value is not the spacing you get.** Three
+of these were correct numbers producing wrong space — through alignment, through
+flex defaults, and through content that overflows its own box._
+
+---
+
+## 2026-09-06 — Session 19 (the controls move off the portrait)
+
+<a id="d-082"></a>
+
+### D-082 · The controls move off the portrait — **Firm** _(places [D-080](#d-080), re-derives [D-081](#d-081))_
+
+**The reported bug was "the chips overflow onto Chandelure". They do not
+overflow.** Chandelure's band content measures **75px inside an 88px band** — it
+fits, with 13px to spare, and only four entries in the entire dex (the Tauros
+family) exceed the band at all, by 14px. The problem was never size. It was
+**position**:
+
+|                        |                                               |
+| ---------------------- | --------------------------------------------- |
+| Artwork box            | y 28 → 380                                    |
+| Artwork **subject**    | y **63 → 344**                                |
+| Controls band          | y **232 → 320** — entirely inside the subject |
+| Scrim across that band | 0% → 35% opaque                               |
+
+So the chips sat on the **brightest, least-scrimmed part of the subject**, and
+covered 112px of it. Diagnosing this as overflow would have produced a taller
+band, which is more chips on the same Pokémon.
+
+**The measurement that closed off the easy answers.** PokéAPI's official artwork
+is **tightly cropped**: sampling the alpha bounding boxes, subjects fill
+**10%–90%** of the square (p10 top 4.6%, p90 bottom 95.2%). There is no
+whitespace anywhere in the image. "Move the chips to where the art is empty" was
+never an available move, and neither was any horizontal rearrangement — the
+user's forms-left / abilities-right idea was measured too: splitting a 255px
+column in half sends Chandelure's three abilities from two rows to three, so it
+is **vertically worse**, not better.
+
+**Why the obvious fix was rejected.** The tempting answer was [D-081](#d-081)'s
+own rule applied to the other axis — cap the artwork to the 176px portrait
+window. Sized to clear the chips, the artwork ends at y=300 while the stats begin
+at y=368, so **it would no longer reach the stat bars at all** — and
+`--color-track-glass` exists for the single purpose of letting the art show
+_through_ them ([04_design §6](04_design.md)). A fix that silently deletes a
+documented feature is not a fix. Rejected on that, not on taste.
+
+**So the controls moved above the portrait instead**, into the identity block:
+name, dex number, types, **form, ability**, then the picture. That is what those
+two controls _are_ — which Pokémon this card is, and which version of it is in
+play — so this is the placement the information already implied. Sitting them
+mid-portrait was the accident, inherited from when only `FormChips` lived there
+and **845 of 1,259 entries rendered nothing at all**. Abilities made the band
+unconditional, which is what turned an occasional overlap into a permanent one.
+
+**The rule worth keeping**: _thin, sparse content may bleed over the artwork; a
+row of opaque 21px pills may not._ A 2px stat bar genuinely reads as bleeding
+behind; chips read as covering. Same treatment, opposite result, and the scrim
+was tuned for the first case only.
+
+**It cost nothing.** Card stays 616 / 424, `ComparisonCard`'s top zone stays 320
+(head 56 + controls 88 + body 176), its slack is untouched, and no height in
+[04_design](04_design.md) moved. The artwork is re-derived to **280px at
+`top-33`** from two constraints — subject below the chips (`top + 0.05N ≥ 144`)
+and, below md, above the scrim's opaque point (`top + 0.9N ≤ 382`).
+
+**And the smaller artwork shows more Pokémon**, which is the whole argument in
+one line: the visible share of the subject goes **60% → 72%** at ≥md and
+**70% → 93%** below it, because none of it is behind a chip any more. The art
+also reaches _further_ behind the stat bars than before (60px → 92px), so the
+feature the rejected option would have deleted is strengthened instead.
+
+---
+
+## 2026-09-06 — Session 18 (the board's second pass: shape, labels, a runaway image)
+
+<a id="d-081"></a>
+
+### D-081 · The artwork is capped to what the card can show — **Firm**
+
+**A square that grows with width, in a band whose height is fixed.** The card's
+`<img>` is `w-full aspect-square`, so its height tracks the card's **width**,
+while the band that displays it is a constant 232–280px. The two only agree by
+coincidence, and they stop agreeing as soon as a card gets wide.
+
+Measured across the breakpoints, the box is **718px at a 767px viewport** — the
+top third of a Pokémon — and **476px at 1023px**. So this was reported as a
+mobile bug and is not one: it recurs at the **top of every column-count band**,
+worst just before each breakpoint, where the card is widest before the grid adds
+a column and halves it again. At 390px and at 1024px+ it happens to be fine,
+which is exactly why three rounds of hand-testing never saw it — the same shape
+of miss as the type grid's overflow ([D-052](#d-052)).
+
+`max-w-[22rem]` (352px), centred. **The number is derived, not chosen**: the box
+measures 315–347px at every width that already looked right, so 352 changes
+nothing there and clamps everything else to that same appearance. The rule
+generalises: _cap a container-sized element at the size it has where it already
+looks correct._
+
+> **Re-derived by [D-082](#d-082).** The cap is now **280px at `top-33`**, set by
+> the vertical window rather than by matching the old look — 352px kept the
+> chips sitting on the artwork's subject. The horizontal diagnosis above still
+> stands and is still why a cap exists at all; only the number moved.
+
+---
+
+<a id="d-080"></a>
+
+### D-080 · The card's controls get their names back — **Firm**
+
+Form chips and ability chips were two stacked bands of **visually identical
+chips with nothing on screen saying which was which** — "Base / Mega" and
+"Flame Body / Swarm" read as one undifferentiated blob of controls. They are now
+one 88px band, a two-column grid with `text-overline` **FORM** and **ABILITY**
+labels.
+
+**This is not a new idea, it is the site's own pattern arriving late.**
+`GenerationStrip`, `TypePicker` and `DexFilters` all label their groups; the
+Pokémon card was the one control surface that did not. **Left-aligned**, because
+the stat rows immediately below are label-left — the card now reads as one spec
+sheet with a label column instead of a portrait with chips floating on it.
+
+**Held to 88px, which is exactly what the two bands occupied (40 + 48).** That
+constraint is the whole reason this was safe to do: relabelling the band's
+insides moves none of its outsides, so `PokemonCard` stays 616, `ComparisonCard`'s
+top zone stays `md:h-80`, `EmptyCard` stays in step, and every number in
+[04_design](04_design.md) stays true.
+
+**The FORM row holds its space when there is one form**, showing an em dash —
+845 of 1,259 entries have exactly one, and a row that vanished for two thirds of
+the dex would slide the ability row up and change the card's height with it.
+Same [D-050](#d-050) rule that keeps the generation strip unconditional.
+
+---
+
+<a id="d-079"></a>
+
+### D-079 · The STAB chip is a pill, and the cause is stated once — **Firm** _(completes [D-058](#d-058), revises [D-073](#d-073))_
+
+**The site had exactly one stretched control, and it was the one that looked
+wrong.** `StabChip`'s `full` variant was `w-full justify-between` — sized by its
+container instead of its content — and `ComparisonCard` is `md:col-span-2`, so
+below `lg` it spans the whole board. Measured: **686px at 767px wide and 819px
+at 900px**, to hold about 120px of text. Fine only at ≥1024px, where the
+three-column grid happens to make the card narrow.
+
+Every other chip on this site is a content-sized pill (`chipStyles.jsx`). This
+one now is too, and that **finishes [D-058](#d-058)'s merge**: the `full` /
+`dense` split existed because one was a bar and one was a pill. With both pills
+the only remaining difference is size, so the prop is now **`size="sm" | "md"`**
+— the prop `Button` and `TypeBadge` already take. The group does the layout: a
+centred wrapping row, which needs no max-width and wraps itself at 320px.
+
+Measured after: **152px corrected, 113px plain, identical at every width from
+320 to 1280.**
+
+**And the ability's name left the chip.** [D-073](#d-073) put `via Levitate`
+under the type as a second line, which made a corrected chip **43px against its
+sibling's 32** and stacked 11px text under 12px. The mistake was structural
+rather than typographic: **a defender has exactly one ability**, so naming it on
+each corrected chip was redundant by construction. It moves to the caption line
+that already sat under the group —
+
+```
+   [● Ground  2̶×̶ 0× ⊘]   [● Dark 2× ⌃]
+      vs Ghost / Poison · ● Levitate
+```
+
+— carrying `AbilityChips`' own "changes type matchups" dot, so the caption and
+the chip on the defender's card visibly refer to each other. It appears **only
+when a chip was actually corrected**, so a Levitate that changed nothing is not
+advertised as though it had.
+
+The general rule, which is what makes this consistent with the rest of the
+session: **the chip states the effect; the surface states the cause.** Home's
+board obeys it in its own frame — `FeaturedComparison` names each Pokémon's
+ability under its head — rather than growing a caption it has no room for
+([D-067](#d-067)'s "flare goes in the frame").
+
+**`/style` was missing both chips this touched.** `AbilityChips` was absent
+entirely and `StabChip` appeared only incidentally inside the sample board, so
+its four tiers and its corrected state had no reference anywhere — drift in the
+page whose stated job is preventing drift, which is the second time that page
+has been the offender ([D-048](#d-048)). Both are now specimens, and the chip
+section's heading finally counts to four.
+
+---
+
+## 2026-09-06 — Session 17b (what the review caught)
+
+<a id="d-078"></a>
+
+### D-078 · Two floors, not one; and a URL that argued with its own parser — **Firm** _(fixes [D-073](#d-073), [D-075](#d-075))_
+
+A review pass over the abilities work found three real defects. All three are the
+same shape: **a rule that was right, applied one level too shallowly.**
+
+**1. Hidden abilities were handed out from Generation III.** [D-073](#d-073)
+states the Gen 3 floor and stops there — but hidden abilities arrived in
+**Gen 5**, and `past_abilities` only half records that. The 540 empty-slot
+records cover the common case; the ones where the hidden slot was later
+_replaced_ do not, because there is no empty record to read. Zapdos is stored as
+a single substitution, `{until: 5, slots: {3: "lightning-rod"}}`, whose `until`
+reaches back to Gen 3 with nothing to stop it. **21 entries were shown a hidden
+ability in Ruby and Sapphire, and five of them bend a matchup** — a Gen 3
+Suicune came out immune to Water.
+
+The fix is a second floor, `HIDDEN_FROM_GEN = 5`, stated rather than derived for
+exactly the reason the first one is. The general lesson is worth keeping: **the
+API records which hidden ability was held, never that one could be held at all**
+— absence of a record is not evidence of presence.
+
+_It also disproved a line in this log._ D-073 justified `since` with "Zapdos
+carried Lightning Rod from Gen 3". It did not — that copy is hidden, so it did
+not exist until Gen 5. `since` is still right, but the Pokémon that need it are
+**Rhyhorn and Electrike** (Lightning Rod, slot 1–2, from Gen 3) and **Gastrodon**
+(Storm Drain, from Gen 4). Corrected here and in
+[02_research §13](02_research.md#13-abilities-for-the-planned-abilities-feature).
+
+**2. `/types` emitted an `ab=` its own parser discarded.** [D-075](#d-075)'s
+whole argument is that a link should never carry a parameter the page would
+throw away on arrival — and the page did exactly that, because it compared the
+_old_ generation's selection against the _new_ generation's default without
+re-resolving in between. Switching a Gengar board to Gen 6 wrote
+`ab=cursed-body` while rendering Levitate.
+
+`/compare` had it right, in a local helper. **That helper is now
+`abilityParam` in `lib/abilities.js` and both tools go through it**, which is the
+real fix: the rule was correct and the second copy of it was not, which is
+[D-058](#d-058)'s lesson arriving in a new place. Resolve first, then compare to
+the default — that order is the entire function.
+
+**3. The "changes type matchups" dot ignored `since`.** `affectsTypes` took no
+generation, so on a Gen 4 board Storm Drain was marked as mattering while the
+STAB block correctly declined to change. A marker that promises something the
+page then does not do is worse than no marker.
+
+**A test that could not fail, replaced.** The invariant that would have caught
+the first bug was exactly the shape of a test already written — "never resolves
+an era roster with a gap in it" — which asserted every slug was _truthy_.
+`abilitiesAsOf` filters nulls before mapping, so that held by construction and
+the test could never fail whatever the resolver did. It now asserts the roster's
+**shape** (unique, ≤3, hidden last, slot 1 present), and the hidden-ability floor
+is its own whole-dex assertion.
+
+**Two smaller things, both the same failure of nerve about previews.**
+`FeaturedTypes` showed Krookodile's ability beside tiers computed _without_ it —
+harmless only because Krookodile's abilities do not touch effectiveness, and
+silently wrong the moment the featured Pokémon changed. And the non-interactive
+chip variant conveyed which ability was selected **by fill alone**, having
+dropped `aria-pressed` along with the button; it carries `sr-only` text now, and
+lost the hover a `<span>` should never have had.
+
+**And one UX wart.** Searching a Pokémon that did not exist at the current
+`?asof=` dropped the _Pokémon_ and kept the generation, landing on a half-typing
+with no explanation. The search is the more recent intent, so **the lens gives
+way instead** — which is also what `/compare` does when a selection cannot honour
+a generation.
+
+---
+
+## 2026-09-05 — Session 17 (abilities: the roster, and the matchups it bends)
+
+<a id="d-077"></a>
+
+### D-077 · The empty state is the state most likely to be unreadable — **Firm**
+
+Two small defects, both found by screenshotting the feature rather than by
+reading it, and both in the case nothing was designed around.
+
+**"Abilities arrived in Gen 3" shipped illegible.** The ability band sits over
+the card's artwork, and the chips carry their own fill so they read fine — but
+the two empty states are bare text, and on a Gen 1 board that text landed across
+Charizard's tail in `text-tertiary` with no shadow. The stats band immediately
+below it has solved this since it was written (`statsShadow`); the new band
+simply had not inherited the lesson. It now carries the same shadow, and the
+text is `secondary`. **The general point: a band that is usually full of opaque
+chips gets its contrast tested by the one case where it is not.**
+
+**The ability chip on `/types` was pushed to the far edge by `ml-auto`,** on the
+reasoning that identity and control are two groups (the proximity rule). At
+1400px that stranded "Levitate" about 700px from the Pokémon it belongs to,
+where it read as a page action rather than as part of the subject. The rule was
+applied correctly and produced the wrong result, because the ability is not a
+separate group — the line is one statement: _Eelektross, Electric, Levitate._
+
+---
+
+<a id="d-076"></a>
+
+### D-076 · The comparison card's top zone is only fixed from `md` — **Firm** _(protects [D-057](#d-057))_
+
+The ability band added 48px to all three cards, and on a phone one of those
+48s bought nothing. `ComparisonCard`'s top zone is a fixed height **so that its
+mirrored stat rows line up with `PokemonCard`'s** — and that alignment is a ≥md
+concern, which the card's own comment has said since D-057: below md the three
+cards are stacked and nothing has to line up. So below md the fixed height was
+already dead space, and this feature grew it to a ~70px hole above the stats.
+
+It is now `md:h-80` with ordinary padding below that. Two things come of it, and
+the second is the one worth writing down:
+
+- `/compare` at 390px went 2,487px → 2,470px. Modest, and the honest total is
+  still **2,343px → 2,470px**: the ability band costs about 127px on a phone,
+  which is content rather than waste and is the price of the feature.
+- **It also removes a clipping risk that was silent.** The top zone is
+  `overflow-hidden`. A corrected STAB chip is two lines tall, and two of them at
+  320px could have exceeded a fixed 320px zone and simply been cut off with
+  nothing to indicate it. `sweep:widths` measures horizontal overflow and target
+  size — it would not have caught this. Below md the zone now grows instead.
+
+---
+
+<a id="d-075"></a>
+
+### D-075 · `/types` answers for a Pokémon, and the Pokémon is never a second source of truth — **Firm** _(extends [D-051](#d-051))_
+
+**The gap this closes was in D-051's own argument.** That decision justified the
+page by pointing out that every other type chart makes you go elsewhere to
+answer a dual-type question. But `/types` still made you go elsewhere to answer
+_"what beats Corviknight"_ — you had to already know it is Steel/Flying. The
+page could only be asked about a **typing**, and the question people actually
+have names a **Pokémon**.
+
+So the search bar is not a new tool, and not a fourth one: it is the missing
+input method for the tool that was already there. `SearchBar` comes over from
+`/compare` unchanged — it is already a labelled combobox that announces its
+result count ([D-065](#d-065)), and a second search box built here would have
+been the exact drift [D-058](#d-058) exists to prevent.
+
+**The framing that made the URL fall out for free:**
+
+> The subject of the page is a defending **typing**. A Pokémon is a way to
+> _name_ one — plus, optionally, an ability that bends it.
+
+So the typing stays in the path where it has always been, and the Pokémon rides
+along as `?as=`, **validated against that path rather than trusted**. If its
+typing at the generation being read is not the typing on screen, the parameter
+is dropped. Three things follow at no cost:
+
+- Clicking a type chip off drops the Pokémon **with no cleanup branch anywhere**
+  — the parameter simply stops validating.
+- Switching to a generation the Pokémon did not exist in, or was a different
+  typing in, does the same. Clefairy is Normal at Gen 5 and Fairy today, and
+  each is only valid in its own era.
+- A stale or hand-edited link degrades to a plainer view of the same page, the
+  rule `parseAsOf` and `parseTypes` already follow.
+
+The one trap: **the comparison has to be canonical on both sides.** Volcarona is
+stored Bug/Fire and canonicalises to Fire/Bug, so comparing the stored order
+position-by-position against the path would have rejected the very Pokémon that
+produced the URL. Both sides go through `parseTypes`.
+
+**Home's type preview follows the tool** ([D-043](#d-043)). It previewed a bare
+typing, which after this change would advertise the version before it, so it now
+previews **Krookodile** — the artwork becomes the subject rather than decoration
+beside it. Its abilities do not touch type effectiveness, so the tiers are
+unchanged and the Black & White easter egg ([D-044](#d-044)) survives. That
+split is deliberate: this preview sells the search, and the flagship board above
+it sells the ability.
+
+---
+
+<a id="d-074"></a>
+
+### D-074 · A Pokémon always has an ability, so the board reads with one — **Firm**
+
+**Decision.** The selected ability defaults to the **first slot of the era's
+roster**, and there is no "no ability" state. In the games a Pokémon always has
+exactly one in play; a neutral default would be a state that does not exist.
+`AbilityChips` is therefore `FormChips` in behaviour — always exactly one
+active — and the default is spelled as **no URL parameter at all**, the same
+rule `?asof=` follows.
+
+**The cost was accepted with its eyes open, and it is visible on the front
+page.** Chandelure's first ability is **Flash Fire**, so Volcarona's Fire STAB
+against it is 0× rather than ½× — and `FeaturedComparison` had to be changed to
+score through the defender's ability, because Home showing ½× where `/compare`
+shows 0× is precisely the drift [D-032](#d-032)/[D-058](#d-058) exist to
+prevent. A live preview that disagrees with the tool is a mockup. The board now
+names each Pokémon's ability under its type badges — as text, not chips, since
+this board is not interactive and a control would be a lie — so the 0× has its
+cause on screen instead of reading as a bug.
+
+**What the alternative would have cost.** Opt-in would have kept the URL and the
+front page exactly as they were, and left `/compare/krookodile/vs/eelektross`
+reading 2× Ground — the example [05_roadmap](05_roadmap.md) uses to explain why
+this feature is worth building at all. Being right by default was worth a
+changed screenshot.
+
+**One correction fell out of it.** The generation strip's dot said
+`, stats differ from today` to a screen reader. A changed ability roster now
+marks a generation too, and on Volcarona vs Chandelure **no stat differs** — so
+that sentence had become specifically false for the exact user who cannot see
+the dot. It now says `, differs from today`, which is what the dot ever claimed.
+
+---
+
+<a id="d-073"></a>
+
+### D-073 · Abilities: hardcode the effect, verify what can be verified — **Firm**
+
+**Decision.** Shipped the last unchecked near-term item on
+[05_roadmap Phase 6](05_roadmap.md). The roster and its history come from
+PokéAPI into the dataset; the ~20 abilities that change type effectiveness are a
+hardcoded table beside `lib/typeChart.js`, and they feed `effectiveness()`
+alongside the era's chart. `/compare/krookodile/vs/eelektross` said Ground was
+2× and now says 0×, which is the point.
+
+**The rule that decides what is in the table**, written down because a
+hand-maintained list without one grows by vibes:
+
+> An ability is in the table when its effect is expressible as
+> **`defending type → multiplier` within the chart's own vocabulary**
+> (0, ¼, ½, 1, 2, 4). Everything else is a damage calculator.
+
+It settles every borderline case in advance, and it is checkable — a test
+asserts every multiplier is in `MULT_ORDER`:
+
+- **Move properties are not types.** **[02_research §13](02_research.md#13-abilities-for-the-planned-abilities-feature)
+  listed Wind Rider as a candidate and was wrong**: it evades _wind_ moves
+  (Tailwind, Bleakwind Storm), not Flying-type ones. Same category as
+  Bulletproof, Soundproof and Queenly Majesty. Fluffy is in for its other clause
+  only — it doubles Fire, which is a type relation; its contact-halving is not.
+- **Off-vocabulary multipliers are not in.** Dry Skin's Fire **×1.25** and
+  Filter / Solid Rock / Prism Armor's **×0.75** would create a 2.5× tier with no
+  row in `MULT_ORDER` and no label in `formatMult`. Dry Skin's Water immunity
+  stays; only its Fire clause is dropped.
+- **Wonder Guard is the one exception**, and it is a rule over the final product
+  rather than a per-type map. One line, one test, one Pokémon — and Shedinja's
+  tier list is the clearest demonstration the feature has.
+
+**Hardcoded is still not unverified.** [D-047](#d-047) re-derives the type chart
+from `damage_relations` on every data build; there is no equivalent here,
+because PokéAPI states Levitate's effect as the prose _"Evades Ground moves."_
+and nowhere as data. But the **keys** are checkable, and now are: `build:data`
+asserts every slug in the table is a real ability that some Pokémon in the dex
+actually has, and fails the build otherwise. That catches a typo, a rename, and
+an entry written for a Pokémon this dataset does not carry. The semantics are
+guarded by `abilities.test.js`, whose expected values are Bulbapedia's rather
+than this codebase's — the `eras.test.js` rule, because a test that restates the
+table would pass on a wrong table.
+
+**What the data turned out to be**, measured rather than assumed:
+
+- **Zero new network requests.** All 1,259 entries already had `abilities` and
+  `past_abilities` in the cache. In particular `/ability/{name}` is not needed:
+  `past_abilities` encodes an ability _arriving_ as `ability: null`.
+- **+8.2 kB gzip** (dataset 29.8 → 38.0 kB). A slug dictionary would save about
+  **0.8 kB** and cost a container-format change to the file — measured, and not
+  taken. Era history is only **0.8 kB of the 8.2**, so it was never a trade.
+- **The encoding is two flat fields** (`ab` normal, `ah` hidden) because the dex
+  makes it free: the hidden ability is **always slot 3**, there is never more
+  than one, and never more than two normal. Asserted over all 1,259 entries.
+- Eras are stored as **slot patches** like `se`, not whole rosters like `te`:
+  540 of the 566 stored records are a single empty slot, and patching measured 1.5 kB
+  gzip cheaper.
+
+**The era interaction is load-bearing, not decoration.** **Gengar carried
+Levitate through Generation VI**, so a Ground STAB into it reads 0× at `?asof=6`
+and 2× today — the clearest era interaction on the site, and it costs nothing
+because `?asof=` already existed. Pikachu's Lightning Rod arrived in Gen 5;
+Zapdos's left in Gen 6. Two abilities also needed a **`since`**: Lightning Rod
+and Storm Drain only _redirected_ until Gen 5, so a Gen 3 board that granted the
+immunity would have been confidently wrong for a Pokémon that really did have
+the ability then.
+
+**Abilities arrived in Generation III, and that is ours to state.** PokéAPI
+emits no record saying Pikachu had none in Red and Blue — it reports Static with
+no history at all. A Gen 1 or Gen 2 board therefore shows a band reading
+"Abilities arrived in Gen 3" rather than no band, per [D-050](#d-050): a control
+that comes and goes shoves the board around and teaches nobody why it went. The
+14 entries with no abilities at all get the same treatment.
+
+**The `differs` dot needed a floor for the same reason.** A changed roster now
+marks a generation on the strip — it has to, or the site's clearest era
+interaction would be invisible on the control that selects it. But **not below
+Gen 3**: "nobody had abilities then" is a fact about the games, true of all
+1,259 entries, so counting it would put a dot on Gen 2 for every one of them and
+say nothing — the [D-049](#d-049) reason the dex has no dots. Confined to Gen 3
+up it marks 18% of the strip's chips; counting the universal ones took it to 27%.
+
+**Geometry.** A 48px band, where the form chips get 40: ability names are words
+where form labels are abbreviations, and the widest roster in the dex
+(Hydrapple, 38 characters over three chips) needs the room. That number moves
+three files which each write the arithmetic down — `PokemonCard` 568 → 616,
+`ComparisonCard`'s top zone 272 → 320, and `EmptyCard` mirroring both.
+
+> **Superseded by [D-080](#d-080) and [D-082](#d-082).** The two bands are now
+> one labelled 88px **controls** band — the same 40 + 48 total, so the card
+> heights above are unchanged — and it sits **above** the portrait rather than
+> below it, because chips on the artwork covered the subject.
+
+**Noted, not fixed:** the dataset ships **Megas that do not exist in the games**
+— `eelektross-mega`, `feraligatr-mega`, `meganium-mega`, `pyroar-mega`,
+`excadrill-mega`, `scovillain-mega` — carrying invented abilities (`Eelevate`,
+`Dragonize`, `Fire Mane`, `Mega Sol`, `Piercing Drill`, `Spicy Spray`). That is
+pre-existing, but abilities is the first feature to **print it on screen**, so
+it is written down here rather than discovered later.
+
+---
+
 ## 2026-09-05 — Session 16 (the home page: naming the flagship, framing the previews, and a greeting)
 
 <a id="d-072"></a>

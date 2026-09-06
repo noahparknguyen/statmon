@@ -6,7 +6,80 @@ _The phased build plan / task checklist: what to implement, in order. Sequenced 
 
 ---
 
-## Current status (2026-09-04 — Session 15, the consistency & accessibility sweep)
+## Current status (2026-09-06 — Session 22, three faults from using it)
+
+**Done — the kind of faults only using the site finds.** None was visible to any
+of the seven checks; all three were found by hand and then reproduced in a real
+browser before being fixed.
+
+- **Every click scrolled the page back to the top** — measured, 327px to 0 on
+  Swap. `<ScrollRestoration>` keys by history entry, and D-022 makes every
+  control a navigation, so each click minted a key with no saved position and
+  fell back to the top. Keyed by tool now, and the same fix was owed to the
+  focus move, which had been yanking focus out of the chip you just clicked.
+  ([D-087](03_decisions.md#d-087))
+- **The type grid's cross-hair was fighting paint order** — the row tint painted
+  _under_ each cell's own fill, so only the 1px gutter lit up, and the column bar
+  painted under every row below the pointer.
+  ([D-088](03_decisions.md#d-088))
+- **A label sat beside the gutter between two chip rows**, not on the first one.
+  ([D-089](03_decisions.md#d-089))
+- **And `/style` was caught shipping a hand-copy** of the caption it was meant to
+  be demonstrating, already drifted from the real one inside the same session.
+  It is a component with two callers now. ([D-090](03_decisions.md#d-090))
+
+Vitest is at **287 tests**.
+
+## Session 21 (the pre-commit review)
+
+**Done — a full review before committing three sessions of work**, half of it by
+an independent reviewer that read the diff cold. Every numeric claim in the docs
+and comments was re-counted against the dataset, and **four were wrong** — all of
+them written in the sessions being reviewed, none caught by any of the seven
+checks, because no check reads prose.
+
+- **One real bug, found by fuzzing:** an ability multiplies the chart, so a
+  double-resist plus a halving ability lands on **⅛×** — a value `MULT_ORDER`
+  did not contain, so `/types` **silently dropped** that attacking type from
+  every tier, and the STAB chip printed a bare `0.125×`. Four entries reach it by
+  default (Water/Ice with Thick Fat). Fixed and guarded by a whole-dex sweep
+  ([D-084](03_decisions.md#d-084)).
+- **Documentation faults:** four stacked "Current status" blocks where the file
+  allows one, and two superseded decisions ([D-073](03_decisions.md#d-073),
+  [D-081](03_decisions.md#d-081)) still stating geometry three sessions out of
+  date without the "revised by" note this log's own convention requires.
+- **Stale references** to the card's "40px band" in `chipStyles.jsx` and
+  `/style`, a chip-family count still reading "three", and Home's tools row left
+  on the old section rhythm.
+
+Vitest is at **282 tests**.
+
+## Session 20 (four spacing faults)
+
+**Done — four "looks a bit off" reports, four different mechanical causes**, and
+none of them the number it appeared to be ([D-083](03_decisions.md#d-083)). The
+controls band was bottom-aligned so its 40px of slack showed between the name
+and the chips; Home's STAB pills were **stretched to 122px each** by a flex
+column's default `align-items`; the page spent the same 32px on a sticky top
+edge and a terminal bottom one; and Home's uniform `mt-28` produced gaps of
+**167 / 17 / 205px** because only the dex preview's art climbs above its own
+heading. Fixing the fourth complaint also surfaced a real bug — `EmptyCard` was
+**674px against its siblings' 618**, a stray head spacer left by
+[D-082](03_decisions.md#d-082).
+
+## Session 19 (the controls move off the portrait)
+
+**Done — the chips stopped covering the Pokémon.** Reported as "the ability chips overflow onto Chandelure", and they do not: the band's content is 75px inside an 88px band, and only the four Tauros entries exceed it at all. The fault was positional, and measuring the artwork settled what could be done about it — PokéAPI's official art is tightly cropped, subjects filling **10%–90%** of the square, so no arrangement of chips _within_ the portrait could have avoided the subject ([D-082](03_decisions.md#d-082)). The controls moved above the portrait, into the identity block where form and ability belong anyway, at no cost to card height or the comparison card's top zone. The artwork is re-derived from the vertical window to **280px** — and the smaller artwork shows **more** Pokémon (60% → 72% of the subject at ≥md, 70% → 93% below), because none of it sits behind a chip. Capping it to the portrait window instead was rejected on the record: it would have stopped the art reaching the stat bars, deleting the reason `--color-track-glass` exists.
+
+## Session 18 (the board's second pass)
+
+**Done — three layout bugs that were the same bug.** A component sized by its container instead of its content, three times over, and none of it visible at the widths anyone tests by hand. The STAB chip was the site's only stretched control — `w-full` inside a card that is `md:col-span-2`, so it reached **819px at 900px** to hold ~120px of text; it is now a content-sized pill like every other chip here, **152 / 113px identical from 320 to 1280**, which also finishes [D-058](03_decisions.md#d-058)'s merge since `full` vs `dense` only ever meant bar vs pill ([D-079](03_decisions.md#d-079)). The ability's name left the chip for the group's caption — per-chip attribution was redundant by construction, and was what made a corrected chip 43px tall against its sibling's 32. The card's controls got their names back as one labelled band ([D-080](03_decisions.md#d-080)), and the artwork gained a cap after measuring **718px at 767px** and **476px at 1023px** against a band 232–280px tall ([D-081](03_decisions.md#d-081)). `/style` gained the two chips it was missing.
+
+## Session 17 (abilities)
+
+**Done — the board is right about Levitate.** Roughly **250 of the 1,259 entries** carry an ability that changes what a type does to them, and until now every board was confidently wrong about all of them ([D-073](03_decisions.md#d-073)). The roster and its per-generation history come from PokéAPI in the same `until` shape the stat and type eras already used, at **+8.2 kB gzip** and zero new network requests; the ~20 effectiveness-modifying abilities are a hardcoded table beside the type chart, since their mechanics exist only as prose. Unit tests stand in for the verification the chart gets from the build, and `build:data` checks as much as is checkable — every table key must be a real ability some Pokémon has. The era interaction came free and is load-bearing: **Gengar carried Levitate through Gen 6**, so a Ground STAB into it reads 0× there and 2× today. `/types` gained a Pokémon search on the same engine ([D-075](03_decisions.md#d-075)), which is the missing input method for a tool that could only be asked about typings.
+
+## Session 15 (the consistency & accessibility sweep)
 
 **Done — the site is one system again, and its claims are measured.** A full pass
 over consistency, accessibility, responsiveness and the writing.
@@ -91,7 +164,7 @@ Vitest is at **213 tests**.
 
 **Reading a past generation (D-045, D-049):** all of the resolution logic is pure functions in `src/lib/eras.js` — `eraView(pokemon, gen)` returns `{ gen, keys, stats, bst, types }`, `generationOptions([p1, p2])` returns the generations both existed in (each flagged for whether it differs from today), and `dexGenerations()` is the dex's plainer equivalent. The dex layers `statKeysFor` / `sortKeysFor` / `typesFor` / `generationsFor` / `setAsOf` on top in `lib/dexTable.js`, so the columns, the sort keys and the filter chips all narrow together. The lens is `?asof=` on both tools; the dex's `?gen=` is the unrelated origin filter. Home and `/style` stay current-generation. `STAT_ORDER` is still exactly the modern six; Gen 1's `special` lives outside it because the stored stat array's order depends on it. The dex, Home and `/style` are all deliberately current-generation.
 
-**Notes:** `StatBar.jsx` is **deleted**. It was kept "for the future stats table", but the dex table did not use it — a table cell is not a label·bar·value row ([D-039](03_decisions.md#d-039)) — leaving it a playground specimen with no claimant, which is what this note flagged. Its `/style` section went with it. The dataset ships in the compact form defined by `src/lib/pokemonCodec.js` and is decoded at import ([D-036](03_decisions.md#d-036)) — read/write it through the codec, never as raw JSON. Shared primitives as of [D-032](03_decisions.md#d-032): `CmpRow` (desktop mirrored row + diff cell) and `CmpStatCard` (mobile per-stat card) are used by **both** `ComparisonCard` and Home's `FeaturedComparison`; `SpeedBanner` and `Button` are shared across the site. The dex adds `DexRow` (used by both the table and Home's preview) with its geometry in `components/dexColumns.jsx`, and `FeaturePreview` — the shell every Home preview is built from ([D-043](03_decisions.md#d-043)). Shared _styling_ constants live in their own `.jsx` modules for the reasons in [D-048](03_decisions.md#d-048): `components/dexColumns.jsx` (table geometry) and `components/chipStyles.jsx` (the one colour pair behind all three chip families). New tools should build on these rather than re-rolling them.
+**Notes:** `StatBar.jsx` is **deleted**. It was kept "for the future stats table", but the dex table did not use it — a table cell is not a label·bar·value row ([D-039](03_decisions.md#d-039)) — leaving it a playground specimen with no claimant, which is what this note flagged. Its `/style` section went with it. The dataset ships in the compact form defined by `src/lib/pokemonCodec.js` and is decoded at import ([D-036](03_decisions.md#d-036)) — read/write it through the codec, never as raw JSON. Shared primitives as of [D-032](03_decisions.md#d-032): `CmpRow` (desktop mirrored row + diff cell) and `CmpStatCard` (mobile per-stat card) are used by **both** `ComparisonCard` and Home's `FeaturedComparison`; `SpeedBanner` and `Button` are shared across the site. The dex adds `DexRow` (used by both the table and Home's preview) with its geometry in `components/dexColumns.jsx`, and `FeaturePreview` — the shell every Home preview is built from ([D-043](03_decisions.md#d-043)). Shared _styling_ constants live in their own `.jsx` modules for the reasons in [D-048](03_decisions.md#d-048): `components/dexColumns.jsx` (table geometry) and `components/chipStyles.jsx` (the one colour pair behind all four chip families). New tools should build on these rather than re-rolling them.
 
 ---
 
@@ -223,14 +296,19 @@ _Goal: grow Statmon into a small family of tools & games, one clean addition at 
 
 - [x] **Full-dex stats table** — shipped at `/dex` ([D-039](03_decisions.md#d-039)), with its Home preview ([D-043](03_decisions.md#d-043)). Every Pokémon in one table, **sortable** on all six stats + BST + name + dex number, **searchable** by name, **filterable** by any number of types and generations at once ([D-040](03_decisions.md#d-040)), with alternate forms toggleable; pixel sprite per row and a type-tinted proportional fill behind each stat. The whole view lives in the URL, so a sorted, filtered dex is a shareable link. Windowed rendering keeps ~26 rows in the DOM out of 1,259. _(It did not reuse `StatBar.jsx` — see Notes above.)_
 - [x] **Type chart** — shipped at `/types` ([D-051](03_decisions.md#d-051)): the 18×18 grid, **dual-type aware** via a tier readout, generation-aware, with its Home preview. Built on `lib/typeChart.js` as predicted, plus `lib/typeView.js` for the URL and the tiers.
-- [ ] **Abilities** — two features that share one dataset, and the second is the reason the first is worth building.
+- [x] **Abilities** — shipped ([D-073](03_decisions.md#d-073), [D-074](03_decisions.md#d-074), [D-075](03_decisions.md#d-075)). Both halves landed, plus a third the plan did not have.
 
-  1. **Show them.** List each Pokémon's abilities on the comparison card, hidden ability marked. Most Pokémon have a choice of two or three, so this needs a selector the way alternate forms do (`FormChips` is the pattern) — the chosen ability is part of the view and therefore belongs in the URL ([D-022](03_decisions.md#d-022)).
-  2. **Let them change the matchup.** The comparison card's STAB block currently scores Ground into Electric at 2× for Krookodile vs Eelektross — but Eelektross has **Levitate**, so the true answer is **0×**. An ability that alters type effectiveness has to feed `effectiveness()` alongside the era's chart, or the board is confidently wrong in exactly the cases people look up.
+  1. **Shown.** Every Pokémon's roster on its comparison card, hidden ability marked, selectable the way alternate forms are — `AbilityChips` is `FormChips`' pattern. The chosen ability is in the URL as `?a1=`/`?a2=`, omitted at the default like everything else.
+  2. **They change the matchup.** `/compare/krookodile/vs/eelektross` scored Ground at 2× and now scores it **0×**, because Eelektross has Levitate. The ~20 effectiveness-modifying abilities are a hardcoded table beside `lib/typeChart.js`, feeding `effectiveness()` alongside the era's chart.
+  3. **`/types` gained a Pokémon search** — not planned here, but the same dataset made it the obvious next question: the page could only be asked about a _typing_, so "what beats Corviknight" meant looking its typing up elsewhere first. The Pokémon rides on `?as=`, validated against the path rather than trusted ([D-075](03_decisions.md#d-075)).
 
-  **What the research already settled** ([02_research §13](02_research.md#13-abilities-for-the-planned-abilities-feature)): the roster and its per-generation history come straight from PokéAPI, in the same `until` shape `lib/eras.js` already reads — but the **mechanical effect is prose only** (`"Evades Ground moves."`), so the ~20 effectiveness-modifying abilities must be a hardcoded table beside `lib/typeChart.js`, and unlike the chart it **cannot be verified against PokéAPI** by `build:data`. Unit tests have to stand in for that guard.
+  **What the research settled, and what it got wrong.** The roster and its history did come straight from PokéAPI in the `until` shape `lib/eras.js` already read, and the effect table did have to be hardcoded — but [02_research §13](02_research.md#13-abilities-for-the-planned-abilities-feature)'s candidate list included **Wind Rider, which is not a type ability at all** (it evades _wind_ moves), and abilities whose multipliers are outside the chart's vocabulary. Corrected there, with the membership rule that replaced the list.
 
-  **The era interaction, free if designed in from the start:** abilities arrived in **Generation III**, so a Gen 1 or Gen 2 board should show none at all — the `?asof=` lens already expresses that. _+ Home preview, per [D-043](03_decisions.md#d-043)._
+  **The verification gap turned out to be narrower than feared.** The semantics still cannot be checked against PokéAPI — but `build:data` now fails if any slug in the table is not a real ability some Pokémon has, and `abilities.test.js` carries the rest against Bulbapedia's values.
+
+  **The era interaction paid for itself.** Abilities arrive in **Gen III**, so a Gen 1 or Gen 2 board shows none — and better, **Gengar carried Levitate through Gen VI**, so `?asof=6` genuinely changes the answer. Two abilities (Lightning Rod, Storm Drain) also needed a `since`: they only redirected until Gen 5.
+
+  _Home advertises both halves: the flagship board now shows Chandelure's Flash Fire zeroing Volcarona's Fire STAB, and the type preview shows Krookodile by name ([D-043](03_decisions.md#d-043))._
 
 - [ ] **Type-advantage quiz game** — quiz the user on the matchup between two (possibly dual) types. Sits directly on the type engine; a clean, well-scoped first game for retention + showcasing that Statmon is more than one tool. _+ Home preview — **Mienshao is reserved for its artwork** ([D-068](03_decisions.md#d-068)), the last unallocated member of the Black & White team._
 
