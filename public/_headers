@@ -1,0 +1,43 @@
+# Response headers for the deployed site. Cloudflare's static-assets runtime
+# reads this file from the build output; it is copied verbatim from `public/`.
+#
+# The CSP is unusually strict because this site earned it: everything it needs
+# is same-origin. The data is baked into the bundle at build time, the sprites,
+# artwork and both webfonts are committed to the repo, and there is exactly one
+# script — Vite's module entry. Nothing is fetched from anyone at runtime, so
+# nothing has to be allowed.
+#
+# **There is no `'unsafe-inline'` anywhere, including for styles**, and that is
+# the part worth explaining because it looks wrong. The app sets every type
+# colour through React's `style` prop (`typeColorVar`, `tintFor`, `typeFill`),
+# and the obvious assumption is that CSP counts those as inline styles. It does
+# not: React assigns individual properties through the CSSOM
+# (`node.style.setProperty`), which CSP's `style-src` does not govern — it
+# governs `<style>` elements, `style=` attributes present in the HTML, and
+# `cssText`. This app has none of those, so the directive costs nothing.
+#
+# That was measured rather than assumed, in both directions: every route loads
+# under exactly this policy with zero violations, AND the same harness reports
+# violations on every route when `img-src` is tightened to `'none'` — so the
+# clean result is a clean result and not a blind check.
+#
+# The one thing to re-verify if the app ever server-renders (D-005): SSR emits
+# real `style=` attributes, which this policy WOULD block.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()
+
+# The hashed build assets are immutable — their name changes when they do.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# So are the vendored fonts, sprites and artwork: every one is content the build
+# scripts fetched once and committed, and a new Pokémon arrives as a new file.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+/sprites/*
+  Cache-Control: public, max-age=604800
+/artwork/*
+  Cache-Control: public, max-age=604800
