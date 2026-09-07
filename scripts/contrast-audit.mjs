@@ -281,6 +281,40 @@ for (const t of TYPES) {
   );
 }
 
+// A dual type's panel is a gradient between two of those tints (D-107), so the
+// colours actually behind the text include every point on that line — not just
+// the two endpoints group 10 just checked. Intermediate colours OUGHT to sit
+// between their endpoints, but "ought to" is not the standard this file exists
+// to hold things to, so all 153 pairs are computed at their midpoint, which is
+// where a blend is furthest from both ends.
+console.log(
+  "\n=== 11. Game arena — panel text over a DUAL type's gradient (AA 4.5) ===",
+);
+let worstPair = null;
+for (let i = 0; i < TYPES.length; i++) {
+  for (let j = i + 1; j < TYPES.length; j++) {
+    const a = blend(hex(`type-${TYPES[i]}`), base, PANEL_TINT / 100);
+    const b = blend(hex(`type-${TYPES[j]}`), base, PANEL_TINT / 100);
+    const mid = blend(a, b, 0.5);
+    for (const [label, colour] of [
+      ["primary", primary],
+      ["secondary", secondary],
+    ]) {
+      const r = ratio(colour, mid);
+      if (!worstPair || r < worstPair.r)
+        worstPair = { r, pair: `${TYPES[i]}/${TYPES[j]}`, label };
+      if (r < 4.5)
+        fails.push(
+          `gradient ${TYPES[i]}/${TYPES[j]} midpoint — ${label} ${r.toFixed(2)}`,
+        );
+    }
+  }
+}
+console.log(
+  `  153 pairs × 2 text colours at their midpoint — worst is ${worstPair.pair} (${worstPair.label})`,
+);
+console.log(row("worst dual-type midpoint", worstPair.r, 4.5));
+
 console.log(`\n── ${fails.length} failure(s) ─────────────────────────────`);
 for (const f of fails) console.log(`  ✗ ${f}`);
 if (!fails.length) console.log("  All pairings pass. ✓");

@@ -60,6 +60,9 @@ const ROUTES = [
   "/types/water/flying",
   "/types/electric?as=eelektross",
   "/games",
+  // The bare routes are the start screen now (D-108), so the boards need
+  // parameterised routes of their own to stay measured.
+  "/games/higher?stats=speed",
   "/games/higher",
   // Four contenders is the widest a round gets, and it is the layout that
   // stacks into a 2x2 below `lg` — the case the verdict card has to sit
@@ -72,6 +75,7 @@ const ROUTES = [
   // One route per tier: the answer rail changes width with the tier, and the
   // hard board is the only one carrying artwork and an ability pill (D-104).
   "/games/effective",
+  "/games/effective?tier=easy",
   "/games/effective?tier=medium",
   "/games/effective?tier=hard",
   "/games/effective?tier=hard&type=ghost&asof=5",
@@ -79,7 +83,13 @@ const ROUTES = [
   // after a click has never been swept, so the games' setup dialog and — the
   // one this closes retroactively — the dex's own mobile filter panel were both
   // unmeasured surfaces (D-099).
-  ["/games/higher", "Setup"],
+  // The setup dialog, opened from a game in progress — so it needs a
+  // parameterised URL now that a bare one is the start screen (D-108). Both
+  // games, because their panels hold different groups.
+  ["/games/higher?stats=speed", "Setup"],
+  ["/games/effective?tier=hard", "Setup"],
+  // And from the start screen, which is the other way in.
+  ["/games/higher", "Customise"],
   ["/dex", "Filters"],
   "/credits",
   "/style",
@@ -267,7 +277,16 @@ const load = (entry, width) => new Promise((resolve) => {
 const SELECTOR = "a[href], button, input, select, textarea, [tabindex]:not([tabindex='-1'])";
 
 function targetFailures(doc) {
-  const boxes = [...doc.querySelectorAll(SELECTOR)]
+  // A modal dialog makes the rest of the document INERT: nothing behind it can
+  // be clicked, tabbed to or hit by a thumb, so nothing behind it is a target.
+  // Without this the checker measures a chip inside the open setup panel
+  // against a footer link it happens to sit 20px from, and reports a spacing
+  // failure between two things that can never be touched in the same moment.
+  // Modelling inertness is what makes "measured, not asserted" honest here —
+  // an over-eager checker is a checker people learn to ignore.
+  const modal = doc.querySelector("dialog[open]");
+  const root = modal ?? doc;
+  const boxes = [...root.querySelectorAll(SELECTOR)]
     .map((el) => ({ el, r: el.getBoundingClientRect() }))
     .filter(({ el, r }) => {
       if (r.width === 0 || r.height === 0) return false;
@@ -328,7 +347,12 @@ const dom = await new Promise((resolve, reject) => {
       "--headless",
       "--disable-gpu",
       "--no-sandbox",
-      "--virtual-time-budget=180000",
+      // Raised with the route list (D-108). Each route × width settles on its
+      // own timers, so the budget scales with ENTRIES.length × WIDTHS.length —
+      // and the failure mode when it runs out is silent: the harness never
+      // prints its results and the sweep reports "could not read", which reads
+      // like a missing build or a missing Chrome rather than a timeout.
+      "--virtual-time-budget=300000",
       "--dump-dom",
       `${origin}/__sweep.html`,
     ],
