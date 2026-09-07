@@ -33,32 +33,15 @@ export default function AnswerCluster({
   correct = null,
   picked = null,
   onPick,
-  children,
 }) {
   const resolved = picked != null;
 
   return (
-    <div className="col-span-full flex flex-col items-center justify-center gap-4 bg-base px-4 py-4 sm:col-span-1 sm:w-64">
-      {/* The verdict lands here, in the middle of the board, the way the stat
-          game's does — and the slot holds its height from the start so that
-          arriving moves nothing. The board had the room to spare, which is
-          exactly why reserving is the right answer here and was the wrong one
-          in the stat game's gutter (D-103, D-107). */}
-      {/* `min-h-52` is measured, not chosen. The verdict is 187px tall at its
-          usual size, so the first attempt at 160 let it push the buttons 27px
-          down every round — the exact fault this slot exists to prevent, caught
-          by measuring the button row before and after rather than by looking.
-          208 clears it with a line's headroom for a caption that wraps on a
-          long ability name.
-
-          It cannot be reserved by rendering the verdict invisibly, which would
-          be the self-sizing version: the caption names the defender's TYPING,
-          and putting that in the markup before you answer is the leak the hard
-          tier's assertions exist to catch (D-104). */}
-      <div className="flex min-h-52 w-full flex-col items-center justify-end gap-2 text-center">
-        {children}
-      </div>
-
+    // Just the buttons now, centred in their cell. The verdict used to sit in
+    // a 208px slot above them, which is what put them a hundred pixels below
+    // the middle of the screen — the reservation was the bug, not the fix
+    // (D-109). It moved onto the attacking panel, where it costs nothing.
+    <div className="col-span-full flex flex-col items-center justify-center bg-base px-4 py-4 md:col-span-1 md:w-64">
       <div
         role="group"
         aria-label="How effective?"
