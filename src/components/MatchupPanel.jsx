@@ -22,6 +22,12 @@ import { capitalize, typeColorVar } from "../lib/types";
 // reason: a responsive variant of a named text style generates no CSS, because
 // the styles are hand-written `@layer components` classes (06_style_guide §13).
 // A prop is the only way to change one.
+// The vendored official artwork is exactly 475x475 — every file, checked across
+// a 400-file sample — so a box any larger than that upscales it, which is the
+// visible pixelation on a big screen. The cap is the source's own resolution
+// rather than a number anyone chose (D-109).
+const ART_CAP = "max-h-[475px] max-w-[475px]";
+
 const SIZES = {
   lg: {
     box: "h-full",
@@ -83,7 +89,7 @@ export default function MatchupPanel({
               src={artworkFor(pokemon)}
               alt=""
               decoding="async"
-              className="min-h-0 w-full flex-1 object-contain"
+              className={`min-h-0 w-full flex-1 object-contain ${ART_CAP}`}
             />
             <span className={`${S.name} text-primary`}>{pokemon.name}</span>
             {/* Read-only: without an `onSelect` these render as pills rather

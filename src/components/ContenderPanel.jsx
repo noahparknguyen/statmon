@@ -43,6 +43,10 @@ import { PANEL_BOX, ring, tintFor } from "./gameChrome";
 // are hand-written `@layer components` classes, so `lg:text-h2` is silently
 // nothing (06_style_guide §13, the D-065 finding). A prop is the only way to
 // change one.
+// The vendored official artwork is exactly 475x475 — every file, checked across
+// a 400-file sample — so a box larger than that upscales it (D-109).
+const ART_CAP = "max-h-[475px] max-w-[475px]";
+
 const SIZES = {
   lg: {
     box: "h-full",
@@ -151,19 +155,21 @@ export default function ContenderPanel({
           below its content otherwise, which is what lets tall artwork push the
           name off the bottom of the panel. */}
         <span className="flex min-h-0 w-full flex-1 items-center justify-center">
-          {/* `h-full w-full object-contain`, not `max-h-full` — the vendored
-            artwork is at most 475px, so capping at its natural size left a
-            700px panel with the subject floating in the middle of it and a
-            band of dead space above the name. Filling the box and letting
-            `object-contain` keep the aspect ratio is what makes the Pokémon
-            the page rather than an illustration on it, which is the whole
-            point of the arena (D-096). The mild upscale is the price, and on
-            these flat-shaded illustrations it does not read. */}
+          {/* Fills its box, but **stops at 475px** (D-109). D-096 deliberately
+            let this upscale, on the argument that capping at the artwork's own
+            size left a 700px panel with a band of dead space above the name —
+            and that argument holds right up to the point where the upscale
+            becomes visible. The vendored art is exactly 475x475, so a panel
+            taller than that is enlarging a bitmap, and on a large monitor the
+            softness shows.
+            The cap only bites where the fault is: below 475 nothing changes at
+            all, and above it the panel trades a little dead space for an image
+            that is not blown up. */}
           <img
             src={artworkFor(pokemon)}
             alt=""
             decoding="async"
-            className="h-full w-full object-contain"
+            className={`h-full w-full object-contain ${ART_CAP}`}
           />
         </span>
 
