@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { LuArrowRight } from "react-icons/lu";
-import AnswerRail from "../components/AnswerRail";
+import AnswerCluster from "../components/AnswerCluster";
 import Button from "../components/Button";
 import GameBar from "../components/GameBar";
+import GameStart from "../components/GameStart";
 import EffectiveSetup from "../components/EffectiveSetup";
 import MatchupPanel from "../components/MatchupPanel";
 import StabChip, { StabCaption } from "../components/StabChip";
 import { BOARD, BOARD_SURFACE, clashVars } from "../components/gameChrome";
 import {
+  EFFECTIVE_PRESETS,
   DEFAULT_SETTINGS,
   answersFor,
   effectiveQuestion,
@@ -37,16 +39,19 @@ import { capitalize } from "../lib/types";
 // and the same record. What differs is what a panel holds and how you answer —
 // which is exactly the seam `gameChrome.jsx` was drawn along (D-105).
 //
-// **The board is two panels and a rail.** The stat game's answer is its panels,
-// so its question lives between them; here the answer is separate, so it gets
-// the bottom of the board and the panels are left alone to be read.
+// **The board is attacker │ answers │ defender** (D-107) — the shape /compare
+// has always used, two subjects with the answer between them. It was a rail
+// along the bottom first, and that put the thing you press as far from the
+// thing you read as the screen allows, across a field that is mostly empty at
+// the easier tiers. The empty middle is what pays for the move.
 
 const GAME = "effective";
 
-// Two panels, and below `sm` they stack — a versus screen on a phone is top
-// against bottom. The rail spans the full width in either case.
+// Attacker, answers, defender. Below `sm` the three stack, which is the same
+// responsive shape the stat game's board takes — a versus screen on a phone is
+// top against bottom with the answer between.
 const GRID =
-  "grid-cols-1 grid-rows-[1fr_1fr_auto] sm:grid-cols-2 sm:grid-rows-[1fr_auto]";
+  "grid-cols-1 grid-rows-[1fr_auto_1fr] sm:grid-cols-[1fr_auto_1fr] sm:grid-rows-1";
 
 function Arena({ settings, record, onAnswer, onSetup }) {
   const [session, setSession] = useState(NEW_SESSION);
@@ -150,17 +155,15 @@ function Arena({ settings, record, onAnswer, onSetup }) {
     <>
       {bar}
       <section className={`${BOARD_SURFACE} ${BOARD} ${GRID}`}>
-        {panels.map((panel, i) => (
-          <div
-            key={`${dealt}-${i}`}
-            className="animate-clash-charge min-h-0"
-            style={clashVars(i, 2, dealt)}
-          >
-            {panel}
-          </div>
-        ))}
+        <div
+          key={`${dealt}-attack`}
+          className="animate-clash-charge min-h-0"
+          style={clashVars(0, 2, dealt)}
+        >
+          {panels[0]}
+        </div>
 
-        <AnswerRail
+        <AnswerCluster
           answers={answersFor(settings)}
           correct={round.mult}
           picked={picked}
@@ -182,19 +185,29 @@ function Arena({ settings, record, onAnswer, onSetup }) {
                 size="sm"
               />
               <StabCaption types={defender.types} via={round.via} />
-              <Button autoFocus size="sm" onClick={next}>
-                Next
-                <LuArrowRight aria-hidden />
-              </Button>
-              <Link
-                to={followUp}
-                className="text-body-sm text-accent transition-colors hover:text-accent-hover"
-              >
-                See it on the chart
-              </Link>
+              <div className="mt-1 flex flex-col items-center gap-2">
+                <Button autoFocus size="sm" onClick={next}>
+                  Next
+                  <LuArrowRight aria-hidden />
+                </Button>
+                <Link
+                  to={followUp}
+                  className="text-body-sm text-accent transition-colors hover:text-accent-hover"
+                >
+                  See it on the chart
+                </Link>
+              </div>
             </>
           )}
-        </AnswerRail>
+        </AnswerCluster>
+
+        <div
+          key={`${dealt}-defend`}
+          className="animate-clash-charge min-h-0"
+          style={clashVars(1, 2, dealt)}
+        >
+          {panels[1]}
+        </div>
       </section>
 
       {/* Announced rather than only shown: the answer is spread across a rail,
@@ -217,6 +230,16 @@ export default function GameEffective() {
   const settings = parseEffective(searchParams);
 
   const [draft, setDraft] = useState(null);
+
+  // Whether a game has been chosen yet (D-108). Page state rather than URL
+  // state, and it has to be: the Medium preset IS the defaults, so it writes no
+  // parameters — asking "does the URL carry settings" after picking it would
+  // land back on the bare URL and ask again, forever. Seeded from the URL so a
+  // shared link plays and a bare arrival asks, and it lives ABOVE the arena's
+  // settings key so picking a preset does not remount it back into the picker.
+  const [started, setStarted] = useState(
+    () => [...searchParams.keys()].length > 0,
+  );
   const [record, setRecord] = useState(() => readRecord(browserStorage()));
 
   const saveAnswer = (entry) => {
@@ -230,10 +253,38 @@ export default function GameEffective() {
     setRecord(EMPTY_RECORD);
   };
 
+  const start = (settings) => {
+    navigate(effectiveUrl(settings), { replace: true });
+    setStarted(true);
+  };
+
   const play = () => {
     navigate(effectiveUrl(draft ?? DEFAULT_SETTINGS), { replace: true });
     setDraft(null);
+    setStarted(true);
   };
+
+  if (!started) {
+    return (
+      <>
+        <GameStart
+          title="Effective"
+          presets={EFFECTIVE_PRESETS}
+          onPick={(preset) => start(preset.settings)}
+          // Straight to the controls, without playing a round first.
+          onCustomise={() => setDraft(settings)}
+        />
+        <EffectiveSetup
+          draft={draft}
+          record={record}
+          onChange={setDraft}
+          onPlay={play}
+          onClearRecord={forget}
+          onClose={() => setDraft(null)}
+        />
+      </>
+    );
+  }
 
   return (
     <>
