@@ -50,10 +50,32 @@ export const BOARD_SURFACE = "relative grid gap-px overflow-hidden bg-base";
 // panels apart at a glance, not enough to compete with what is on them.
 export const TINT = 10;
 
-export const tintFor = (type) =>
-  type
-    ? `color-mix(in srgb, var(--color-type-${type}) ${TINT}%, var(--color-base))`
-    : "var(--color-base)";
+const tintOf = (type) =>
+  `color-mix(in srgb, var(--color-type-${type}) ${TINT}%, var(--color-base))`;
+
+/**
+ * A panel's background for a whole TYPING rather than one type (D-107).
+ *
+ * A dual type gets a diagonal gradient between its two tints, which is the one
+ * place on this site a gradient sits behind content — 04_design §2 reserves the
+ * *flame* gradient for the hero and says never behind data, and this is a
+ * different thing: two type colours saying "this is two types", which is the
+ * §3 idea (a Pokémon's typing colours its representation) finally able to say
+ * both halves. Volcarona has been rendering as Bug alone since the arena
+ * shipped.
+ *
+ * The stops hold each colour flat for a quarter of the run before blending, so
+ * it reads as two colours with a seam rather than as a wash that is neither.
+ *
+ * Returns a **background**, not a background-color — a caller setting
+ * `backgroundColor` from this will silently render nothing for a dual type.
+ */
+export function tintFor(types = []) {
+  if (!types.length) return "var(--color-base)";
+  if (types.length === 1) return tintOf(types[0]);
+  const [a, b] = types;
+  return `linear-gradient(135deg, ${tintOf(a)} 0%, ${tintOf(a)} 25%, ${tintOf(b)} 75%, ${tintOf(b)} 100%)`;
+}
 
 // The marking is an INSET ring rather than a border, because these panels sit
 // edge to edge in a grid — a border would move every neighbour by 2px the

@@ -28,8 +28,15 @@ const SIZES = {
     pad: "gap-3 p-4",
     type: "text-display",
     name: "text-h3",
+    band: "h-6",
   },
-  sm: { box: "h-32", pad: "gap-1 p-2", type: "text-h4", name: "text-caption" },
+  sm: {
+    box: "h-32",
+    pad: "gap-1 p-2",
+    type: "text-h4",
+    name: "text-caption",
+    band: "h-0",
+  },
 };
 
 export default function MatchupPanel({
@@ -47,15 +54,14 @@ export default function MatchupPanel({
   // A hidden typing means a hidden tint. `pokemon && !reveal` is the only case
   // that gets the bare page background.
   const hidden = pokemon != null && !reveal;
-  const tint = hidden ? "var(--color-base)" : tintFor(types[0]);
+  const tint = hidden ? "var(--color-base)" : tintFor(types);
 
   return (
     <div
       className={`${PANEL_BOX} ${S.box} ${className}`}
-      style={{
-        backgroundColor: tint,
-        ...(reveal ? ring("--color-accent") : {}),
-      }}
+      // `background`, not `backgroundColor`: a dual type's tint is a gradient
+      // (D-107) and a background-color would drop it silently.
+      style={{ background: tint, ...(reveal ? ring("--color-accent") : {}) }}
     >
       {/* The panel is static and its CONTENT is what moves (D-102): shaking the
           panels themselves would flicker the gap between them open and shut a
@@ -65,7 +71,11 @@ export default function MatchupPanel({
           S.pad
         } ${shake ? "animate-clash-shake" : ""}`}
       >
-        <span className="text-overline text-tertiary">{role}</span>
+        {/* 16px, not 11. This label carries the entire direction of the
+            question — Fire into Water is not Water into Fire — and the two
+            panels are otherwise symmetrical, so it cannot be the quietest
+            thing on the board (D-107). */}
+        <span className="text-overline-lg text-tertiary">{role}</span>
 
         {pokemon ? (
           <>
@@ -90,14 +100,17 @@ export default function MatchupPanel({
                 markEffect={reveal}
               />
             )}
-            {/* The answer, revealed with it. */}
-            {reveal && (
-              <span className="flex flex-wrap justify-center gap-1">
-                {types.map((t) => (
-                  <TypeBadge key={t} type={t} size="sm" />
-                ))}
-              </span>
-            )}
+            {/* The typing, revealed with the answer — into space that was
+                already held. The band keeps its height from the start, so the
+                reveal does not shove the name and the ability up the panel
+                (D-107). Same reservation `ContenderPanel` makes for its value.
+                Two rows' worth, because a dual type wraps at a narrow width. */}
+            <span
+              className={`flex flex-wrap items-start justify-center gap-1 ${S.band}`}
+            >
+              {reveal &&
+                types.map((t) => <TypeBadge key={t} type={t} size="sm" />)}
+            </span>
           </>
         ) : (
           <span className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1">

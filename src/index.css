@@ -423,6 +423,19 @@
     letter-spacing: var(--tracking-wider);
     text-transform: uppercase;
   }
+  /* The arena's role labels — ATTACKING / DEFENDING (D-107). The eyebrow
+     treatment at a size you can read across a board: `text-overline` is 11px,
+     which is right beside a chip and far too quiet above a 36px type name.
+     Added to the scale rather than hand-tuned at the call site, which is what
+     06_style_guide §5 asks for when a design needs a style the table lacks. */
+  .text-overline-lg {
+    font-family: var(--font-display);
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--leading-none);
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+  }
   .text-stat {
     font-family: var(--font-body);
     font-size: var(--text-md);

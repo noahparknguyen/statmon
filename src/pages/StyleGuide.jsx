@@ -116,6 +116,7 @@ const TEXT_STYLES = [
   ["text-label", "Label — form and UI labels", "14 · 500"],
   ["text-caption", "Caption — hints and footnotes", "12 · 500"],
   ["text-overline", "Overline · stat labels", "11 · 500"],
+  ["text-overline-lg", "Overline large · arena role labels", "16 · 500"],
   ["text-numeral-xl", "+123", "48 · 700 · display numeral"],
   ["text-numeral-lg", "+123", "36 · 700 · display numeral"],
   ["text-numeral-md", "Tied", "30 · 700 · display numeral"],

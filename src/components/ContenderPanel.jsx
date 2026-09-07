@@ -89,7 +89,10 @@ export default function ContenderPanel({
   shake = false,
 }) {
   const S = SIZES[size];
-  const tint = tintFor(pokemon.types[0]);
+  // The whole typing, not just the primary: a dual type gets both colours
+  // (D-107). `background` rather than `backgroundColor` because that value is a
+  // gradient for two types, and a background-color would silently drop it.
+  const tint = tintFor(pokemon.types);
 
   // Four states on one scale: the winner is loud, your wrong pick is present,
   // the rest recede. Opacity rather than a fourth colour.
@@ -123,7 +126,7 @@ export default function ContenderPanel({
       className={`${PANEL_BOX} ${S.box} ${
         resolved && !won && !picked ? "opacity-50" : ""
       } ${className}`}
-      style={{ backgroundColor: tint, ...mark }}
+      style={{ background: tint, ...mark }}
     >
       {/* The panel is static and its CONTENT is what moves (D-102). The clash
           shakes what is inside each panel rather than the panel itself, because
