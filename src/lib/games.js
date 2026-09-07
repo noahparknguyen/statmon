@@ -85,6 +85,40 @@ export const defaultSettings = (asof = null) => ({
 export const DEFAULT_SETTINGS = defaultSettings(null);
 
 /**
+ * The three ways in (D-108).
+ *
+ * Presets are **settings, not modes**: each is a shortcut to a state the setup
+ * panel could also reach by hand, so there is no fourth code path and no way
+ * for a preset to mean something the filters cannot express. That is the same
+ * rule the tiers follow in the type game.
+ *
+ * They exist because this game grew: when the games shipped it had two knobs
+ * and dropping someone straight into the default was right. It now has six
+ * axes, and the first thing a new player meets should be three answers rather
+ * than six questions.
+ */
+export const HIGHER_PRESETS = [
+  {
+    id: "easy",
+    label: "Easy",
+    blurb: "Two Pokémon, base stat total.",
+    settings: { ...DEFAULT_SETTINGS, n: 2, stats: ["bst"] },
+  },
+  {
+    id: "medium",
+    label: "Medium",
+    blurb: "Two Pokémon, any stat.",
+    settings: DEFAULT_SETTINGS,
+  },
+  {
+    id: "hard",
+    label: "Hard",
+    blurb: "Four Pokémon, any stat.",
+    settings: { ...DEFAULT_SETTINGS, n: 4 },
+  },
+];
+
+/**
  * The stat list a lens can actually hold, mapping across the Gen 1 Special
  * split before giving anything up, and falling back to **all** of them.
  *

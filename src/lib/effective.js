@@ -53,6 +53,18 @@ export const DEFAULT_SETTINGS = {
   asof: null,
 };
 
+/**
+ * The three ways in (D-108) — which here are just the tiers, since the tier IS
+ * the difficulty. Presets are settings rather than modes, so each is a state
+ * the setup panel could also reach by hand.
+ */
+export const EFFECTIVE_PRESETS = TIERS.map((tier) => ({
+  id: tier,
+  label: TIER_LABEL[tier],
+  blurb: TIER_DESC[tier],
+  settings: { ...DEFAULT_SETTINGS, tier },
+}));
+
 /* -------------------------------------------------------------------------
    The question space.
 

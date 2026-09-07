@@ -5,10 +5,12 @@ import Button from "../components/Button";
 import ContenderPanel from "../components/ContenderPanel";
 import { BOARD, BOARD_SURFACE, clashVars } from "../components/gameChrome";
 import GameBar from "../components/GameBar";
+import GameStart from "../components/GameStart";
 import HigherSetup from "../components/HigherSetup";
 import { compareUrl } from "../lib/compareUrl";
 import { DEFAULT_VIEW, viewToSearch } from "../lib/dexTable";
 import {
+  HIGHER_PRESETS,
   NEW_SESSION,
   higherQuestion,
   higherUrl,
@@ -384,6 +386,16 @@ export default function GameHigher() {
   // every chip click — only Play commits (D-096).
   const [draft, setDraft] = useState(null);
 
+  // Whether a game has been chosen yet (D-108). Page state rather than URL
+  // state, and it has to be: the Medium preset IS the defaults, so it writes no
+  // parameters — asking "does the URL carry settings" after picking it would
+  // land back on the bare URL and ask again, forever. Seeded from the URL so a
+  // shared link plays and a bare arrival asks, and it lives ABOVE the arena's
+  // settings key so picking a preset does not remount it back into the picker.
+  const [started, setStarted] = useState(
+    () => [...searchParams.keys()].length > 0,
+  );
+
   // Read once. `browserStorage()` is null under a server render or a browser
   // refusing site data, and every function in lib/record handles that by
   // remembering nothing rather than throwing (D-098).
@@ -403,6 +415,11 @@ export default function GameHigher() {
     setRecord(EMPTY_RECORD);
   };
 
+  const start = (settings) => {
+    navigate(higherUrl(settings), { replace: true });
+    setStarted(true);
+  };
+
   const play = () => {
     const next = draft;
     setDraft(null);
@@ -413,6 +430,28 @@ export default function GameHigher() {
       navigate(higherUrl(next), { replace: true });
     }
   };
+
+  if (!started) {
+    return (
+      <>
+        <GameStart
+          title="Higher"
+          presets={HIGHER_PRESETS}
+          onPick={(preset) => start(preset.settings)}
+          // Straight to the controls, without playing a round first.
+          onCustomise={() => setDraft(settings)}
+        />
+        <HigherSetup
+          draft={draft}
+          record={record}
+          onChange={setDraft}
+          onPlay={play}
+          onClearRecord={forget}
+          onClose={() => setDraft(null)}
+        />
+      </>
+    );
+  }
 
   return (
     <>

@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import { ALL_POKEMON, getBySlug, spriteFor } from "./lib/pokemon";
 import { WALL_TILES } from "./components/SpriteWall";
 import { sortRows } from "./lib/dexTable";
+import { HIGHER_PRESETS, higherUrl } from "./lib/games";
 
 // Renders every route to a string and asserts it produced something. This is a
 // smoke test, not a snapshot: it catches the errors that only show up when a
@@ -883,7 +884,9 @@ describe("the stat game's arena", () => {
   // only works where localStorage does is a game that white-screens for some
   // people (D-098).
   it("renders with no storage available at all", () => {
-    expect(text("/games/higher")).toContain("Best");
+    // A parameterised URL, because a bare one now asks how you want to play
+    // rather than dealing a round (D-108).
+    expect(text("/games/higher?stats=speed")).toContain("Best");
   });
 });
 
@@ -924,5 +927,42 @@ describe("Effective's hard tier does not give the answer away", () => {
     // two assertions above would be passing for the wrong reason.
     const withAbility = hard().filter((html) => html.includes("In play: "));
     expect(withAbility.length).toBeGreaterThan(0);
+  });
+});
+
+// A bare URL asks; a parameterised URL plays (D-108). The distinction is the
+// whole of what makes the start screen compatible with settings living in the
+// URL — a shared link carries a game, never a form.
+describe("the games ask how you want to play", () => {
+  it.each(["/games/higher", "/games/effective"])(
+    "%s offers presets rather than dealing a round",
+    (path) => {
+      const page = text(path);
+      expect(page).toContain("How do you want to play?");
+      for (const label of ["Easy", "Medium", "Hard", "Customise"]) {
+        expect(page, label).toContain(label);
+      }
+      // The game bar belongs to a round in progress, so it must not be here.
+      expect(page).not.toContain("Streak");
+    },
+  );
+
+  it.each(["/games/higher?stats=speed&n=4", "/games/effective?tier=hard"])(
+    "%s goes straight to the board",
+    (path) => {
+      const page = text(path);
+      expect(page).not.toContain("How do you want to play?");
+      expect(page).toContain("Streak");
+    },
+  );
+
+  // The Medium preset for the stat game is the defaults, so it writes no
+  // parameters at all — which is exactly why "have you chosen" cannot be read
+  // off the URL, and why this is worth pinning down rather than assuming.
+  it("has a stat-game preset whose URL is the bare one", () => {
+    const bare = HIGHER_PRESETS.filter(
+      (p) => higherUrl(p.settings) === "/games/higher",
+    );
+    expect(bare).toHaveLength(1);
   });
 });
