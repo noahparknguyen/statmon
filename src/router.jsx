@@ -1,6 +1,7 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, redirect } from "react-router";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
+import HydrateFallback from "./components/HydrateFallback";
 
 // Every route except Home is code-split. The whole site used to ship as one
 // 482 kB bundle, which meant a visitor who only ever opened the comparison tool
@@ -40,6 +41,7 @@ const lazyPage = (load) => () => load().then((m) => ({ Component: m.default }));
 export const routes = [
   {
     element: <Layout />,
+    HydrateFallback,
     children: [
       { index: true, element: <Home /> },
       {
@@ -98,9 +100,20 @@ export const routes = [
         handle: { title: "Effective", bare: true },
       },
       {
+        path: "about",
+        lazy: lazyPage(() => import("./pages/About")),
+        handle: { title: "About" },
+      },
+      // Credits are the footer's now (D-119), so there is no section to anchor
+      // to and this points at /about — the nearest page about the project,
+      // with the attribution directly beneath it like everywhere else. The path stays because it has been in
+      // the footer since launch and in the nav before that (D-094): a bookmark
+      // should not hit the 404 for something that still exists and has only
+      // moved. A loader redirect rather than a component, so the address bar is
+      // corrected before anything renders.
+      {
         path: "credits",
-        lazy: lazyPage(() => import("./pages/Credits")),
-        handle: { title: "Credits" },
+        loader: () => redirect("/about"),
       },
       {
         path: "style",

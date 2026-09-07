@@ -49,6 +49,36 @@ const UA =
 
 const KEEP = new Set(["latin", "latin-ext"]);
 
+// **The licences are vendored with the fonts, not beside them by hand.**
+// Both families are SIL OFL 1.1, which requires the licence text to be
+// distributed with the font software — and ten .woff2 files shipped in this
+// repository for months with no OFL anywhere in it. Fetching them here is what
+// stops that being true again after the next re-vendor: if upstream moves, this
+// throws rather than quietly writing fonts without their terms (D-120).
+const LICENSES = [
+  {
+    file: "OFL-Inter.txt",
+    url: "https://raw.githubusercontent.com/rsms/inter/master/LICENSE.txt",
+  },
+  {
+    file: "OFL-SpaceGrotesk.txt",
+    url: "https://raw.githubusercontent.com/floriankarsten/space-grotesk/master/OFL.txt",
+  },
+];
+
+const LICENSE_DIR = path.join(ROOT, "licenses");
+await mkdir(LICENSE_DIR, { recursive: true });
+for (const { file, url } of LICENSES) {
+  const res = await fetch(url, { headers: { "User-Agent": UA } });
+  if (!res.ok) throw new Error(`${file}: ${res.status} from ${url}`);
+  const text = await res.text();
+  // A 404 page is a 200 from some hosts; an OFL that does not say so is not one.
+  if (!text.includes("SIL OPEN FONT LICENSE"))
+    throw new Error(`${file}: fetched text is not an OFL licence`);
+  await writeFile(path.join(LICENSE_DIR, file), text);
+  console.log(`  licence  ${file}`);
+}
+
 const css = await (await fetch(HREF, { headers: { "User-Agent": UA } })).text();
 
 // The stylesheet is a flat list of `/* subset */` comments each followed by one
