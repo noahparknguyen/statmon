@@ -4,7 +4,39 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ---
 
-## 2026-09-07 — Session 28 (three consistency tweaks, and a final pass)
+## 2026-09-07 — Session 28 (three consistency tweaks, a dead link, and a final pass)
+
+<a id="d-111"></a>
+
+### D-111 · A panel is a button only when it is one — **Firm** _(applies [D-078](#d-078))_
+
+**Reported as** "on the games index, clicking the images does nothing — only
+the text below opens the game." Exactly right, and only on the stat game's card.
+
+`ContenderPanel` rendered a `<button>` at its root whether or not it had an
+`onPick`, disabling itself when it did not. The games index wraps each
+thumbnail in a `<Link>`, so the markup was an **`<a>` containing a `<button>`**
+— invalid HTML, and the disabled button swallowed every click over the top half
+of the card. `MatchupPanel` renders a `<div>`, which is why the type game's card
+worked and the stat game's did not: the two thumbnails were never the same
+markup.
+
+It renders a `<div>` with no handler now, which is the rule
+[D-078](#d-078) already set for `AbilityChips` — _without an `onSelect` the
+chips render as pills rather than buttons; a button that does nothing is worse
+than a label._ The same sentence would have prevented this, and the fix is to
+apply it rather than to invent anything.
+
+_A `disabled` button is not a neutral way to spell "not interactive". It is
+still a control: it takes part in hit-testing, it is invalid inside a link, and
+it stops the click reaching whatever wrapped it._
+
+**Guarded, and guarded non-vacuously.** A test asserts no anchor on `/games`
+contains a control — and asserts first that it found at least two anchors to
+check, because a regression test that passes by finding nothing is worse than
+not having one.
+
+---
 
 <a id="d-110"></a>
 

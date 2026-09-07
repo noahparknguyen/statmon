@@ -33,6 +33,7 @@
     "build": "vite build",
     "test": "vitest",
     "test:run": "vitest run",
+    "check": "npm run lint && npm run format:check && npm run test:run && npm run build && npm run audit:contrast && npm run check:docs && npm run sweep:widths",
     "build:data": "node scripts/build-data.mjs",
     "vendor:images": "node scripts/vendor-images.mjs",
     "vendor:fonts": "node scripts/vendor-fonts.mjs",

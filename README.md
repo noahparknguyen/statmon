@@ -73,7 +73,7 @@ npm run dev
 
 `npm run build:data` regenerates the dataset from PokéAPI, `npm run vendor:images` fetches the sprites and artwork, and `npm run vendor:fonts` fetches the two webfonts — all three only needed when something upstream changes, and all three cache or commit their output so re-runs are free. The data build also re-checks the hardcoded type chart against PokéAPI across all three of its historical eras, so a typo in 18×18 of hand-written data fails the build instead of reaching a user.
 
-The checks that keep things honest, all seven of which run in CI:
+The checks that keep things honest, all seven of which run in CI — and `npm run check` runs the lot locally, in CI's own order, cheapest first so a typo fails in seconds rather than after the browser sweep:
 
 - `lint`, `format:check`, `build`
 - `test:run` — Vitest: the stat math, the dataset codec round-trip, the dex sort/filter logic, the generation-era resolution, the ability effect table, the game's question generator, a server-render smoke test of every route, and a set of accessibility regressions

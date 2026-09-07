@@ -24,7 +24,15 @@ wordmark keeps its flame; and the boards fit the viewport exactly.
   without a name, no other conflicting utility pairs, and all 23 named text
   styles present on `/style`.
 
-Vitest is at **410 tests**. The sweep is at **29 routes × 14 widths = 406
+**And one dead link, reported from using it** ([D-111](03_decisions.md#d-111)):
+the stat game's thumbnail on `/games` rendered as a disabled `<button>` inside
+the card's `<Link>`, so it swallowed every click over the top half of the card.
+A panel is a button only when it has a handler now — the rule D-078 already set
+for the ability chips.
+
+`npm run check` runs all seven checks in CI's own order.
+
+Vitest is at **412 tests**. The sweep is at **29 routes × 14 widths = 406
 checks**, and every game route now measures the viewport exactly.
 
 ## Session 27, the boards settle)
@@ -363,7 +371,7 @@ Vitest is at **213 tests**.
 
 **npm scripts:** `dev` · `build` · `test` / `test:run` · `build:data` · `vendor:images` (after `build:data`) · `vendor:fonts` · `audit:contrast` · `check:docs` · `sweep:widths` · `shoot:docs` · `lint` · `format` · `format:check` · `preview` · `deploy` (`build` + `wrangler deploy`).
 
-**The seven checks that must stay green:** `npm run lint && npm run format:check && npm run test:run && npm run build && npm run audit:contrast && npm run check:docs && npm run sweep:widths`. All seven run in CI on every push and PR (`.github/workflows/ci.yml`); the sweep needs `build` first and a Chrome binary (`CHROME_PATH` to override).
+**The seven checks that must stay green:** `npm run check` runs all of them, in this order — `lint`, `format:check`, `test:run`, `build`, `audit:contrast`, `check:docs`, `sweep:widths`. Cheapest first, so a typo fails in seconds rather than after the browser sweep, and the order is CI's own. All seven run in CI on every push and PR (`.github/workflows/ci.yml`); the sweep needs `build` first and a Chrome binary (`CHROME_PATH` to override).
 
 **Reading a past generation (D-045, D-049):** all of the resolution logic is pure functions in `src/lib/eras.js` — `eraView(pokemon, gen)` returns `{ gen, keys, stats, bst, types }`, `generationOptions([p1, p2])` returns the generations both existed in (each flagged for whether it differs from today), and `dexGenerations()` is the dex's plainer equivalent. The dex layers `statKeysFor` / `sortKeysFor` / `typesFor` / `generationsFor` / `setAsOf` on top in `lib/dexTable.js`, so the columns, the sort keys and the filter chips all narrow together. The lens is `?asof=` on both tools; the dex's `?gen=` is the unrelated origin filter. Home and `/style` stay current-generation. `STAT_ORDER` is still exactly the modern six; Gen 1's `special` lives outside it because the stored stat array's order depends on it. The dex, Home and `/style` are all deliberately current-generation.
 
