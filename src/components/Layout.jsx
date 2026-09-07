@@ -7,13 +7,19 @@ import {
   useLocation,
   useMatches,
 } from "react-router";
-import { LuGithub } from "react-icons/lu";
+import { LuExternalLink, LuGithub } from "react-icons/lu";
 import { toolOf } from "../lib/toolKey";
+import { hasChosenGame } from "../lib/games";
+import { ALL_POKEMON } from "../lib/pokemon";
+import { CURRENT_GEN } from "../lib/eras";
 
 // Shared shell across all routes (D-022): a sticky brand/nav header, the routed
 // page in the <main> landmark, and a muted footer with attribution. Token-driven
 // and keyboard-navigable; the wordmark links home, nav marks the active route.
 const REPO_URL = "https://github.com/noahparknguyen/statmon";
+const LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`;
+const NOTICE_URL = `${REPO_URL}/blob/main/licenses/NOTICE.md`;
+const DEX_SIZE = ALL_POKEMON.length;
 
 // Matches index.html's <title>. Routes declare a page name in `handle.title`
 // and get "<name> — Statmon"; the index route declares none and keeps this.
@@ -73,6 +79,98 @@ function useFocusOnNavigate(ref) {
   }, [tool, ref]);
 }
 
+// The footer's two link groups (D-119). Data rather than markup, so the two
+// columns are the same component and cannot drift into two shapes.
+//
+// **Tools mirrors the nav on purpose.** A footer that repeats the primary nav
+// is not redundancy here — the two game boards drop the footer entirely and the
+// nav is sticky, so this is the copy that exists for someone who has scrolled
+// to the bottom of a 50,000px dex table.
+const TOOL_LINKS = [
+  { label: "Compare", to: "/compare" },
+  { label: "Dex", to: "/dex" },
+  { label: "Types", to: "/types" },
+  { label: "Games", to: "/games" },
+  { label: "About", to: "/about" },
+];
+
+// The credits, split into the two kinds of thing they actually are (D-122).
+//
+// One "Credits" column left a ~480px hole between the brand and the links,
+// because two groups cannot span a 1120px footer however they are aligned. The
+// gap wanted content rather than decoration, and there was content: **data**
+// the site fetched and **type and icons** it draws with are different
+// obligations from different places, and a reader looking for one is not
+// looking for the other.
+//
+// **Two of these five are obligations rather than courtesies** (D-120). Font
+// Awesome Free is **CC BY 4.0**, which requires attribution — it supplies the
+// dex table's four sort carets and nothing else, and was credited nowhere. The
+// two fonts are **SIL OFL 1.1**, which requires the licence text to travel with
+// the redistributed files; ten `.woff2` shipped in this repo with no OFL in it
+// at all. The texts live in `licenses/` and `vendor:fonts` now fetches them
+// with the fonts.
+//
+// Lucide (ISC) draws almost every other icon on the site and needs no on-site
+// notice; it is in `licenses/NOTICE.md` for completeness rather than here,
+// because a credits list that includes everything is one nobody reads.
+const DATA_LINKS = [
+  { label: "PokéAPI", href: "https://pokeapi.co/" },
+  { label: "PokéAPI/sprites", href: "https://github.com/PokeAPI/sprites" },
+];
+
+const CRAFT_LINKS = [
+  { label: "Inter", href: "https://github.com/rsms/inter" },
+  {
+    label: "Space Grotesk",
+    href: "https://github.com/floriankarsten/space-grotesk",
+  },
+  { label: "Font Awesome", href: "https://fontawesome.com/" },
+  { label: "Source on GitHub", href: REPO_URL, icon: LuGithub },
+];
+
+// `py-1` is a target-size number rather than a taste one. These used to be bare
+// 12px links that cleared WCAG 2.5.8 only through its spacing exception, which
+// needs 24px between neighbouring centres and left a 3px margin. At 14px with
+// 4px of padding each row is a ~28px box and passes outright, which is the
+// better way to pass. `npm run sweep:widths` measures it either way.
+const FOOTER_LINK =
+  "inline-flex items-center gap-1.5 py-1 text-body-sm text-tertiary transition-colors hover:text-secondary";
+
+function FooterGroup({ title, links }) {
+  return (
+    <div>
+      <h3 className="text-overline text-tertiary">{title}</h3>
+      <ul className="mt-2 flex flex-col items-start">
+        {links.map(({ label, to, href, icon: Icon }) => (
+          <li key={label}>
+            {to ? (
+              <Link to={to} className={FOOTER_LINK}>
+                {label}
+              </Link>
+            ) : (
+              <a
+                href={href}
+                target="_blank"
+                rel="noreferrer"
+                className={FOOTER_LINK}
+              >
+                {Icon ? <Icon aria-hidden /> : null}
+                {label}
+                {/* External, and said rather than only shown: the icon is
+                    decorative and a link that leaves the site should announce
+                    that to a screen reader too. */}
+                <LuExternalLink aria-hidden className="text-border-strong" />
+                <span className="sr-only">(opens in a new tab)</span>
+              </a>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function Layout() {
   const mainRef = useRef(null);
   useDocumentTitle();
@@ -91,6 +189,22 @@ export default function Layout() {
   // screen. The attribution and the unofficial-fan-project line stay on every
   // other route, including the `/games` index you arrive through.
   const bare = useMatches().some((m) => m.handle?.bare);
+  // A bare route is a game, but a game is not always a BOARD: `/games/higher`
+  // with no query is the difficulty picker (D-108), which is an ordinary page
+  // that happens to live on the same route. The footer came off both, which was
+  // a slip rather than a decision — the picker is not sized to the viewport and
+  // has nothing to be pushed by.
+  //
+  // Read through `hasChosenGame`, the same predicate the two game pages use to
+  // decide what to render (D-116), rather than a second list of paths or a copy
+  // of the rule. Before that the answer lived in page state and Layout could
+  // not see it at all.
+  // `useLocation()` is called unconditionally and the result narrowed after —
+  // `bare && hasChosenGame(useLocation().search)` short-circuits, so on a
+  // non-game route the hook would not run at all and React's hook order would
+  // change between routes. ESLint's rules-of-hooks caught it.
+  const { search } = useLocation();
+  const playing = bare && hasChosenGame(search);
 
   return (
     // A bare route is sized to the viewport EXACTLY (D-110). `min-h-screen`
@@ -105,27 +219,38 @@ export default function Layout() {
     // collapsing toolbar makes `vh` taller than what you can actually see.
     <div
       className={`flex flex-col bg-base text-primary ${
-        bare ? "h-[100svh]" : "min-h-screen"
+        playing ? "h-[100svh]" : "min-h-screen"
       }`}
     >
-      {/* Data mode does not reset scroll on navigation on its own; without this
-          a deep link out of a long page lands part-way down the next one.
+      {/* Data mode does not reset scroll on navigation on its own; without
+          this a deep link out of a long page lands part-way down the next one.
 
-          **Keyed by tool, not by `location.key`** (D-087). The default keys each
-          history entry separately, and every control on this site navigates —
-          the URL is the single source of truth (D-022), so picking a Pokémon,
-          swapping, choosing a generation or toggling a type is a `navigate()`.
-          Each one minted a fresh key with no saved position, and the fallback
-          for that is scrolling to the top: the board you were reading jumped
-          away under you on every single click. Measured before the fix — Swap
-          and a form chip both went from 327px to 0.
+          **Keyed per history entry, with the in-tool navigations opting out**
+          (D-129). It used to be keyed by TOOL, which fixed a real bug the wrong
+          way round: every control on this site navigates — the URL is the
+          single source of truth (D-022), so picking a Pokémon, swapping,
+          choosing a generation or toggling a type is a `navigate()` — and each
+          one minted a fresh key with no saved position, whose fallback is
+          scrolling to the top. The board you were reading jumped away on every
+          click. Measured before that fix: Swap and a form chip both went from
+          327px to 0.
 
-          Sharing one key across a tool's URLs means an in-tool change restores
-          the position it just saved, which is a no-op, while moving between
-          tools still has no entry to restore and still lands at the top. Coming
-          BACK to a tool returns you to where you were, which is what the browser
-          would have done anyway. */}
-      <ScrollRestoration getKey={(location) => toolOf(location.pathname)} />
+          Sharing one key across a tool's URLs stopped the jumping, but it also
+          made **returning** to a tool restore where you had been — and a nav
+          click is not a return. Clicking "Dex" after reading 5,000px of it put
+          you back at 5,000px, which no browser does for a fresh navigation and
+          which reads as the page failing to load at the top.
+
+          So the two cases are separated at the source instead. Every in-tool
+          navigation is a `replace` and now also carries `preventScrollReset`,
+          which is the mechanism for exactly this; everything else — a nav link,
+          the wordmark, a link out of a game — is an ordinary navigation and
+          lands at the top. Back and Forward still restore, because that is what
+          `location.key` keying is for.
+
+          `toolOf` is still used, by the focus announcement below: a state change
+          is not a page change, whatever the pathname does. */}
+      <ScrollRestoration />
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-1300 focus:rounded-md focus:border focus:border-border-strong focus:bg-elevated focus:px-3 focus:py-2 focus:text-button focus:text-primary"
@@ -220,48 +345,101 @@ export default function Layout() {
       {/* The bottom inset is the footer's alone: it is the only thing that ends
           up under a home indicator, and putting it on the body would add dead
           space to every page on devices that have one. */}
-      {!bare && (
+      {!playing && (
         <footer
-          className="border-t border-border-subtle"
+          className="mt-16 border-t border-border-subtle"
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
-          <div className="max-w-content mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-5">
-            <p className="text-caption text-tertiary">
-              Data from PokéAPI. Statmon is an unofficial fan project, not
-              affiliated with Nintendo, Game Freak, or The Pokémon Company.
-            </p>
-            {/* Byline + credits + repo read as one authorship group, so they sit
-              together on the right rather than leaving the links stranded
-              mid-row.
+          <h2 className="sr-only">Site information</h2>
+          <div className="max-w-content mx-auto px-4 py-10">
+            {/* **Brand left, link groups right — not three even columns.**
+                Even columns were the first shape and they read as off-centre,
+                because the boxes were even and the CONTENT was not: each `1fr`
+                is about 347px while "Font Awesome" is 110px wide, so two thirds
+                of the footer was trailing whitespace and all the mass sat in
+                the left third. Pinning the groups to the right edge uses the
+                width and gives the block a left and a right edge instead of a
+                left one and a ragged middle. It is also the shape most footers
+                converge on, for the same reason.
 
-              Credits landed here when Games took its nav slot (D-094), and it
-              is the better home for it: the line to its left is the attribution
-              summary and this is the page that expands it, so the link now sits
-              beside its own subject instead of beside the tools. */}
-            {/* Wraps, and `gap-y-3` is a target-size number rather than a taste
-              one: these are 12px links, so they clear WCAG 2.5.8 only by its
-              spacing exception, which needs 24px between neighbouring centres.
-              A wrapped `gap-y-1` puts two of them ~19px apart and fails; 12px
-              of row gap lands at ~27px. `npm run sweep:widths` measures it. */}
-            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3">
-              <span className="text-caption text-tertiary">
-                Built by Noah Park-Nguyen
-              </span>
-              <Link
-                to="/credits"
-                className="text-caption text-tertiary transition-colors hover:text-secondary"
-              >
-                Credits
-              </Link>
-              <a
-                href={REPO_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1.5 text-caption text-tertiary transition-colors hover:text-secondary"
-              >
-                <LuGithub aria-hidden />
-                GitHub
-              </a>
+                Stacked below `sm`, where there is no width to spread into. */}
+            <div className="flex flex-col gap-10 sm:flex-row sm:justify-between sm:gap-8">
+              <div className="max-w-sm">
+                <p className="text-h3 text-primary">
+                  Statmon<span className="text-accent">.</span>
+                </p>
+                {/* No tagline here. It read "A simple set of Pokémon tools,
+                    built for myself." — which is Home's hero line with four
+                    words added, and on Home the two appeared on the same page.
+                    The two lines below say something the wordmark does not
+                    (06_style_guide §14.1 rule 7). */}
+                {/* Both numbers are READ off the dataset, never typed. A
+                    footer that states a count is a footer that can be wrong
+                    about it, and the dataset is already in this chunk because
+                    Home is eager (D-060) — so this costs nothing and cannot go
+                    stale after a `build:data`. */}
+                <p className="mt-4 text-caption text-tertiary">
+                  {DEX_SIZE.toLocaleString()} entries, current through
+                  Generation {CURRENT_GEN}.
+                </p>
+                <p className="mt-1 text-caption text-tertiary">
+                  No cookies and no analytics. Your game record is saved in your
+                  own browser and nowhere else.
+                </p>
+              </div>
+
+              {/* Three groups, spread. `justify-between` on the row above
+                  puts the brand on the left edge and this block on the right;
+                  inside it the three sit on a fixed gap, so they read as a set
+                  rather than as three things that happened to land apart. */}
+              <div className="flex flex-wrap gap-x-12 gap-y-8 sm:gap-x-14 lg:gap-x-20">
+                <FooterGroup title="Tools" links={TOOL_LINKS} />
+                <FooterGroup title="Data" links={DATA_LINKS} />
+                <FooterGroup title="Fonts & icons" links={CRAFT_LINKS} />
+              </div>
+            </div>
+
+            {/* **The same three columns as the block above, not a
+                `justify-between` row.** Pushing the legal line and the byline to
+                opposite edges made the bar the one part of the footer that
+                ignored the grid over it — the byline floated to the far right
+                while every heading above it started on a column. Spanning two
+                and taking the third puts it on the same ruler as "Credits", so
+                the whole footer reads on three verticals instead of two
+                arrangements stacked. */}
+            {/* Mirrors the block above: one thing on each edge. It was a
+                three-column grid while that block was too; both changed
+                together, because the fault was never the bar on its own — it
+                was two different arrangements stacked. */}
+            <div className="mt-10 flex flex-col gap-3 border-t border-border-subtle pt-6 sm:flex-row sm:justify-between sm:gap-8">
+              <p className="max-w-xl text-caption text-tertiary">
+                Data and images from PokéAPI; sprites are CC0. Fonts are SIL
+                OFL, and the dex&rsquo;s sort carets are Font Awesome Free (CC
+                BY 4.0) — full notices in the{" "}
+                <a
+                  href={NOTICE_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline decoration-border-strong underline-offset-2 transition-colors hover:text-secondary"
+                >
+                  repository
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </a>
+                . Pokémon is © Nintendo, Game Freak and The Pokémon Company.
+                Statmon is an unofficial fan project.
+              </p>
+              <p className="shrink-0 text-caption text-tertiary sm:text-right">
+                Built by Noah Park-Nguyen · Code{" "}
+                <a
+                  href={LICENSE_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline decoration-border-strong underline-offset-2 transition-colors hover:text-secondary"
+                >
+                  MIT
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </a>
+              </p>
             </div>
           </div>
         </footer>

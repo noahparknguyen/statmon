@@ -20,6 +20,41 @@
 // Shape and behaviour, without size: every chip is a pill that transitions.
 export const CHIP = "text-badge inline-flex items-center rounded-full border";
 
+// The box a compact chip occupies, reserved by the CELL that holds it.
+//
+// A chip is exactly 21px tall and the arithmetic is worth writing down because
+// this constant depends on it: `text-badge` is `leading-none`, so its line box
+// is the 11px font size itself, plus `py-1` (4 + 4) and the 1px border on each
+// side.
+//
+// **The cell needs it because the two placeholders beside these chips are not
+// chips.** `FormChips` renders nothing for the 845 single-form entries and the
+// card supplies an em-dash; `AbilityChips` renders a sentence for the 14
+// entries with none, and for any Gen 1 or Gen 2 board. Both are inline text in
+// a block, so their height came from the INHERITED line-height (16px x 1.5 =
+// 24px) rather than from the glyph — three pixels taller than a chip. With the
+// band on `items-baseline` that moved the Form and Ability labels up by 4px and
+// 3px the moment a Pokémon had a form, which is a card that twitches as you
+// browse.
+//
+// Reserving it on the cell fixes both placeholders at once and leaves the chips
+// to size themselves.
+export const CHIP_CELL = "flex min-h-[21px] min-w-0 flex-wrap items-center";
+
+// The LABEL beside a `CHIP_CELL`, held in the same 21px box.
+//
+// Reserving the cell was only half of it. The band aligned its two columns on
+// `items-baseline`, so the label still took its position from whatever the cell
+// contained: a chip and a bare glyph do not sit on the same baseline, and a
+// chip row that WRAPS takes its baseline from the first line, which moves as
+// the row grows. That is worth about a pixel, which is small enough to look
+// like a rendering artifact and consistent enough to notice while browsing.
+//
+// Given both sides the same box and `items-start` on the grid, the label's
+// position is a function of the reservation alone — it no longer depends on
+// what is beside it, wrapped or not, chip or dash.
+export const CHIP_CELL_LABEL = "flex min-h-[21px] items-center";
+
 // Selected, when the chip has no colour of its own.
 export const CHIP_ON = "border-transparent bg-accent text-accent-contrast";
 

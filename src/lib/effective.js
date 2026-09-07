@@ -17,6 +17,7 @@ import { ALL_POKEMON } from "./pokemon";
 import { affectsTypes } from "./abilities";
 import { effectiveness, typesIn } from "./typeChart";
 import { MULT_ORDER } from "./typeView";
+import { PLAY_PARAM } from "./games";
 
 /* -------------------------------------------------------------------------
    The three tiers.
@@ -334,9 +335,12 @@ export function settingsKey({
   return params.toString();
 }
 
+// `PLAY_PARAM` and the "a chosen game always has a non-empty query" rule are
+// the stat game's, shared rather than restated — both games have a preset that
+// is the defaults, so both had the same reload bug.
 export function effectiveUrl(settings = DEFAULT_SETTINGS) {
   const qs = settingsKey(settings);
-  return qs ? `/games/effective?${qs}` : "/games/effective";
+  return `/games/effective?${qs || PLAY_PARAM}`;
 }
 
 /* -------------------------------------------------------------------------

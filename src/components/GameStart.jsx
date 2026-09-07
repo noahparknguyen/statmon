@@ -21,7 +21,13 @@ import { BOARD } from "./gameChrome";
 // could also reach by hand, so nothing here is a fourth code path, and
 // Customise is not an escape hatch from a mode system — it is the same
 // controls, opened directly.
-export default function GameStart({ title, presets, onPick, onCustomise }) {
+export default function GameStart({
+  title,
+  presets,
+  preview,
+  onPick,
+  onCustomise,
+}) {
   return (
     <div
       className={`${BOARD} mx-auto flex max-w-content flex-col items-center justify-center gap-8 px-4`}
@@ -36,23 +42,40 @@ export default function GameStart({ title, presets, onPick, onCustomise }) {
         </p>
       </header>
 
-      <ul className="grid w-full max-w-3xl gap-3 sm:grid-cols-3">
+      {/* Wider than the old `max-w-3xl`, because each card now carries a board
+          rather than two lines of text — at 768px across three cards a
+          four-contender thumbnail was 80px of Pokémon. The cards are equal
+          weight: nothing here is recommended, and a highlighted middle option
+          would be the page making a choice it has no basis for. */}
+      <ul className="grid w-full max-w-5xl gap-4 sm:grid-cols-3">
         {presets.map((preset) => (
           <li key={preset.id}>
+            {/* The card anatomy is the games index's — a fixed thumbnail band
+                over a text body — so the page you pick a GAME on and the page
+                you pick a DIFFICULTY on are the same object at two scales
+                (D-117). `overflow-hidden` is what lets the thumbnail sit flush
+                inside the card's radius.
+
+                The whole card is the control, and the panels inside it are
+                given no handler, so they render as `<div>`s rather than
+                controls nested in a control — the rule D-111 exists for. */}
             <button
               type="button"
               onClick={() => onPick(preset)}
-              className="group flex h-full w-full flex-col gap-1 rounded-lg border border-border-subtle bg-surface p-5 text-left transition-colors hover:border-border-strong"
+              className="group flex h-full w-full flex-col overflow-hidden rounded-lg border border-border-subtle bg-surface text-left transition-colors hover:border-border-strong"
             >
-              <span className="flex items-center gap-1.5 text-h4 text-primary">
-                {preset.label}
-                <LuArrowRight
-                  aria-hidden
-                  className="text-tertiary transition-colors group-hover:text-secondary"
-                />
-              </span>
-              <span className="text-body-sm text-secondary">
-                {preset.blurb}
+              {preview?.(preset)}
+              <span className="flex flex-1 flex-col gap-1 p-5">
+                <span className="flex items-center gap-1.5 text-h4 text-primary">
+                  {preset.label}
+                  <LuArrowRight
+                    aria-hidden
+                    className="text-tertiary transition-colors group-hover:text-secondary"
+                  />
+                </span>
+                <span className="text-body-sm text-secondary">
+                  {preset.blurb}
+                </span>
               </span>
             </button>
           </li>

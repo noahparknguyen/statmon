@@ -6,12 +6,14 @@ import ContenderPanel from "../components/ContenderPanel";
 import { BOARD, BOARD_SURFACE, clashVars } from "../components/gameChrome";
 import GameBar from "../components/GameBar";
 import GameStart from "../components/GameStart";
+import { HigherThumb } from "../components/gameThumbs";
 import HigherSetup from "../components/HigherSetup";
 import { compareUrl } from "../lib/compareUrl";
 import { DEFAULT_VIEW, viewToSearch } from "../lib/dexTable";
 import {
   HIGHER_PRESETS,
   NEW_SESSION,
+  hasChosenGame,
   higherQuestion,
   higherUrl,
   parseHigher,
@@ -387,15 +389,13 @@ export default function GameHigher() {
   // every chip click — only Play commits (D-096).
   const [draft, setDraft] = useState(null);
 
-  // Whether a game has been chosen yet (D-108). Page state rather than URL
-  // state, and it has to be: the Medium preset IS the defaults, so it writes no
-  // parameters — asking "does the URL carry settings" after picking it would
-  // land back on the bare URL and ask again, forever. Seeded from the URL so a
-  // shared link plays and a bare arrival asks, and it lives ABOVE the arena's
-  // settings key so picking a preset does not remount it back into the picker.
-  const [started, setStarted] = useState(
-    () => [...searchParams.keys()].length > 0,
-  );
+  // Whether a game has been chosen yet — READ off the URL, not held beside it
+  // (D-116). It used to be page state seeded from the URL, because the Medium
+  // preset is the defaults and so wrote no parameters: "does the URL carry
+  // settings" answered no for a game that had been chosen. `higherUrl` emits
+  // `?play` in exactly that case now, so the URL can answer it, and a flag that
+  // could disagree with the address bar is gone.
+  const started = hasChosenGame(searchParams);
 
   // Read once. `browserStorage()` is null under a server render or a browser
   // refusing site data, and every function in lib/record handles that by
@@ -417,8 +417,7 @@ export default function GameHigher() {
   };
 
   const start = (settings) => {
-    navigate(higherUrl(settings), { replace: true });
-    setStarted(true);
+    navigate(higherUrl(settings), { replace: true, preventScrollReset: true });
   };
 
   const play = () => {
@@ -427,8 +426,15 @@ export default function GameHigher() {
     // Only navigate if something actually changed — otherwise closing the panel
     // would restart a game you were in the middle of, which is the opposite of
     // what "Play" should do when you opened it just to look at your accuracy.
-    if (settingsKey(next) !== settingsKey(settings)) {
-      navigate(higherUrl(next), { replace: true });
+    //
+    // **`!started` is the other half, and its absence was a bug.** From the
+    // picker the settings are usually the defaults and therefore unchanged, so
+    // this guard alone refused to navigate and Customise -> Play left you
+    // exactly where you started. The type game had the opposite shape — it
+    // always navigated and flipped a flag — and the two are one rule now
+    // (D-116).
+    if (!started || settingsKey(next) !== settingsKey(settings)) {
+      navigate(higherUrl(next), { replace: true, preventScrollReset: true });
     }
   };
 
@@ -438,6 +444,10 @@ export default function GameHigher() {
         <GameStart
           title="Higher"
           presets={HIGHER_PRESETS}
+          // Each card shows a real round at ITS OWN preset, so the difference
+          // between Medium and Hard is visible as two panels against four
+          // rather than stated as a sentence (D-117).
+          preview={(preset) => <HigherThumb settings={preset.settings} />}
           onPick={(preset) => start(preset.settings)}
           // Straight to the controls, without playing a round first.
           onCustomise={() => setDraft(settings)}
@@ -464,13 +474,13 @@ export default function GameHigher() {
         record={record}
         onAnswer={saveAnswer}
         onSetup={() => setDraft(settings)}
-        // Back to the picker. It clears the URL as well as the flag, so a
-        // refresh from here asks again rather than replaying the game you
-        // just left (D-109).
-        onRestart={() => {
-          navigate("/games/higher", { replace: true });
-          setStarted(false);
-        }}
+        // Back to the picker, which is now the whole of it: a bare URL IS the
+        // picker (D-116), so clearing the query is the state change rather
+        // than something done alongside one. A refresh from here still asks
+        // again rather than replaying the game you just left (D-109).
+        onRestart={() =>
+          navigate("/games/higher", { replace: true, preventScrollReset: true })
+        }
       />
       <HigherSetup
         draft={draft}

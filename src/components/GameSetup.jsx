@@ -40,8 +40,18 @@ import { topicAccuracy } from "../lib/record";
 //
 // `max-h` at all because the record at the bottom grows without bound, and a
 // dialog that runs off the viewport cannot be closed by its own button.
+// **`hidden open:flex`, not `flex`.** The browser hides a `<dialog>` without
+// the `open` attribute through a UA rule (`dialog:not([open]) { display: none }`),
+// and a `display` utility beats it — so the closed panel, which is rendered on
+// every game route so the element exists to be opened, painted as a **2px-tall
+// bordered box** under the header. Two hairlines and 576px wide, on the picker
+// where there is nothing else to hide it. Nothing failed; it just sat there.
+//
+// Declaring the display per state puts it back under the browser's control and
+// keeps one class string for both branches, so the open and closed forms cannot
+// drift apart.
 const PANEL =
-  "m-auto flex max-h-[85svh] w-[min(36rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border border-border-subtle bg-surface p-0 text-primary backdrop:bg-base/70";
+  "m-auto hidden max-h-[85svh] w-[min(36rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border border-border-subtle bg-surface p-0 text-primary backdrop:bg-base/70 open:flex";
 
 // Clearing a record cannot be undone, and this site has no confirm pattern — no
 // toast, no second dialog, and a nested <dialog> for one button would be

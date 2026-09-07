@@ -237,6 +237,20 @@ const load = (entry, width) => new Promise((resolve) => {
       // quietly tests nothing is worse than no check.
       if (entry.open) {
         let btn = null;
+        // 4s, and deliberately not more. Raising this was the first thing
+        // tried against the intermittent failure and it did not fix it — the
+        // retry in the driver loop below is what did. It also is not free:
+        // every poll spends VIRTUAL time, so a genuinely missing button costs
+        // this budget twice on each of fourteen widths, and at 6s that was
+        // enough to overrun the harness's virtual-time budget and report
+        // "could not read the sweep results" instead of naming the button.
+        // The loop exits on the first poll that finds it, so none of this is
+        // spent in the normal case.
+        //
+        // NOTE: every comment from here down to the closing script tag lives
+        // inside the HARNESS template literal, so it must not contain a
+        // backtick. One did, twice, and each time it ended the string and broke
+        // the whole file's parse in a way that points at line 146.
         for (let i = 0; i < 40 && !btn; i++) {
           btn = [...f.contentDocument.querySelectorAll("button")].find(
             (b) => (b.textContent || "").trim().startsWith(entry.open));
@@ -326,7 +340,17 @@ function targetFailures(doc) {
       // measurement, while a page that genuinely overflows fails every time. So
       // a failure has to happen twice to be reported. This is the difference
       // between a checker that is trusted and one that is muted.
-      if (m.scrollWidth > m.clientWidth) m = await load(entry, width);
+      //
+      // **A disclosure that never opened is the same kind of failure and was
+      // not getting the same treatment.** The rule above was written for
+      // overflow and applied only to overflow, so a single lost race among 406
+      // checks was reported as a hard failure with no second chance — which is
+      // exactly what made this check intermittently red. Twice observed across
+      // separate runs, on a different route each time and once on a single
+      // width out of fourteen, which is the signature of a race rather than a
+      // broken page.
+      if (m.scrollWidth > m.clientWidth || m.missing)
+        m = await load(entry, width);
       results.push({ width, route: entry.label, ...m });
     }
   document.getElementById("out").textContent =
@@ -347,12 +371,15 @@ const dom = await new Promise((resolve, reject) => {
       "--headless",
       "--disable-gpu",
       "--no-sandbox",
-      // Raised with the route list (D-108). Each route × width settles on its
+      // Raised with the route list (D-108), and again for the disclosure retry:
+      // a genuinely missing button now spends its poll budget twice on every
+      // width, which overran 300s and surfaced as the "could not read" message
+      // below rather than as the real fault. Each route × width settles on its
       // own timers, so the budget scales with ENTRIES.length × WIDTHS.length —
       // and the failure mode when it runs out is silent: the harness never
       // prints its results and the sweep reports "could not read", which reads
       // like a missing build or a missing Chrome rather than a timeout.
-      "--virtual-time-budget=300000",
+      "--virtual-time-budget=600000",
       "--dump-dom",
       `${origin}/__sweep.html`,
     ],
@@ -395,9 +422,21 @@ console.log(
 // opened. A renamed button is exactly how that happens (D-099).
 const missing = results.filter((r) => r.missing);
 if (missing.length) {
-  const seen = [...new Set(missing.map((r) => `${r.route}`))];
+  // Grouped WITH THE WIDTHS, because "this route never opened" and "this route
+  // never opened at 320px" are different bugs and the first phrasing hides the
+  // second. A disclosure that fails at every width is broken; one that fails at
+  // a single width is a layout or a timing fault, and the widths say which.
+  const byRoute = new Map();
+  for (const r of missing) {
+    if (!byRoute.has(r.route)) byRoute.set(r.route, []);
+    byRoute.get(r.route).push(r.width);
+  }
   console.log("Disclosures that never opened:");
-  for (const route of seen) console.log(`  ✗ ${route} — no button matched`);
+  for (const [route, widths] of byRoute)
+    console.log(
+      `  ✗ ${route} — no button matched at ${widths.sort((a, b) => a - b).join(", ")}px` +
+        ` (${widths.length} of ${WIDTHS.length} widths)`,
+    );
   console.log();
 }
 

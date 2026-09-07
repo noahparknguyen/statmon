@@ -273,7 +273,9 @@ describe("no answer is ever the best guess", () => {
 describe("settings in the URL", () => {
   it("defaults to Easy with no filters", () => {
     expect(parseEffective(params(""))).toEqual(DEFAULT_SETTINGS);
-    expect(effectiveUrl(DEFAULT_SETTINGS)).toBe("/games/effective");
+    // `?play` marks a chosen game whose settings write nothing (D-116); the
+    // defaults themselves are still omitted.
+    expect(effectiveUrl(DEFAULT_SETTINGS)).toBe("/games/effective?play");
   });
 
   it("reads a full Hard game", () => {

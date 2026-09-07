@@ -5,6 +5,7 @@ import AnswerCluster from "../components/AnswerCluster";
 import Button from "../components/Button";
 import GameBar from "../components/GameBar";
 import GameStart from "../components/GameStart";
+import { EffectiveThumb } from "../components/gameThumbs";
 import EffectiveSetup from "../components/EffectiveSetup";
 import MatchupPanel from "../components/MatchupPanel";
 import StabChip, { StabCaption } from "../components/StabChip";
@@ -18,7 +19,7 @@ import {
   parseEffective,
   settingsKey,
 } from "../lib/effective";
-import { NEW_SESSION, scoreAnswer } from "../lib/games";
+import { NEW_SESSION, hasChosenGame, scoreAnswer } from "../lib/games";
 import {
   EMPTY_RECORD,
   bestFor,
@@ -110,8 +111,7 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
           <div className="max-w-sm text-center">
             <p className="text-h4">No question fits these settings.</p>
             <p className="mt-2 text-body-sm text-secondary">
-              The filters have narrowed this game to fewer than two possible
-              answers, so there is nothing to choose between.
+              These filters leave fewer than two answers to choose between.
             </p>
             <Button className="mt-6" onClick={onSetup}>
               Open setup
@@ -261,15 +261,10 @@ export default function GameEffective() {
 
   const [draft, setDraft] = useState(null);
 
-  // Whether a game has been chosen yet (D-108). Page state rather than URL
-  // state, and it has to be: the Medium preset IS the defaults, so it writes no
-  // parameters — asking "does the URL carry settings" after picking it would
-  // land back on the bare URL and ask again, forever. Seeded from the URL so a
-  // shared link plays and a bare arrival asks, and it lives ABOVE the arena's
-  // settings key so picking a preset does not remount it back into the picker.
-  const [started, setStarted] = useState(
-    () => [...searchParams.keys()].length > 0,
-  );
+  // Whether a game has been chosen yet — READ off the URL, not held beside it
+  // (D-116). See `hasChosenGame`: this game has the same defaults-writing-no-
+  // parameters preset the stat game does, and had the same reload bug.
+  const started = hasChosenGame(searchParams);
   const [record, setRecord] = useState(() => readRecord(browserStorage()));
 
   const saveAnswer = (entry) => {
@@ -284,14 +279,24 @@ export default function GameEffective() {
   };
 
   const start = (settings) => {
-    navigate(effectiveUrl(settings), { replace: true });
-    setStarted(true);
+    navigate(effectiveUrl(settings), {
+      replace: true,
+      preventScrollReset: true,
+    });
   };
 
   const play = () => {
-    navigate(effectiveUrl(draft ?? DEFAULT_SETTINGS), { replace: true });
+    const next = draft ?? DEFAULT_SETTINGS;
     setDraft(null);
-    setStarted(true);
+    // Navigate when leaving the picker, or when something actually changed.
+    // The second half is the stat game's rule, adopted here: opening Setup just
+    // to read your accuracy and closing it on Play should not restart the round
+    // you were in the middle of. The first half is what makes `started`
+    // derivable — from the picker the settings may be identical and the
+    // navigation is still the thing that starts the game (D-116).
+    if (!started || settingsKey(next) !== settingsKey(settings)) {
+      navigate(effectiveUrl(next), { replace: true, preventScrollReset: true });
+    }
   };
 
   if (!started) {
@@ -300,6 +305,10 @@ export default function GameEffective() {
         <GameStart
           title="Effective"
           presets={EFFECTIVE_PRESETS}
+          // The tier IS the defender — one type, two types, then a Pokémon — so
+          // the right-hand panel changes shape across the three cards and the
+          // ladder is visible rather than described (D-117).
+          preview={(preset) => <EffectiveThumb settings={preset.settings} />}
           onPick={(preset) => start(preset.settings)}
           // Straight to the controls, without playing a round first.
           onCustomise={() => setDraft(settings)}
@@ -326,13 +335,16 @@ export default function GameEffective() {
         record={record}
         onAnswer={saveAnswer}
         onSetup={() => setDraft(settings)}
-        // Back to the picker. It clears the URL as well as the flag, so a
-        // refresh from here asks again rather than replaying the game you
-        // just left (D-109).
-        onRestart={() => {
-          navigate("/games/effective", { replace: true });
-          setStarted(false);
-        }}
+        // Back to the picker, which is now the whole of it: a bare URL IS the
+        // picker (D-116), so clearing the query is the state change rather
+        // than something done alongside one. A refresh from here still asks
+        // again rather than replaying the game you just left (D-109).
+        onRestart={() =>
+          navigate("/games/effective", {
+            replace: true,
+            preventScrollReset: true,
+          })
+        }
       />
       <EffectiveSetup
         draft={draft}
