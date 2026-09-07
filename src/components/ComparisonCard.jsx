@@ -26,6 +26,12 @@ import SpeedBanner from "./SpeedBanner";
 export default function ComparisonCard({ p1, p2, v1, v2, keys, ability }) {
   const ready = p1 && p2;
 
+  // What the bars are showing, as a string. Changing selection, swapping, or
+  // moving the generation lens all change it; choosing an ability does not.
+  const barKey = ready
+    ? keys.map((k) => `${v1.stats[k]}/${v2.stats[k]}`).join(",")
+    : "empty";
+
   return (
     <div className="flex flex-col overflow-hidden bg-surface border border-border-subtle rounded-lg">
       <h2 className="sr-only">Comparison</h2>
@@ -58,33 +64,53 @@ export default function ComparisonCard({ p1, p2, v1, v2, keys, ability }) {
       </div>
 
       {/* Stats: mirrored bars + centered difference (≥768px, D-010) */}
-      <div className="hidden md:block px-3 pt-2 pb-4">
-        {keys.map((k) => (
-          <CmpRow
-            key={k}
-            label={STAT_LABEL[k]}
-            a={ready ? v1.stats[k] : null}
-            b={ready ? v2.stats[k] : null}
-            aColor={ready ? v1.types[0] : null}
-            bColor={ready ? v2.types[0] : null}
-          />
-        ))}
-      </div>
+      {/* **The bars grow in, and `barKey` is what makes them do it again**
+          (D-124). Home's board has animated since D-023 and the tool's never
+          did — the last of D-043's "partially shipped" items. A CSS animation
+          runs on mount, so re-running it needs the element to be new: keying
+          this wrapper remounts the six rows inside it.
 
-      {/* Stats: per-stat cards (<768px, D-010) */}
-      <div className="md:hidden flex flex-col gap-2 px-3 pt-2 pb-4">
-        {keys.map((k) => (
-          <CmpStatCard
-            key={k}
-            label={STAT_LABEL[k]}
-            a={ready ? v1.stats[k] : null}
-            b={ready ? v2.stats[k] : null}
-            aName={ready ? p1.name : null}
-            bName={ready ? p2.name : null}
-            aColor={ready ? v1.types[0] : null}
-            bColor={ready ? v2.types[0] : null}
-          />
-        ))}
+          The key is the NUMBERS, not the slugs or a counter. That is the exact
+          condition worth animating on — the bars re-grow when they would move,
+          and not when something that does not touch them changes. Picking an
+          ability re-renders this card (it re-scores the STAB chips above) and
+          leaves the stats alone, so it leaves the bars alone too.
+
+          Both surfaces, because below `md` the per-stat cards are the ONLY
+          stats surface (D-057); animating one and not the other would make the
+          phone the odd one out. Reduced motion is handled globally by the rule
+          that collapses animation duration (index.css). */}
+      <div key={barKey}>
+        <div className="hidden md:block px-3 pt-2 pb-4">
+          {keys.map((k) => (
+            <CmpRow
+              key={k}
+              label={STAT_LABEL[k]}
+              a={ready ? v1.stats[k] : null}
+              b={ready ? v2.stats[k] : null}
+              aColor={ready ? v1.types[0] : null}
+              bColor={ready ? v2.types[0] : null}
+              animate
+            />
+          ))}
+        </div>
+
+        {/* Stats: per-stat cards (<768px, D-010) */}
+        <div className="md:hidden flex flex-col gap-2 px-3 pt-2 pb-4">
+          {keys.map((k) => (
+            <CmpStatCard
+              key={k}
+              label={STAT_LABEL[k]}
+              a={ready ? v1.stats[k] : null}
+              b={ready ? v2.stats[k] : null}
+              aName={ready ? p1.name : null}
+              bName={ready ? p2.name : null}
+              aColor={ready ? v1.types[0] : null}
+              bColor={ready ? v2.types[0] : null}
+              animate
+            />
+          ))}
+        </div>
       </div>
 
       {/* Speed verdict — full-width banner */}

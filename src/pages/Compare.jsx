@@ -1,5 +1,5 @@
 import { useNavigate, useParams, useSearchParams } from "react-router";
-import { LuArrowLeftRight } from "react-icons/lu";
+import { LuArrowLeftRight, LuShuffle } from "react-icons/lu";
 import Button from "../components/Button";
 import PageHeader from "../components/PageHeader";
 import { PAGE_TOOL } from "../components/pageChrome";
@@ -12,6 +12,7 @@ import { compareUrl } from "../lib/compareUrl";
 import { eraView, generationOptions, parseAsOf } from "../lib/eras";
 import { abilityParam, resolveAbility } from "../lib/abilities";
 import { STAT_ORDER } from "../lib/stats";
+import { randomMatchup } from "../lib/randomMatchup";
 
 // The core comparison page. The URL is the single source of truth (D-022): the
 // selection is derived from the path deep link (/compare/<p1>/vs/<p2>) or, for a
@@ -73,7 +74,7 @@ export default function Compare() {
         a1: abilityParam(a, g, x),
         a2: abilityParam(b, g, y),
       }),
-      { replace: true },
+      { replace: true, preventScrollReset: true },
     );
   const selectP1 = (p) => go(p, p2, asof, null);
   const selectP2 = (p) => go(p1, p, asof, a1, null);
@@ -81,6 +82,23 @@ export default function Compare() {
   const selectAsOf = (g) => go(p1, p2, g);
   const selectA1 = (slug) => go(p1, p2, asof, slug);
   const selectA2 = (slug) => go(p1, p2, asof, a1, slug);
+
+  // **Keeps the lens, and draws inside it** (D-123). The pair comes from the
+  // pool that existed at `asof`, so hitting Random on a Gen 1 board hands back
+  // two Gen 1 Pokémon rather than two modern ones that quietly drop the
+  // generation on arrival. Abilities are cleared, the way they are whenever the
+  // Pokémon change under them.
+  // Clearing a slot is just the URL without that slug — `compareUrl` already
+  // spells every combination, including the partial one-slot form. The ability
+  // goes with it: `?a1=` for a Pokémon that is no longer there is a dead
+  // parameter, and `resolveAbility` would drop it on the next render anyway.
+  const clearP1 = () => go(null, p2, asof, null, a2);
+  const clearP2 = () => go(p1, null, asof, a1, null);
+
+  const surprise = () => {
+    const pair = randomMatchup(asof);
+    if (pair) go(pair[0], pair[1], asof, null, null);
+  };
 
   return (
     <div className={PAGE_TOOL}>
@@ -119,16 +137,25 @@ export default function Compare() {
             asof={asof}
             onSelect={selectAsOf}
           />
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={swap}
-            disabled={!p1 && !p2}
-            className="shrink-0 sm:ml-auto"
-          >
-            <LuArrowLeftRight aria-hidden />
-            Swap
-          </Button>
+          {/* Random sits before Swap and is never disabled: it is the one
+              control here that works from an empty board, and on an empty board
+              it is the only thing to do besides type. Swap still needs a
+              selection to have something to turn around. */}
+          <div className="flex shrink-0 items-center gap-2 sm:ml-auto">
+            <Button variant="secondary" size="sm" onClick={surprise}>
+              <LuShuffle aria-hidden />
+              Random
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={swap}
+              disabled={!p1 && !p2}
+            >
+              <LuArrowLeftRight aria-hidden />
+              Swap
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -152,6 +179,7 @@ export default function Compare() {
             ability={a1}
             onSelectForm={selectP1}
             onSelectAbility={selectA1}
+            onClear={clearP1}
           />
         </div>
         <div className="order-3 md:order-2 lg:order-3">
@@ -162,6 +190,7 @@ export default function Compare() {
             ability={a2}
             onSelectForm={selectP2}
             onSelectAbility={selectA2}
+            onClear={clearP2}
           />
         </div>
         <div className="order-1 md:order-3 md:col-span-2 lg:col-span-1 lg:order-2">

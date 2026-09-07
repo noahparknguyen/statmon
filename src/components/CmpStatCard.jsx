@@ -14,6 +14,7 @@ export default function CmpStatCard({
   bName,
   aColor,
   bColor,
+  animate = false,
 }) {
   const ready = a !== null && b !== null;
   const aWins = ready && a > b;
@@ -33,6 +34,7 @@ export default function CmpStatCard({
           color={aColor}
           win={aWins}
           ready={ready}
+          animate={animate}
         />
         <StatLine
           name={bName}
@@ -40,13 +42,14 @@ export default function CmpStatCard({
           color={bColor}
           win={bWins}
           ready={ready}
+          animate={animate}
         />
       </div>
     </div>
   );
 }
 
-function StatLine({ name, value, color, win, ready }) {
+function StatLine({ name, value, color, win, ready, animate }) {
   return (
     <div className="grid grid-cols-[5rem_1fr_2.25rem] items-center gap-2">
       {/* No `title` tooltip on the truncation. It was the third `title=` on the
@@ -58,15 +61,30 @@ function StatLine({ name, value, color, win, ready }) {
         {name ?? "–"}
       </span>
       <div className="h-2 rounded-full bg-elevated overflow-hidden">
-        {ready && (
-          <div
-            className="h-full rounded-full"
-            style={{
-              width: statPct(value),
-              backgroundColor: typeColorVar(color),
-            }}
-          />
-        )}
+        {/* Same two branches as `CmpRow`'s bar, for the same reason: `--target`
+            and `width` are different mechanisms and composing them into one
+            element would mean a style object whose meaning depends on a flag.
+            Below `md` this is the ONLY stats surface (D-057), so leaving it
+            static while the desktop board animated would have made the phone
+            the odd one out. */}
+        {ready &&
+          (animate ? (
+            <div
+              className="h-full rounded-full animate-grow-w"
+              style={{
+                "--target": statPct(value),
+                backgroundColor: typeColorVar(color),
+              }}
+            />
+          ) : (
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: statPct(value),
+                backgroundColor: typeColorVar(color),
+              }}
+            />
+          ))}
       </div>
       <span
         className={`text-stat text-right ${win ? "text-primary" : "text-tertiary"}`}

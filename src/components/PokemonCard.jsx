@@ -1,6 +1,8 @@
+import { LuX } from "react-icons/lu";
 import TypeBadge from "./TypeBadge";
 import FormChips from "./FormChips";
 import AbilityChips from "./AbilityChips";
+import { CHIP_CELL, CHIP_CELL_LABEL } from "./chipStyles";
 import { STAT_ORDER, STAT_LABEL, statPct } from "../lib/stats";
 import { typeColorVar } from "../lib/types";
 import { artworkFor, formsOf } from "../lib/pokemon";
@@ -76,6 +78,7 @@ export default function PokemonCard({
   ability,
   onSelectForm,
   onSelectAbility,
+  onClear = null,
 }) {
   // The empty card takes the board's stat list rather than assuming six, so a
   // half-filled Gen 1 board keeps both cards the same height.
@@ -126,10 +129,40 @@ export default function PokemonCard({
               #{String(dex).padStart(4, "0")}
             </div>
           </div>
-          <div className="flex flex-col items-end gap-1.5 shrink-0">
-            {view.types.map((t) => (
-              <TypeBadge key={t} type={t} />
-            ))}
+          {/* Badges and the clear button sit SIDE BY SIDE in the head's right
+              column rather than stacked, because the head is a fixed 56px
+              (D-080's arithmetic) and two badges already use 40px of it. A
+              third stacked item would overflow the band; a third column does
+              not change its height at all. */}
+          <div className="flex shrink-0 items-start gap-2">
+            <div className="flex flex-col items-end gap-1.5">
+              {view.types.map((t) => (
+                <TypeBadge key={t} type={t} />
+              ))}
+            </div>
+            {/* **A button only when it does something** — the rule D-078 set
+                and D-111 had to apply twice. `/compare` is the only caller
+                today, so the `null` default guards nothing yet; it is here so
+                that a read-only caller gets no control rather than a disabled
+                one, which is how the games index acquired an invisible button
+                that ate clicks (D-111).
+
+                28px, which clears WCAG 2.5.8's 24px floor outright rather than
+                through its spacing exception — the harder way to pass and the
+                one `npm run sweep:widths` does not have to argue about. Always
+                visible, never hover-only: a control that appears on hover is
+                undiscoverable and unreachable on touch. */}
+            {onClear && (
+              <button
+                type="button"
+                onClick={onClear}
+                aria-label={`Remove ${pokemon.name}`}
+                className="-mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-tertiary transition-colors hover:bg-elevated hover:text-primary"
+                style={shadowText}
+              >
+                <LuX aria-hidden />
+              </button>
+            )}
           </div>
         </div>
 
@@ -178,7 +211,7 @@ export default function PokemonCard({
             own position that is a property of the crop rather than a
             guarantee. Four entries of 1,259. */}
         <div
-          className="h-22 grid grid-cols-[auto_1fr] content-start items-baseline gap-x-3 gap-y-1.5 px-4 pt-1"
+          className="h-22 grid grid-cols-[auto_1fr] content-start items-start gap-x-3 gap-y-1.5 px-4 pt-1"
           style={statsShadow}
         >
           {/* The FORM row holds its space even for the 845 entries with one
@@ -186,8 +219,15 @@ export default function PokemonCard({
               would slide the ability row up and change the card's height for
               two thirds of the dex — the D-050 rule, and here it is also what
               keeps the three cards equal. */}
-          <span className="text-overline text-tertiary">Form</span>
-          <div className="min-w-0">
+          <span className={`${CHIP_CELL_LABEL} text-overline text-tertiary`}>
+            Form
+          </span>
+          {/* `CHIP_CELL` reserves one chip's height, so the em-dash branch is
+              the same box as the chips branch. Without it the placeholder was
+              24px against a chip's 21 — inline text taking its height from the
+              inherited line-height — and both labels shifted up by a few pixels
+              the moment a Pokémon had alternate forms. */}
+          <div className={CHIP_CELL}>
             {forms.length > 1 ? (
               <FormChips pokemon={pokemon} onSelect={onSelectForm} />
             ) : (
@@ -195,8 +235,13 @@ export default function PokemonCard({
             )}
           </div>
 
-          <span className="text-overline text-tertiary">Ability</span>
-          <div className="min-w-0">
+          <span className={`${CHIP_CELL_LABEL} text-overline text-tertiary`}>
+            Ability
+          </span>
+          {/* Same reservation: `AbilityChips` renders a sentence rather than
+              chips for the 14 entries with no abilities, and on every Gen 1 or
+              Gen 2 board. */}
+          <div className={CHIP_CELL}>
             <AbilityChips
               abilities={view.abilities}
               selected={ability}
@@ -220,7 +265,19 @@ export default function PokemonCard({
             both Pokémon, so these were the second of three copies of the same
             numbers on one screen (D-057). What the card keeps is what only it
             has — the identity, the artwork, the forms and the total. */}
-        <div className="hidden md:block px-4 pt-2 pb-4" style={statsShadow}>
+        {/* **These grow in too** (D-124). The centre card's bars animated and
+            the two beside them did not, which made the board look like it was
+            loading in halves.
+
+            Keyed on THIS card's own values, not the board's: a card re-animates
+            when its own Pokémon or era changes, and holds still when the other
+            side changes underneath it. The comparison card between them keys on
+            both, because both are what it is comparing. */}
+        <div
+          key={view.keys.map((k) => view.stats[k]).join(",")}
+          className="hidden md:block px-4 pt-2 pb-4"
+          style={statsShadow}
+        >
           {view.keys.map((k) => (
             <div
               key={k}
@@ -230,10 +287,12 @@ export default function PokemonCard({
                 {STAT_LABEL[k]}
               </span>
               <div className="h-2 rounded-full bg-track-glass overflow-hidden">
+                {/* `--target` with no `width`, the mechanism `CmpRow` and
+                    `DexRow` use: the keyframe animates width from 0 to it. */}
                 <div
-                  className="h-full rounded-full"
+                  className="h-full rounded-full animate-grow-w"
                   style={{
-                    width: statPct(view.stats[k]),
+                    "--target": statPct(view.stats[k]),
                     backgroundColor: typeColorVar(primary),
                   }}
                 />
