@@ -1,13 +1,17 @@
 import { describe, it, expect } from "vitest";
 import {
   CONTENDER_COUNTS,
+  HIGHER_PRESETS,
   DEFAULT_SETTINGS,
   NEW_SESSION,
   defaultSettings,
   higherQuestion,
+  hasChosenGame,
   higherUrl,
+  isPlayableRound,
   parseHigher,
   poolFor,
+  roundFor,
   resolveStats,
   scoreAnswer,
   setAsOf,
@@ -20,6 +24,7 @@ import {
   toggleType,
 } from "./games";
 import { CURRENT_GEN, eraView } from "./eras";
+import { getBySlug } from "./pokemon";
 import { GEN1_STAT_ORDER, STAT_ORDER } from "./stats";
 
 const params = (qs) => new URLSearchParams(qs);
@@ -352,8 +357,13 @@ describe("settings in the URL", () => {
     ]);
   });
 
-  it("omits every default from the URL", () => {
-    expect(higherUrl(DEFAULT_SETTINGS)).toBe("/games/higher");
+  it("omits every default from the URL, and marks the game as chosen", () => {
+    // `?play` is the marker that a game was CHOSEN, for the one settings object
+    // that writes nothing of its own (D-116). The defaults are still omitted —
+    // that is `settingsKey`, and it is unchanged, which is what keeps the saved
+    // streak filed under the same key (D-098).
+    expect(settingsKey(DEFAULT_SETTINGS)).toBe("");
+    expect(higherUrl(DEFAULT_SETTINGS)).toBe("/games/higher?play");
     expect(higherUrl({ ...DEFAULT_SETTINGS, stats: ["speed"] })).toBe(
       "/games/higher?stats=speed",
     );
@@ -411,5 +421,87 @@ describe("settings in the URL", () => {
     );
     expect(settingsKey(a)).toBe(settingsKey(b));
     expect(settingsKey(DEFAULT_SETTINGS)).toBe("");
+  });
+});
+
+// Home's games preview names its two contenders rather than drawing them
+// (D-043, D-044): Mienshao was reserved for that section by D-068 and Samurott
+// joined it when Beartic took the dex preview's slow end.
+//
+// Pinning a pair gives up the guarantee a generated round carries for free —
+// that the board cannot show a matchup the game would never deal — so these
+// assertions are what buys it back. They hold the hand-picked lineup to
+// `higherQuestion`'s own bar rather than to a number written down here.
+describe("Home's pinned games preview is a round the game could deal", () => {
+  const CAMEO = ["mienshao", "samurott"];
+  const STAT = "speed";
+  const contenders = CAMEO.map(getBySlug);
+
+  it("names two entries that are really in the dataset", () => {
+    expect(contenders.every(Boolean)).toBe(true);
+    expect(new Set(CAMEO).size).toBe(CAMEO.length);
+  });
+
+  it("draws both from the pool the default settings actually use", () => {
+    // Not merely "exists": an alternate form or a filtered-out entry is in the
+    // dataset and still unreachable by a default game, which would make the
+    // preview advertise a round nobody can be dealt.
+    const pool = new Set(poolFor(DEFAULT_SETTINGS).map((p) => p.slug));
+    for (const slug of CAMEO) expect(pool.has(slug)).toBe(true);
+  });
+
+  it("clears the generator's own floor, so it is a question rather than a coin flip", () => {
+    const round = roundFor(contenders, STAT);
+    expect(round.margin).toBeGreaterThan(0); // a tie has two right answers
+    expect(isPlayableRound(round)).toBe(true);
+  });
+
+  it("has exactly one winner, and it is the faster of the two", () => {
+    const round = roundFor(contenders, STAT);
+    const [fastest] = [...contenders].sort(
+      (a, b) =>
+        statValue(eraView(b, null), STAT) - statValue(eraView(a, null), STAT),
+    );
+    expect(round.winner).toBe(fastest);
+    expect(
+      round.values.filter((v) => v === Math.max(...round.values)),
+    ).toHaveLength(1);
+  });
+});
+
+// A bare URL asks how you want to play; a parameterised one plays (D-108). That
+// only holds if a chosen game always writes SOMETHING, which the Medium preset
+// did not — it is the defaults (D-116).
+describe("a chosen game always names itself in the URL", () => {
+  it("never lets a preset produce the bare URL", () => {
+    expect(HIGHER_PRESETS.length).toBeGreaterThan(0);
+    for (const p of HIGHER_PRESETS) {
+      expect(higherUrl(p.settings), p.id).not.toBe("/games/higher");
+      const { search } = new URL(higherUrl(p.settings), "https://x.test");
+      expect(hasChosenGame(search), p.id).toBe(true);
+    }
+  });
+
+  it("adds the marker only when the settings write nothing themselves", () => {
+    expect(higherUrl({ ...DEFAULT_SETTINGS, n: 4 })).toBe("/games/higher?n=4");
+    expect(higherUrl({ ...DEFAULT_SETTINGS, n: 4 })).not.toContain("play");
+  });
+
+  it("reads a bare URL as no game chosen", () => {
+    expect(hasChosenGame("")).toBe(false);
+    expect(hasChosenGame("?")).toBe(false);
+    expect(hasChosenGame("?play")).toBe(true);
+    expect(hasChosenGame("?n=4")).toBe(true);
+    // Both shapes, because the pages hold URLSearchParams and Layout holds a
+    // search string.
+    expect(hasChosenGame(new URLSearchParams("play"))).toBe(true);
+    expect(hasChosenGame(new URLSearchParams())).toBe(false);
+  });
+
+  it("keeps the marker out of the record key", () => {
+    // If `play` reached settingsKey, every existing saved streak would be
+    // orphaned and "did you press play" would become part of a game's identity.
+    for (const p of HIGHER_PRESETS)
+      expect(settingsKey(p.settings), p.id).not.toContain("play");
   });
 });

@@ -71,7 +71,13 @@ const SIZES = {
   // The games index thumbnail (D-043: a preview is the real component, not a
   // mockup). Short and fixed, so two of them sit inside a card.
   sm: {
-    box: "h-32",
+    // **`h-full`, not a fixed height.** This size is only ever used inside
+    // `gameThumbs`' band, and that band now has to hold either two panels in a
+    // row or FOUR in a 2x2 (D-117). A hardcoded `h-32` made the four-up case
+    // 256px of panels inside a 128px band, which overflowed the card and
+    // painted over the label under it. The grid owns the height; the panel
+    // fills its cell.
+    box: "h-full",
     pad: "gap-1 p-2",
     name: "text-caption",
     value: "text-stat-sm",
@@ -91,6 +97,7 @@ export default function ContenderPanel({
   size = "md",
   className = "",
   shake = false,
+  lazy = false,
 }) {
   const S = SIZES[size];
   // The whole typing, not just the primary: a dual type gets both colours
@@ -177,10 +184,23 @@ export default function ContenderPanel({
             The cap only bites where the fault is: below 475 nothing changes at
             all, and above it the panel trades a little dead space for an image
             that is not blown up. */}
+          {/* **`lazy` is off by default, and that is the arena's answer rather
+            than an oversight.** In a game this artwork IS the subject and it is
+            above the fold, so eager is right — React 19 emits a
+            `<link rel="preload">` for any image without `loading="lazy"`, which
+            is what you want for the thing the round is about.
+
+            Home is the other case: the preview sits below the fold, and its two
+            sibling previews (`FeaturedDex`, `FeaturedTypes`) already mark their
+            art lazy for exactly that reason. Without this prop Home preloaded
+            two 475px artworks before the reader had scrolled to them. A loading
+            hint is not a restyle, so this stays inside D-043's rule that a
+            preview may subtract from its tool but never re-dress it. */}
           <img
             src={artworkFor(pokemon)}
             alt=""
             decoding="async"
+            loading={lazy ? "lazy" : undefined}
             className={`h-full w-full object-contain ${ART_CAP}`}
           />
         </span>

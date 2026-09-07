@@ -16,12 +16,19 @@ import { STAT_ORDER } from "../lib/stats";
 // FeaturedComparison on CmpRow (D-032).
 //
 // Only the wrapper differs from the real table: a static header instead of sort
-// buttons, no sticky positioning, and no windowing (there are six rows).
+// buttons, no sticky positioning, and no windowing — the preview is one screen
+// of rows, where the tool is 1,259 of them.
 
-// The easter egg (D-044): these six are the author's team from the Black & White
-// playthrough the project came out of (00_brainstorm §1). All six are Gen 5, and
-// two of them are the site's mascots — so Volcarona and Chandelure appear here
-// and in the flagship board above. Nothing marks it on screen.
+// The easter egg (D-044): these seven are the author's team from the Black &
+// White playthrough the project came out of (00_brainstorm §1). All seven are
+// Gen 5, and two of them are the site's mascots — so Volcarona and Chandelure
+// appear here and in the flagship board above. Nothing marks it on screen.
+//
+// **Beartic is the HM mule**, and it earns its place here for a reason beyond
+// sentiment: at 50 Speed it is the slowest of the seven, which makes it the
+// other end of this preview's sort. The two flanking figures below are that
+// sort's ends, so adding it is what gives the pair a real spread — Archeops at
+// 110 against Beartic at 50 — instead of 110 against Samurott's 70.
 const TEAM = [
   "samurott",
   "krookodile",
@@ -29,6 +36,7 @@ const TEAM = [
   "volcarona",
   "archeops",
   "mienshao",
+  "beartic",
 ];
 
 const PREVIEW_SORT = "speed";
@@ -73,7 +81,9 @@ function Head({ colKey, className, align = "center" }) {
 // D-069), and neither is a decorative pick: they are the **ends of the sort** —
 // whoever the comparator put in the top row and whoever it put in the last —
 // read off ROWS rather than named here, so they stay correct if the dataset or
-// the team changes. Today that is Archeops at 110 Speed and Samurott at 70.
+// the team changes. Today that is Archeops at 110 Speed and Beartic at 50 —
+// and that pair changed by itself when Beartic joined the team, which is the
+// derivation doing its job rather than a decision needing to be re-made.
 //
 // They flank the table's top edge **symmetrically**: same size, mirrored
 // rotation, clipped by the same edge. They were first placed diagonally, each at
@@ -140,9 +150,13 @@ export default function FeaturedDex() {
           aria-rowcount={ROWS.length}
           className="w-full table-fixed border-collapse"
         >
+          {/* The count is READ off the rows rather than written out. It said
+              "Six" for as long as there were six, which is the kind of literal
+              that goes quietly wrong the moment the team gains a member — and
+              a screen reader is the one audience that cannot see that it has. */}
           <caption className="sr-only">
-            Six Pokémon sorted by base {SORT_LONG_LABEL[PREVIEW_SORT]},
-            descending — a preview of the dex table.
+            {ROWS.length} Pokémon sorted by base {SORT_LONG_LABEL[PREVIEW_SORT]}
+            , descending — a preview of the dex table.
           </caption>
           <thead>
             <tr>

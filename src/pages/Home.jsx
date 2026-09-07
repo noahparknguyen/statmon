@@ -9,6 +9,7 @@ import FeaturedGames from "../components/FeaturedGames";
 import SpriteWall from "../components/SpriteWall";
 import PageHeader from "../components/PageHeader";
 import { getBySlug, artworkFor } from "../lib/pokemon";
+import { compareUrl } from "../lib/compareUrl";
 
 // Home. The page opens on a full-bleed wall of sprites (D-070) with the wordmark
 // on it, then runs hero -> one labelled section per shipped tool -> tools row.
@@ -102,11 +103,30 @@ export default function Home() {
             </div>
           )}
 
-          {/* The flagship keeps its own CTA copy (D-023) where the sections below
-            say "Open the …" — it is the first thing anyone is invited to do. */}
+          {/* **"Open the comparison", not "Try it out".** D-023 gave the
+            flagship its own CTA copy on the grounds that it is the first thing
+            anyone is invited to do — but "Try it out" was the only string on
+            the site written as a pitch rather than a description
+            (06_style_guide §14.1 rule 4), and the other three sections all say
+            "Open the …". What made the flagship distinct was never the verb: it
+            is the mascots, the full-width board and its own section, and all of
+            that survives the change.
+
+            **It opens the board it is standing under**, rather than an empty
+            tool. The type section has always done this — its CTA carries
+            Krookodile's typing — and the inconsistency was the flagship's:
+            clicking through from a live Volcarona-vs-Chandelure board landed on
+            two empty slots and a "Pick two Pokémon to compare." The preview is
+            the promise, so the link keeps it. */}
+          {/* Guarded, because this button sits OUTSIDE the `V && C` block that
+              renders the board: the two lookups are filtered rather than
+              trusted everywhere else on this page, and reaching into `.slug`
+              here would have been the one place a renamed slug crashed Home
+              instead of quietly dropping a figure. Falls back to the empty
+              tool, which is where this link went before. */}
           <div className="mt-8 flex justify-center">
-            <Button to="/compare">
-              Try it out
+            <Button to={V && C ? compareUrl(V.slug, C.slug) : "/compare"}>
+              Open the comparison
               <LuArrowRight aria-hidden />
             </Button>
           </div>
@@ -116,10 +136,16 @@ export default function Home() {
           board above is the flagship and keeps its own treatment — mascots, the
           full-width board, its own CTA — while sharing this section's heading
           block; this is the repeatable shell each later tool adds. */}
+        {/* The preview is the Black & White team read by Speed, descending
+            (D-044), so the CTA opens the dex under that same reading: Gen 5,
+            sorted by Speed. It is the honest widening of what is on screen —
+            the same question asked of the whole generation instead of seven
+            rows — rather than a bare /dex that drops you on an unsorted
+            National Dex and makes you redo the sort you were just shown. */}
         <FeaturePreview
           title="Dex"
           description="Every Pokémon, sorted by any stat."
-          to="/dex"
+          to="/dex?sort=speed&dir=desc&gen=5"
           cta="Open the dex"
         >
           <FeaturedDex />

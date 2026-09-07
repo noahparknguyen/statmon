@@ -282,6 +282,43 @@ const MAX_DRAWS = 200;
  * state now that the filters can be narrowed by hand, so the arena renders it
  * rather than assuming it away.
  */
+/**
+ * The round a given LINEUP produces on a given stat.
+ *
+ * Split out of `higherQuestion` so that a round with fixed contenders — Home's
+ * preview names two (D-043, D-044) — is built by the generator's own code
+ * rather than by a second copy of this arithmetic that could disagree about
+ * which entry won.
+ *
+ * `winner` is the entry itself rather than an index, and `margin` is the gap
+ * between first and second, which is what decides whether the round is worth
+ * asking at all.
+ */
+export function roundFor(contenders, stat, asof = null) {
+  const values = contenders.map((p) => statValue(eraView(p, asof), stat));
+  const ranked = [...values].sort((a, b) => b - a);
+  return {
+    stat,
+    asof,
+    contenders,
+    values,
+    winner: contenders[values.indexOf(ranked[0])],
+    margin: ranked[0] - ranked[1],
+  };
+}
+
+/**
+ * Whether a round is one `higherQuestion` would have RETURNED rather than
+ * redrawn — a tie has two right answers, and a gap under the stat's floor is a
+ * coin flip wearing a question's clothes.
+ *
+ * Exported so a hand-picked lineup can be held to the generator's own bar
+ * instead of being trusted: Home's preview pins its contenders, and this is
+ * what keeps that from quietly advertising a round the game would never deal.
+ */
+export const isPlayableRound = (round) =>
+  !!round && round.margin >= floorFor(round.stat);
+
 export function higherQuestion(settings = DEFAULT_SETTINGS, rng = Math.random) {
   const { n = 2, asof = null } = settings;
   const pool = poolFor(settings);
@@ -293,24 +330,13 @@ export function higherQuestion(settings = DEFAULT_SETTINGS, rng = Math.random) {
   let best = null;
 
   for (let draw = 0; draw < MAX_DRAWS; draw++) {
-    const contenders = sample(pool, n, rng);
-    const values = contenders.map((p) => statValue(eraView(p, asof), key));
-    const ranked = [...values].sort((a, b) => b - a);
-    const margin = ranked[0] - ranked[1];
+    const round = roundFor(sample(pool, n, rng), key, asof);
 
     // A tie for first is not a hard round, it is a broken one: two right
     // answers and the game can only accept one. Never returned, at any margin.
-    if (margin === 0) continue;
+    if (round.margin === 0) continue;
 
-    const round = {
-      stat: key,
-      asof,
-      contenders,
-      values,
-      winner: contenders[values.indexOf(ranked[0])],
-      margin,
-    };
-    if (margin >= floor) return round;
+    if (round.margin >= floor) return round;
     // Knowable but tight. Kept only in case the floor is never cleared, so a
     // narrow pool still plays rather than rendering nothing.
     best ??= round;
@@ -399,9 +425,41 @@ export function parseHigher(searchParams) {
  * below is this string, and it is what the saved best streak is filed under
  * (D-098). Two ways of writing the same game would be two records.
  */
+/**
+ * The marker that says a game has been CHOSEN, for the one settings object that
+ * writes no parameters of its own.
+ *
+ * A bare URL asks how you want to play and a parameterised one plays
+ * ([D-108](../../docs/03_decisions.md)) — except the Medium preset **is** the
+ * defaults, and defaults stay out of the URL, so picking it produced
+ * `/games/higher` and the page had to remember in React state that you had
+ * chosen. That state could not survive a reload: picking Medium and refreshing
+ * put you back on the picker, and the link you copied did not carry the game.
+ *
+ * `?play` closes it by making the invariant true by construction — **a chosen
+ * game always has a non-empty query** — so "have they chosen" is a fact about
+ * the URL rather than a flag beside it. That is what lets `Layout` read it too,
+ * without a second list of paths or a copy of this rule.
+ *
+ * It is emitted ONLY when the settings would otherwise write nothing, so
+ * `/games/higher?stats=speed` stays clean, and it is deliberately outside
+ * `settingsKey`: that string is what the saved best streak is filed under
+ * (D-098), and adding a marker to it would orphan every existing record and
+ * make "did you press play" part of a game's identity.
+ */
+export const PLAY_PARAM = "play";
+
+/**
+ * Whether a URL names a game rather than asking for one. Accepts a search
+ * string or a `URLSearchParams`, because the pages hold one and `Layout` holds
+ * the other.
+ */
+export const hasChosenGame = (search) =>
+  [...new URLSearchParams(search).keys()].length > 0;
+
 export function higherUrl(settings = DEFAULT_SETTINGS) {
   const qs = settingsKey(settings);
-  return qs ? `/games/higher?${qs}` : "/games/higher";
+  return `/games/higher?${qs || PLAY_PARAM}`;
 }
 
 export function settingsKey({
