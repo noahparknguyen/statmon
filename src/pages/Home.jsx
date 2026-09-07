@@ -5,6 +5,7 @@ import FeaturedComparison from "../components/FeaturedComparison";
 import FeaturePreview from "../components/FeaturePreview";
 import FeaturedDex from "../components/FeaturedDex";
 import FeaturedTypes from "../components/FeaturedTypes";
+import FeaturedGames from "../components/FeaturedGames";
 import SpriteWall from "../components/SpriteWall";
 import PageHeader from "../components/PageHeader";
 import { getBySlug, artworkFor } from "../lib/pokemon";
@@ -25,21 +26,26 @@ import { getBySlug, artworkFor } from "../lib/pokemon";
 const V = getBySlug("volcarona");
 const C = getBySlug("chandelure");
 
-// The live ones link to themselves — a row advertising tools that cannot be
-// clicked is a dead end. "Compare" rather than "Comparison": the nav, the
-// section heading and the route all say Compare, and one tool with three names
-// was three chances to look like three tools (D-067).
+// Every chip links to itself — a row advertising tools that cannot be clicked
+// is a dead end. "Compare" rather than "Comparison": the nav, the section
+// heading and the route all say Compare, and one tool with three names was
+// three chances to look like three tools (D-067).
+//
+// The greyed "soon" variant this row used to carry for Games is gone with the
+// last unlinked entry (D-091). Keeping a branch for a tool that does not exist
+// yet is the `StatBar.jsx` mistake — code held for a future caller — and the
+// games index is the honest home for "not built yet", where it can say what the
+// thing will be rather than just that it is coming.
 const TOOLS = [
   { label: "Compare", to: "/compare" },
   { label: "Dex table", to: "/dex" },
   { label: "Type chart", to: "/types" },
-  { label: "Games · soon" },
+  { label: "Games", to: "/games" },
 ];
 
 const TOOL_CHIP =
-  "text-caption inline-block rounded-full border px-3 py-1 transition-colors";
-const TOOL_LIVE = "text-accent hover:text-accent-hover";
-const LIVE_BORDER = {
+  "text-caption inline-block rounded-full border px-3 py-1 text-accent transition-colors hover:text-accent-hover";
+const TOOL_BORDER = {
   borderColor: "color-mix(in srgb, var(--color-accent) 45%, transparent)",
 };
 
@@ -128,6 +134,18 @@ export default function Home() {
           <FeaturedTypes />
         </FeaturePreview>
 
+        {/* The fourth section, and the one D-043 named as the limit: a stack of
+            full previews stops working at about four, so a fifth tool should
+            become a grid of compact ones rather than another 500px band. */}
+        <FeaturePreview
+          title="Games"
+          description="The same data, asking you the questions."
+          to="/games"
+          cta="Open the games"
+        >
+          <FeaturedGames />
+        </FeaturePreview>
+
         {/* Labelled so a screen reader announces what the list is; without it
           this is four bare items with no context. */}
         <ul
@@ -136,21 +154,9 @@ export default function Home() {
         >
           {TOOLS.map((t) => (
             <li key={t.label}>
-              {t.to ? (
-                <Link
-                  to={t.to}
-                  className={`${TOOL_CHIP} ${TOOL_LIVE}`}
-                  style={LIVE_BORDER}
-                >
-                  {t.label}
-                </Link>
-              ) : (
-                <span
-                  className={`${TOOL_CHIP} border-border-subtle text-tertiary`}
-                >
-                  {t.label}
-                </span>
-              )}
+              <Link to={t.to} className={TOOL_CHIP} style={TOOL_BORDER}>
+                {t.label}
+              </Link>
             </li>
           ))}
         </ul>

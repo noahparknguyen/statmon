@@ -5,7 +5,6 @@
 // See docs/06_style_guide.md (tokens) and docs/04_design.md (rationale).
 
 import { useState } from "react";
-import { LuX } from "react-icons/lu";
 import Button from "../components/Button";
 import PageHeader from "../components/PageHeader";
 import { PAGE_CONTENT } from "../components/pageChrome";
@@ -15,16 +14,11 @@ import SearchBar from "../components/SearchBar";
 import FormChips from "../components/FormChips";
 import AbilityChips from "../components/AbilityChips";
 import StabChip, { StabCaption, StabLabel } from "../components/StabChip";
+import FilterChip from "../components/FilterChip";
 import GenerationStrip from "../components/GenerationStrip";
 import { getBySlug } from "../lib/pokemon";
 import { generationOptions } from "../lib/eras";
-import { TYPES, capitalize, typeColorVar, typeTextVar } from "../lib/types";
-import {
-  CHIP,
-  CHIP_OFF,
-  CHIP_ON,
-  CHIP_ON_FILLED,
-} from "../components/chipStyles";
+import { TYPES, capitalize } from "../lib/types";
 
 const noop = () => {};
 
@@ -143,37 +137,6 @@ function ChipRow({ label, note, children }) {
       {children}
       <span className="text-caption text-tertiary">{note}</span>
     </div>
-  );
-}
-
-// The dex's filter chip, rebuilt from the shared constants rather than imported:
-// DexFilters keeps its Chip private and wires it to URL state, which this page
-// has none of. It is the one specimen here that is a copy, so it uses the same
-// exported classes the real one does — if those change, this changes with them.
-function DemoChip({ label, color, active = false }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      className={`${CHIP} min-h-9 gap-1.5 px-3 py-1.5 transition-colors ${
-        active ? (color ? CHIP_ON_FILLED : CHIP_ON) : CHIP_OFF
-      }`}
-      style={
-        active && color
-          ? { backgroundColor: typeColorVar(color), color: typeTextVar() }
-          : undefined
-      }
-    >
-      {!active && color && (
-        <span
-          aria-hidden
-          className="size-1.5 shrink-0 rounded-full"
-          style={{ backgroundColor: typeColorVar(color) }}
-        />
-      )}
-      {label}
-      {active && <LuX aria-hidden />}
-    </button>
   );
 }
 
@@ -383,15 +346,29 @@ export default function StyleGuide() {
             ) : null}
           </ChipRow>
 
+          {/* The real `FilterChip`, not a copy of it (D-095). This page carried
+              a hand-rebuilt `DemoChip` under a comment explaining that the dex
+              "keeps its Chip private" — which stopped being true at D-058, when
+              the dex's chip and the type picker's became one exported
+              component. It is the same fault D-090 found in this same file one
+              session earlier: a specimen page makes copies feel legitimate, and
+              the rule is that a specimen is a **call site**. */}
           <ChipRow
             label="Filter chips · 36px, with a colour dot and a dismiss ×"
-            note="Selected type chips take the audited TypeBadge pairing (D-027)."
+            note="Selected type chips take the audited TypeBadge pairing (D-027). The last pair is the single-select variant, which drops the × because nothing there can be dismissed (D-091)."
           >
             <div className="flex flex-wrap gap-1.5">
-              <DemoChip label={capitalize(t1)} color={t1} />
-              <DemoChip label={capitalize(t2)} color={t2} active />
-              <DemoChip label="Gen 5" />
-              <DemoChip label="Gen 6" active />
+              <FilterChip label={capitalize(t1)} color={t1} onClick={noop} />
+              <FilterChip
+                label={capitalize(t2)}
+                color={t2}
+                active
+                onClick={noop}
+              />
+              <FilterChip label="Gen 5" onClick={noop} />
+              <FilterChip label="Gen 6" active onClick={noop} />
+              <FilterChip label="Speed" removable={false} onClick={noop} />
+              <FilterChip label="Any" active removable={false} onClick={noop} />
             </div>
           </ChipRow>
 
