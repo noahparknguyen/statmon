@@ -51,7 +51,10 @@ export default function Dex() {
   }).length;
 
   const setView = (next) =>
-    navigate(`/dex${viewToSearch(next)}`, { replace: true });
+    navigate(`/dex${viewToSearch(next)}`, {
+      replace: true,
+      preventScrollReset: true,
+    });
 
   // Below md the six stat columns are hidden, so the table shows the one column
   // being sorted by instead — sort by Speed on a phone and Speed is the number

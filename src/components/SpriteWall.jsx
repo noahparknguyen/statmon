@@ -21,8 +21,8 @@ import { ALL_POKEMON, spriteFor } from "../lib/pokemon";
 // is what a 390px phone needs, where the tiles halve and 72vh is over six rows
 // tall — at 4 rows the top of the wall visibly repeated a third of the way
 // down. 98 sprites, ~108KB, and every one of them is already cached by the dex.
-export const WALL_COLS = 14;
-export const WALL_ROWS = 7;
+const WALL_COLS = 14;
+const WALL_ROWS = 7;
 export const WALL_TILES = WALL_COLS * WALL_ROWS;
 
 const SPECIES = ALL_POKEMON.filter((p) => p.isDefault);

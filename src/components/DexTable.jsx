@@ -53,8 +53,19 @@ function SortHeader({ colKey, view, onSort, className, align = "center" }) {
             is appended for screen readers. It is appended rather than replacing
             the name with aria-label because WCAG 2.5.3 (Label in Name) requires
             the accessible name to contain the visible text — "Sort by Attack"
-            does not contain "Atk", so speech control could not act on it. */}
-        <span className="sr-only"> sort by {SORT_LONG_LABEL[colKey]}</span>
+            does not contain "Atk", so speech control could not act on it.
+
+            **Two of the nine are not abbreviations**, and appending the long
+            name to those produced "Name sort by Name" and "HP sort by HP".
+            Nothing failed — it is only heard, never seen, which is how it
+            survived. The name is added only when it says something the visible
+            label did not, and the comma is what stops "Atk sort by Attack"
+            running together as one word. */}
+        <span className="sr-only">
+          {SORT_LONG_LABEL[colKey] === SORT_LABEL[colKey]
+            ? ", sort"
+            : `, sort by ${SORT_LONG_LABEL[colKey]}`}
+        </span>
         <Caret aria-hidden className={active ? "" : "invisible"} />
       </button>
     </th>

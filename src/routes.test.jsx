@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { describe, it, expect } from "vitest";
 import { renderToString } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
@@ -10,12 +10,14 @@ import TypeChart from "./pages/TypeChart";
 import Games from "./pages/Games";
 import GameHigher from "./pages/GameHigher";
 import GameEffective from "./pages/GameEffective";
-import Credits from "./pages/Credits";
+import About from "./pages/About";
 import StyleGuide from "./pages/StyleGuide";
 import NotFound from "./pages/NotFound";
 import { ALL_POKEMON, getBySlug, spriteFor } from "./lib/pokemon";
+import { CURRENT_GEN } from "./lib/eras";
 import { WALL_TILES } from "./components/SpriteWall";
 import { sortRows } from "./lib/dexTable";
+import { compareUrl } from "./lib/compareUrl";
 import { HIGHER_PRESETS, higherUrl } from "./lib/games";
 
 // Renders every route to a string and asserts it produced something. This is a
@@ -56,7 +58,7 @@ const routes = [
         element: <GameEffective />,
         handle: { title: "Effective", bare: true },
       },
-      { path: "credits", element: <Credits /> },
+      { path: "about", element: <About /> },
       { path: "style", element: <StyleGuide /> },
       { path: "*", element: <NotFound /> },
     ],
@@ -99,7 +101,7 @@ describe.each([
   "/games/higher?stats=speed&n=4",
   "/games/higher?stats=special&asof=1",
   "/games/higher?stats=speed&gen=1&type=water",
-  "/credits",
+  "/about",
   "/style",
   "/no-such-page",
 ])("route %s", (path) => {
@@ -119,7 +121,7 @@ describe.each([
   ["/games", "Games"],
   ["/games/higher", "Higher"],
   ["/games/effective", "Effective"],
-  ["/credits", "Credits"],
+  ["/about", "About"],
   ["/style", "Style"],
   ["/no-such-page", "Statmon"],
 ])("route %s", (path, expected) => {
@@ -285,7 +287,7 @@ describe("the type chart route (D-051)", () => {
     // A tool nobody can navigate to is not shipped. The Home chip going live
     // is D-043's rule; this is the header, which is easy to forget because the
     // page works perfectly when you type the URL yourself.
-    for (const path of ["/", "/compare", "/dex", "/types", "/credits"]) {
+    for (const path of ["/", "/compare", "/dex", "/types", "/about"]) {
       expect(render(path)).toContain('href="/types"');
     }
   });
@@ -478,6 +480,146 @@ describe("abilities", () => {
   });
 });
 
+// A dex bar carries the whole typing, not just the primary (D-115). The value
+// itself is unit-tested in types.test.js; these assert it survives the trip
+// through React's style serialisation, which is where the one dangerous mistake
+// lives.
+// The Form and Ability rows hold one chip's height whether or not there are
+// chips (D-125). Both placeholders — the em-dash for the 845 single-form
+// entries, and the sentence `AbilityChips` renders for a Gen 1 board — are
+// inline text, so their boxes took the INHERITED line-height (24px) rather than
+// a chip's 21, and the labels shifted the moment a Pokémon had a form.
+//
+// The offsets themselves are a browser measurement and belong to
+// `npm run sweep:widths`; what a server render can hold is that both cells
+// still reserve the box.
+describe("the card's controls band does not twitch", () => {
+  const RESERVED = "min-h-[21px]";
+
+  it.each([
+    // A Pokémon with no alternate forms against one with Megas — the case that
+    // was reported.
+    "/compare/volcarona/vs/charizard",
+    // A Gen 1 board, where NEITHER card has abilities and both fall to the
+    // sentence placeholder.
+    "/compare/charizard/vs/blastoise?asof=1",
+  ])("reserves a chip's height on both rows of both cards at %s", (path) => {
+    const page = render(path);
+    // Two cards x two rows x BOTH SIDES of each row — the label carries the
+    // same reservation as the cell (D-125), which is what makes its position
+    // independent of whether the cell holds chips, a dash, or a wrapped row.
+    expect((page.match(/min-h-\[21px\]/g) ?? []).length).toBe(8);
+  });
+
+  it("holds the label steady when the chips wrap to a second line", () => {
+    // Hydrapple has the widest ability roster in the dex — three chips over two
+    // lines — and Happiny beside it has one. Both labels must still sit in a
+    // 21px box; the cell below them is free to grow.
+    const page = render("/compare/hydrapple/vs/happiny");
+    expect((page.match(/min-h-\[21px\]/g) ?? []).length).toBe(8);
+    // The band aligns on `items-start`, not `items-baseline`: a wrapped flex row
+    // takes its baseline from its first line, which moves as the row grows.
+    expect(page).toContain("items-start");
+    expect(page).not.toContain("items-baseline");
+  });
+
+  it("has no band to reserve on the empty card, which is deliberate", () => {
+    // `EmptyCard` merges head, controls and portrait into one zone rather than
+    // mirroring the filled card's three bands (D-083), so there is no Form or
+    // Ability row there to hold open. Asserted rather than assumed, because the
+    // test above would otherwise look like it is missing a case.
+    const page = render("/compare");
+    expect(page).toContain("No Pokémon selected");
+    expect(page).not.toContain(RESERVED);
+  });
+});
+
+// The last two items off D-043's "partially shipped" list (D-123, D-124).
+describe("the comparison board's own bars, and Random", () => {
+  it("grows in EVERY bar on the board, not only the middle card", () => {
+    // `.animate-grow-w` is the shared grow-in. Home's board has had it since
+    // D-023; the tool it advertises rendered instantly for as long.
+    //
+    // The count is what makes this mean something. The comparison card alone
+    // renders 24 — six mirrored rows and six per-stat cards, two bars each —
+    // and the two Pokémon cards add six apiece. So a floor above 24 is the
+    // assertion that the SIDE cards animate, which is what shipped broken the
+    // first time: the middle grew in and the two beside it did not, and the
+    // board looked like it was loading in halves.
+    const page = render("/compare/volcarona/vs/chandelure");
+    const animated = (page.match(/animate-grow-w/g) ?? []).length;
+    const sideTracks = (page.match(/bg-track-glass/g) ?? []).length;
+    expect(sideTracks).toBe(12); // two cards, six stats each
+    expect(animated).toBeGreaterThan(24);
+  });
+
+  it("has nothing to animate on an empty board", () => {
+    // Non-vacuous: proves the class above comes from bars that exist rather
+    // than from something the page always renders.
+    expect(render("/compare")).not.toContain("animate-grow-w");
+  });
+
+  it("leaves the real dex table static", () => {
+    // The dex windows its rows, so rows mount continuously while scrolling and
+    // every one of them would animate on arrival (D-067). Only Home's preview
+    // passes `animate`, and this is the guard that keeps it that way.
+    expect(render("/dex")).not.toContain("animate-grow-w");
+  });
+
+  it("offers a random matchup, and offers it on an empty board", () => {
+    // The one control here that works with nothing selected — which is the
+    // state it is most useful in.
+    for (const path of ["/compare", "/compare/volcarona/vs/chandelure"]) {
+      const page = render(path);
+      const buttons = [
+        ...page.matchAll(/<button[^>]*>[\s\S]*?<\/button>/g),
+      ].map((m) => m[0]);
+      const random = buttons.find((b) => b.includes(">Random</button>"));
+      expect(random, path).toBeTruthy();
+      // The ATTRIBUTE, not the substring: every Button carries
+      // `disabled:opacity-40` in its class list, so a plain `toContain`
+      // matches the styling of a button that is not disabled at all.
+      expect(random, `${path} — Random must never be disabled`).not.toMatch(
+        /\sdisabled=""/,
+      );
+      // And Swap on an empty board IS disabled, which is what makes the
+      // assertion above mean something.
+      if (path === "/compare") {
+        const swap = buttons.find((b) => b.includes(">Swap</button>"));
+        expect(swap).toMatch(/\sdisabled=""/);
+      }
+    }
+  });
+});
+
+describe("the dex bars carry both of a dual type's colours", () => {
+  it("paints a gradient for a dual type and names both colours", () => {
+    // Bulbasaur is Grass/Poison and leads the default National Dex order.
+    const page = render("/dex");
+    expect(page).toContain("--color-type-grass");
+    expect(page).toContain("--color-type-poison");
+    expect(page).toContain("linear-gradient");
+  });
+
+  it("emits it as `background`, which is the whole reason this test exists", () => {
+    // A gradient is a background IMAGE. Setting it through `backgroundColor`
+    // serialises to `background-color: linear-gradient(…)`, which every browser
+    // silently discards — the bar simply vanishes, with nothing failing. So the
+    // property name is asserted, not just the value.
+    const page = render("/dex");
+    expect(page).toMatch(/style="[^"]*background:\s*linear-gradient/);
+    expect(page).not.toMatch(/background-color:\s*linear-gradient/);
+  });
+
+  it("leaves a single type a flat wash rather than a gradient of one colour", () => {
+    // Charmander is mono-Fire. Scoped to its row so the assertion cannot be
+    // satisfied by some other row's fill.
+    const page = render("/dex?q=charmander");
+    expect(page).toContain("--color-type-fire");
+    expect(page).not.toContain("linear-gradient");
+  });
+});
+
 describe("the dex route", () => {
   it("renders a windowed slice of rows, not all 1,259", () => {
     const rowCount = (render("/dex").match(/aria-rowindex/g) ?? []).length;
@@ -580,6 +722,7 @@ describe("Home's feature previews (D-043)", () => {
     "volcarona",
     "archeops",
     "mienshao",
+    "beartic",
   ];
 
   it("previews the dex with the Black & White team", () => {
@@ -594,7 +737,7 @@ describe("Home's feature previews (D-043)", () => {
       (p) => p.name,
     );
     expect(expected[0]).toBe("Archeops");
-    // Scoped to the preview table: two of the six are the flagship's mascots and
+    // Scoped to the preview table: two of them are the flagship's mascots and
     // appear higher up the page, so searching the whole document would find
     // the flagship board's copy of them rather than the row.
     const page = html();
@@ -610,14 +753,57 @@ describe("Home's feature previews (D-043)", () => {
 
   it("shows only the preview slice, never the whole dex", () => {
     const rows = (html().match(/aria-rowindex/g) ?? []).length;
-    // Six preview rows; the flagship board has none.
+    // One row per team member; the flagship board has none.
     expect(rows).toBe(TEAM.length);
     expect(html()).toContain(`aria-rowcount="${TEAM.length}"`);
   });
 
-  it("links each preview to the tool it advertises", () => {
-    expect(html()).toContain('href="/compare"');
-    expect(html()).toContain('href="/dex"');
+  // The href immediately preceding a CTA's label is that anchor's own, which is
+  // how these get scoped to the BUTTON rather than to the page. Written this way
+  // because the previous version of this test asserted `href="/compare"` and
+  // `href="/dex"` and passed no matter what the CTAs did: the nav and the tools
+  // chip row at the foot of the page both carry those bare links, so it was
+  // matching them instead. It went on passing when the CTAs changed, which is
+  // the failure mode a test like this exists to not have.
+  const ctaHref = (page, label) => {
+    const before = page.slice(0, page.indexOf(label));
+    const hrefs = [...before.matchAll(/href="([^"]*)"/g)];
+    return hrefs.at(-1)?.[1];
+  };
+
+  it("opens each preview's CTA on the exact view it was advertising", () => {
+    const page = html();
+    // The flagship board IS this matchup, so its CTA is that matchup rather
+    // than two empty slots. All four CTAs say "Open the …" since D-126 —
+    // "Try it out" was the one string on the site written as a pitch.
+    expect(ctaHref(page, "Open the comparison")).toBe(
+      compareUrl("volcarona", "chandelure"),
+    );
+    // The dex preview is the Gen 5 team read by Speed, descending (D-044), so
+    // the CTA is the whole of Gen 5 under that same reading. `&` is escaped in
+    // rendered HTML.
+    expect(ctaHref(page, "Open the dex")).toBe(
+      "/dex?sort=speed&amp;dir=desc&amp;gen=5",
+    );
+    // Krookodile's typing, which is what the type preview is answering for.
+    expect(ctaHref(page, "Open the type chart")).toBe("/types/ground/dark");
+    // The games section advertises two games, so the index is the honest
+    // destination — deep-linking one would hide the other.
+    expect(ctaHref(page, "Open the games")).toBe("/games");
+  });
+
+  // Home's games preview is a cameo like every other section (D-044): Mienshao,
+  // reserved for it by D-068, and Samurott. The round itself is held to the
+  // generator's bar in games.test.js; this is the half that asserts the two
+  // actually reach the page.
+  it("previews the games with named contenders, not a random draw", () => {
+    const page = html();
+    const preview = page.slice(page.indexOf("Which has the higher"));
+    expect(preview).toContain("Mienshao");
+    expect(preview).toContain("Samurott");
+    // Resolved, so the preview shows the whole loop rather than a question —
+    // the accent ring is what marks the winner.
+    expect(preview).toContain("--color-accent");
   });
 
   it("keeps one h1 and puts the preview heading below it", () => {
@@ -651,7 +837,12 @@ describe("Home's feature previews (D-043)", () => {
     // shipped (D-091), which is the count D-043 named as this pattern's limit —
     // a fifth tool should become a grid of compact previews rather than a fifth
     // full-height band.
-    expect((html().match(/<h2/g) ?? []).length).toBe(4);
+    // Scoped to <main>: the footer carries an `sr-only` <h2> of its own so its
+    // "Tools" and "Built with" groups do not skip from the page's <h1> to an
+    // <h3> (D-119). That heading is not one of Home's sections.
+    const doc = html();
+    const main = doc.slice(doc.indexOf("<main"), doc.indexOf("</main>"));
+    expect((main.match(/<h2/g) ?? []).length).toBe(4);
   });
 
   it("drops the sr-only heading that named the mascots, not the tool", () => {
@@ -695,11 +886,17 @@ describe("Home's feature previews (D-043)", () => {
   it("samples the hero wall across every generation", () => {
     const html = render("/");
     const sprites = html.match(/image-rendering:pixelated/g) ?? [];
-    // The wall's 2x2 tiling, plus the six dex rows, the flagship board's two
+    // The wall's 2x2 tiling, plus one per dex row, the flagship board's two
     // heads, and Krookodile's in the type preview's heading (D-075). The 2x2 is
     // what makes the diagonal loop seam-free, so a change to it is a change to
     // the animation and should fail here.
-    expect(sprites.length).toBe(WALL_TILES * 4 + 9);
+    //
+    // The dex rows are COUNTED off TEAM rather than folded into a literal. This
+    // was `+ 9`, which silently meant "six rows and three other sprites" — so
+    // adding a seventh team member failed here with an off-by-one that said
+    // nothing about the wall it is named for.
+    const OTHER_SPRITES = TEAM.length + 3;
+    expect(sprites.length).toBe(WALL_TILES * 4 + OTHER_SPRITES);
     // The sample starts at the top of the dex.
     expect(html).toContain(spriteFor(getBySlug("bulbasaur")));
   });
@@ -800,8 +997,17 @@ describe("the real router's lazy routes (D-060)", () => {
     const children = realRoutes[0].children;
     const lazyRoutes = children.filter((r) => r.lazy);
 
-    // Home is deliberately eager; everything else is split.
-    expect(lazyRoutes.length).toBe(children.length - 1);
+    // Home is deliberately eager, and /credits is a redirect with no component
+    // to split (D-118); everything else is lazily imported. Both exceptions are
+    // named rather than subtracted as a number, so a route that quietly loses
+    // its `lazy` fails here instead of moving the count.
+    const eager = children.filter((r) => r.index);
+    const redirects = children.filter((r) => r.loader && !r.lazy);
+    expect(eager).toHaveLength(1);
+    expect(redirects).toHaveLength(1);
+    expect(lazyRoutes.length).toBe(
+      children.length - eager.length - redirects.length,
+    );
 
     for (const route of lazyRoutes) {
       const mod = await route.lazy();
@@ -852,6 +1058,65 @@ describe("the site's name", () => {
 // of fault a smoke test is for: a round that renders no Pokémon, a settings
 // combination that throws, and the empty state being unreachable when it should
 // not be.
+// The clash animates every direct CHILD of `.animate-clash-shake`, not the
+// element itself (D-114) — that is what puts the parts of a panel out of phase
+// instead of sliding them as one rigid block.
+//
+// The cost of that selector is a silent failure mode: flatten a panel's markup,
+// or wrap its contents in one more span, and the shake stops or applies to a
+// single node, with nothing to notice. CSS cannot be unit-tested here, but the
+// SHAPE it depends on can be, so this asserts the contract the stylesheet is
+// written against rather than the stylesheet.
+describe("the clash has parts to shake (D-114)", () => {
+  // Immediate element children of the tag whose opening tag ends at `from`.
+  // Depth-aware rather than a fixed window: the first version of this counted
+  // tags in the 4000 characters after the wrapper, which runs straight past it
+  // into the sibling panels — so it passed even when the wrapper had exactly
+  // one child, which is the whole thing it exists to catch.
+  const VOID = new Set(["img", "br", "hr", "input", "source", "meta", "link"]);
+  const immediateChildren = (page, from) => {
+    let depth = 0;
+    let count = 0;
+    const tag = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)\b[^>]*?(\/?)>/g;
+    tag.lastIndex = from;
+    let m;
+    while ((m = tag.exec(page))) {
+      const [, closing, name, selfClosed] = m;
+      if (closing) {
+        if (depth === 0) break; // the wrapper's own closing tag
+        depth -= 1;
+        continue;
+      }
+      if (depth === 0) count += 1;
+      if (!selfClosed && !VOID.has(name.toLowerCase())) depth += 1;
+    }
+    return count;
+  };
+
+  // Both boards, because the two panels have different children — three or four
+  // in `ContenderPanel`, up to five in `MatchupPanel` — and the `4n+k` cycle is
+  // what makes that difference produce two different rhythms.
+  for (const route of [
+    "/games/higher?stats=speed&n=4",
+    "/games/effective?tier=hard",
+  ]) {
+    it(`gives every shaking wrapper more than one child on ${route}`, () => {
+      const page = render(route);
+      const marker = /class="[^"]*animate-clash-shake[^"]*"[^>]*>/g;
+      let m;
+      let wrappers = 0;
+      while ((m = marker.exec(page))) {
+        wrappers += 1;
+        expect(immediateChildren(page, m.index + m[0].length)).toBeGreaterThan(
+          1,
+        );
+      }
+      // Non-vacuous: a test that passes by finding nothing is worse than none.
+      expect(wrappers).toBeGreaterThan(0);
+    });
+  }
+});
+
 describe("the stat game's arena", () => {
   it("renders a playable round with its prompt and its contenders", () => {
     const page = text("/games/higher?stats=speed");
@@ -960,42 +1225,375 @@ describe("the games ask how you want to play", () => {
     },
   );
 
-  it.each(["/games/higher?stats=speed&n=4", "/games/effective?tier=hard"])(
-    "%s goes straight to the board",
-    (path) => {
-      const page = text(path);
-      expect(page).not.toContain("How do you want to play?");
-      expect(page).toContain("Streak");
-    },
-  );
+  it.each([
+    "/games/higher?stats=speed&n=4",
+    "/games/effective?tier=hard",
+    // The URLs the default presets produce. These ARE the reload regression:
+    // before D-116 both were the bare path, so refreshing after choosing
+    // Medium landed back on the picker.
+    "/games/higher?play",
+    "/games/effective?play",
+  ])("%s goes straight to the board", (path) => {
+    const page = text(path);
+    expect(page).not.toContain("How do you want to play?");
+    expect(page).toContain("Streak");
+  });
 
-  // The Medium preset for the stat game is the defaults, so it writes no
-  // parameters at all — which is exactly why "have you chosen" cannot be read
-  // off the URL, and why this is worth pinning down rather than assuming.
-  it("has a stat-game preset whose URL is the bare one", () => {
-    const bare = HIGHER_PRESETS.filter(
-      (p) => higherUrl(p.settings) === "/games/higher",
-    );
-    expect(bare).toHaveLength(1);
+  // The Medium preset for the stat game IS the defaults, so its settings write
+  // no parameters. That used to make its URL the bare one — the picker's own
+  // URL — so choosing it and reloading put you back on the picker with the
+  // game forgotten, and the link you copied did not carry it. `?play` closes
+  // that: no preset can produce a bare URL now (D-116).
+  it("gives every preset a URL that plays, the defaults included", () => {
+    expect(HIGHER_PRESETS.length).toBeGreaterThan(0);
+    for (const p of HIGHER_PRESETS)
+      expect(higherUrl(p.settings), p.id).not.toBe("/games/higher");
   });
 });
 
-// The two game boards drop the footer, because they are sized to fill the
+// The two game BOARDS drop the footer, because they are sized to fill the
 // viewport exactly and anything beneath one makes every game page scroll by
 // that much (D-109). Everything else keeps it — including the /games index you
-// arrive through, which is where the attribution and the Credits link stay
-// reachable from.
+// arrive through, and including the difficulty picker, which lives on the same
+// route as a board but is an ordinary page with nothing to be pushed by
+// (D-116). It had lost the footer by association.
+// The setup panel is rendered on every game route even while closed, so the
+// <dialog> element exists to be opened. The browser hides a dialog without the
+// `open` attribute — but a `display` utility beats that UA rule, and `flex` did:
+// the closed panel painted as a 2px-tall bordered box under the header, 576px
+// wide, on a picker with nothing else to hide it. Nothing failed (D-116).
+// The difficulty picker previews each preset with a real board at that preset's
+// own settings (D-117) — D-043's rule one rung down from the games index. The
+// COUNT of panels is what separates the stat game's presets, so it is what is
+// asserted; an artwork per contender is the cheapest way to count them.
+describe("the difficulty picker previews each preset", () => {
+  // `<img>` only. React 19 also emits `<link rel="preload" as="image">` for
+  // eager artwork, so matching the bare path counts each picture twice on some
+  // pages and once on others — which is how this test first "found" a Pokémon
+  // on the medium tier that was not there.
+  const artworks = (page) =>
+    [...page.matchAll(/<img src="\/artwork\//g)].length;
+
+  it("draws two, two and four contenders across the stat game's presets", () => {
+    // Easy and Medium deal two; Hard deals four. 2 + 2 + 4.
+    expect(artworks(render("/games/higher"))).toBe(8);
+  });
+
+  it("climbs the type game's ladder: a type, a dual type, then a Pokémon", () => {
+    // Only the hard tier's defender IS a Pokémon, so only that card carries
+    // artwork — which is the tier ladder being visible rather than described.
+    expect(artworks(render("/games/effective"))).toBe(1);
+  });
+
+  it("leaves the games index on the same two thumbnails", () => {
+    // The stat game's card deals two contenders; the type game's medium tier
+    // is two typings and no Pokémon. Guards the extraction into gameThumbs.
+    expect(artworks(render("/games"))).toBe(2);
+  });
+
+  it("shows a board on the picker, not a picture of one", () => {
+    // Non-vacuous: the panels are the game's own components, so the round's
+    // values reach the card. Without a preview these cards are text only.
+    const page = render("/games/higher");
+    expect(page).toContain("Highest");
+    expect(page).toContain("How do you want to play?");
+  });
+});
+
+describe("the closed setup dialog stays out of the layout", () => {
+  it.each(["/games/higher", "/games/effective", "/games/higher?play"])(
+    "declares display per state on %s",
+    (path) => {
+      const tag = render(path).match(/<dialog[^>]*>/)?.[0];
+      expect(tag).toBeTruthy();
+      const classes = tag.match(/class="([^"]*)"/)[1].split(/\s+/);
+      expect(classes).toContain("hidden");
+      expect(classes).toContain("open:flex");
+      // A bare `flex` is the thing that overrode the UA rule. `flex-col` is
+      // direction, not display, and is fine.
+      expect(classes).not.toContain("flex");
+    },
+  );
+});
+
+// index.html's <title>, `SITE_TITLE` and the web manifest are three copies of
+// the site's name, and nothing read the third: the manifest still said
+// "comparison, dex and type chart" after the games shipped and after abilities
+// did, because no check reads prose (D-086) and no test had ever opened it.
+describe("the site's name and description agree everywhere", () => {
+  const manifest = JSON.parse(readFileSync("public/site.webmanifest", "utf8"));
+  const html = readFileSync("index.html", "utf8");
+  const titleOf = (s) => s.match(/<title>([^<]+)<\/title>/)[1];
+  const metaOf = (s, name) =>
+    s.match(new RegExp(`name="${name}"[^>]*content="([^"]+)"`, "s"))?.[1] ??
+    s.match(new RegExp(`content="([^"]+)"[^>]*name="${name}"`, "s"))?.[1];
+
+  it("uses one name in the tag, the manifest and the app shell", () => {
+    const title = titleOf(html);
+    expect(manifest.name).toBe(title);
+    // `SITE_TITLE` is asserted against the tag elsewhere; this closes the third
+    // corner of the triangle.
+    expect(title).toContain("games");
+  });
+
+  it("uses one description in the tag and the manifest", () => {
+    expect(manifest.description).toBe(metaOf(html, "description"));
+  });
+
+  it("names every shipped tool in both", () => {
+    // The failure this catches is a shipped feature that never reached the
+    // copy — which is exactly what happened to games.
+    for (const tool of ["comparison", "dex", "type chart", "games"]) {
+      expect(manifest.name.toLowerCase(), tool).toContain(tool);
+    }
+  });
+});
+
+// The alternate-forms chip is the same field on three surfaces, and it read
+// two different ways: the dex was lit when forms were HIDDEN, both game setups
+// when they were SHOWN (D-126). Same component, same default, opposite meaning.
+describe("one control, one meaning: the alternate-forms chip", () => {
+  const sources = [
+    "src/components/DexFilters.jsx",
+    "src/components/HigherSetup.jsx",
+    "src/components/EffectiveSetup.jsx",
+  ].map((f) => readFileSync(f, "utf8"));
+
+  it("uses the same label on every surface", () => {
+    for (const src of sources) {
+      expect(src).toContain('label="Hide alternate forms"');
+      expect(src).not.toContain('label="Alternate forms"');
+    }
+  });
+
+  it("is lit when the forms are hidden, on every surface", () => {
+    // Negated against the include flag — lit means a narrowing is applied,
+    // which is what every other FilterChip on the site means.
+    for (const src of sources) {
+      expect(src).toMatch(/active=\{!\w+\.includeForms\}/);
+      expect(src).not.toMatch(/active=\{\w+\.includeForms\}/);
+    }
+  });
+});
+
+// The dex's sort headers append the full column name for screen readers,
+// because the visible label is an abbreviation and WCAG 2.5.3 needs the
+// accessible name to contain it. Two of the nine columns are NOT abbreviated,
+// and those read "Name sort by Name" and "HP sort by HP" (D-126) — audible
+// only, which is why it shipped.
+describe("the dex's sort headers do not stutter", () => {
+  it("names the column once, however it is abbreviated", () => {
+    const page = render("/dex");
+    const hints = [
+      ...page.matchAll(/<span class="sr-only">, sort(?: by ([^<]*))?<\/span>/g),
+    ];
+    // Non-vacuous: the dex really does render a sort hint per column.
+    expect(hints.length).toBeGreaterThan(5);
+
+    // The two columns whose visible label already IS the full name add nothing
+    // after "sort".
+    expect(page).not.toContain(", sort by Name");
+    expect(page).not.toContain(", sort by HP");
+
+    // The abbreviated ones still spell it out, which is the whole point of the
+    // hint and what WCAG 2.5.3 needs the accessible name to carry.
+    expect(page).toContain(", sort by Sp. Attack");
+    expect(page).toContain(", sort by Base stat total");
+    expect(page).toContain(", sort by Dex number");
+  });
+});
+
+// Two copy rules that are mechanical enough to assert, so they do not depend on
+// anyone re-reading 186 strings (D-126). Everything else the copy pass turned up
+// was a judgement call and lives in 06_style_guide §14 instead — a linter for
+// "does this sentence earn its place" would be a linter that cries wolf.
+//
+// A test rather than a `check:copy` script, because these read source files the
+// way the manifest and title assertions already do, and a check nobody
+// remembers to run is worse than one that rides along with the suite.
+describe("the copy is spelled one way and does not shout", () => {
+  const FILES = readdirSync("src/pages")
+    .map((f) => `src/pages/${f}`)
+    .concat(readdirSync("src/components").map((f) => `src/components/${f}`))
+    .filter((f) => f.endsWith(".jsx") && !f.includes(".test."))
+    // The design playground is documentation for whoever is building the site,
+    // not copy for whoever is using it, and robots.txt keeps it out of search.
+    .filter((f) => !f.endsWith("StyleGuide.jsx"));
+
+  // JSX text nodes and the label-ish props that reach a reader, with comments
+  // stripped so prose about the code is not mistaken for the code's prose.
+  const stringsIn = (src) => {
+    const code = src
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+    return [
+      // The `>` of an ARROW is not the `>` of a tag. Without the lookbehind
+      // this matched from `=>` through to the next `<` and reported a chunk of
+      // `gameThumbs.jsx` as shouty copy — which is how the extractor's own bug
+      // was found. Text also may not span a line, since a JSX text node that
+      // wraps is still one line of prose per source line.
+      ...[
+        ...code.matchAll(
+          /(?<![=!<>-])>\s*([A-Za-z][^<>{}\n]*[A-Za-z.?!…])\s*</g,
+        ),
+      ].map((m) => m[1]),
+      ...[
+        ...code.matchAll(
+          /\b(?:aria-label|alt|placeholder|title|label|subtitle|blurb|desc|cta)="([^"]{2,})"/g,
+        ),
+      ].map((m) => m[1]),
+    ];
+  };
+
+  const all = FILES.flatMap((f) =>
+    stringsIn(readFileSync(f, "utf8")).map((s) => ({ f, s })),
+  );
+
+  it("finds strings to check at all", () => {
+    expect(all.length).toBeGreaterThan(80);
+  });
+
+  it("never shouts", () => {
+    // 06_style_guide §14: no exclamation mark, in either register.
+    const shouty = all.filter(({ s }) => s.includes("!"));
+    expect(shouty.map(({ f, s }) => `${f}: ${s}`)).toEqual([]);
+  });
+
+  it("picks one spelling and keeps it", () => {
+    // Both spellings of the same word shipped on /style before this pass.
+    const PAIRS = [
+      ["colour", "color"],
+      ["favourite", "favorite"],
+      ["customise", "customize"],
+      ["licence", "license"],
+      ["centre", "center"],
+      ["grey", "gray"],
+      ["analyse", "analyze"],
+      ["organise", "organize"],
+    ];
+    const text = all
+      .map(({ s }) => s)
+      .join(" ")
+      .toLowerCase();
+    for (const [a, b] of PAIRS) {
+      const hasA = new RegExp(`\\b${a}`).test(text);
+      const hasB = new RegExp(`\\b${b}`).test(text);
+      expect(hasA && hasB, `both "${a}" and "${b}" are used`).toBe(false);
+    }
+  });
+});
+
+// Removing a selection was only possible by searching for a replacement or
+// reloading (D-127). Each filled card carries a Remove now; the URL already
+// spelled every partial state, so the control is a navigation and not new
+// state.
+describe("a selected Pokémon can be removed", () => {
+  it("offers Remove on each filled card, named after the Pokémon", () => {
+    const page = render("/compare/volcarona/vs/chandelure");
+    // Named, not a bare "Remove": two identical controls on one board tell a
+    // screen reader nothing about which side they belong to — the reason the
+    // two search fields and the two ability groups are named too.
+    expect(page).toContain('aria-label="Remove Volcarona"');
+    expect(page).toContain('aria-label="Remove Chandelure"');
+  });
+
+  it("offers none on an empty board, where there is nothing to remove", () => {
+    // Non-vacuous: the empty card is a different component, so this proves the
+    // control comes from a selection rather than from the page.
+    expect(render("/compare")).not.toContain('aria-label="Remove');
+  });
+
+  it("offers one on a half-filled board", () => {
+    const page = render("/compare?p1=volcarona");
+    expect((page.match(/aria-label="Remove /g) ?? []).length).toBe(1);
+    expect(page).toContain('aria-label="Remove Volcarona"');
+  });
+});
+
+// Scroll restoration is keyed per history entry, and every IN-TOOL navigation
+// opts out of the reset (D-129). The opt-out is what stops the board jumping
+// away on every click — measured at 327px before D-087 — so a `navigate()` that
+// forgets it reintroduces that bug on one control, silently.
+//
+// Source-level, because scroll position is a browser fact and this is the
+// invariant behind it: on this site an in-tool change is always a `replace`,
+// and a `replace` must always prevent the reset.
+describe("in-tool navigations never yank the page to the top", () => {
+  const FILES = [
+    "src/pages/Compare.jsx",
+    "src/pages/Dex.jsx",
+    "src/pages/TypeChart.jsx",
+    "src/pages/GameHigher.jsx",
+    "src/pages/GameEffective.jsx",
+  ];
+
+  it("pairs every `replace` navigation with `preventScrollReset`", () => {
+    let total = 0;
+    for (const f of FILES) {
+      const src = readFileSync(f, "utf8");
+      const replaces = (src.match(/replace:\s*true/g) ?? []).length;
+      const guarded = (src.match(/preventScrollReset:\s*true/g) ?? []).length;
+      expect(
+        guarded,
+        `${f} has ${replaces} replaces but ${guarded} guards`,
+      ).toBe(replaces);
+      total += replaces;
+    }
+    // Non-vacuous: there really are navigations to check.
+    expect(total).toBeGreaterThanOrEqual(9);
+  });
+
+  it("leaves scroll restoration keyed per history entry", () => {
+    // A `getKey` that collapses a tool's URLs into one key is what made
+    // RETURNING to a tool restore its old position — which a nav click should
+    // not do, however much a Back should.
+    const layout = readFileSync("src/components/Layout.jsx", "utf8");
+    expect(layout).toContain("<ScrollRestoration />");
+    expect(layout).not.toMatch(/<ScrollRestoration\s+getKey/);
+  });
+});
+
 describe("the footer", () => {
   const ATTRIBUTION = "unofficial fan project";
 
-  it.each(["/games/higher?stats=speed", "/games/effective?tier=hard"])(
-    "is absent on the board at %s",
+  it.each([
+    "/games/higher?stats=speed",
+    "/games/effective?tier=hard",
+    // The default presets' URLs are boards too, and they are the ones that
+    // used to be indistinguishable from the picker.
+    "/games/higher?play",
+    "/games/effective?play",
+  ])("is absent on the board at %s", (path) => {
+    expect(render(path)).not.toContain(ATTRIBUTION);
+  });
+
+  // Same two routes, no query — the picker rather than the board.
+  it.each(["/games/higher", "/games/effective"])(
+    "is present on the difficulty picker at %s",
     (path) => {
-      expect(render(path)).not.toContain(ATTRIBUTION);
+      const page = render(path);
+      expect(page).toContain("How do you want to play?");
+      expect(page).toContain(ATTRIBUTION);
     },
   );
 
-  it.each(["/", "/games", "/compare", "/dex", "/types", "/credits"])(
+  // The picker is not pinned to the viewport, so it must not carry the board's
+  // exact-height shell — that is what would push the footer off screen.
+  it.each(["/games/higher", "/games/effective"])(
+    "sizes the picker as an ordinary page at %s",
+    (path) => {
+      expect(render(path)).not.toContain("h-[100svh]");
+    },
+  );
+
+  it.each(["/games/higher?play", "/games/effective?play"])(
+    "keeps the board pinned to the viewport at %s",
+    (path) => {
+      expect(render(path)).toContain("h-[100svh]");
+    },
+  );
+
+  it.each(["/", "/games", "/compare", "/dex", "/types", "/about"])(
     "is present on %s",
     (path) => {
       expect(render(path)).toContain(ATTRIBUTION);
@@ -1003,10 +1601,52 @@ describe("the footer", () => {
   );
 
   // The one thing the boards give up. Asserted rather than left as a comment,
-  // so that if Credits ever stops being reachable from the games index the
-  // trade stops being the one that was agreed.
-  it("still reaches Credits from the games index", () => {
-    expect(render("/games")).toContain('href="/credits"');
+  // so that if the attribution ever stops being reachable from the games index
+  // the trade stops being the one that was agreed.
+  //
+  // The credits are the footer itself now (D-119), so this checks the sources
+  // rather than a link to a page about them — which is a stronger guarantee,
+  // since they are on every route that has a footer at all.
+  it("still reaches the attribution from the games index", () => {
+    const page = render("/games");
+    expect(page).toContain('href="https://pokeapi.co/"');
+    expect(page).toContain('href="https://github.com/PokeAPI/sprites"');
+    expect(page).toContain("unofficial fan project");
+  });
+
+  // The footer states two facts about the dataset. Both are READ off it rather
+  // than typed, because a footer that states a count is a footer that can be
+  // wrong about one — and `npm run build:data` is the thing that would make it
+  // wrong, silently, months later (D-121).
+  it("reads its dex size and generation off the dataset", () => {
+    const page = render("/about");
+    // React's server renderer separates adjacent text and expressions with an
+    // empty comment, so "Generation {CURRENT_GEN}" arrives as
+    // `Generation <!-- -->9`. Stripping those is what makes this assert the
+    // text a reader sees rather than the markup around it.
+    const footer = page
+      .slice(page.indexOf("<footer"))
+      .replaceAll("<!-- -->", "");
+    expect(footer).toContain(ALL_POKEMON.length.toLocaleString());
+    expect(footer).toContain(`Generation ${CURRENT_GEN}`);
+    // Non-vacuous: these are real values, not an empty string matching anything.
+    expect(ALL_POKEMON.length).toBeGreaterThan(1000);
+    expect(CURRENT_GEN).toBeGreaterThanOrEqual(9);
+  });
+
+  // Every external link in the footer leaves the site, and a screen reader is
+  // told so rather than only shown an icon — the arrow is `aria-hidden`, so
+  // without this the only signal is visual. EVERY one, not most: the first
+  // version of this allowed a slack of one and passed while the licence and
+  // notice links said nothing.
+  it("says when a footer link opens in a new tab", () => {
+    const page = render("/about");
+    const footer = page.slice(page.indexOf("<footer"));
+    const external = (footer.match(/target="_blank"/g) ?? []).length;
+    const announced = (footer.match(/opens in a new tab/g) ?? []).length;
+    // Non-vacuous: the footer really does carry a handful of outbound links.
+    expect(external).toBeGreaterThanOrEqual(6);
+    expect(announced).toBe(external);
   });
 });
 

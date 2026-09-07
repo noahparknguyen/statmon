@@ -74,7 +74,7 @@ export default function TypeChart() {
         // rendering Levitate.
         ability: keep ? abilityParam(nextMon, nextAsOf, nextAbility) : null,
       }),
-      { replace: true },
+      { replace: true, preventScrollReset: true },
     );
   };
 

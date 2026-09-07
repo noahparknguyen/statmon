@@ -118,9 +118,16 @@ export default function HigherSetup({ draft, onChange, ...shell }) {
           </ChipGroup>
 
           <ChipGroup label="Options">
+            {/* **"Hide alternate forms", lit when they are hidden** — the dex's
+                  exact wording and polarity (D-126). This chip was `Alternate forms`
+                  and lit when they were INCLUDED: the same field, the same component
+                  and the same default, reading the opposite way on two surfaces a
+                  reader moves between. Every other `FilterChip` on the site means "a
+                  narrowing is applied" when it is lit, and hiding 234 entries is a
+                  narrowing, so the games were the odd one out rather than the dex. */}
             <FilterChip
-              active={draft.includeForms}
-              label="Alternate forms"
+              active={!draft.includeForms}
+              label="Hide alternate forms"
               onClick={() =>
                 onChange({ ...draft, includeForms: !draft.includeForms })
               }

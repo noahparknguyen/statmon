@@ -114,9 +114,13 @@ export default function EffectiveSetup({ draft, onChange, ...shell }) {
               </ChipGroup>
 
               <ChipGroup label="Options">
+                {/* The dex's wording and polarity, like the stat game's
+                    (D-126): lit means the forms are hidden, because every
+                    other FilterChip on the site is lit when a narrowing is
+                    applied. */}
                 <FilterChip
-                  active={draft.includeForms}
-                  label="Alternate forms"
+                  active={!draft.includeForms}
+                  label="Hide alternate forms"
                   onClick={() =>
                     onChange({ ...draft, includeForms: !draft.includeForms })
                   }

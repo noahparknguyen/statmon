@@ -196,7 +196,7 @@ export default function StyleGuide() {
           `text-h1` — drift in the one file whose stated job is not to have any. */}
       <PageHeader
         title="Style guide"
-        subtitle="Every color, text style, and core component — rendered from the live tokens and real components, so this page can't drift from the app."
+        subtitle="Every colour, text style, and core component — rendered from the live tokens and real components, so this page can't drift from the app."
       />
 
       <Section title="Core palette">
@@ -246,14 +246,14 @@ export default function StyleGuide() {
         </p>
       </Section>
 
-      <Section title="18 type colors — TypeBadge">
+      <Section title="18 type colours — TypeBadge">
         <div className="flex flex-wrap gap-2">
           {TYPES.map((t) => (
             <TypeBadge key={t} type={t} />
           ))}
         </div>
         <p className="text-caption text-tertiary mt-4">
-          All badges use near-black text on the type color (AA — D-027).
+          All badges use near-black text on the type colour (AA — D-027).
         </p>
       </Section>
 
