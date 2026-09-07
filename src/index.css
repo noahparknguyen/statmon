@@ -210,6 +210,10 @@
       rather than kept on spec. (D-033)
      ------------------------------------------------------------------------ */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  /* Accelerate, where --ease-standard decelerates. The clash needs the opposite
+     shape from every other motion here: things that ease OUT are arriving
+     gently, and two Pokémon running at each other are not. (D-100) */
+  --ease-clash: cubic-bezier(0.55, 0, 1, 0.45);
 
   /* Content width */
   --container-content: 1120px;
@@ -221,6 +225,14 @@
   --dur-base: 180ms;
   --dur-slow: 300ms;
   --dur-bar: 450ms;
+  /* The arena's round change, in its two halves (D-100, D-101, split by D-102).
+     The charge is the run-in and stops DEAD — weight is velocity, so it covers
+     5rem in this long and does not ease out of it. The shake is what happens
+     after, and it is the collision's only response now that the rebound is
+     gone; per panel it is scaled off this base so four of them never rattle in
+     unison. */
+  --dur-charge: 220ms;
+  --dur-shake: 280ms;
   /* Home's hero wall. Ambient rather than a response to anything, so it is
      three orders of magnitude slower than the rest of the scale — a field that
      large only needs to creep for the movement to register. */
@@ -309,6 +321,11 @@
     ::before,
     ::after {
       animation-duration: 0.01ms !important;
+      /* Delays as well as durations. The arena's shake is delayed by the length
+         of the charge (D-102), so collapsing only the duration would leave a
+         reduced-motion user waiting out a 220ms delay for a frame that never
+         moves. */
+      animation-delay: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
@@ -618,6 +635,103 @@
      count, landing it on the loop point — pixel-identical to the start. */
   .animate-wall {
     animation: wall var(--dur-wall) linear infinite;
+  }
+
+  /* The arena's round change — the clash, in two parts (D-102).
+     Everything left of the board's centre charges right and everything right of
+     it charges left, so a round arrives as a collision in the middle. The
+     direction comes from `--round-from`, set per panel by the page, because
+     "outer" depends on which half of the grid a panel is in.
+
+     **The charge stops dead.** It used to rebound, and a rebound is not a
+     clash — it is two things bouncing off each other. It also had to reopen the
+     gap it had just closed, which is the one thing this animation must not do
+     (D-100). So the panels arrive and stay arrived.
+
+     **The response moved inside them.** The shake is on the panel's CONTENT,
+     not the panel, and that is load-bearing rather than tidy: shaking the
+     panels themselves would flicker the gaps between them open and shut a
+     dozen times a round. Boxes collide; the things inside them rattle. Every
+     shake parameter is a custom property the page sets per panel and inherits
+     down, so four contenders shake differently and none of them is a copy of
+     its neighbour.
+
+     No stagger on the charge, matching the bar fill's rule (04_design §7) —
+     four panels arriving in sequence reads as a loading state rather than as a
+     collision. The VARIATION is in the shake, where it reads as four things
+     reacting rather than as four things being dealt. */
+  .animate-clash-charge {
+    animation: clash-charge var(--dur-charge) var(--ease-clash) both;
+  }
+
+  .animate-clash-shake {
+    animation: clash-shake var(--dur-shake) var(--ease-standard)
+      var(--dur-charge) both;
+  }
+
+  /* The answer landing. Separate from the panel's own entrance because it
+     happens at a different time, on a click rather than on a deal. */
+  .animate-reveal {
+    animation: reveal var(--dur-base) var(--ease-standard) both;
+  }
+}
+
+@keyframes clash-charge {
+  0% {
+    opacity: 0;
+    transform: translateX(var(--round-from, 0));
+  }
+  /* Solid well before impact, so the collision is between two real things
+     rather than two fading ones. */
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* The aftershock. `--shake-x` is SIGNED and points the way the panel was
+   already travelling: on impact the contents carry on for an instant before
+   snapping back, which is what inertia looks like. Four decaying swings, and
+   a little rotation with them — a pure sideways slide reads as a glitch, a
+   slide that tips reads as something being hit. */
+@keyframes clash-shake {
+  0% {
+    transform: translateX(0) rotate(0deg);
+  }
+  14% {
+    transform: translateX(var(--shake-x, 0px)) rotate(var(--shake-r, 0deg));
+  }
+  32% {
+    transform: translateX(calc(var(--shake-x, 0px) * -0.62))
+      rotate(calc(var(--shake-r, 0deg) * -0.62));
+  }
+  52% {
+    transform: translateX(calc(var(--shake-x, 0px) * 0.38))
+      rotate(calc(var(--shake-r, 0deg) * 0.38));
+  }
+  72% {
+    transform: translateX(calc(var(--shake-x, 0px) * -0.2))
+      rotate(calc(var(--shake-r, 0deg) * -0.2));
+  }
+  88% {
+    transform: translateX(calc(var(--shake-x, 0px) * 0.08)) rotate(0deg);
+  }
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
