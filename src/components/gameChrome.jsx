@@ -77,8 +77,13 @@ const tintOf = (type) =>
  * both halves. Volcarona has been rendering as Bug alone since the arena
  * shipped.
  *
- * The stops hold each colour flat for a quarter of the run before blending, so
- * it reads as two colours with a seam rather than as a wash that is neither.
+ * The stops hold each colour flat to 45% and blend across the middle tenth.
+ * They used to hold to 25% and blend across the middle HALF, which went muddy:
+ * two type colours are often near-complementary in hue, and a straight line
+ * between opposite hues passes close to neutral. Measured across the 65 pairs
+ * with a muddy midpoint, 29.7% of the surface was visibly desaturated at 25/75
+ * against 5.9% at 45/55. Interpolating in oklab was measured and rejected — it
+ * fixes gamma darkening, not opposite hues, and scored slightly worse (D-130).
  *
  * Returns a **background**, not a background-color — a caller setting
  * `backgroundColor` from this will silently render nothing for a dual type.
@@ -87,7 +92,7 @@ export function tintFor(types = []) {
   if (!types.length) return "var(--color-base)";
   if (types.length === 1) return tintOf(types[0]);
   const [a, b] = types;
-  return `linear-gradient(135deg, ${tintOf(a)} 0%, ${tintOf(a)} 25%, ${tintOf(b)} 75%, ${tintOf(b)} 100%)`;
+  return `linear-gradient(135deg, ${tintOf(a)} 0%, ${tintOf(a)} 45%, ${tintOf(b)} 55%, ${tintOf(b)} 100%)`;
 }
 
 // The marking is an INSET ring rather than a border, because these panels sit
@@ -118,14 +123,32 @@ export const PANEL_BOX =
  * always shakes the same way and the next one differs. `--shake-x` is signed
  * and points the way the panel was already travelling, because on impact the
  * contents carry on for an instant before snapping back.
+ *
+ * **These are the panel's ENVELOPE, not the final motion.** Each part inside a
+ * panel scales and re-phases them on its own (`--part-amp`, `--part-delay`,
+ * `--part-dur` in index.css), so what these numbers set is how hard this
+ * particular panel was hit, and the parts answer it independently.
+ *
+ * **The distances were raised, because the collision was too polite.** 7–13px
+ * over a panel several hundred px wide is a nudge — legible in a diff and
+ * almost invisible on screen — and the rotation topped out at 0.75°, which is
+ * below the angle at which a tilt reads as a tilt. 13–25px and 0.7–1.6° land
+ * where the contents visibly lurch and settle. The per-part multiplier tops out
+ * at 1.22, so the widest any single element travels is about 30px.
  */
 export function clashVars(i, n, dealt = 0) {
   const onward = i < n / 2 ? 1 : -1;
   const v = (dealt * 5 + i * 3) % 4;
   return {
     "--round-from": onward > 0 ? "-5rem" : "5rem",
-    "--shake-x": `${onward * (7 + v * 2)}px`,
-    "--shake-r": `${onward * (0.3 + v * 0.15)}deg`,
+    "--shake-x": `${onward * (13 + v * 4)}px`,
+    // **Vertical is the jolt off the impact, not a second impact**, so it runs
+    // at roughly half the horizontal throw and its sign comes from the SLOT
+    // rather than from `onward` — neighbouring panels bob against each other,
+    // where they all lurch the same way horizontally because they all hit the
+    // same thing. Parts inside a panel then split again on `--part-y`.
+    "--shake-y": `${(i % 2 ? -1 : 1) * (6 + v * 2)}px`,
+    "--shake-r": `${onward * (0.7 + v * 0.3)}deg`,
     "--dur-shake": `${250 + v * 30}ms`,
   };
 }

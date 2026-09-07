@@ -661,13 +661,14 @@
      gap it had just closed, which is the one thing this animation must not do
      (D-100). So the panels arrive and stay arrived.
 
-     **The response moved inside them.** The shake is on the panel's CONTENT,
+     **The response moved inside them.** The shake is on the panel's CONTENTS,
      not the panel, and that is load-bearing rather than tidy: shaking the
      panels themselves would flicker the gaps between them open and shut a
      dozen times a round. Boxes collide; the things inside them rattle. Every
      shake parameter is a custom property the page sets per panel and inherits
      down, so four contenders shake differently and none of them is a copy of
-     its neighbour.
+     its neighbour — and within each one, every part answers on its own phase
+     (see `.animate-clash-shake` below).
 
      No stagger on the charge, matching the bar fill's rule (04_design §7) —
      four panels arriving in sequence reads as a loading state rather than as a
@@ -677,9 +678,109 @@
     animation: clash-charge var(--dur-charge) var(--ease-clash) both;
   }
 
-  .animate-clash-shake {
-    animation: clash-shake var(--dur-shake) var(--ease-standard)
-      var(--dur-charge) both;
+  /* **The shake is on each PART, not on the panel's contents as one block.**
+     It used to sit on the single wrapper holding everything, so the artwork,
+     the name, the badges and the value band travelled as one rigid object —
+     the panel's contents slid as a unit and snapped back together. A collision
+     does not do that. Things inside a box that gets hit rattle independently,
+     and the give-away that they are not is that every edge stays parallel for
+     the whole 280ms.
+
+     So every direct child animates on its own, and the variation is mostly in
+     TIMING rather than in distance: `--part-delay` and `--part-dur` put the
+     parts out of phase with each other, which is what reads as independent
+     mass. Amplitude varies too, but narrowly (0.78–1.22) — spread it wider and
+     one part looks broken rather than loose.
+
+     Four steps, cycled with `4n+k`, so this works for either panel regardless
+     of how many children it has: `ContenderPanel` has three or four (artwork,
+     name, badges, value) and `MatchupPanel` has up to five (role, artwork,
+     name, ability, typing). The cycle also means the two boards shake
+     differently from each other, because the same index lands on a different
+     part in each.
+
+     Deterministic, not random — `clashVars` sets the per-panel envelope from
+     the round number and the slot, and React is entitled to run a render
+     twice (D-102). These offsets are constants for the same reason. */
+  .animate-clash-shake > * {
+    /* Resolved once per part so the keyframes stay readable: each stop is then
+       a plain multiple of these three, rather than a triple-nested calc. */
+    --sx: calc(var(--shake-x, 0px) * var(--part-amp, 1) * var(--throw, 1));
+    --sy: calc(var(--shake-y, 0px) * var(--part-y, 1) * var(--throw, 1));
+    --sr: calc(var(--shake-r, 0deg) * var(--part-amp, 1) * var(--throw, 1));
+    animation: clash-shake calc(var(--dur-shake) * var(--part-dur, 1))
+      var(--ease-standard) calc(var(--dur-charge) + var(--part-delay, 0ms)) both;
+  }
+
+  /* **Text takes a shorter throw than artwork, and this is a legibility rule
+     rather than a physical one.** A clipped letterform reads as a bug; a
+     Pokémon whose shoulder passes behind the panel edge reads as impact, which
+     is what the collision is meant to look like. The panel's `overflow-hidden`
+     is deliberate (D-100) — it is what stops a shaking contender spilling into
+     its neighbour — so the question was never whether to clip but what.
+
+     Measured at 320px with four contenders, where each panel is 160px and the
+     margins are tightest: at full throw the text cleared the sides by only
+     8.1px and went **2.2px past the panel floor**, because the value band sits
+     a `p-2` from the bottom. At 0.6 it clears both axes with room, and still
+     travels further than the 13px the whole block managed before any of this.
+
+     Selected by "does not carry the artwork" rather than by index, because the
+     two panels order their children differently — `MatchupPanel` has the image
+     as a direct child, `ContenderPanel` wraps it. If `:has()` is unavailable
+     the rule drops and text simply keeps the full throw, which is the previous
+     behaviour rather than a broken one. */
+  .animate-clash-shake > *:not(img):not(:has(img)) {
+    --throw: 0.7;
+  }
+
+  /* **And further on a phone, where the slack is not a number I control.** A
+     name is as wide as the name: "Roaring Moon" fills a 160px panel and leaves
+     almost nothing either side, so at that width horizontal text clipping is
+     not a threshold to stay under — it is a property of long names, and the
+     old 13px block-shake clipped them too.
+
+     So the rule below `sm` is *do not make it worse than it was*: 0.4 puts the
+     text's widest throw at 12.2px, just inside the 13px the whole content
+     block used to move as one. The board keeps the full-strength shake
+     everywhere there is room for it, and the artwork keeps it at every width.
+
+     Measured across repeated rounds rather than one, because which Pokémon are
+     drawn decides how much slack there is. */
+  @media (width < 40rem) {
+    .animate-clash-shake > *:not(img):not(:has(img)) {
+      --throw: 0.4;
+    }
+  }
+
+  /* `--part-y` is SIGNED and is not a copy of `--part-amp`: neighbouring parts
+     bob in opposite directions, so a panel's contents come apart vertically
+     instead of rising and falling together. Signs run + − + − and the
+     magnitudes differ from the horizontal ones, which is what stops the whole
+     cycle collapsing back into one shared rhythm. */
+  .animate-clash-shake > :nth-child(4n + 1) {
+    --part-amp: 0.78;
+    --part-y: 0.9;
+    --part-dur: 1.16;
+    --part-delay: 0ms;
+  }
+  .animate-clash-shake > :nth-child(4n + 2) {
+    --part-amp: 1.22;
+    --part-y: -0.75;
+    --part-dur: 0.88;
+    --part-delay: 38ms;
+  }
+  .animate-clash-shake > :nth-child(4n + 3) {
+    --part-amp: 0.94;
+    --part-y: 1.15;
+    --part-dur: 1.04;
+    --part-delay: 16ms;
+  }
+  .animate-clash-shake > :nth-child(4n + 4) {
+    --part-amp: 1.12;
+    --part-y: -1;
+    --part-dur: 0.94;
+    --part-delay: 54ms;
   }
 
   /* The answer landing. Separate from the panel's own entrance because it
@@ -710,30 +811,63 @@
    snapping back, which is what inertia looks like. Four decaying swings, and
    a little rotation with them — a pure sideways slide reads as a glitch, a
    slide that tips reads as something being hit. */
+/* The aftershock, in two axes that are deliberately OUT OF PHASE.
+   `--shake-x` is signed and points the way the panel was already travelling:
+   on impact the contents carry on for an instant before snapping back, which
+   is what inertia looks like. The horizontal decay is the impact axis, so it
+   leads — full throw at 14%, then four decaying reversals.
+
+   **The vertical is not a second copy of it.** Reusing the same decay would
+   only rotate the motion: every part would slide along a fixed diagonal, which
+   is one straight line however hard it is thrown. So Y peaks at 32% — where X
+   is already at its first reversal — and reverses on its own schedule, so a
+   part traces a small wobble rather than a line. Combined with `--part-y`
+   being signed per child, adjacent parts pull apart vertically instead of
+   rising together.
+
+   Y is also smaller than X throughout, because the collision is horizontal:
+   the vertical is the jolt that comes off it, not a second impact.
+
+   `--sx`, `--sy` and `--sr` are resolved on the element above; each stop below
+   is a plain multiple of them. */
 @keyframes clash-shake {
   0% {
-    transform: translateX(0) rotate(0deg);
+    transform: translate(0, 0) rotate(0deg);
   }
   14% {
-    transform: translateX(var(--shake-x, 0px)) rotate(var(--shake-r, 0deg));
+    transform: translate(var(--sx, 0px), calc(var(--sy, 0px) * 0.35))
+      rotate(var(--sr, 0deg));
   }
   32% {
-    transform: translateX(calc(var(--shake-x, 0px) * -0.62))
-      rotate(calc(var(--shake-r, 0deg) * -0.62));
+    transform: translate(
+        calc(var(--sx, 0px) * -0.62),
+        calc(var(--sy, 0px) * 0.85)
+      )
+      rotate(calc(var(--sr, 0deg) * -0.62));
   }
   52% {
-    transform: translateX(calc(var(--shake-x, 0px) * 0.38))
-      rotate(calc(var(--shake-r, 0deg) * 0.38));
+    transform: translate(
+        calc(var(--sx, 0px) * 0.38),
+        calc(var(--sy, 0px) * -0.55)
+      )
+      rotate(calc(var(--sr, 0deg) * 0.38));
   }
   72% {
-    transform: translateX(calc(var(--shake-x, 0px) * -0.2))
-      rotate(calc(var(--shake-r, 0deg) * -0.2));
+    transform: translate(
+        calc(var(--sx, 0px) * -0.2),
+        calc(var(--sy, 0px) * 0.28)
+      )
+      rotate(calc(var(--sr, 0deg) * -0.2));
   }
   88% {
-    transform: translateX(calc(var(--shake-x, 0px) * 0.08)) rotate(0deg);
+    transform: translate(
+        calc(var(--sx, 0px) * 0.08),
+        calc(var(--sy, 0px) * -0.1)
+      )
+      rotate(0deg);
   }
   100% {
-    transform: translateX(0) rotate(0deg);
+    transform: translate(0, 0) rotate(0deg);
   }
 }
 

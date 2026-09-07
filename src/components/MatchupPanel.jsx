@@ -37,11 +37,24 @@ const SIZES = {
     band: "h-6",
   },
   sm: {
-    box: "h-32",
+    // **`h-full`, not a fixed height.** This size is only ever used inside
+    // `gameThumbs`' band, and that band now has to hold either two panels in a
+    // row or FOUR in a 2x2 (D-117). A hardcoded `h-32` made the four-up case
+    // 256px of panels inside a 128px band, which overflowed the card and
+    // painted over the label under it. The grid owns the height; the panel
+    // fills its cell.
+    box: "h-full",
     pad: "gap-1 p-2",
     type: "text-h4",
     name: "text-caption",
-    band: "h-0",
+    // **Not `h-0`.** The reservation exists so a revealed typing does not shove
+    // the name up the panel mid-round (D-107) — but at this size nothing was
+    // ever revealed, so the band was zero and the question never came up. The
+    // difficulty picker's hard-tier card shows a Pokémon WITH its typing
+    // (D-117), and its badges spilled straight out of the thumbnail's bottom
+    // edge. One row's worth here; the artwork above is `flex-1` and gives up
+    // the space.
+    band: "h-5",
   },
 };
 
@@ -55,6 +68,7 @@ export default function MatchupPanel({
   shake = false,
   size = "lg",
   className = "",
+  lazy = false,
 }) {
   const S = SIZES[size];
   // A hidden typing means a hidden tint. `pokemon && !reveal` is the only case
@@ -85,10 +99,16 @@ export default function MatchupPanel({
 
         {pokemon ? (
           <>
+            {/* `lazy` is off by default — in a round this artwork is the
+                subject and eager is right — and on by the thumbnails, where
+                React 19 would otherwise emit a `<link rel="preload">` for a
+                picture of a game nobody has started (D-113). The same prop
+                `ContenderPanel` carries, for the same reason. */}
             <img
               src={artworkFor(pokemon)}
               alt=""
               decoding="async"
+              loading={lazy ? "lazy" : undefined}
               className={`min-h-0 w-full flex-1 object-contain ${ART_CAP}`}
             />
             <span className={`${S.name} text-primary`}>{pokemon.name}</span>
