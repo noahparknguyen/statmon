@@ -6,7 +6,7 @@ A simple set of Pokémon tools, built for myself. Three of them — and each can
 - **[Dex](https://statmon.noahparknguyen.workers.dev/dex)** — all 1,259 entries in one table, sortable by any stat and filterable by type and generation.
 - **[Types](https://statmon.noahparknguyen.workers.dev/types)** — the full effectiveness chart, and a dual-type readout on the same page — searchable by Pokémon, not just by type.
 
-And **[Games](https://statmon.noahparknguyen.workers.dev/games)** — two of them — which is the same data asking me the questions instead.
+And **[Games](https://statmon.noahparknguyen.workers.dev/games)** — two of them — which is the same data asking me the questions instead. There is an **[About](https://statmon.noahparknguyen.workers.dev/about)** page for why any of it exists.
 
 **Live at [statmon.noahparknguyen.workers.dev](https://statmon.noahparknguyen.workers.dev/).**
 
@@ -73,13 +73,14 @@ npm run dev
 
 `npm run build:data` regenerates the dataset from PokéAPI, `npm run vendor:images` fetches the sprites and artwork, and `npm run vendor:fonts` fetches the two webfonts — all three only needed when something upstream changes, and all three cache or commit their output so re-runs are free. The data build also re-checks the hardcoded type chart against PokéAPI across all three of its historical eras, so a typo in 18×18 of hand-written data fails the build instead of reaching a user.
 
-The checks that keep things honest, all seven of which run in CI — and `npm run check` runs the lot locally, in CI's own order, cheapest first so a typo fails in seconds rather than after the browser sweep:
+The checks that keep things honest, all eight of which run in CI — and `npm run check` runs the lot locally, in CI's own order, cheapest first so a typo fails in seconds rather than after the browser sweep:
 
 - `lint`, `format:check`, `build`
+- `audit:classes` — every class string in `src/`, checked for two utilities setting the same property; Tailwind resolves those by stylesheet order rather than the order they are written, so the one that wins is not the one you meant
 - `test:run` — Vitest: the stat math, the dataset codec round-trip, the dex sort/filter logic, the generation-era resolution, the ability effect table, the game's question generator, a server-render smoke test of every route, and a set of accessibility regressions
 - `audit:contrast` — WCAG AA across all 18 type colours, in nine pairing groups
 - `check:docs` — every link and anchor in `docs/`
-- `sweep:widths` — headless Chrome across 18 routes × 14 widths, asserting no page ever scrolls sideways and every touch target meets WCAG 2.5.8
+- `sweep:widths` — headless Chrome across 29 routes × 14 widths, asserting no page ever scrolls sideways and every touch target meets WCAG 2.5.8
 
 That last one exists because I kept doing it by hand and kept doing it wrong: the type grid leaked horizontal overflow onto every page for as long as it had shipped, and I missed it three times because 390, 768 and 1280 are all clean while 600 and 700 are not. It has since caught a breakpoint that broke the header on every width between 360 and 383, and disproved a WCAG failure I had been asserting in two documents without ever measuring it.
 
@@ -91,4 +92,10 @@ I keep my working notes in [`docs/`](docs/) — the original brainstorm, the des
 
 ## Credits
 
-Data and images from [PokéAPI](https://pokeapi.co) (sprites are CC0). Pokémon is © Nintendo / Game Freak / The Pokémon Company; Statmon is an unofficial fan project. My code is MIT — see [`LICENSE`](LICENSE).
+Data and images from [PokéAPI](https://pokeapi.co) (sprites are CC0). The two
+webfonts are SIL OFL and the dex's sort carets are Font Awesome Free (CC BY
+4.0); every third-party notice is in [`licenses/`](licenses/NOTICE.md), and the
+font licences are fetched by `npm run vendor:fonts` alongside the fonts so a
+re-vendor cannot drop them. Pokémon is © Nintendo / Game Freak / The Pokémon
+Company; Statmon is an unofficial fan project. My code is MIT — see
+[`LICENSE`](LICENSE).

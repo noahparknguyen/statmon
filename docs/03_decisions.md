@@ -4,6 +4,1020 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ---
 
+## 2026-09-07 — Session 29 (a check for the trap, Home's cameos, two things that move, a picker that is a page, and a voice)
+
+<a id="d-131"></a>
+
+### D-131 · The pre-deploy review — what it found in files nobody had opened — **Firm**
+
+A last pass over the whole repository, including the setup files no session had
+touched. Four real defects, and the two worst were in the checks themselves.
+
+**`audit:contrast` could not fail.** It printed `── N failure(s)` and then fell
+off its last line with an **exit code of 0**. It has been advisory-only since
+[D-027](#d-027) — through [D-058](#d-058), where a real pairing failed AA on 17
+of 18 types and was caught by a person reading the output rather than by the
+build. `npm run check` and CI would have gone green with WCAG failures on
+screen. It sets `process.exitCode` now, verified both ways: a clean tree exits
+0, and a fill raised to 60% exits 1.
+
+**The audit restated two constants the app owns.** `0.28` and `PANEL_TINT = 10`
+were copies of `DexRow`'s `FILL_ALPHA` and `gameChrome`'s `TINT`, so changing
+either in the app left the audit validating a colour the site no longer paints —
+and passing. Both are read from source now, the way `--hero-scrim` already was,
+and a constant it cannot find is a hard failure rather than a default.
+
+**Every lazy route warned in the console.** React Router had no
+`HydrateFallback`, so 14 of 15 pages logged a warning to every visitor who
+opened devtools. There was no white flash to fix — `body` carries
+`--color-base` and `color-scheme: dark` from the stylesheet before any
+JavaScript runs — but the state was undeclared. It is a component of its own
+now, for the reason `toolKey.js` is: `react-refresh` requires a module defining
+a component to export only components.
+
+**`vite.config.js` described a test suite from two years ago**, claiming tests
+were pure logic and "anything that needs a browser is verified by hand". Neither
+half is true: `routes.test.jsx` server-renders every route, and layout is
+measured by `sweep:widths`.
+
+**Security headers, which the site had none of.** `public/_headers` ships a CSP,
+`X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` and
+`Cache-Control` for the immutable assets. The policy is unusually strict because
+the site earned it — nothing is fetched from anyone at runtime — and it contains
+**no `'unsafe-inline'`, not even for styles**, which looks wrong and is not:
+React assigns style properties through the CSSOM, which `style-src` does not
+govern.
+
+That was measured in both directions, and the first measurement was worthless:
+the harness listened only to `Runtime.consoleAPICalled`, and browser-emitted
+messages — CSP refusals, failed subresources — arrive on `Log.entryAdded`. It
+reported "clean" for a policy that should have broken the site. With `Log`
+enabled, tightening `img-src` to `'none'` lights up every route, and the shipped
+policy still reports zero violations on all fifteen.
+
+_Unverifiable from here, and stated rather than assumed: whether Cloudflare's
+static-assets runtime applies `_headers` for a Workers deployment. The file is
+inert if not — it costs nothing and breaks nothing — but the headers should be
+confirmed on the live origin after the first deploy._
+
+**Also swept and clean:** a nine-point accessibility audit across all 17 routes
+(one `h1`, no skipped heading levels, every image with alt or `aria-hidden`,
+every control named, every input labelled, no positive `tabindex`, no dangling
+`aria-labelledby`, no duplicate ids, title and lang present) — zero findings.
+No sourcemaps or stray files in `dist/`. Three exports nothing imported, made
+private.
+
+---
+
+<a id="d-130"></a>
+
+### D-130 · The dual-type gradients stop being muddy — **Firm** _(refines [D-107](#d-107), [D-115](#d-115))_
+
+**Reported as** "by themselves the colours look fine, but some gradients look
+muddy — an odd greyish middle."
+
+**Correct, and it was about a third of every dual-type surface.** Two type
+colours are frequently near-complementary in HUE — bug against dragon is
+yellow-green against purple, grass against poison is green against magenta — and
+a straight line between opposite hues passes close to neutral. The stops held
+each colour to 25% and blended across the **middle half**, so that neutral zone
+was enormous.
+
+Measured over the 65 pairs whose midpoint loses more than a quarter of its
+chroma, as a fraction of the surface that is visibly desaturated:
+
+| stops         | blend zone | mean muddy width |
+| ------------- | ---------- | ---------------- |
+| 25 / 75 (was) | 50%        | **29.7%**        |
+| 40 / 60       | 20%        | 11.9%            |
+| **45 / 55**   | **10%**    | **5.9%**         |
+| hard split    | 0%         | 0%               |
+
+**45/55.** The seam stays soft — a hard edge would alias badly on the arena's
+135° diagonal — and there is simply far less of it. It is also what
+[D-107](#d-107) said it wanted in the first place: "two colours with a seam
+rather than a wash that is neither". 25/75 never delivered that.
+
+**Interpolating in oklab was measured and rejected**, which is the part worth
+recording because it is the opposite of the standard advice. Perceptual
+interpolation fixes gamma-induced darkening; that is not what is happening here.
+Opposite hues pass near grey in **any** rectangular space, and across all 153
+pairs oklab came out slightly **worse** — 29.9% mean chroma loss against sRGB's
+26.4%, with 77 bad pairs against 65. `oklch` would arc around the hue circle and
+stay saturated, but it would sweep through hues belonging to neither type, and a
+green midpoint on a Pokémon with no Grass in it says something false on a site
+about types.
+
+**The contrast audit is unaffected and still correct.** Groups 11 and 12 check
+the 50% midpoint, which is the worst colour along the gradient and is unchanged
+by moving the stops — only how much of the surface sits near it changed.
+
+_The first version of the measurement was wrong and said so: it compared every
+sample against the AVERAGE of the two endpoints, which punished any pair whose
+colours differ in saturation and reported a hard split as 18% muddy. A hard
+split never blends. Mud is chroma falling below what the endpoints imply at that
+point, not below their mean._
+
+---
+
+<a id="d-129"></a>
+
+### D-129 · A nav click is not a Back — **Firm** _(corrects [D-087](#d-087))_
+
+**Reported as** "should clicking the logo or a nav link take you back to the top?
+Right now navigating between pages remembers where your scroll bar was."
+
+**It did, and that was [D-087](#d-087) fixing a real bug the wrong way round.**
+Every control on this site navigates — the URL is the single source of truth
+([D-022](#d-022)), so picking a Pokémon, swapping, choosing a generation or
+toggling a type is a `navigate()` — and each minted a fresh history key with no
+saved position, whose fallback is scrolling to the top. The board you were
+reading jumped away on every click, measured at **327px to 0**. Keying
+`ScrollRestoration` by TOOL rather than by history entry stopped that.
+
+**But it made every return to a tool a restore.** Clicking "Dex" after reading
+5,000px of it put you back at 5,000px — which no browser does for a fresh
+navigation, and which reads as the page having failed to load at the top. Back
+should restore; a link click should not, and the tool key could not tell them
+apart because `getKey` never sees the navigation type.
+
+**So the two cases are separated at the source instead.** Every in-tool
+navigation on this site is a `replace` — all nine of them — and each now carries
+`preventScrollReset`, which is the mechanism for exactly this. Keying goes back
+to the default per-entry `location.key`. A nav link, the wordmark and a link out
+of a game are ordinary navigations and land at the top; Back and Forward restore.
+
+**Measured in a browser rather than reasoned about**, because scroll position is
+not something a server render can answer:
+
+|                       | before   | after              |
+| --------------------- | -------- | ------------------ |
+| Deep in `/dex`        | 5000     | 5000               |
+| An in-tool sort click | 5000     | **5000** — no jump |
+| Nav to `/compare`     | 0        | 0                  |
+| Nav back to `/dex`    | **5000** | **0**              |
+| Browser Back          | 4000     | 4000               |
+
+**The invariant is guarded at the source**, since a `navigate()` that forgets
+the flag reintroduces D-087's jump on one control and nothing would say so: a
+test asserts every `replace: true` is paired with `preventScrollReset: true`,
+and that `ScrollRestoration` carries no `getKey`.
+
+_`toolOf` stays, and is now used only by the focus announcement it was also
+written for — a state change is not a page change, whatever the pathname does._
+
+_Two false alarms while measuring, both the harness: `focus()` on an input
+scrolls it into view, which looked exactly like the jump returning; and a
+one-line `sed` mutation silently matched nothing after Prettier split the object
+across lines, which looked exactly like a vacuous test._
+
+---
+
+<a id="d-128"></a>
+
+### D-128 · Closing the V2 list — what will not be built, and why — **Firm**
+
+The fast-follow list in [01_spec §2.2](01_spec.md) has sat half-open since
+launch. Everything on it is now either shipped or closed, because an item nobody
+has decided about reads as an item nobody got to.
+
+**Shipped this session:** the `/compare` bar animation
+([D-124](#d-124)), random matchup ([D-123](#d-123)), and the About page
+([D-118](#d-118)).
+
+**Closed as won't-do, each for a reason rather than for lack of time:**
+
+- **Attacker-identity read (physical vs. special).** The board already answers
+  it without a label — Attack and Sp. Atk sit two rows apart with a tinted
+  difference between them, so which one matters is read off the bars. A badge
+  saying "physical attacker" would be a second, coarser statement of what six
+  rows already show, on a card whose whole design history is about removing
+  duplicate statements of the same numbers ([D-057](#d-057)).
+- **Biggest-gap highlight.** Every difference cell already carries the winner's
+  type colour and a caret. Emphasising one row further means a fifth weight on a
+  scale [D-051](#d-051) deliberately keeps at one loud state and three quiet
+  ones.
+- **Search filters by type and generation.** `/dex` filters by any number of
+  types and generations at once and every row links into `/compare`, so this
+  exists — one page over, with more power than a dropdown on a search field
+  would have had. Building it twice is the duplication
+  [06_style_guide §12](06_style_guide.md) rule 8 exists to prevent.
+- **Recently-compared list.** The only item here the site genuinely cannot do
+  another way, and the one that costs something real: it would be the first
+  thing stored about a reader beyond the game record they can already clear
+  ([D-098](#d-098)), in exchange for saving a search on a site whose search is
+  two keystrokes.
+- **Light-mode toggle.** Not a toggle: every token in `index.css` is dark-first
+  and `npm run audit:contrast` validates exactly one theme across eleven
+  pairing groups. A second palette means a second audit, and 04_design §2's
+  type colours were tuned specifically for a near-black background.
+- **The 24px desktop gutter** ([04_design §5](04_design.md)). The argument is
+  where a gutter actually bites: above 1120px plus gutters the content is capped
+  and centred, so the gutter is invisible; below that it is the only thing
+  between content and screen edge, and 16px is right there. A responsive gutter
+  would add a breakpoint-dependent value to every page wrapper to change nothing
+  where it applies and cost 16px of width where space is tightest.
+- **The selection cross-fade** ([04_design §7](04_design.md)), superseded rather
+  than dropped. A cross-fade masks a change; the bar grow-in performs it — the
+  bar travels to its new length, which is what changed ([D-124](#d-124)).
+
+**Still open, and deliberately:** the copy-link button and a full keyboard audit.
+Both are real, neither is a judgement call, and they belong to a session with
+time to do the audit properly rather than to a checklist being cleared.
+
+---
+
+<a id="d-127"></a>
+
+### D-127 · A selection can be removed — **Firm**
+
+**Reported as** "we don't have the option to remove the selected Pokémon —
+I know you can search for another or refresh, but sometimes you just want to
+remove it."
+
+**Decision.** Each filled card carries a **Remove** in its head, beside the type
+badges.
+
+**It is a navigation, not new state.** `compareUrl` already spells every
+combination including the partial one-slot form, so clearing a slot is the URL
+without that slug — which means Back undoes it, a half-filled board is still
+shareable, and there is nothing to keep in sync ([D-022](#d-022)). The ability
+goes with the Pokémon: `?a1=` for something no longer on the board is a dead
+parameter, and `resolveAbility` would drop it on the next render anyway.
+
+**Side by side with the badges, not stacked above them.** The head is a fixed
+56px ([D-080](#d-080)) and two type badges already use 40px of it, so a third
+stacked item overflows the band. A third column changes its height by nothing.
+
+**28px**, which clears WCAG 2.5.8's 24px floor outright rather than through its
+spacing exception — the harder way to pass, and the one `npm run sweep:widths`
+does not have to argue about. **Always visible**, never hover-only: a control
+that appears on hover is undiscoverable and unreachable on touch.
+
+**Named after its Pokémon** — "Remove Volcarona", not "Remove". Two identical
+controls on one board tell a screen reader nothing about which side they belong
+to, which is why the two search fields and the two ability groups are named too.
+
+_The `onClear` default is `null` and today guards nothing, because `/compare` is
+the only caller. It is there so a read-only caller renders no control rather
+than a disabled one — the rule [D-078](#d-078) set, and which
+[D-111](#d-111) had to apply after a disabled button spent a release eating
+clicks on the games index._
+
+---
+
+<a id="d-126"></a>
+
+### D-126 · The copy pass — what came out, and what became a test — **Firm** _(applies [06_style_guide §14](06_style_guide.md))_
+
+**186 user-visible strings** were inventoried — JSX text, `aria-label`, `alt`,
+`placeholder`, group labels, and the `sr-only` text nobody had ever read back —
+and audited against §14.1. `/style` is excluded: it is documentation for whoever
+is building the site rather than copy for whoever is using it, and `robots.txt`
+keeps it out of search.
+
+**Cut or rewritten, each against a stated rule.**
+
+- `/games`' closing line — _"Every round ends with a link into the tool that
+  would have answered it — the point is to stop needing to look it up."_ True,
+  and the argument for a game living on a reference site at all; also the site
+  telling the reader why its own idea is good (rule 4). The rounds do it. The
+  reasoning stays in [D-091](#d-091), which is where it belongs.
+- **"Try it out" → "Open the comparison"**, which reverses a slice of
+  [D-023](#d-023). It was the one string on the site written as a pitch rather
+  than a description, and the other three sections all say "Open the …". What
+  made the flagship distinct was never the verb — it is the mascots, the
+  full-width board and its own section, and all of that survives.
+- `/games/effective`'s empty state, **18 words to 9**, because its sibling says
+  the same thing in eight (rule 7).
+- **The footer's tagline**, which was Home's hero line with four words added —
+  and on Home the two appeared on the same page.
+- `/style` used both **"color" and "colour"** in its own prose.
+
+**One control was saying two different things.** The alternate-forms chip is the
+same `includeForms` field on three surfaces, and it read oppositely: the dex was
+lit when forms were **hidden**, both game setups when they were **shown**. Same
+component, same default, inverted polarity. Every other `FilterChip` on the site
+is lit when a narrowing is applied, and hiding 234 entries is a narrowing — so
+the games were the odd ones out rather than the dex, and all three now say "Hide
+alternate forms" and light the same way.
+
+**And two of the nine dex sort headers stuttered.** The full column name is
+appended for screen readers because the visible label is an abbreviation and
+WCAG 2.5.3 needs the accessible name to contain it — but `Name` and `HP` are not
+abbreviations, so they read **"Name sort by Name"** and **"HP sort by HP"**.
+Audible only, never seen, which is how it survived. The name is added only when
+it says something the label did not.
+
+**No `check:copy` script, and that is the finding.** Five of the eight things
+this pass turned up were mechanically detectable, and the right home for them
+was **tests**, not a new command: they read source files the way the existing
+`index.html` ↔ `SITE_TITLE` assertions already do, they ride along with
+`test:run`, and they give a precise failure instead of a report to read. What is
+now asserted: the manifest, the tag and the app shell agree on the site's name
+and description; the forms chip has one label and one polarity everywhere; the
+sort headers do not repeat themselves; nothing shouts; and no word ships in two
+spellings. The other three findings were judgement calls, and a linter for "does
+this sentence earn its place" is a linter that cries wolf.
+
+_The extractor's own bug was caught by the test it feeds: `>` in `=>` is not the
+`>` of a tag, so it matched from an arrow through to the next `<` and reported a
+chunk of `gameThumbs.jsx` as shouty copy. The same flaw was in the scratch
+inventory, where it was read past._
+
+---
+
+<a id="d-125"></a>
+
+### D-125 · The controls band reserves a chip, not a line of text — **Firm** _(applies [D-050](#d-050), refines [D-080](#d-080))_
+
+**Reported as** "when a Pokémon has no forms a dash is placed instead, but when
+they do have a form the FORM and ABILITY labels shift up a tiny bit."
+
+**Measured: 4px and 3px.** The Form cell was **24px** with the em-dash and
+**21px** with chips, and the band is on `items-baseline`, so both labels moved
+when the taller cell shrank.
+
+**The cause is that the placeholders are inline text and the chips are not.** A
+chip is 21px by construction — `text-badge` is `leading-none`, so its line box
+is the 11px font size itself, plus `py-1` and a 1px border each side. The
+em-dash is a `<span>` in a block `<div>`, so its box came from the **inherited**
+line-height (16px × 1.5 = 24px) and had nothing to do with the glyph in it. The
+`text-caption` on it was never the number that mattered.
+
+**[D-080](#d-080) reserved the row and not the box.** Its comment is right that
+"what must not collapse is the labelled ROW, not the chips" — the row did hold
+its space, it just held a slightly different amount of it, which is the harder
+bug to see and the one that had shipped.
+
+**Both placeholders, not just the reported one.** `AbilityChips` renders a
+sentence rather than chips for the 14 entries with no abilities **and on every
+Gen 1 or Gen 2 board**, where abilities do not exist yet ([D-073](#d-073)) — the
+same 24-against-21 and the same shift, on a case nobody had reported. One
+`CHIP_CELL` on the cell fixes both and leaves the chips to size themselves.
+
+**The 21 is written down with its arithmetic** rather than left as a number, in
+`chipStyles.jsx` beside the chip it is derived from.
+
+**Reserving the cell was only half of it.** The band aligned its two columns on
+`items-baseline`, so the label still took its position from whatever the cell
+held — and a chip, a bare glyph and a chip row that WRAPS do not share a
+baseline. Wrapping is the interesting one: a multi-line flex row takes its
+baseline from its first line, which moves as the row grows, so Hydrapple's
+three-chip roster nudged its label about a pixel. Small enough to look like a
+rendering artifact, consistent enough to notice while browsing.
+
+Both sides carry the reservation now and the grid aligns on `items-start`, so
+the label's position is a function of the box alone. Measured across a no-forms
+card, a Megas card, a wrapped three-ability roster and a Gen 1 board with no
+abilities at all: **435.0 and 462.0 in every case**, where before it ranged over
+435.0, 440.0, 440.3 and 444.0.
+
+_The empty card has no band to reserve, and a test says so: `EmptyCard` merges
+head, controls and portrait into one zone rather than mirroring the filled
+card's three ([D-083](#d-083)). Without that assertion the guard above looks like
+it is missing a case._
+
+---
+
+<a id="d-124"></a>
+
+### D-124 · The tool's own bars grow in, and re-grow when they would move — **Firm** _(closes a [D-043](#d-043) leftover)_
+
+**Decision.** `/compare`'s board animates its bars on mount, on both the desktop
+rows and the phone's per-stat cards, and re-animates whenever the values change.
+
+**Why it was outstanding.** Home's `FeaturedComparison` has grown its bars in
+since [D-023](#d-023), and the tool it advertises rendered instantly — the last
+of the roadmap's "partially shipped" items, and a preview that was livelier than
+the product.
+
+**A CSS animation runs on mount, so re-running it means a new element.** The
+stats block is wrapped in a keyed `<div>`, which remounts the six rows.
+
+**The key is the NUMBERS, not the slugs and not a counter**, and that is the
+part worth keeping. It is precisely the condition worth animating on: the bars
+re-grow when they would move, and stay still when something that does not touch
+them changes. Selecting, swapping and moving the generation lens all change it;
+**choosing an ability does not** — that re-renders this card, because it
+re-scores the STAB chips above the stats, and it leaves the bars alone.
+
+**Both surfaces.** Below `md` the per-stat cards are the only stats surface
+([D-057](#d-057)), so animating the desktop board alone would have made the
+phone the odd one out. `CmpStatCard` gained the same two branches `CmpRow` has —
+written out rather than composed, because `--target` and `width` are different
+mechanisms.
+
+**And all three cards, which the first attempt missed.** The comparison card
+animated and the two `PokemonCard`s beside it did not, so the board grew in
+down the middle and sat still on either side — reported as "the animation
+doesn't play for the left and right cards", which is exactly what it looked
+like. Each side card keys on **its own** values rather than the board's: a card
+re-animates when its Pokémon or era changes and holds still when the other side
+changes under it, while the card between them keys on both, because both are
+what it is comparing.
+
+_The test that guards this is a count, not a `toContain`. The comparison card
+alone renders 24 animated bars and the two side cards add six apiece, so the
+assertion is a floor **above 24** — which is the difference between "something
+on this page animates" and "the side cards do". The first version of it was the
+former, and passed while the bug was on screen._
+
+**The dex table still does not animate**, and a test now guards that: it windows
+its rows, so rows mount continuously while scrolling and every one would animate
+on arrival ([D-067](#d-067)).
+
+---
+
+<a id="d-123"></a>
+
+### D-123 · Random matchup — **Firm** _(closes part of the V2 list)_
+
+**Decision.** A `Random` button beside Swap on `/compare`, drawing two different
+Pokémon from the pool that existed at the generation being read.
+
+**It keeps the lens rather than ignoring it.** Drawing from the whole dex while
+someone reads a Gen 1 board hands back two Pokémon Gen 1 did not have —
+`parseAsOf` then validates the era against the new selection and silently drops
+it, so the control would quietly undo the one you had set. Drawing from
+`filterRows(ALL_POKEMON, { asof })` means "what existed then" is the identical
+question here, on `/dex`, and in the games.
+
+**Never disabled**, unlike Swap. An empty board is the state a random matchup is
+most useful in — it is the only thing to do there besides type — where Swap
+needs a selection to have something to turn around.
+
+**The second pick steps over the first rather than redrawing until they
+differ.** That is O(1), has no loop to bound, and cannot hang on an rng that
+returns a constant — which a rejection loop would, and which a test asserts
+directly.
+
+_The `rng` is injected, like every generator on this site (lib/games.js), which
+is what makes "always distinct" and "always in the era" assertable over 2,000
+seeded draws rather than over whatever `Math.random` produced once._
+
+---
+
+<a id="d-122"></a>
+
+### D-122 · The credits are two kinds of thing, so they are two columns — **Firm** _(completes [D-121](#d-121))_
+
+**Reported as** "now there's a big empty gap in the middle — maybe move the
+disclaimer there, or add the Poké Ball?"
+
+**The gap was real**: a 384px brand block and a ~250px pair of link groups
+cannot span 1120px however they are aligned, so about 480px sat empty between
+them. Two suggestions were on the table and **neither is what shipped**, for
+reasons worth recording.
+
+**Not the disclaimer.** It is tertiary legal text. Moving it to the middle of
+the upper block would make it more prominent than the links above it, which is
+backwards — the reason it sits under a rule is that it is the least important
+thing in the footer, not the most centred.
+
+**Not a mark either.** A large Poké Ball would be the site's **third**
+decorative exception, after Home's sprite wall ([D-070](#d-070)) and the arena
+([D-096](#d-096)). Both of those have a written argument for why the decoration
+does a job. A brand mark filling a hole does not have one; it would be
+decoration hired to cover a layout problem, which is how sites acquire the
+clutter this one exists to avoid.
+
+**The gap wanted content, and there was content.** The one "Credits" column was
+holding two unrelated obligations: **Data** the site fetched (PokéAPI, CC0
+sprites) and the **fonts and icons** it draws with (SIL OFL, CC BY 4.0). They
+come from different places, carry different terms, and a reader looking for one
+is not looking for the other. Split, they fill the width with substance, and the
+footer reads as four blocks across instead of two clusters and a hole.
+
+_`Source on GitHub` moved up into "Fonts & icons" with them, which also thins
+the bottom bar back to a legal line and a byline._
+
+---
+
+<a id="d-121"></a>
+
+### D-121 · The footer spreads to both edges, and states two things it can prove — **Firm** _(refines [D-119](#d-119))_
+
+**Reported as** "because the right side only has small lines of text, it looks
+like the entire thing is off centred."
+
+**The cause was even boxes holding uneven content.** Three `1fr` columns are
+about 347px each; "Font Awesome" is 110px wide. So two of the three columns were
+mostly trailing whitespace, all the mass sat in the left third, and the footer
+had a left edge and a ragged middle rather than two edges.
+
+**So the brand goes left and the link groups are pinned right**, which uses the
+width and is the shape most footers converge on for exactly this reason. The
+bottom bar mirrors it — one thing on each edge — and both changed together,
+because the earlier complaint about that bar was never about the bar on its own:
+it was two different arrangements stacked.
+
+**Two facts were added to the left column, and both are read off the dataset.**
+The entry count and the current generation come from `ALL_POKEMON.length` and
+`CURRENT_GEN`, never typed. A footer that states a count is a footer that can be
+wrong about one, and `npm run build:data` is the thing that would make it wrong
+— silently, months later. A test asserts both against the dataset and fails if
+either is hardcoded. It costs **486 bytes** and no new dependency: the dataset is
+already in the eager chunk because Home is ([D-060](#d-060)).
+
+**And one line about storage**, because it is a fact worth having and nobody
+else will state it: no cookies, no analytics, and the only thing kept is the
+game record ([D-098](#d-098)) in the reader's own browser. It survives
+06_style_guide §14 rule 4 — describe decisions, never virtues — because it
+describes a mechanism rather than claiming to be private.
+
+_The test for it failed on a clean tree first: React's server renderer separates
+adjacent text and expressions with an empty comment, so "Generation 9" arrives
+as `Generation <!-- -->9` and never matched. Stripping those is what makes the
+assertion about the text a reader sees rather than the markup around it._
+
+---
+
+<a id="d-120"></a>
+
+### D-120 · Two attribution obligations, unmet since launch — **Firm**
+
+**Found while asking what else belonged in the footer**, which is the only
+reason either was found at all: nothing checks licences, and neither had ever
+been visible on screen or in the repository.
+
+**The fonts.** `public/fonts/` holds ten `.woff2` files vendored from Google
+Fonts. Inter and Space Grotesk are both **SIL OFL 1.1**, and the OFL requires
+the licence text to be distributed with the font software. The only `LICENSE` in
+this repository was the project's own MIT. The two texts are in `licenses/` now,
+and — the part that matters more — **`npm run vendor:fonts` fetches them
+alongside the fonts**, and throws if what comes back is not an OFL. A licence
+added by hand is one the next re-vendor silently drops.
+
+**The icons.** `react-icons` is a wrapper, and each set keeps its original
+terms. Almost every icon here is Lucide (ISC, no notice required), but the dex
+table's four sort carets are **Font Awesome 6 Free**, which is **CC BY 4.0 —
+attribution required**. Four carets were the whole exposure, and they were
+credited nowhere. Font Awesome is in the footer's Credits column now; Lucide is
+in `licenses/NOTICE.md` for completeness rather than on screen, because a
+credits list containing everything is one nobody reads.
+
+**`licenses/NOTICE.md` covers the rest**: the runtime dependencies whose MIT
+banners a minifier drops, and Bulbapedia as the source the ability-effect table
+was checked against — read rather than copied, so a courtesy rather than a
+requirement.
+
+_The footer's bottom bar also stopped being a `justify-between` row. It was the
+one part of the footer ignoring the grid above it — the byline floated to the
+far edge while every heading started on a column — so it spans two columns and
+takes the third, and the whole footer reads on three verticals._
+
+_And every outbound link in the footer now announces itself. The first test for
+that allowed a slack of one and passed while the licence and notice links said
+nothing; it asserts **every** external link, and that there are at least six._
+
+---
+
+<a id="d-119"></a>
+
+### D-119 · The credits are the footer — **Firm** _(replaces [D-118](#d-118)'s credits section)_
+
+**Reported as** "the footer is getting a bit crowded, everything is on one line
+and the spacing feels off" — plus the better idea underneath it: put the credits
+_in_ the footer rather than on a page.
+
+**Decision.** A three-column footer — the wordmark and a line, **Tools**, and
+**Built with** — over a rule carrying the legal line and the byline. The
+attribution lives there on every route instead of on one page, and `/about`
+loses its Credits section entirely.
+
+**Why this is better than the page it replaces.** [D-118](#d-118) merged Credits
+into `/about` on the argument that a three-card page was too thin to stand
+alone. That was right about the page and wrong about the destination: the fix
+for "nobody navigates to the attribution" is not a shorter trip to it, it is not
+requiring a trip. PokéAPI's fair-use ask and the CC0 sprite credit are now on
+every page that has a footer at all, which is what attribution is for.
+
+**The crowding was the symptom of a footer doing two jobs in one row.** Six
+items — a paragraph, a byline, three links — wrapped into a line that had to be
+held apart by a `gap-y-3` chosen to satisfy WCAG 2.5.8's _spacing exception_,
+because the links were bare 12px text with a ~17px hit box and only cleared the
+24px rule by 3px. In columns they are 14px with `py-1`, which makes each row a
+**~28px box that passes outright**. Passing a target-size rule by having targets
+rather than by having gaps is the better way to pass it.
+
+**A screen reader is told the footer links leave the site**, not just shown an
+arrow: the icon is `aria-hidden` and each external link carries an `sr-only`
+"(opens in a new tab)".
+
+**The footer has an `sr-only` heading**, which is not decoration. Its two groups
+are `<h3>`, and without an `<h2>` above them every page skipped a heading level
+from its own `<h1>`. The Home test that counts sections is scoped to `<main>`
+now rather than counting every `<h2>` in the document.
+
+**`/credits` still redirects**, at `/about` rather than an anchor that no longer
+exists.
+
+---
+
+<a id="d-118b"></a>
+
+### D-118b · The About copy is the author's, not mine — **Firm** _(supersedes the draft in [D-118](#d-118))_
+
+**Two drafts failed in the same direction before the obvious fix.** The first
+read like release notes. The second corrected the register and was still an
+impression of someone rather than the person — and the tell was the last
+paragraph, which spent its ending on the Black & White team scattered around the
+site. That is a good fact and it was in the wrong place: it made a tangent the
+payoff, when the payoff is a sign-off.
+
+**So the page is his own account**, edited only for grammar and repetition — a
+duplicated "During", "over time" unglued, subject-verb agreement, "which types
+were strong against which". Nothing was rewritten for style.
+
+**One paragraph was added**, and it is the only addition: the generation lens.
+Without it the story ends at "I built more tools", and the lens is the single
+feature that came directly out of the replay the page opens with — the site was
+describing Pokémon as they are now while he was playing them as they were. It
+earns its place by belonging to the origin, not by being the cleverest thing
+here.
+
+**It is signed.** An About page on a solo site is signed work rather than a
+section of a product, and the footer's byline is a credit where this is a person
+ending a letter. 289 words.
+
+---
+
+<a id="d-118"></a>
+
+### D-118 · An About page, the credits folded into it, and a written voice — **Firm** _(absorbs [D-023](#d-023)'s credits page)_
+
+**Decision.** `/about` ships, Credits becomes a section on it, `/credits`
+redirects to `/about#credits`, and the footer carries **both** links.
+
+**Why merge rather than add.** A dedicated credits page is what a product with
+heavy third-party licensing needs. This one was three cards and a disclaimer —
+one of the thin pages this pass set out to fix — and the site had no page saying
+why it exists at all, which for a project whose selling point is that it was
+built for one person's actual problem is the page most worth having.
+
+**Both footer links, one page.** The PokéAPI attribution and the CC0 sprite
+credit are nearer obligations than content, and a reader looking for them scans
+for the word "Credits". Hiding them behind a label that does not say it makes
+them harder to find, which is the opposite of what attribution is for. Two
+links pointing at one page costs nothing.
+
+**`/credits` redirects rather than 404s.** It has been in the footer since
+launch and in the nav before that ([D-094](#d-094)); a bookmark should not hit
+the 404 for something that has only moved. A loader redirect, so the address bar
+is corrected before anything renders.
+
+**The voice is written down now, and that is the part with teeth.** 06_style_guide
+gained a **§14**, because the copy pass that follows this had nothing to audit
+against and would otherwise have been my taste with a checklist stapled to it.
+The rules were derived from what the site already sounded like rather than
+invented: every user-facing string on it describes a **mechanism rather than a
+benefit** — _"See who's faster, hits harder, and is bulkier."_, _"The same data,
+asking you the questions."_ — and not one claims the site is fast, clean or
+minimal. There is exactly one joke, _"This page fainted."_, delivered flat and
+never explained, and that is the calibration for humour.
+
+**About is a stated, bounded exception to the site's terseness**, in the way
+Home's sprite wall ([D-070](#d-070)) and the arena ([D-096](#d-096)) are stated
+exceptions to 04_design §1. It gets paragraphs and a past tense because there
+the prose _is_ the content.
+
+**The first draft was wrong, and how it was wrong is worth keeping.** §14's
+rules were derived from the site's UI STRINGS and then applied to a page that is
+not UI. Under "say it once", "prefer a number to an adjective" and "describe
+decisions", the page came out reading like release notes — a paragraph of
+feature list, and a closing paragraph about a build-time verification gap that I
+argued was the most credible sentence on it. It is, **to a developer evaluating
+the project**. To someone who arrived from the type chart it is noise, and the
+README already carries it for the audience that wants it.
+
+So §14 splits into **14.1 the UI voice** and **14.2 the `/about` voice**, and
+the second wants what the first forbids: hedges ("I'd say", "which I'd argue
+still counts"), sentences that build on each other, conversational openers, and
+the loose word over the precise one — "nostalgia trip", "HM mule". A solo
+project has an opinion rather than a position, and the hedges are what make it
+read as a person instead of a product.
+
+**What a visitor wants from an About page** is three things: who made this, why
+it exists, and one detail nobody would include unless it were true. So it ends
+on the Black & White team scattered across the site — Volcarona and Chandelure
+on Home, Krookodile on the type chart, Archeops and Beartic on the dex, Mienshao
+and Samurott mid-round in the games — and on Beartic having been the HM mule,
+which does more work than any claim the site could make about its own quality.
+**336 words**, deliberately looser than the 250 the first draft aimed at.
+
+---
+
+<a id="d-117"></a>
+
+### D-117 · The difficulty picker shows the games rather than describing them — **Firm** _(applies [D-043](#d-043), extends [D-108](#d-108))_
+
+**Reported as** "the difficulty select page is probably the most boring — no
+colours, interesting visuals, nothing."
+
+**Decision.** Each preset card carries a **real round at its own settings**,
+drawn with the game's own panels. Easy and Medium deal two contenders, Hard
+deals four; the type game's three cards show a single defending type, a dual
+type, and a Pokémon. Equal weight, no recommended option.
+
+**Why this and not decoration.** [D-043](#d-043)'s rule is that a preview is the
+tool's own components against real data, never a mockup, and the games index
+already applies it one level down. The picker was the one surface advertising
+something it did not show. Doing it with the real panels means the cards cannot
+drift from the presets they start, and it costs **no new colour system** — the
+vibrancy is `tintFor`, which these panels already had.
+
+**What a thumbnail has to say is the SHAPE of the round, not its detail.**
+Nobody reads a picker; they glance at it on the way to playing. Two panels
+against four is the entire difference between Medium and Hard and it survives
+being 80px wide, where a legible stat value would not. The type game's ladder
+is the same idea: the tier IS the defender, so the right-hand panel changes
+shape across the three cards and the difficulty explains itself.
+
+**The thumbnails moved out of the games index rather than being copied.** The
+index had two local ones; the picker needed the same thing per preset. Copying
+would have produced a second set of pictures of the same three games, which is
+the drift [D-043](#d-043) exists to prevent — so they are `gameThumbs.jsx` now,
+parameterised by settings, and each round is drawn **once per settings object**
+and remembered in a module-level map, so leaving the picker and coming back does
+not quietly redeal it.
+
+**Two fixed heights had to stop being fixed.** `ContenderPanel`'s `sm` size
+carried `h-32`, which made a four-up thumbnail 256px of panels inside a 128px
+band — it overflowed the card and painted over the label beneath it. The grid
+owns the height now and the panel fills its cell, which is one number instead of
+two that have to agree. `MatchupPanel`'s `sm` band was `h-0`: a reservation that
+was never exercised because nothing at that size had ever revealed a typing, so
+the hard tier's badges spilled straight out of the thumbnail's bottom edge.
+
+_Caught by a test that was measuring the wrong thing: counting `/artwork/…`
+anywhere in the page counts React 19's automatic `<link rel="preload">` as well
+as the `<img>`, which made the medium tier appear to contain a Pokémon it does
+not have. It counts images now — and `MatchupPanel` gained the `lazy` prop
+`ContenderPanel` already had, so a thumbnail stops preloading artwork for a game
+nobody has started._
+
+---
+
+<a id="d-116"></a>
+
+### D-116 · A chosen game is a fact about the URL — **Firm** _(fixes [D-108](#d-108), refines [D-109](#d-109))_
+
+**Reported as** "I think I accidentally removed the footer on the difficulty
+select screen as well." Correct, and the footer was the visible end of a
+structural problem rather than the problem.
+
+**The footer could not be fixed where it broke.** `handle.bare` is declared per
+ROUTE, and `/games/higher` is one route serving two things: a board sized to
+fill the viewport exactly, and a difficulty picker that is an ordinary page.
+Which one you are looking at lived in React state on the page — so `Layout`,
+which renders the footer, had no way to ask.
+
+**And the state could not be derived, because of a real bug underneath it.**
+[D-108](#d-108)'s rule is _a bare URL asks; a parameterised URL plays_ — but the
+Medium preset **is** the defaults, and defaults stay out of the URL, so choosing
+it produced `/games/higher` and the page had to remember in state that you had
+chosen. That state did not survive a reload: **picking Medium and refreshing put
+you back on the picker**, and the link you copied did not carry the game. The
+rule the picker's own comment states was false for one of its three presets.
+
+**`?play` makes the invariant true by construction.** It is emitted only when
+the settings would otherwise write nothing, so `/games/higher?stats=speed` stays
+clean, and it is deliberately **outside `settingsKey`** — that string is what
+the saved best streak is filed under ([D-098](#d-098)), and putting a marker in
+it would orphan every existing record and make "did you press play" part of a
+game's identity. With that, a chosen game always has a non-empty query, so
+`started` is read off the URL by both pages and by `Layout`, through one
+exported predicate rather than a second list of paths.
+
+**A second bug fell out of the same state, and it was live.** `GameEffective`
+set the flag in both `start()` and `play()`; `GameHigher` set it only in
+`start()`, and its `play()` refused to navigate when the settings were
+unchanged. From the picker the settings usually **are** the defaults — so
+**Customise → Play left you exactly where you were**, and if you had changed
+something the URL and the screen then disagreed. Both games now navigate when
+leaving the picker or when something actually changed, which is one rule instead
+of two half-rules.
+
+**The picker gets an ordinary page shell**, not the board's. It is not pinned to
+the viewport, so `min-h-screen` and a footer beneath it; the board keeps
+`h-[100svh]` and no footer, which is what [D-109](#d-109) sized it for.
+
+**One artifact, found by looking rather than by any check.** The setup panel is
+rendered on every game route so the `<dialog>` exists to be opened, and its
+class string carried `flex` — which **overrides the UA rule that hides a dialog
+without `open`**. The closed panel painted as a 2px-tall bordered box, 576px
+wide, under the header: invisible on a board where the game bar covers it, and
+sitting in the open on the picker. It is `hidden open:flex` now, which puts the
+display back under the browser's control and keeps one class string for both
+branches. Nothing failed while it shipped, which is the point.
+
+_ESLint caught the fix's own defect: `bare && hasChosenGame(useLocation().search)`
+short-circuits, so the hook would not run on a non-game route and React's hook
+order would change between routes._
+
+---
+
+<a id="d-115"></a>
+
+### D-115 · A dex bar carries the whole typing — **Firm** _(applies [D-107](#d-107))_
+
+**Decision.** The dex's stat fill is tinted by a Pokémon's **typing**, not its
+primary type. A dual type paints a gradient between both colours, running along
+the bar's length.
+
+**Why.** It was the primary alone, so Volcarona's bars said Bug and never Fire —
+exactly the omission [D-107](#d-107) corrected for the arena's panels, still
+sitting in the tool the arena borrows its data from. 04_design §3's idea is that
+a Pokémon's typing colours its representation; half a typing is half the idea.
+
+**The helper is new, and reusing the arena's would have been a bug.**
+`tintFor` mixes with `--color-base` because a game panel sits on the page and
+nothing shows through it. These bars sit in a table row that changes colour on
+hover, so `typeFill` mixes with `transparent` instead — reusing `tintFor` would
+have pinned every bar to the page background and silently killed the row hover.
+
+**90°, not the arena's 135°.** A stat bar is a horizontal strip whose width _is_
+the value, so a diagonal has almost no vertical run to travel across and
+degrades into a hard edge. Along the length, both colours stay visible at every
+width, from a 5 HP sliver to a 255 Speed full bar.
+
+**The dangerous part is one word.** A gradient is a background _image_:
+`backgroundColor` serialises to `background-color: linear-gradient(…)`, which
+every browser silently discards — the bar simply vanishes, and nothing fails.
+`typeFill`'s docstring says so, and a test asserts the **property name** rather
+than only the value. Both mutations were run: swapping to `backgroundColor`
+fails it, and so does reverting to the primary type.
+
+**Audited before shipping, not after.** Group 12 of `npm run audit:contrast`
+computes all **153 pairs at their midpoint** — where a blend is furthest from
+both endpoints group 5 already checks — against `--color-surface`, which is the
+lighter of the two row backgrounds and therefore the harder case for near-white
+text. Worst is **electric/ice at 7.83**, against a 4.5 threshold.
+
+---
+
+<a id="d-114"></a>
+
+### D-114 · The clash shakes parts, not blocks — and in two axes — **Firm** _(refines [D-102](#d-102))_
+
+**Reported as** "the shake doesn't feel strong enough, and it doesn't feel
+irregular — each component in each card should shake differently."
+
+**Both halves were right, and the second was the real fault.** A single
+`animate-clash-shake` sat on the one wrapper holding everything, so the artwork,
+the name, the badges and the value band travelled as one rigid object. The
+variation [D-102](#d-102) built was real but **per panel**: four contenders
+differed from each other and nothing inside any one of them did. The give-away
+is that every edge stays parallel for the whole 280ms.
+
+**Every direct child animates on its own now**, on a `4n+k` cycle of
+`--part-delay`, `--part-dur` and `--part-amp`. The variation is mostly in
+**timing** rather than distance — phase offsets are what read as independent
+mass, and spreading amplitude wider just makes one part look broken. The cycle
+also means the two boards shake differently, because the same index lands on a
+different part in each: `ContenderPanel` has three or four children,
+`MatchupPanel` up to five.
+
+**A second axis, deliberately out of phase.** Reusing the horizontal decay for
+vertical would only have rotated the motion — every part sliding along a fixed
+diagonal, which is one straight line however hard it is thrown. So Y peaks at
+**32%** where X is already at its first reversal, `--part-y` is **signed** per
+child so adjacent parts pull apart rather than rising together, and Y runs at
+roughly half the horizontal throw because the collision is horizontal and the
+vertical is the jolt that comes off it.
+
+Measured live at 4% playback, one panel's four parts at a single instant:
+**(13.3, 2.5) (6.2, −0.6) (10.7, 2.2) (0, 0)** — different distances, opposite
+vertical directions, and one part not yet started.
+
+**Text takes a shorter throw than artwork, and that is a legibility rule rather
+than a physical one.** A clipped letterform reads as a bug; a Pokémon whose
+shoulder passes behind the panel edge reads as impact, which is what the
+collision is for. The panel's `overflow-hidden` is load-bearing
+([D-100](#d-100)) — it is what stops a shaking contender spilling into its
+neighbour — so the question was never whether to clip but what.
+
+**The measurement is the interesting part, because three of my instruments were
+wrong before the numbers were right.** `--window-size=320` does not go below
+about 500px in headless, so the first "320px" figures were taken at 500. The
+first clipping metric measured the artwork's _element_ box, which is `w-full`
+with `object-contain` and mostly empty, reporting clipping nobody could see.
+And sampled peaks are unreliable when the round is **random**: one run showed
+clipping going _up_ on less throw, which is impossible — it had simply drawn
+longer names. Worst case is now computed from geometry and the resolved custom
+properties, over repeated rounds.
+
+What that showed: with a long name filling a 160px panel the slack approaches
+zero, so **at that width any throw clips a long name — including the 13px the
+old block-shake used**. "Text never clips" was never achievable. The target
+became _do not make it worse than it was_: below `sm`, text throws **12.2px**
+against the old 13, measuring **+0.3px** worst clip across six rounds. Artwork
+clips 11.5px at 320px with four contenders, and that is accepted.
+
+**Selected by "does not carry the artwork", not by index**, because the two
+panels order their children differently. If `:has()` is unavailable the rule
+drops and text keeps the full throw — the previous behaviour rather than a
+broken one.
+
+**The selector has a silent failure mode, so it is guarded.** Moving from `.x`
+to `.x > *` means flattening a panel's markup would stop the shake with nothing
+to notice. A test asserts every shaking wrapper has more than one child, on both
+boards. Its first version passed under mutation — it counted tags in a fixed
+window that ran past the wrapper into the sibling panels — so it is depth-aware
+now, and fails on the mutation it exists for.
+
+---
+
+<a id="d-113"></a>
+
+### D-113 · Home's previews are cameos, and open what they advertise — **Firm** _(applies [D-043](#d-043), [D-044](#d-044))_
+
+**Decision.** Beartic joins the dex preview's team; the games preview's round is
+**Mienshao against Samurott** rather than two random draws; and the Compare and
+Dex CTAs open the exact view their preview was showing.
+
+**Why the games preview needed it.** Every other section on Home shows a member
+of the Black & White team the project came out of. This one drew two random
+Pokémon and stood **Mienshao next to the board** as an illustration —
+[D-068](#d-068) reserved it for this section and the reservation was spent on
+decoration beside the game rather than on the game. It is the round now, and the
+section is the only one on Home with no flanking art, because
+`ContenderPanel` already renders artwork full-size as its subject: that is
+[D-096](#d-096)'s "in a game the Pokémon _are_ the data", one level down.
+
+**Pinning gives up a guarantee, so it is bought back rather than dropped.** A
+generated round cannot show a matchup the game would never deal; a hand-picked
+pair can. So the pair is held to the generator's own bar: `isPlayableRound` is
+the predicate `higherQuestion` uses to decide return-or-redraw, and the round is
+built by `roundFor` — the generator's own constructor, extracted rather than
+copied — so the preview cannot disagree with the game about who won. Mienshao's
+105 Speed against Samurott's 70 is a 35-point margin against a floor of 3.
+
+**Beartic earns its place by the sort, not by sentiment.** At 50 Speed it is the
+slowest of the seven, and the dex preview's two flanking figures are the **ends
+of its sort**, read off the rows rather than named. Adding it moved the pair
+from Archeops-110/Samurott-70 to **Archeops-110/Beartic-50** with no code
+change, which is the derivation doing its job.
+
+**The CTAs stop under-delivering.** The type section has always carried
+Krookodile's typing into `/types`; the flagship did not — clicking through from a
+live Volcarona-vs-Chandelure board landed on two empty slots and "Pick two
+Pokémon to compare." It opens that matchup now, and the dex CTA opens Gen 5
+sorted by Speed descending, which is what its preview is. **Games deliberately
+stays `/games`**: the section advertises two games and deep-linking one would
+hide the other.
+
+_Three things this turned up that were not the task. A hardcoded `"Six"` in the
+preview's `<caption>` — the count is derived now, and a screen reader is the one
+audience that cannot see it has gone stale. `WALL_TILES * 4 + 9` in the hero-wall
+test, where the `9` silently meant "six rows and three other sprites". And Home
+was **eagerly preloading two 475px artworks below the fold**: React 19 emits a
+`<link rel="preload">` for any image without `loading="lazy"`, which
+`ContenderPanel` had no reason to set while it only ever ran above the fold in a
+game._
+
+---
+
+<a id="d-112"></a>
+
+### D-112 · Conflicting utilities are a check, not a habit — **Firm** _(closes a [D-042](#d-042) gap)_
+
+**Decision.** `npm run audit:classes` is the eighth check. It splits every class
+string in `src/` into utilities, maps each to the CSS property it sets, and
+fails on two utilities setting the same property under the same variant.
+
+**Why.** Tailwind resolves `min-h-0 flex-1 min-h-[26rem]` by **stylesheet
+order**, not by the order they are written, so the one that wins is not the one
+you meant and nothing says otherwise. [D-042](#d-042) documented the trap and it
+has shipped **twice** since — a `TypeBadge` radius pair, and the game board's
+height in [D-110](#d-110), where a human reading the diff was the only thing
+that caught it. This is the part that does not depend on someone reading the
+diff, which is the same argument `sweep:widths` was built on.
+
+**It reads the design system rather than restating it.** The 23 named text
+styles and the `--color-*` tokens are parsed out of `index.css` at run time,
+because `text-*` carries two unrelated properties: `text-h2 text-primary` is a
+named style plus a colour and is correct on nearly every component on the site,
+while `text-h2 text-h3` is a real conflict. `font-` splits the same way.
+
+**Its first finding was wrong, and that is worth recording.** It flagged
+`font-display font-semibold` — a family and a weight. The script was fixed, not
+the component. Had it been trusted, it would have "corrected" working code.
+
+**Verified against a canary rather than a green result.** Fed the [D-110](#d-110)
+defect verbatim plus four other cases: it catches that, a radius pair and a
+variant-scoped `sm:p-2 sm:p-4`, and correctly ignores `text-h2 text-primary
+font-display font-semibold` and `p-4 px-2`. On the real tree: **420 class
+strings, every utility classified, zero conflicts** — so it is a guard rail
+rather than a cleanup.
+
+**What it does not do is stated in the file.** It does not resolve conflicts
+across composition, because `${BOARD} min-h-[26rem]` is two strings to a static
+scanner; the D-110 defect was inside one string, which is the case it covers.
+
+---
+
 ## 2026-09-07 — Session 28 (three consistency tweaks, a dead link, and a final pass)
 
 <a id="d-111"></a>
@@ -4452,12 +5466,27 @@ Both are served as **Cloudflare Workers static assets** and **lazy-loaded** (onl
 
 ---
 
-## Open / Undecided (to resolve before or during Phase 1)
+## Open / Undecided — none
 
-- **Project template specifics** — confirm the exact official Cloudflare + React Router starter and its current state at scaffold time (D-005 sets direction; pin the concrete template when I init).
-- **Styling approach within Tailwind** — how type colors are wired (Tailwind theme extension vs. CSS variables driven by the data map).
-- ~~Mobile layout strategy~~ — ✅ resolved in [D-010](#d-010) (per-stat cards under 768px).
-- **Testing depth for MVP** — how much of Vitest/Playwright lands in V2 vs. later.
+This section held four questions "to resolve before or during Phase 1" and was
+never emptied; all four were answered by Phase 3 and two of them twice over.
+Kept as a record of what was genuinely open at the start rather than deleted.
+
+- ~~**Project template specifics**~~ — ✅ no template. Plain Vite + React, with
+  React Router and Wrangler layered in when each was needed ([D-013](#d-013)).
+- ~~**Styling approach within Tailwind**~~ — ✅ CSS variables. The 18 type
+  colours are `--color-type-*` tokens read through `typeColorVar()`, and the
+  parallel JSON map the spec anticipated was never built because the tokens made
+  it redundant ([D-028](#d-028), [04_design §3](04_design.md)).
+- ~~**Mobile layout strategy**~~ — ✅ per-stat cards under 768px
+  ([D-010](#d-010)), later corrected so the comparison card is the ONLY stats
+  surface at that width ([D-057](#d-057)).
+- ~~**Testing depth for MVP**~~ — ✅ Vitest, and rather more of it than the
+  question imagined: **478 tests across 15 files**, plus four checks that are not
+  tests at all (`audit:classes`, `audit:contrast`, `check:docs`,
+  `sweep:widths`). Playwright was never added, and
+  [Phase 5](05_roadmap.md#phase-5--fast-follow-v2) records why: the headless
+  width sweep covers the thing it was wanted for.
 
 ---
 

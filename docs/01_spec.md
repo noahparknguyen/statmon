@@ -59,7 +59,24 @@ The MVP is done when a user can land on the site, search two Pokémon, and read 
 
 ### 2.3 Shipped since launch
 
-- **Games** — `/games`, and **`Higher.`** in it, as a full-height **arena**: two or four Pokémon, one stat, pick the highest, readable as of any generation like everything else. The board fills the viewport with one type-tinted panel per contender and the settings live in a modal behind a 56px game bar — the site's second stated exception to [04_design §1](04_design.md), after Home's sprite wall, on the argument that in a game the Pokémon _are_ the data ([D-096](03_decisions.md#d-096)). The setup panel carries the dex's own filters (stats, "Introduced in", types, alternate forms) under its own parameter names, and the best streak and a per-stat accuracy log persist per settings ([D-098](03_decisions.md#d-098)). The brief's three modes are two knobs — "which of these four moves first" is `stat: speed, n: 4` — and the question generator rejects the rounds that are not questions: a tie has two right answers (1.2–2.5% of random pairs) and a sub-5-point gap is a coin flip. Every round ends with a link into `/compare` or `/dex`, which is the argument for a game living on a reference site at all. Settings are in the URL; the score and the round are not ([D-091](03_decisions.md#d-091), [D-092](03_decisions.md#d-092)). Credits moved to the footer to free the nav slot ([D-094](03_decisions.md#d-094)).
+- **`Effective.`, and the games section as specified** — the second game
+  ([D-104](03_decisions.md#d-104)): an attacking type against a single type, a
+  dual type, or a **Pokémon**, answered on the multiplier ladder. The defender
+  axis _is_ the difficulty ladder, so the answer buttons are a property of the
+  tier and never leak a round. The sampler **picks the answer first**, because
+  uniform sampling is a broken quiz — 63% of single-type matchups are 1×, and
+  the best single guess fell to 23.6%. Both games open on a difficulty picker
+  whose cards are real rounds at their own settings ([D-108](03_decisions.md#d-108),
+  [D-117](03_decisions.md#d-117)).
+- **An About page, and the credits in the footer** — `/about` carries the origin
+  story in the author's own voice, bounded by a written
+  [§14](06_style_guide.md) ([D-118](03_decisions.md#d-118),
+  [D-118b](03_decisions.md#d-118b)); the attribution moved into a redesigned
+  footer where it appears on every route rather than on one page
+  ([D-119](03_decisions.md#d-119)). Two licence obligations that had been unmet
+  since launch — the vendored fonts' OFL text and Font Awesome's CC BY
+  attribution — are met ([D-120](03_decisions.md#d-120)).
+- **Games** — `/games`, with **both** games in it. **`Higher.`** is a full-height **arena**: two or four Pokémon, one stat, pick the highest, readable as of any generation like everything else. The board fills the viewport with one type-tinted panel per contender and the settings live in a modal behind a 56px game bar — the site's second stated exception to [04_design §1](04_design.md), after Home's sprite wall, on the argument that in a game the Pokémon _are_ the data ([D-096](03_decisions.md#d-096)). The setup panel carries the dex's own filters (stats, "Introduced in", types, alternate forms) under its own parameter names, and the best streak and a per-stat accuracy log persist per settings ([D-098](03_decisions.md#d-098)). The brief's three modes are two knobs — "which of these four moves first" is `stat: speed, n: 4` — and the question generator rejects the rounds that are not questions: a tie has two right answers (1.2–2.5% of random pairs) and a sub-5-point gap is a coin flip. Every round ends with a link into `/compare` or `/dex`, which is the argument for a game living on a reference site at all. Settings are in the URL; the score and the round are not ([D-091](03_decisions.md#d-091), [D-092](03_decisions.md#d-092)). Credits moved to the footer to free the nav slot ([D-094](03_decisions.md#d-094)).
 - **Abilities, and the matchups they bend** — every Pokémon's roster on its comparison card, hidden ability marked, and the ~20 that change type effectiveness feeding `effectiveness()` alongside the era's chart: `/compare/krookodile/vs/eelektross` said Ground was 2× and now says 0×, because Eelektross has Levitate. One ability is always selected (a Pokémon always has one), which is why Home's flagship board now shows Volcarona's Fire STAB doing nothing to Chandelure's Flash Fire. The roster is generation-aware like everything else — **Gengar carried Levitate through Gen 6** — and below Gen 3 there are no abilities to show, which the board says rather than hides. See [D-073](03_decisions.md#d-073) and [D-074](03_decisions.md#d-074).
 - **`/types` answers for a Pokémon** — a search bar, so "what beats Corviknight" no longer requires knowing it is Steel/Flying first. The typing stays the page's subject and the Pokémon rides along as `?as=`, validated against it rather than trusted: dropping a type, or moving to a generation it did not exist in, drops the Pokémon with no cleanup logic anywhere. See [D-075](03_decisions.md#d-075).
 - **A consistency, accessibility and responsive sweep** — the pages were built in
@@ -71,7 +88,7 @@ The MVP is done when a user can land on the site, search two Pokémon, and read 
   reach, nav links with a 17px hit box, and an `xs` breakpoint that broke the
   header on every width from 360 to 383. Claims that used to be asserted are now
   measured: `npm run sweep:widths` checks horizontal overflow and target size
-  across 11 routes × 14 widths. See [D-057](03_decisions.md#d-057) through
+  across 29 routes × 14 widths. See [D-057](03_decisions.md#d-057) through
   [D-065](03_decisions.md#d-065).
 - **Home feature previews** — every tool gets a live preview on Home, built from its own components against real data ([D-043](03_decisions.md#d-043)).
 - **Type chart** (`/types`) — the third tool: the full effectiveness matrix plus a **dual-type readout**, so one page answers "what beats Water/Flying" instead of a page per pairing. Generation-aware like the rest ([D-051](03_decisions.md#d-051)).
@@ -81,7 +98,7 @@ The MVP is done when a user can land on the site, search two Pokémon, and read 
 
 ### 2.4 Someday (the rest of the suite)
 
-Radar/hex view, favorites, and the remaining tools & games catalogued in [00_brainstorm §5](00_brainstorm.md) — speed-tier tool, type coverage calculator, team builder, EV/IV planner, Nuzlocke helper, dex trackers, and the rest of the games (`Effective.` is specified in [05_roadmap Phase 6](05_roadmap.md); then the silhouette guess and a daily puzzle, which the injected `rng` already leaves room for). Plus expanded generation coverage and per-comparison OG images.
+Radar/hex view, favorites, and the remaining tools & games catalogued in [00_brainstorm §5](00_brainstorm.md) — speed-tier tool, type coverage calculator, team builder, EV/IV planner, Nuzlocke helper, dex trackers, and the rest of the games (the silhouette guess and a daily puzzle, which the injected `rng` already leaves room for). Plus expanded generation coverage and per-comparison OG images.
 
 ---
 
@@ -163,14 +180,16 @@ Generated by `scripts/build-data.mjs` into `src/data/pokemon.json` — **1,259 e
 
 ---
 
-## 5. Open Decisions Feeding This Spec
+## 5. Open Decisions Feeding This Spec — all closed
 
-Tracked in [02_research](02_research.md) / [03_decisions](03_decisions.md); each affects the spec above:
+Tracked in [02_research](02_research.md) / [03_decisions](03_decisions.md). Every
+one of these is settled; the leans they recorded were resolved during Phases 1–3
+and are kept here because the questions are what shaped the spec above.
 
-- **Generation scope at launch** — ✅ **Decided:** all generations, the complete National Dex (1,025 Pokémon). Pipeline stays generation-parameterized. See [D-009](03_decisions.md#d-009).
-- **Mega/forms handling** — separate selectable entries vs. a toggle on the base mon. _Current lean: separate entries that reference each other._
-- **Gen-1 Special** — normalize to modern six stats. _Current lean: yes, normalize._
-- **Sprite hosting** — self-host/vendor vs. hotlink the sprites repo. _Current lean: self-host._
-- **Language & template** — ✅ **Decided:** start plain Vite + React in **JavaScript**; defer Cloudflare + React Router until needed. See [D-013](03_decisions.md#d-013), [D-014](03_decisions.md#d-014).
+- **Generation scope at launch** — ✅ all generations, the complete National Dex. See [D-009](03_decisions.md#d-009).
+- **Mega/forms handling** — ✅ separate selectable entries that reference each other, 234 of them beside the 1,025 default forms. See [D-003](03_decisions.md#d-003).
+- **Gen-1 Special** — ✅ the modern six-stat schema is canonical, and history is layered on top rather than replacing it: `statEras` carries a real Gen 1 `special` for all 151 species, and 43 of them disagree with the "just use spAtk" shortcut. See [D-004](03_decisions.md#d-004) and [D-045](03_decisions.md#d-045), which corrected the original answer.
+- **Sprite hosting** — ✅ self-hosted; sprites and artwork are downloaded and committed, so the site makes no runtime request to anyone. See [D-002](03_decisions.md#d-002).
+- **Language & template** — ✅ plain Vite + React in **JavaScript**; Cloudflare and React Router layered in when each was needed. See [D-013](03_decisions.md#d-013), [D-014](03_decisions.md#d-014).
 
-Once these are settled, this spec's MVP list is frozen and the [05_roadmap](05_roadmap.md) drives implementation.
+With those closed, this spec's MVP list is frozen and the [05_roadmap](05_roadmap.md) drives implementation.

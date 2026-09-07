@@ -6,7 +6,41 @@ _The phased build plan / task checklist: what to implement, in order. Sequenced 
 
 ---
 
-## Current status (2026-09-07 — Session 28, the last pass)
+## Current status (2026-09-07 — Session 29, the polish pass)
+
+**Done — the loose ends closed and the site polished end to end.** Ten decisions
+([D-112](03_decisions.md#d-112) through [D-128](03_decisions.md#d-128)), and the
+through-line is that most of what this pass found was invisible to every check
+that existed when it started.
+
+- **An eighth check, written first so it guarded the rest.** `audit:classes` maps
+  every utility in a class string to the CSS property it sets and fails on two
+  that collide — the [D-042](03_decisions.md#d-042) trap, which had shipped
+  twice and both times was caught by a human reading a diff. Its own first
+  finding was wrong, and the script was fixed rather than the component.
+- **Home's previews are cameos and open what they advertise.** Beartic joins the
+  dex team and re-derives the flanking pair to the ends of the sort; Mienshao and
+  Samurott are the games preview's round rather than an illustration beside it;
+  Compare and Dex open the exact view they were showing.
+- **Two things that move.** The clash shakes each part of a panel on its own
+  phase and in two axes; `/compare`'s bars grow in on all three cards, keyed on
+  the numbers so they re-run when they would move.
+- **The difficulty picker shows the games** instead of describing them, and the
+  footer came back to it — which turned out to be structural: "have you chosen a
+  game" lived in React state that `Layout` could not read, and could not be
+  derived because the Medium preset wrote no URL at all. Three bugs, one cause.
+- **An About page in the author's own words**, a written voice in
+  [06_style_guide §14](06_style_guide.md), and the credits moved into a
+  redesigned footer — where two licence obligations unmet since launch, the
+  vendored fonts' OFL and Font Awesome's CC BY attribution, are finally met.
+- **The V2 list is closed.** Random matchup and the bar animation shipped, six
+  items are won't-do with reasons ([D-128](03_decisions.md#d-128)), and only the
+  copy-link button and a keyboard audit remain open.
+
+`npm run check` runs all **eight** checks in CI's own order. Vitest is at **478
+tests across 15 files**. The sweep is at **29 routes × 14 widths = 406 checks**.
+
+## Session 28 (three consistency tweaks, a dead link, and a final pass)
 
 **Done — three consistency tweaks and a review pass** ([D-110](03_decisions.md#d-110)).
 The wordmark gained the game bar's hover rather than the game title losing it;
@@ -30,12 +64,12 @@ the card's `<Link>`, so it swallowed every click over the top half of the card.
 A panel is a button only when it has a handler now — the rule D-078 already set
 for the ability chips.
 
-`npm run check` runs all seven checks in CI's own order.
+`npm run check` runs all eight checks in CI's own order.
 
 Vitest is at **412 tests**. The sweep is at **29 routes × 14 widths = 406
 checks**, and every game route now measures the viewport exactly.
 
-## Session 27, the boards settle)
+## Session 27 (the boards settle)
 
 **Done — seven notes from playing it, and three of them were one fault of
 mine.** [D-107](03_decisions.md#d-107)'s 208px reservation above the answer
@@ -58,7 +92,7 @@ Measured: the buttons are now **1.5px** off the board's centre and still shift
 
 Vitest is at **410 tests**.
 
-## Session 26, the board fills up)
+## Session 26 (the board fills up)
 
 **Done — six notes from playing it, and five were the same complaint.** The type
 game's options sat outside a board that was mostly air, so the answers moved
@@ -84,7 +118,7 @@ way the stat game's does.
 
 Vitest is at **399 tests**. The width sweep is at **29 routes × 14 widths**.
 
-## Session 25, the second game)
+## Session 25 (the second game)
 
 **Done — `Effective.` ships, and the games section is complete as specified.**
 An attacking type against a defender; name the multiplier. One tier at a time:
@@ -117,7 +151,7 @@ you recall and whose **randomly drawn ability** you have to read
 
 Vitest is at **394 tests**. The width sweep is at **22 routes × 14 widths**.
 
-## Session 24, the games take the field)
+## Session 24 (the games take the field)
 
 **Done — `Higher.` is an arena.** The first build was a tool page and it showed:
 the settings panel was the biggest thing on screen and the Pokémon were
@@ -371,7 +405,7 @@ Vitest is at **213 tests**.
 
 **npm scripts:** `dev` · `build` · `test` / `test:run` · `build:data` · `vendor:images` (after `build:data`) · `vendor:fonts` · `audit:contrast` · `check:docs` · `sweep:widths` · `shoot:docs` · `lint` · `format` · `format:check` · `preview` · `deploy` (`build` + `wrangler deploy`).
 
-**The seven checks that must stay green:** `npm run check` runs all of them, in this order — `lint`, `format:check`, `test:run`, `build`, `audit:contrast`, `check:docs`, `sweep:widths`. Cheapest first, so a typo fails in seconds rather than after the browser sweep, and the order is CI's own. All seven run in CI on every push and PR (`.github/workflows/ci.yml`); the sweep needs `build` first and a Chrome binary (`CHROME_PATH` to override).
+**The eight checks that must stay green:** `npm run check` runs all of them, in this order — `lint`, `format:check`, `audit:classes`, `test:run`, `build`, `audit:contrast`, `check:docs`, `sweep:widths`. Cheapest first, so a typo fails in seconds rather than after the browser sweep, and the order is CI's own. All eight run in CI on every push and PR (`.github/workflows/ci.yml`); the sweep needs `build` first and a Chrome binary (`CHROME_PATH` to override).
 
 **Reading a past generation (D-045, D-049):** all of the resolution logic is pure functions in `src/lib/eras.js` — `eraView(pokemon, gen)` returns `{ gen, keys, stats, bst, types }`, `generationOptions([p1, p2])` returns the generations both existed in (each flagged for whether it differs from today), and `dexGenerations()` is the dex's plainer equivalent. The dex layers `statKeysFor` / `sortKeysFor` / `typesFor` / `generationsFor` / `setAsOf` on top in `lib/dexTable.js`, so the columns, the sort keys and the filter chips all narrow together. The lens is `?asof=` on both tools; the dex's `?gen=` is the unrelated origin filter. Home and `/style` stay current-generation. `STAT_ORDER` is still exactly the modern six; Gen 1's `special` lives outside it because the stored stat array's order depends on it. The dex, Home and `/style` are all deliberately current-generation.
 
@@ -483,15 +517,15 @@ _Goal: a complete, showcase-ready site. This is where the **Cloudflare Workers/W
 _Goal: sharpen the core and add the low-cost, high-value extras._
 
 - [x] ~~**`FormChips` touch targets** — the one likely WCAG 2.5.8 (AA) spacing failure on the site.~~ **Closed as not-a-failure.** Measured rather than assumed, the chips pass via 2.5.8's spacing exception: 45–59 × 21px with a tightest neighbouring centre of **27.1px** against the 24px required, including Minior's eight-form wrapped worst case. It was a guess that had propagated into two documents and this checklist. `npm run sweep:widths` measures it every run, since the margin is only 3px. ([D-059](03_decisions.md#d-059), [D-042](03_decisions.md#d-042))
-- [ ] Attacker-identity read (physical vs. special).
-- [ ] Biggest-gap highlight.
+- [x] ~~Attacker-identity read (physical vs. special).~~ **Closed as won't-do** ([D-128](03_decisions.md#d-128)). The board already answers it without a label: the two Sp. Atk and Attack rows sit side by side with a tinted difference between them, so "which stat matters" is read off the bars rather than announced. A badge saying "physical attacker" would be a second, coarser statement of what six rows already show.
+- [x] ~~Biggest-gap highlight.~~ **Closed as won't-do** ([D-128](03_decisions.md#d-128)). Every difference cell is already tinted with the winner's type colour and carries a caret; emphasising one row more would add a fifth weight to a scale that D-051 keeps at one loud state and three quiet ones.
 - [x] **Type-effectiveness** between the two Pokémon — **shipped early** in Phase 3 as the attacker-STAB matchup on the comparison card, on the hardcoded `src/lib/typeChart.js` matrix ([D-018](03_decisions.md#d-018)).
 - [x] **Generation-accurate stats** — Gen 1's single Special, historical base stats and typings, and per-generation type charts, behind one generation strip on `/compare` ([D-045](03_decisions.md#d-045), [D-046](03_decisions.md#d-046), [D-047](03_decisions.md#d-047)). _Not on the original V2 list — it came out of actually playing the games the project is about._
-- [~] Bar-fill **animation** (reduced-motion aware) — **partially shipped:** `.animate-grow-w` runs on Home, on both the `FeaturedComparison` board ([D-023](03_decisions.md#d-023)) and now the dex preview's stat fills, via a `DexRow` `animate` prop the real table deliberately does not pass ([D-067](03_decisions.md#d-067)). The `/compare` tool's own bars still render instantly; extending it there is what remains.
-- [ ] Copy-link button, **random matchup**, full keyboard flow.
-- [ ] Search **filters** (type / generation), recently-compared list.
-- [ ] **About** page; **light-mode** toggle.
-- [~] Tooling — **ESLint + Prettier are both in** (flat ESLint config + `npm run lint`; Prettier as a devDependency with `npm run format` / `format:check`, whole tree passing on stock config). **Vitest is in** ([D-038](03_decisions.md#d-038)): 94 tests across six files — the stat math, the type-matchup engine, dataset queries, the codec (including the whole-dataset round-trip), the dex sort/filter/URL logic, and a `react-dom/server` smoke test of every route — node environment, no jsdom. **GitHub Actions CI is in** (`.github/workflows/ci.yml`): every check runs on push and PR, cheapest-first, ending with the browser sweep. **Playwright** and auto-deploy to Cloudflare are still outstanding — though `scripts/sweep-widths.mjs` now covers, headlessly and without a framework, the specific thing Playwright was wanted for: real layout measurement across widths.
+- [x] Bar-fill **animation** (reduced-motion aware) — `.animate-grow-w` runs on Home's `FeaturedComparison` board ([D-023](03_decisions.md#d-023)), on the dex preview's stat fills via a `DexRow` `animate` prop the real table deliberately does not pass ([D-067](03_decisions.md#d-067)), and now on **`/compare`'s own board**, both the desktop bars and the phone's per-stat cards ([D-124](03_decisions.md#d-124)). It re-runs when the numbers change rather than on every render, because the wrapper is keyed on what the bars are showing — so a selection, a swap or a generation re-animates and picking an ability does not.
+- [~] Copy-link button, **random matchup**, full keyboard flow — **random matchup shipped** ([D-123](03_decisions.md#d-123)): a `Random` button beside Swap, drawing from the pool that existed at the generation being read so it never silently drops the lens, and never disabled because an empty board is the state it is most useful in. The draw is a tested `lib/randomMatchup.js` with an injected `rng`, like the games'. The copy-link button and a full keyboard audit are what remain.
+- [x] ~~Search **filters** (type / generation), recently-compared list.~~ **Closed as won't-do** ([D-128](03_decisions.md#d-128)). `/dex` filters by any number of types and generations at once and every row links into `/compare`, so the filtered search already exists — one page over. A recently-compared list is the only thing here the site cannot otherwise do, and it would be the first state stored about a reader beyond the game record.
+- [~] **About** page; **light-mode** toggle — **`/about` shipped** ([D-118](03_decisions.md#d-118)), carrying the origin story in the author's own voice with the credits folded into a redesigned footer ([D-119](03_decisions.md#d-119)). **Light mode is closed as won't-do** ([D-128](03_decisions.md#d-128)): every token in `index.css` is dark-first and `audit:contrast` validates exactly one theme, so it is a second palette and a second audit rather than a toggle.
+- [~] Tooling — **ESLint + Prettier are both in** (flat ESLint config + `npm run lint`; Prettier as a devDependency with `npm run format` / `format:check`, whole tree passing on stock config). **Vitest is in** ([D-038](03_decisions.md#d-038)): **478 tests across 15 files** — the stat math, the type-matchup engine, dataset queries, the codec (including the whole-dataset round-trip), the dex sort/filter/URL logic, both games' generators, the ability effect table, a `react-dom/server` smoke test of every route, and a growing set of accessibility and copy regressions — node environment, no jsdom. **GitHub Actions CI is in** (`.github/workflows/ci.yml`): every check runs on push and PR, cheapest-first, ending with the browser sweep. **Playwright** and auto-deploy to Cloudflare are still outstanding — though `scripts/sweep-widths.mjs` now covers, headlessly and without a framework, the specific thing Playwright was wanted for: real layout measurement across widths.
 
 **Exit:** the comparison tool feels finished and the repo has real engineering rigor.
 

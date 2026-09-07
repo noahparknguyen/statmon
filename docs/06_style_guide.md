@@ -251,6 +251,29 @@ is not inline emphasis and needs a named style.
 | `*-16`  | 4rem    | 64  |
 | `*-20`  | 5rem    | 80  |
 
+**Half-steps are in the scale too, and are used.** Tailwind's default spacing
+emits `*-0.5`, `*-1.5` and `*-2.5` (2, 6 and 10px) and this table omitted them
+while the code used `gap-1.5` **nineteen times** — every chip group on the site
+sits on it, because 4px reads as touching and 8px breaks a row of pills into
+separate objects. They are legitimate; the omission was the table's. Reach for a
+whole step first and a half-step only when the whole one is visibly wrong.
+
+| Utility | rem      | px  | Where                                                |
+| ------- | -------- | --- | ---------------------------------------------------- |
+| `*-0.5` | 0.125rem | 2   | inside a badge (`py-0.5`), name-to-number offsets    |
+| `*-1.5` | 0.375rem | 6   | **every chip group**, icon-to-label gaps             |
+| `*-2.5` | 0.625rem | 10  | two fine-tuned bands (`MatchupSummary`, `SearchBar`) |
+
+**Arbitrary values are allowed when the number is DERIVED**, which is the other
+place this section overstated itself: "no arbitrary spacing" is right about
+taste and wrong about arithmetic. Five values are arbitrary on purpose, and each
+is a number computed from something else and written down beside it —
+`min-h-[21px]` (a compact chip: 11px `leading-none` + `py-1` + two 1px borders,
+[D-125](03_decisions.md#d-125)), `min-h-[26rem]` (the arena's floor), `h-[100svh]`
+and `h-[72svh]` (viewport-sized surfaces), and `w-[min(36rem,calc(100vw-2rem))]`
+(the setup dialog). The rule is that an arbitrary value must show its working;
+a magic number with no derivation is still banned.
+
 **Applying spacing — the proximity rule (`internal ≤ external`).** Spacing communicates grouping, so it must be _relative_, never uniform. Inside a group (a label and its value, an eyebrow and its content) use a **tight** gap (`gap-1`/`gap-2`). Between groups (one section and the next, the stats and the footer) use a **generous** gap (`gap-4`+). Uniform gaps make everything read as one undifferentiated block ("claustrophobic"); the contrast between tight and loose is what creates hierarchy and breathing room. ([D-019](03_decisions.md#d-019))
 
 **Never touch a divider or edge.** Any content adjacent to a border/divider or the card edge gets padding on both sides (≥ `p-3`), so nothing looks cramped against a line.
@@ -322,6 +345,15 @@ Content max-width `--container-content: 1120px` (utility: `max-w-content`), cent
 `--dur-fast` is wired as `--default-transition-duration`, so **every** `transition-*` utility picks it up with no per-component opt-in — write `transition-colors` and you get the documented 120ms. Override per element with `duration-*` when a specific motion needs it. ([D-033](03_decisions.md#d-033))
 
 `--dur-wall` is deliberately three orders of magnitude off the rest of the scale: every other duration answers something the user just did, while the hero wall is ambient — a field that large only needs to creep for the movement to register. It is linear rather than eased, because easing an endless loop reads as a stutter. ([D-070](03_decisions.md#d-070))
+
+**The clash is two axes and per-part** ([D-114](03_decisions.md#d-114)). Its
+horizontal throw peaks at 14% and its vertical at 32%, deliberately out of
+phase — reusing one decay for both would only rotate the motion, and every part
+would slide along a fixed diagonal. Each direct child of a shaking panel
+animates on its own `--part-delay`, `--part-dur` and `--part-amp`, so the
+variation is mostly in TIMING rather than distance; phase offsets are what read
+as independent mass. Text throws less than artwork (`--throw`), because a
+clipped letterform reads as a bug where a clipped Pokémon reads as impact.
 
 `--dur-base` is spent by the arena's answer reveal. **`--dur-slow` is not, and this table said it was for one session** — the round change used it until it was rebuilt as the clash and outgrew it ([D-100](03_decisions.md#d-100)). Corrected here rather than left, because a status column that drifts is worse than no status column.
 
@@ -469,3 +501,76 @@ The §5 styles are hand-written utility classes in an `@layer components` block 
 **Status:** every call site now uses a named style; `/style` walks the stylesheet
 at render and warns if one is missing from its own list, which is what caught
 `text-stat-sm` the moment it was added. The BST numerals and chip labels that used to hand-assemble type were resolved by _adding_ the four styles they needed (`text-numeral-*`, `text-meta`) rather than bending the design to fit the table ([D-035](03_decisions.md#d-035)). The single remaining family/weight override is the documented inline-emphasis case in §5.
+
+---
+
+## 14. Voice — the words on screen
+
+The site has one, and it was consistent before it was written down. Every
+user-facing string describes a **mechanism rather than a benefit**:
+
+> "See who's faster, hits harder, and is bulkier." · "The same data, asking you
+> the questions." · "Every matchup, including dual types."
+
+Not one claims the site is fast, clean or minimal. The pages demonstrate that;
+saying it would be the site arguing with the reader about its own qualities.
+There is exactly one joke — **"This page fainted."** — delivered flat and never
+explained. That is the calibration point for humour: one, dry, unremarked.
+
+**The rules.**
+
+1. **First person singular.** One person built it; "we" would be a lie.
+2. **Prefer a number to an adjective.** "1,259 entries", not "comprehensive" —
+   this is a stats site and the numbers _are_ the personality.
+3. **Name a real Pokémon** rather than describing a category. Gengar keeping
+   Levitate until Gen 7 says more than "handles historical edge cases".
+4. **Describe decisions, never virtues.**
+5. **Admit the limits.** The most credible line in the README is the one
+   conceding that an ability's _effect_ cannot be verified against PokéAPI.
+6. **One joke at most, and never explain it.**
+7. **Say it once.** No sentence whose only job is to restate the one before it.
+8. **Contractions on.** It is a person talking, not a product.
+
+### 14.1 The UI voice
+
+Everything above applies to **controls, labels, empty states and section
+descriptions** — the strings that sit next to something rather than being the
+something. A fragment is fine here; "Pick two Pokémon to compare." is a whole
+empty state.
+
+### 14.2 The `/about` voice — a different register, on purpose
+
+§14's rules were derived from UI strings, and applying them to a page whose
+content _is_ prose produced a draft that read like release notes. **A solo
+project has an opinion, not a position**, and the things the UI voice forbids
+are exactly what make writing sound like a person. So on `/about`:
+
+1. **Hedges are wanted, not tolerated.** "I'd say", "I think", "which I'd argue
+   still counts". They are the difference between someone talking and a product
+   describing itself.
+2. **Sentences may build on each other.** §14's "say it once" is a UI rule; a
+   story is allowed a second sentence that only softens the first.
+3. **Conversational openers are fine** — "So", "Of course", "Now" — where the
+   UI voice would start with the noun.
+4. **The loose word beats the precise one.** "Nostalgia trip" over "replay
+   project"; "HM mule" over "utility Pokémon".
+5. **Commas and full stops.** The site voice is em-dash heavy; this one is not.
+6. **No implementation detail.** If it belongs in the README or the decision
+   log, it does not belong here. A build-time verification gap is the most
+   credible sentence on the page to a developer evaluating the project, and
+   noise to someone who just came from the type chart.
+   6b. **Write it in the author's voice by having the author write it.** Two drafts
+   in this register still read as an impression. The page ships his own account,
+   edited for grammar and nothing else ([D-118b](03_decisions.md#d-118b)).
+7. **Earn it with one unfakeable detail.** A visitor wants who made this, why it
+   exists, and one thing nobody would include unless it were true. Beartic being
+   the HM mule does more work than any claim about the site's quality.
+
+**Still off the table**, in both registers: a tagline, a benefits list, an
+exclamation mark, the second-person imperative ("Dive in", "Discover"), and any
+adjective the site applies to itself.
+
+**What this rules out**, because these are the failure modes worth naming: the
+sentence that congratulates the reader for arriving, the feature-benefit
+pairing, and the paragraph that explains how something was built to a reader who
+only wanted to know why it exists. ([D-118](03_decisions.md#d-118))
