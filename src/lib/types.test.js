@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { globSync, readFileSync } from "node:fs";
-import { TYPES, typeColorVar, typeTextVar, capitalize } from "./types";
+import {
+  TYPES,
+  typeColorVar,
+  typeFill,
+  typeTextVar,
+  capitalize,
+} from "./types";
 import {
   CHART,
   CHART_ERAS,
@@ -169,5 +175,56 @@ describe("token helpers", () => {
 
   it("capitalizes a type slug for display", () => {
     expect(capitalize("dragon")).toBe("Dragon");
+  });
+});
+
+// The dex bar carries a whole typing, so a dual type paints a gradient between
+// its two colours. Audited for contrast as group 12 of `npm run audit:contrast`
+// across all 153 pairs; these assert the VALUE, which the audit cannot see.
+describe("typeFill", () => {
+  it("is a flat wash for a single type, with no gradient", () => {
+    const fill = typeFill(["fire"], "28%");
+    expect(fill).toContain(typeColorVar("fire"));
+    expect(fill).toContain("28%");
+    expect(fill).not.toContain("gradient");
+  });
+
+  it("carries BOTH colours for a dual type, primary first", () => {
+    const fill = typeFill(["bug", "fire"], "28%");
+    expect(fill).toContain("linear-gradient");
+    expect(fill).toContain(typeColorVar("bug"));
+    expect(fill).toContain(typeColorVar("fire"));
+    // Primary leads: Bug/Fire and Fire/Bug are different bars.
+    expect(fill.indexOf(typeColorVar("bug"))).toBeLessThan(
+      fill.indexOf(typeColorVar("fire")),
+    );
+  });
+
+  it("runs along the bar, not diagonally like the arena's panels", () => {
+    // A stat bar is a horizontal strip whose width is the value; a diagonal has
+    // no vertical run to travel across and degrades into a hard edge.
+    expect(typeFill(["bug", "fire"], "28%")).toContain("90deg");
+  });
+
+  it("mixes with transparent, never with a background colour", () => {
+    // The bars sit in a table row that changes colour on hover. Mixing with
+    // `--color-base` the way the arena's `tintFor` does would pin every bar to
+    // the page background and kill that hover.
+    const fill = typeFill(["water", "flying"], "28%");
+    expect(fill).toContain("transparent");
+    expect(fill).not.toContain("--color-base");
+  });
+
+  it("degrades to transparent rather than throwing on no typing", () => {
+    expect(typeFill([], "28%")).toBe("transparent");
+    expect(typeFill(undefined, "28%")).toBe("transparent");
+  });
+
+  it("produces a usable value for every type and every pair", () => {
+    for (const t of TYPES) expect(typeFill([t], "28%")).toContain("color-mix");
+    for (const a of TYPES)
+      for (const b of TYPES)
+        if (a !== b)
+          expect(typeFill([a, b], "28%")).toContain("linear-gradient");
   });
 });

@@ -6,7 +6,7 @@ import { compareUrl } from "../lib/compareUrl";
 import { dexNumberOf } from "../lib/dexTable";
 import { eraView } from "../lib/eras";
 import { statPct } from "../lib/stats";
-import { typeColorVar } from "../lib/types";
+import { typeFill } from "../lib/types";
 
 // One dex row. Memoised because the windowing hook re-renders the table on every
 // scroll frame while the on-screen rows themselves rarely change.
@@ -16,9 +16,15 @@ import { typeColorVar } from "../lib/types";
 //   #  |  Pokemon  |  Types  |  HP Atk Def SpA SpD Spe  |  [sorted stat]  |  BST
 
 // The stat cell's proportional fill. Scaled to the same fixed 255 reference as
-// every other bar on the site (D-011), tinted with the Pokemon's primary type,
-// and kept faint enough that the number on top stays the thing you read —
-// verified against text-primary by npm run audit:contrast.
+// every other bar on the site (D-011), tinted with the Pokemon's TYPING, and
+// kept faint enough that the number on top stays the thing you read — verified
+// against text-primary by npm run audit:contrast, groups 5 and 12.
+//
+// **A dual type gets both colours.** It was the primary alone, so Volcarona's
+// bars were Bug and said nothing about Fire — the same omission the arena
+// corrected for its panels (D-107). The gradient is `typeFill`'s, shared with
+// nothing yet but written where the type helpers live rather than here, because
+// the type chart and the arena are the obvious next callers.
 const FILL_ALPHA = "28%";
 
 // `animate` grows the fill in on mount, and only Home's preview passes it
@@ -29,20 +35,22 @@ const FILL_ALPHA = "28%";
 // rather than composed because `--target` and `width` are different mechanisms;
 // reduced motion is handled globally by the rule that collapses animation
 // duration (index.css).
-function StatCell({ value, color, className = "", animate = false }) {
-  const fill = `color-mix(in srgb, ${typeColorVar(color)} ${FILL_ALPHA}, transparent)`;
+function StatCell({ value, types, className = "", animate = false }) {
+  // `background`, never `backgroundColor`: for a dual type this value is a
+  // gradient, and a background-color would drop it without a word (typeFill).
+  const fill = typeFill(types, FILL_ALPHA);
   return (
     <td className={`px-1 ${className}`}>
       <div className="relative flex h-7 items-center justify-end overflow-hidden rounded-xs px-1.5">
         {animate ? (
           <div
             className="absolute inset-y-0 left-0 animate-grow-w"
-            style={{ "--target": statPct(value), backgroundColor: fill }}
+            style={{ "--target": statPct(value), background: fill }}
           />
         ) : (
           <div
             className="absolute inset-y-0 left-0"
-            style={{ width: statPct(value), backgroundColor: fill }}
+            style={{ width: statPct(value), background: fill }}
           />
         )}
         <span className="relative text-stat-sm text-primary">{value}</span>
@@ -66,7 +74,6 @@ function DexRow({
   animate = false,
 }) {
   const view = eraView(pokemon, asof);
-  const primary = view.types[0];
   const dex = dexNumberOf(pokemon);
 
   return (
@@ -129,7 +136,7 @@ function DexRow({
         <StatCell
           key={key}
           value={view.stats[key]}
-          color={primary}
+          types={view.types}
           className="hidden md:table-cell"
           animate={animate}
         />
@@ -138,7 +145,7 @@ function DexRow({
       {mobileStat && (
         <StatCell
           value={view.stats[mobileStat]}
-          color={primary}
+          types={view.types}
           className="md:hidden"
           animate={animate}
         />

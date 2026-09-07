@@ -22,6 +22,7 @@
  */
 
 import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { TYPES } from "../src/lib/types.js";
@@ -31,6 +32,37 @@ const CSS = path.join(ROOT, "src", "index.css");
 
 /* ---- parse --color-* tokens and resolve var() chains to hex ---- */
 const raw = await readFile(CSS, "utf8");
+
+// Two fills this file audits are owned by components, not by tokens, and were
+// restated here as `0.28` and `PANEL_TINT = 10`. A restated constant is one
+// that can silently desync: change the app's value and this keeps validating a
+// colour the site no longer paints, and passes. So they are READ, the way
+// `--hero-scrim` below already is, and a missing one is a hard failure rather
+// than a default.
+const readConst = (file, re, what) => {
+  const m = readFileSync(path.join(ROOT, file), "utf8").match(re);
+  if (!m) {
+    console.error(`Could not read ${what} from ${file}. It is audited here and
+owned there; this file must not guess it.`);
+    process.exit(1);
+  }
+  return Number(m[1]);
+};
+
+// The dex stat cell's proportional fill (DexRow), as a fraction.
+const DEX_FILL =
+  readConst(
+    "src/components/DexRow.jsx",
+    /FILL_ALPHA\s*=\s*"(\d+(?:\.\d+)?)%"/,
+    "FILL_ALPHA",
+  ) / 100;
+
+// How much of a type sits over the page background on a game panel (gameChrome).
+const PANEL_TINT = readConst(
+  "src/components/gameChrome.jsx",
+  /\bTINT\s*=\s*(\d+(?:\.\d+)?)\b/,
+  "TINT",
+);
 const decls = {};
 for (const m of raw.matchAll(/--color-([\w-]+):\s*([^;]+);/g)) {
   decls[m[1]] = m[2].trim();
@@ -122,7 +154,7 @@ const blend = (fg, bg, alpha) => {
 };
 for (const t of TYPES)
   console.log(
-    row(t, ratio(primary, blend(hex(`type-${t}`), surface, 0.28)), 4.5),
+    row(t, ratio(primary, blend(hex(`type-${t}`), surface, DEX_FILL)), 4.5),
   );
 
 // The type chart's grid (D-051) tints a cell by what it does — accent-muted for
@@ -272,7 +304,6 @@ console.log(row("border (accent) vs base", ratio(hex("accent"), base), 3));
 console.log(
   "\n=== 10. Game arena — panel text over the primary-type tint (AA 4.5) ===",
 );
-const PANEL_TINT = 10;
 for (const t of TYPES) {
   const panel = blend(hex(`type-${t}`), base, PANEL_TINT / 100);
   console.log(row(`${t} — name (primary)`, ratio(primary, panel), 4.5));
@@ -315,6 +346,47 @@ console.log(
 );
 console.log(row("worst dual-type midpoint", worstPair.r, 4.5));
 
+// The dex's stat fill is now a whole TYPING rather than a primary type, so a
+// dual type paints a gradient between two 28% fills and the number sits on top
+// of every colour along it — not just the two endpoints group 5 checks. Same
+// argument as group 11, at bar scale: intermediate colours ought to sit between
+// their endpoints, but "ought to" is not the standard this file holds things to.
+//
+// Audited over `surface` rather than `base` for the reason group 5 is: the row
+// background is `base` on /dex and `surface` on hover and in Home's preview,
+// and the lighter of the two is the harder case for near-white text.
+console.log(
+  "\n=== 12. Dex stat cell — primary text over a DUAL type's 28% gradient (AA 4.5) ===",
+);
+let worstBar = null;
+for (let i = 0; i < TYPES.length; i++) {
+  for (let j = i + 1; j < TYPES.length; j++) {
+    const a = blend(hex(`type-${TYPES[i]}`), surface, DEX_FILL);
+    const b = blend(hex(`type-${TYPES[j]}`), surface, DEX_FILL);
+    const mid = blend(a, b, 0.5);
+    const r = ratio(primary, mid);
+    if (!worstBar || r < worstBar.r)
+      worstBar = { r, pair: `${TYPES[i]}/${TYPES[j]}` };
+    if (r < 4.5)
+      fails.push(
+        `dex bar ${TYPES[i]}/${TYPES[j]} midpoint — primary ${r.toFixed(2)}`,
+      );
+  }
+}
+console.log(`  153 pairs at their midpoint — worst is ${worstBar.pair}`);
+console.log(row("worst dual-type bar midpoint", worstBar.r, 4.5));
+
 console.log(`\n── ${fails.length} failure(s) ─────────────────────────────`);
 for (const f of fails) console.log(`  ✗ ${f}`);
 if (!fails.length) console.log("  All pairings pass. ✓");
+
+// **This is what makes it a gate rather than a report.** Every failure above
+// was printed and then forgotten: the script fell off its last line with an
+// exit code of 0, so `npm run check` and CI went green with WCAG failures on
+// screen. It had been advisory-only since D-027 — including through D-058,
+// where a real pairing failed AA on 17 of 18 types and was caught by someone
+// reading the output rather than by the build.
+//
+// `exitCode` rather than `exit(1)`, so the whole report still prints first —
+// which is the point of a report.
+if (fails.length) process.exitCode = 1;
