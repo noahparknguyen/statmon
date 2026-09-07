@@ -17,7 +17,13 @@ const REPO_URL = "https://github.com/noahparknguyen/statmon";
 
 // Matches index.html's <title>. Routes declare a page name in `handle.title`
 // and get "<name> — Statmon"; the index route declares none and keeps this.
-const SITE_TITLE = "Statmon — Pokémon stat tools";
+//
+// It did NOT match, for as long as this comment has claimed it did: the tag
+// said "Pokémon comparison, dex and type chart" while this said "Pokémon stat
+// tools", so a crawler and a visitor who clicked Home read two different names
+// for the same page. Nothing checked it, because no check reads prose (D-086) —
+// routes.test.jsx now reads both files and asserts they agree. (D-091)
+const SITE_TITLE = "Statmon — Pokémon comparison, dex, type chart and games";
 
 // `h-14` is the header's own height, and it is a target-size fix rather than a
 // layout one: these were bare 14px text with no padding, so the clickable box
@@ -144,8 +150,15 @@ export default function Layout() {
             <NavLink to="/types" className={navClass}>
               Types
             </NavLink>
-            <NavLink to="/credits" className={navClass}>
-              Credits
+            {/* Games takes the slot Credits held (D-094). The header's width
+                budget is four items: D-062 measured it needing 373px for the
+                wordmark plus four, which is what let `xs` sit at 384 and keep
+                the wordmark on a 390px phone. A fifth label pushes that past
+                430 and hides the wordmark on every phone there is — so the
+                fourth slot goes to the tool people came for, and Credits moves
+                to the footer, next to the attribution it is about. */}
+            <NavLink to="/games" className={navClass}>
+              Games
             </NavLink>
           </nav>
         </div>
@@ -175,12 +188,29 @@ export default function Layout() {
             Data from PokéAPI. Statmon is an unofficial fan project, not
             affiliated with Nintendo, Game Freak, or The Pokémon Company.
           </p>
-          {/* Byline + repo read as one authorship group, so they sit together
-              on the right rather than leaving the link stranded mid-row. */}
-          <div className="flex items-center gap-4 shrink-0">
+          {/* Byline + credits + repo read as one authorship group, so they sit
+              together on the right rather than leaving the links stranded
+              mid-row.
+
+              Credits landed here when Games took its nav slot (D-094), and it
+              is the better home for it: the line to its left is the attribution
+              summary and this is the page that expands it, so the link now sits
+              beside its own subject instead of beside the tools. */}
+          {/* Wraps, and `gap-y-3` is a target-size number rather than a taste
+              one: these are 12px links, so they clear WCAG 2.5.8 only by its
+              spacing exception, which needs 24px between neighbouring centres.
+              A wrapped `gap-y-1` puts two of them ~19px apart and fails; 12px
+              of row gap lands at ~27px. `npm run sweep:widths` measures it. */}
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3">
             <span className="text-caption text-tertiary">
               Built by Noah Park-Nguyen
             </span>
+            <Link
+              to="/credits"
+              className="text-caption text-tertiary transition-colors hover:text-secondary"
+            >
+              Credits
+            </Link>
             <a
               href={REPO_URL}
               target="_blank"
