@@ -108,14 +108,26 @@ export default function ContenderPanel({
         ? ring("--color-border-strong")
         : null;
 
+  // **A button only when it is one** (D-111). With no `onPick` this is a
+  // thumbnail — on Home's preview and on the games index — and rendering it as
+  // a disabled `<button>` there was a real bug, not just a semantic one: the
+  // index wraps each thumbnail in a `<Link>`, so the markup was an `<a>`
+  // containing a `<button>`, which is invalid, and the disabled button ate
+  // every click over the top half of the card. Only the text below it opened
+  // the game.
+  //
+  // `MatchupPanel` renders a `<div>` and was unaffected, which is why the type
+  // game's card worked and the stat game's did not.
+  //
+  // The rule is the one `AbilityChips` already follows: without a handler,
+  // render a label rather than a control (D-078).
+  const Tag = onPick ? "button" : "div";
+
   return (
-    <button
-      type="button"
-      // Inert once resolved, and inert with no handler at all — that is how the
-      // thumbnails and Home's preview render it. A button that does nothing is
-      // worse than a label (the D-078 rule Home's ability pills follow).
-      disabled={resolved || !onPick}
-      onClick={onPick ?? undefined}
+    <Tag
+      {...(onPick
+        ? { type: "button", disabled: resolved, onClick: onPick }
+        : null)}
       // No aria-label: the accessible name is computed from the contents — the
       // Pokémon's name and its types — which is what a speech-control user
       // would actually say (WCAG 2.5.3, the FilterChip reasoning).
@@ -225,6 +237,6 @@ export default function ContenderPanel({
           )}
         </span>
       </span>
-    </button>
+    </Tag>
   );
 }

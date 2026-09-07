@@ -1025,3 +1025,30 @@ describe("the game bar's title", () => {
     },
   );
 });
+
+// A card on the games index is one link, all the way through (D-111). The stat
+// game's thumbnail used to render `ContenderPanel` as a disabled `<button>`,
+// which put a button inside an anchor — invalid, and it swallowed every click
+// over the top half of the card, so only the text below opened the game.
+describe("the games index cards are clickable everywhere", () => {
+  it("puts no interactive element inside a card's link", () => {
+    const html = render("/games");
+    // Anchors on this page are the cards themselves; none of them may contain
+    // a control, which is both the HTML rule and the reason the click worked
+    // on one half of the card and not the other.
+    for (const anchor of html.match(/<a\b[^>]*>[\s\S]*?<\/a>/g) ?? []) {
+      expect(anchor, anchor.slice(0, 80)).not.toMatch(
+        /<(button|input|select)\b/,
+      );
+    }
+  });
+
+  it("still renders both thumbnails", () => {
+    const page = text("/games");
+    expect(page).toContain("Higher");
+    expect(page).toContain("Effective");
+    // The thumbnail is the real component against a real round, so a Pokémon
+    // name proves it rendered rather than fell back to nothing (D-043).
+    expect(render("/games")).toContain("Attacking");
+  });
+});
