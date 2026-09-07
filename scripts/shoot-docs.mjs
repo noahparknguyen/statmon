@@ -85,6 +85,21 @@ const SHOTS = [
   // Ground dropping from 2x to 0x because of an ability (D-073). A screenshot of
   // the typing alone would show the version before this session.
   ["/types/psychic/steel?as=bronzong", 1600, 900, "docs/types.png"],
+  // Four contenders and a fixed stat, because it is the shape the brief asked
+  // about — "which of these four moves first" — and because four cards show the
+  // controls, the prompt and the round in one frame where two leave half of it
+  // empty.
+  //
+  // **This shot is the one that is not reproducible**, and deliberately so: the
+  // round is drawn at random (D-091), so re-running `shoot:docs` produces a
+  // different four Pokémon every time. That is a true picture of the page —
+  // there is no canonical round — and pinning a seed here would mean shipping a
+  // capture mode the game itself does not have.
+  ["/games/higher?stat=speed&n=4", 1600, 900, "docs/games.png"],
+  // The hard tier, because it is the one with something to show: a Pokémon
+  // whose typing is hidden and whose ability is the question (D-104). Random
+  // like the shot above, and for the same reason — there is no canonical round.
+  ["/games/effective?tier=hard", 1600, 900, "docs/effective.png"],
 ];
 
 // The two social frames must come out centred. This check exists because they

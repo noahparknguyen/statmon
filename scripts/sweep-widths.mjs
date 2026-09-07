@@ -59,10 +59,41 @@ const ROUTES = [
   "/types",
   "/types/water/flying",
   "/types/electric?as=eelektross",
+  "/games",
+  "/games/higher",
+  // Four contenders is the widest a round gets, and it is the layout that
+  // stacks into a 2x2 below `lg` — the case the verdict card has to sit
+  // between rather than on top of (D-097).
+  "/games/higher?stats=speed&n=4",
+  // A heavily filtered game: the narrowest pool the setup panel can produce
+  // that still plays, and a Gen 1 lens, which changes the stat chips under it.
+  "/games/higher?stats=speed&gen=1&type=water",
+  "/games/higher?asof=1",
+  // One route per tier: the answer rail changes width with the tier, and the
+  // hard board is the only one carrying artwork and an ability pill (D-104).
+  "/games/effective",
+  "/games/effective?tier=medium",
+  "/games/effective?tier=hard",
+  "/games/effective?tier=hard&type=ghost&asof=5",
+  // Two DISCLOSURES, measured for the first time. A panel that only exists
+  // after a click has never been swept, so the games' setup dialog and — the
+  // one this closes retroactively — the dex's own mobile filter panel were both
+  // unmeasured surfaces (D-099).
+  ["/games/higher", "Setup"],
+  ["/dex", "Filters"],
   "/credits",
   "/style",
   "/no-such-page",
 ];
+
+// A route is either a path, or a path plus the visible text of a button to
+// click before measuring — which is how a disclosure or a modal gets swept at
+// all. The label keeps the two apart in the report.
+const ENTRIES = ROUTES.map((r) =>
+  Array.isArray(r)
+    ? { route: r[0], open: r[1], label: `${r[0]} [${r[1]}]` }
+    : { route: r, open: null, label: r },
+);
 
 const MIME = {
   ".html": "text/html",
@@ -106,20 +137,20 @@ const HARNESS = `<!doctype html><meta charset="utf-8"><title>sweep</title>
 <style>html,body{margin:0}iframe{border:0;display:block}</style>
 <pre id="out">PENDING</pre>
 <script>
-const ROUTES = ${JSON.stringify(ROUTES)};
+const ENTRIES = ${JSON.stringify(ENTRIES)};
 const WIDTHS = ${JSON.stringify(WIDTHS)};
 // A tall frame so lazy content and sticky elements settle the way they would on
 // a real screen; height does not affect the horizontal question being asked.
 const HEIGHT = 900;
 
-const load = (src, width) => new Promise((resolve) => {
+const load = (entry, width) => new Promise((resolve) => {
   const f = document.createElement("iframe");
   // Width pinned in CSS as well as the attribute. The attribute alone left a
   // window in which the frame was laid out wider, which is how routes that
   // cannot overflow — the 404 is centred text — reported ~1000px scroll widths.
   f.width = width; f.height = HEIGHT;
   f.style.width = width + "px"; f.style.height = HEIGHT + "px";
-  f.src = src;
+  f.src = entry.route;
   f.onload = () => {
     // Overlay scrollbars, which is what phones actually have. Without this the
     // frame lays out at the requested width but reports a 15px-narrower
@@ -188,6 +219,28 @@ const load = (src, width) => new Promise((resolve) => {
     f.contentDocument.fonts.ready.then(async () => {
       const wait = (ms) => new Promise((r) => setTimeout(r, ms));
       await wait(150);
+      // Open the disclosure or modal under test, if this entry names one. The
+      // button is polled for rather than assumed present: every route but Home
+      // is a lazily-imported chunk (D-060), so at fonts.ready the page may
+      // still be its empty shell. A button that never appears is reported as a
+      // failure rather than silently measuring the closed page — a check that
+      // quietly tests nothing is worse than no check.
+      if (entry.open) {
+        let btn = null;
+        for (let i = 0; i < 40 && !btn; i++) {
+          btn = [...f.contentDocument.querySelectorAll("button")].find(
+            (b) => (b.textContent || "").trim().startsWith(entry.open));
+          if (!btn) await wait(100);
+        }
+        if (!btn) {
+          resolve({ scrollWidth: 0, clientWidth: 0, scrollHeight: 0,
+            offenders: [], targets: [], missing: entry.open });
+          f.remove();
+          return;
+        }
+        btn.click();
+        await wait(150);
+      }
       let prev = read();
       let agreed = 0;
       // ~4s of headroom. Every route settles well inside it; the cap only stops
@@ -246,16 +299,16 @@ function targetFailures(doc) {
 (async () => {
   const results = [];
   for (const width of WIDTHS)
-    for (const route of ROUTES) {
-      let m = await load(route, width);
+    for (const entry of ENTRIES) {
+      let m = await load(entry, width);
       // Re-measure anything that looks like a failure, in a fresh frame.
       // Layout probes in a headless browser are inherently a little racy — a
       // transient caught mid-settle does not survive a second, independent
       // measurement, while a page that genuinely overflows fails every time. So
       // a failure has to happen twice to be reported. This is the difference
       // between a checker that is trusted and one that is muted.
-      if (m.scrollWidth > m.clientWidth) m = await load(route, width);
-      results.push({ width, route, ...m });
+      if (m.scrollWidth > m.clientWidth) m = await load(entry, width);
+      results.push({ width, route: entry.label, ...m });
     }
   document.getElementById("out").textContent =
     "SWEEP_JSON:" + JSON.stringify(results);
@@ -309,8 +362,20 @@ if (process.argv.includes("--json")) {
 const overflow = results.filter((r) => r.scrollWidth > r.clientWidth);
 
 console.log(
-  `\nSwept ${ROUTES.length} routes × ${WIDTHS.length} widths = ${results.length} checks.\n`,
+  `\nSwept ${ENTRIES.length} routes × ${WIDTHS.length} widths = ${results.length} checks.\n`,
 );
+
+// A disclosure whose button never turned up. Reported first and loudly,
+// because the failure mode it guards against is silent: the frame would
+// measure a closed page, pass, and claim to have swept a panel it never
+// opened. A renamed button is exactly how that happens (D-099).
+const missing = results.filter((r) => r.missing);
+if (missing.length) {
+  const seen = [...new Set(missing.map((r) => `${r.route}`))];
+  console.log("Disclosures that never opened:");
+  for (const route of seen) console.log(`  ✗ ${route} — no button matched`);
+  console.log();
+}
 
 // Tallest page per route, at the narrowest width — the "how far does a phone
 // scroll" number.
@@ -334,6 +399,10 @@ if (tooSmall.length === 0) {
     );
 }
 
+if (missing.length) {
+  console.log(`\n── ${missing.length} unopened disclosure(s) ────────────\n`);
+  process.exit(1);
+}
 if (overflow.length === 0 && tooSmall.length === 0) {
   console.log("\n── 0 horizontal overflow(s) ─────────────────");
   console.log("  No route scrolls sideways at any width. ✓\n");

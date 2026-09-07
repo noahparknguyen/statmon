@@ -11,6 +11,9 @@
  *   5. dex stat-cell text over its proportional type fill
  *   6. type-chart grid cells — the multiplier text on each cell fill
  *   7. STAB chip — the type name and multiplier on the chip's own type fill
+ *   8. Home hero — text on the scrim over a worst-case sprite pixel
+ *   9. Game contender — the winning card's accent-muted fill
+ *  10. Game arena — panel text over the primary-type tint
  *
  * Thresholds: AA normal text 4.5, AA large text 3.0, non-text (1.4.11) 3.0.
  * (Statmon's diff/badge/label text is small, so 4.5 applies.)
@@ -231,6 +234,50 @@ if (!scrimPct) {
   const secondaryRatio = ratio(secondary, worst);
   console.log(
     `  (secondary on the same backdrop: ${secondaryRatio.toFixed(2)} — why hero text is primary)`,
+  );
+}
+
+// The stat game marks its winning card with `--color-accent-muted` (D-093) —
+// the "subtle accent fills" token 04_design §2 has always listed and nothing
+// had ever consumed. Being the first consumer is exactly when a fill needs
+// auditing: an unused token's pairings have never been anyone's problem.
+//
+// Three things sit on it. The Pokémon's name and the revealed stat value are
+// `primary`; the check mark is `accent`, and it is an ICON rather than text, so
+// it is held to 1.4.11's 3.0 for non-text contrast rather than to 4.5 — the
+// same threshold the stat-bar fills are measured against in group 4.
+console.log(
+  "\n=== 9. Game contender — the winning card's accent fill (D-093) ===",
+);
+const accentMuted = hex("accent-muted");
+console.log(row("name + value (primary)", ratio(primary, accentMuted), 4.5));
+console.log(
+  row("check icon (accent, non-text)", ratio(hex("accent"), accentMuted), 3),
+);
+// The card's border is the other half of the marking, and it has to be visible
+// against the page it sits on or the fill is doing the work alone.
+console.log(row("border (accent) vs base", ratio(hex("accent"), base), 3));
+
+// The arena tints each panel with its Pokémon's primary type (D-096) — the
+// site's oldest visual idea, applied to a whole surface rather than a chip. So
+// the eighteen tints are eighteen new backgrounds for the name and the value,
+// and they are audited the way the STAB chip's fills are (group 7), which is
+// the audit that caught a real AA failure shipping on two surfaces (D-058).
+//
+// The tint is deliberately much lighter than the chip's 14%: it sits over
+// `base` rather than `elevated`, covers a whole panel, and has artwork on top
+// of it. That makes these the easiest pairings in this file — which is the
+// point of measuring rather than assuming, since "obviously fine" is exactly
+// what group 7 was before anyone checked it.
+console.log(
+  "\n=== 10. Game arena — panel text over the primary-type tint (AA 4.5) ===",
+);
+const PANEL_TINT = 10;
+for (const t of TYPES) {
+  const panel = blend(hex(`type-${t}`), base, PANEL_TINT / 100);
+  console.log(row(`${t} — name (primary)`, ratio(primary, panel), 4.5));
+  console.log(
+    row(`${t} — losing value (secondary)`, ratio(secondary, panel), 4.5),
   );
 }
 
