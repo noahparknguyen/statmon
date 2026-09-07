@@ -6,7 +6,7 @@ _The tangible plan parsed out of [00_brainstorm](00_brainstorm.md): what's actua
 
 ## 1. Product Definition
 
-**Statmon** is a minimalist, dark-mode set of Pokémon tools — three of them as of this writing: a head-to-head **stat comparison**, a sortable **full-dex table**, and a **type chart** that answers dual types on one page. The flagship is the comparison, deliberately narrow: fast search, two slots, three columns (Pokémon 1 · Pokémon 2 · difference), color-coded bars. The modular foundation was always meant to carry more tools without a rewrite, and the other two (§2.3) are the proof that it does. Every one of them can be read **as of any generation**.
+**Statmon** is a minimalist, dark-mode set of Pokémon tools — four sections as of this writing: a head-to-head **stat comparison**, a sortable **full-dex table**, a **type chart** that answers dual types on one page, and a **games** section that asks you the questions the other three answer. The flagship is the comparison, deliberately narrow: fast search, two slots, three columns (Pokémon 1 · Pokémon 2 · difference), color-coded bars. The modular foundation was always meant to carry more tools without a rewrite, and the other three (§2.3) are the proof that it does. Every one of them can be read **as of any generation**.
 
 **Primary goal:** answer "which of these two is faster / hits harder / is bulkier?" in seconds, and look good doing it.
 
@@ -59,6 +59,7 @@ The MVP is done when a user can land on the site, search two Pokémon, and read 
 
 ### 2.3 Shipped since launch
 
+- **Games** — `/games`, and **`Higher.`** in it, as a full-height **arena**: two or four Pokémon, one stat, pick the highest, readable as of any generation like everything else. The board fills the viewport with one type-tinted panel per contender and the settings live in a modal behind a 56px game bar — the site's second stated exception to [04_design §1](04_design.md), after Home's sprite wall, on the argument that in a game the Pokémon _are_ the data ([D-096](03_decisions.md#d-096)). The setup panel carries the dex's own filters (stats, "Introduced in", types, alternate forms) under its own parameter names, and the best streak and a per-stat accuracy log persist per settings ([D-098](03_decisions.md#d-098)). The brief's three modes are two knobs — "which of these four moves first" is `stat: speed, n: 4` — and the question generator rejects the rounds that are not questions: a tie has two right answers (1.2–2.5% of random pairs) and a sub-5-point gap is a coin flip. Every round ends with a link into `/compare` or `/dex`, which is the argument for a game living on a reference site at all. Settings are in the URL; the score and the round are not ([D-091](03_decisions.md#d-091), [D-092](03_decisions.md#d-092)). Credits moved to the footer to free the nav slot ([D-094](03_decisions.md#d-094)).
 - **Abilities, and the matchups they bend** — every Pokémon's roster on its comparison card, hidden ability marked, and the ~20 that change type effectiveness feeding `effectiveness()` alongside the era's chart: `/compare/krookodile/vs/eelektross` said Ground was 2× and now says 0×, because Eelektross has Levitate. One ability is always selected (a Pokémon always has one), which is why Home's flagship board now shows Volcarona's Fire STAB doing nothing to Chandelure's Flash Fire. The roster is generation-aware like everything else — **Gengar carried Levitate through Gen 6** — and below Gen 3 there are no abilities to show, which the board says rather than hides. See [D-073](03_decisions.md#d-073) and [D-074](03_decisions.md#d-074).
 - **`/types` answers for a Pokémon** — a search bar, so "what beats Corviknight" no longer requires knowing it is Steel/Flying first. The typing stays the page's subject and the Pokémon rides along as `?as=`, validated against it rather than trusted: dropping a type, or moving to a generation it did not exist in, drops the Pokémon with no cleanup logic anywhere. See [D-075](03_decisions.md#d-075).
 - **A consistency, accessibility and responsive sweep** — the pages were built in
@@ -80,7 +81,7 @@ The MVP is done when a user can land on the site, search two Pokémon, and read 
 
 ### 2.4 Someday (the rest of the suite)
 
-Radar/hex view, favorites, and the remaining tools & games catalogued in [00_brainstorm §5](00_brainstorm.md) — type matchup grid, speed-tier tool, type coverage calculator, team builder, EV/IV planner, Nuzlocke helper, dex trackers, and the guessing/higher-lower/silhouette/daily-puzzle games. Plus expanded generation coverage and per-comparison OG images.
+Radar/hex view, favorites, and the remaining tools & games catalogued in [00_brainstorm §5](00_brainstorm.md) — speed-tier tool, type coverage calculator, team builder, EV/IV planner, Nuzlocke helper, dex trackers, and the rest of the games (`Effective.` is specified in [05_roadmap Phase 6](05_roadmap.md); then the silhouette guess and a daily puzzle, which the injected `rng` already leaves room for). Plus expanded generation coverage and per-comparison OG images.
 
 ---
 

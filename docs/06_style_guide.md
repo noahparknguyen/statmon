@@ -32,10 +32,17 @@ This is what makes §12 rule 1 enforceable instead of merely aspirational. ([D-0
 **On unused primitives.** A primitive is "the palette of possible choices" (§1),
 so an unreferenced one is not drift — it is headroom, and the ramp reads as a
 designed system rather than a list of exactly-what-got-used. `--color-neutral-100`,
-`--color-neutral-500`, `--color-neutral-800`, `--color-accent-500`,
-`--color-accent-600` and `--color-accent-muted` are currently unreferenced and are
-kept deliberately. An unused **semantic** token is a different matter — it claims
-a role nothing plays — and gets removed.
+`--color-neutral-500`, `--color-neutral-800`, `--color-accent-500` and
+`--color-accent-600` are currently unreferenced and are kept deliberately. An
+unused **semantic** token is a different matter — it claims a role nothing plays
+— and gets removed.
+
+`--color-accent-muted` used to be on that list and now is not: the stat game's
+winning card is its first consumer ([D-093](03_decisions.md#d-093)). Worth noting
+what that cost — **a token's pairings are unaudited until something uses it**,
+because until then its contrast has never been anyone's problem. Being a first
+consumer means adding a group to `npm run audit:contrast`, which is what group 9
+is.
 
 ### Neutrals (dark-first ramp)
 
@@ -297,20 +304,27 @@ Content max-width `--container-content: 1120px` (utility: `max-w-content`), cent
 
 ## 9. Motion
 
-| Token             | Value                        | Intended use          | Status                        |
-| ----------------- | ---------------------------- | --------------------- | ----------------------------- |
-| `--dur-fast`      | 120ms                        | hover, focus          | ✅ **the transition default** |
-| `--dur-base`      | 180ms                        | most transitions      | scale rung, unconsumed        |
-| `--dur-slow`      | 300ms                        | selection cross-fades | scale rung, unconsumed        |
-| `--dur-bar`       | 450ms                        | stat-bar fill         | ✅ `.animate-grow-w`          |
-| `--dur-wall`      | 120s                         | Home's hero wall      | ✅ `.animate-wall`            |
-| `--ease-standard` | `cubic-bezier(0.2, 0, 0, 1)` | default               | ✅ `.animate-grow-w`          |
+| Token             | Value                            | Intended use           | Status                        |
+| ----------------- | -------------------------------- | ---------------------- | ----------------------------- |
+| `--dur-fast`      | 120ms                            | hover, focus           | ✅ **the transition default** |
+| `--dur-base`      | 180ms                            | most transitions       | ✅ `.animate-reveal`          |
+| `--dur-slow`      | 300ms                            | selection cross-fades  | scale rung, unconsumed        |
+| `--dur-bar`       | 450ms                            | stat-bar fill          | ✅ `.animate-grow-w`          |
+| `--dur-charge`    | 220ms                            | the clash's run-in     | ✅ `.animate-clash-charge`    |
+| `--dur-shake`     | 280ms                            | the clash's aftershock | ✅ `.animate-clash-shake`     |
+| `--dur-wall`      | 120s                             | Home's hero wall       | ✅ `.animate-wall`            |
+| `--ease-standard` | `cubic-bezier(0.2, 0, 0, 1)`     | default                | ✅ `.animate-grow-w`          |
+| `--ease-clash`    | `cubic-bezier(0.55, 0, 1, 0.45)` | accelerate             | ✅ `.animate-clash-charge`    |
 
 `--dur-fast` is wired as `--default-transition-duration`, so **every** `transition-*` utility picks it up with no per-component opt-in — write `transition-colors` and you get the documented 120ms. Override per element with `duration-*` when a specific motion needs it. ([D-033](03_decisions.md#d-033))
 
 `--dur-wall` is deliberately three orders of magnitude off the rest of the scale: every other duration answers something the user just did, while the hero wall is ambient — a field that large only needs to creep for the movement to register. It is linear rather than eased, because easing an endless loop reads as a stutter. ([D-070](03_decisions.md#d-070))
 
-A second easing (`--ease-out-soft`) was specified here and referenced by nothing; it has been removed. The bar fill uses `--ease-standard`. Add an easing when a component actually needs one.
+`--dur-base` is spent by the arena's answer reveal. **`--dur-slow` is not, and this table said it was for one session** — the round change used it until it was rebuilt as the clash and outgrew it ([D-100](03_decisions.md#d-100)). Corrected here rather than left, because a status column that drifts is worse than no status column.
+
+`--dur-charge`, `--dur-shake` and `--ease-clash` are component tokens in the `--dur-bar` / `--dur-wall` tradition: a named motion that is nobody else's. **560ms is deliberately long for this scale**, and the reason is the one §9 exists to make explicit — every other duration here answers something the user just did, while the clash is a thing that has to be _read_: two Pokémon charging in and colliding. At `--dur-slow` it registered as a flicker rather than as an event. `--ease-clash` is the scale's only accelerating curve, for the same reason: things that ease **out** are arriving gently, and these are not.
+
+A second easing (`--ease-out-soft`) was specified here once and referenced by nothing; it was removed. `--ease-clash` earns its place by having a caller on the day it lands — which is the bar §12 rule 1 sets for adding anything to this document.
 
 **Reduced motion is mandatory:** under `prefers-reduced-motion: reduce`, disable bar fills/staggers and render final state instantly; keep only opacity fades. ([04_design §7](04_design.md))
 
@@ -327,11 +341,17 @@ A second easing (`--ease-out-soft`) was specified here and referenced by nothing
 | `--z-overlay`  | 1200  | modals / dialogs                               |
 | `--z-toast`    | 1300  | toasts / copied-link confirmation              |
 
-`--z-dropdown` (search results), `--z-sticky` (site header) and `--z-raised`
-(the dex table's sticky column headers) are consumed. The unused rungs stay: a
+`--z-dropdown` (search results), `--z-sticky` (site header), `--z-raised` (the
+dex table's sticky column headers, and the games' game bar) and `--z-overlay`
+(the games' setup dialog) are consumed. The remaining unused rungs stay: a
 z-index scale's whole value is being a **complete ladder** — an incomplete one
 is what makes someone reach for `z-9999`. This is the opposite call from unused
 semantic colour tokens, and deliberately so.
+
+**`--z-overlay` is that argument paying off a second time.** It sat unused from
+the day the scale was written until the games needed a modal
+([D-096](03_decisions.md#d-096)) — at which point the right rung was simply
+there, with a documented meaning, instead of being guessed at.
 
 **`--z-raised` is that argument proving itself.** The ladder had no rung between
 "normal flow" and "floating chrome", so a sticky table header that only needed

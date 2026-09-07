@@ -4,6 +4,831 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ---
 
+## 2026-09-07 — Session 25 (`Effective.`)
+
+<a id="d-106"></a>
+
+### D-106 · A bar that fits one game's name — **Firm** _(fixes [D-096](#d-096))_
+
+`GameBar`'s title was `shrink-0`, which was correct for exactly as long as there
+was one game. "Higher." fits a 320px bar; **"Effective." does not**, so the
+second game shoved the Setup button **15px off the side of the screen** and
+every page on the site scrolled sideways with it.
+
+The title now truncates instead of pushing. `min-w-0` is the half that does the
+work — a flex item will not shrink below its content's intrinsic width without
+it, so `truncate` alone would have changed nothing, the same pairing
+[D-055](#d-055) needed for the dex's sort control.
+
+**Only `npm run sweep:widths` was ever going to find this.** The bar looks
+perfect at every width anyone opens by hand, and the failure needed a second
+caller with a longer name to exist at all. Worth recording as the case for
+measuring rather than looking: this is a bug that was _created_ by adding a
+component's second consumer, and it was reported by a machine within a minute
+of that happening.
+
+Finding it took two false starts of its own, both worth noting because the
+tooling lies in a specific way: Chrome **ignores `--window-size` below about
+500px**, so a "320px" reproduction is really a 500px one — and this project's
+`sm` is **480px**, so that lands in the wrong layout entirely. The sweep gets a
+real 320 by pinning the width on an **iframe**, which is the technique any
+narrow-width measurement here has to use.
+
+---
+
+<a id="d-105"></a>
+
+### D-105 · The arena did not extract, and that is the finding — **Firm** _(scopes [D-058](#d-058))_
+
+**Decision.** There is no `GameArena` component. The two games share a
+constants-and-helpers module, `components/gameChrome.jsx`, holding the board's
+size, the panel's look and the clash choreography; each game lays out its own
+board.
+
+**Why, against the plan.** Extracting a shared arena was the plan, on
+[D-058](#d-058)'s two-callers rule, and building it made the rule's limit
+visible: **the two arenas are not the same layout.** `Higher.`'s answer _is_ its
+panels, so its question and verdict live in an overlay between them, with all of
+[D-103](#d-103)'s no-shift geometry. `Effective.`'s answer is a rail of
+multipliers along the bottom, so its board has a row the other one does not and
+needs none of that machinery. A component covering both would have taken a prop
+for every difference and stopped being an abstraction of anything.
+
+What they genuinely share is the board's **size**, the panel's **look** and the
+**clash** — and those are exactly what `chipStyles.jsx`, `dexColumns.jsx` and
+`pageChrome.jsx` are: shared strings in a constants module, with each component
+keeping only what differs (06_style_guide §12 rule 8). Same rule, one rung down
+from where the plan expected to apply it.
+
+_The corollary is worth stating, because "go all the way up" ([D-058](#d-058))
+pushes the other way: the test is whether two things are the same **thing**, not
+whether they have parts in common. Two boards that answer differently are two
+boards._
+
+---
+
+<a id="d-104"></a>
+
+### D-104 · `Effective.` — three tiers, a random ability, and no thumb on the scale — **Firm**
+
+**Decision.** The type game: an attacking type against a defender, name the
+multiplier. **One tier at a time** — Easy is a single defending type, Medium a
+dual type, Hard a Pokémon. Answers are the multiplier ladder the rest of the
+site speaks in.
+
+**Abilities are always in play, always shown, and drawn at random from the
+roster.** Verified on the case that prompted it: Fire into Chandelure is **0×
+with Flash Fire and ½× with Flame Body**. Drawing the ability is what makes that
+a question rather than a species you memorise — you have to read the card, not
+recall the Pokémon.
+
+**There is no abilities toggle**, and two things say there should not be. A
+Pokémon always has exactly one ability in play ([D-074](#d-074)), so "abilities
+off" is a state this site does not model. And the toggle anyone would want
+already exists: it is called **Medium**, where the defender is a typing and
+there is no ability to account for.
+
+**One tier at a time, not a mix**, and that is what makes the answer buttons a
+property of the tier rather than of the round: computed once from the settings,
+constant all session, so their number can never hint at the answer in front of
+you.
+
+#### The sampler picks the answer first
+
+Uniform sampling is a broken quiz. Measured before any of this was written:
+**63%** of single-type matchups and **47%** of dual ones are `1×`, so "always
+guess 1×" beats a real player. So a target multiplier is drawn from the offered
+set and a question is found for it — cheaply, because one defender answers
+eighteen questions at once: draw it, score every attacker, keep one that lands
+on the target.
+
+Measured over 4,000 generated rounds per tier, the shipped distribution is
+**25.6 / 23.6 / 25.2 / 25.5%** in Easy and within a point of even in Medium and
+Hard. The best single guess went from 63% to **23.6%**.
+
+#### `⅛×` is producible and is never asked
+
+An answer is offered only when **at least 0.1% of the tier's question space**
+produces it. That is a rule about diversity rather than a tuning constant, and
+it excludes exactly one thing: `⅛×` is reachable from **four Pokémon in the
+entire dex** — Dewgong, Spheal, Sealeo and Walrein, Water/Ice with Thick Fat,
+the [D-084](#d-084) case — which is 0.009% of Hard's space. Sampling answers
+evenly while offering it would have put that one family in **one round in
+seven**. The rarest bucket the floor keeps is Hard's `4×` at 1.21%, clearing it
+by 12×; the one it drops misses by 130×. Nothing sits near the line, and
+`/types` still answers `⅛×` — the game just does not quiz a question with four
+instances.
+
+#### No thumb on the scale
+
+A uniformly drawn ability decides the answer in **8.1%** of Hard rounds, and
+**15.9%** once answers are balanced. Biasing the generator toward Pokémon whose
+roster contains an effectiveness ability was **considered and declined**: the
+ability matters as often as it really does. The numbers are here so that if the
+tier ever feels thin, the decision is visible rather than something to
+rediscover.
+
+#### Three things the hard tier hides, and the one that leaked
+
+The typing, the tint and the ability's marker. The first two were designed in;
+the third was not, and shipped in the first build: `AbilityChips` shows an
+accent dot on an ability that changes type matchups, which on `/compare` is
+information and here is **the answer**. It would have destroyed the whole trap —
+Flame Body would have shown no dot, so you would never have had to know what it
+does. `markEffect` turns it off until the round resolves, and three rendered
+assertions guard all three, over twelve random rounds each because a single
+render could pass by drawing a Pokémon with one type and no ability.
+
+_The first of those assertions failed for the right reason and would have kept
+failing for the wrong one: it looked for `text-badge`, which the ability pill
+shares with `TypeBadge`. It now looks for a type token set as a **background**
+colour, which nothing but a type badge does._
+
+#### Elsewhere
+
+The verdict reuses `StabChip` and `StabCaption` verbatim — the site's own idiom
+for "the chart said one thing and the ability changed it", struck original and
+all ([D-079](#d-079)) — so the game cannot drift from the comparison board's
+version of the same fact. `?type=` filters the **defending** typing in all three
+tiers on the dex's own OR-within-a-group rule; `?gen=` and `?forms=` exist only
+in Hard, because only Hard draws from the dex, and a URL that carries them
+elsewhere would mean nothing.
+
+**The record is now namespaced by game**, which is a correctness fix rather than
+tidiness: every game spells its default settings as the empty string, so the two
+would have filed their best streaks under the same key and overwritten each
+other on the first round of either. `Effective.`'s accuracy topic is the
+**attacking type** — "Ghost 54%" is the actionable axis, and it is one click
+from a drill on exactly that.
+
+**And one bug in `Higher.` fell out of writing this one.** Three settings
+mutators could each emit an object whose URL parsed back into a _different_
+object — lists filtered in place keep whatever order they were handed. Fixing
+them one at a time was fixing the same thing three times, so both games now
+route every mutation through a single `normalise`, and "the URL round-trips" is
+a structural property rather than something each mutator has to remember.
+
+---
+
+## 2026-09-06 — Session 24 (the games take the field)
+
+<a id="d-103"></a>
+
+### D-103 · The answer stops shoving the board — **Firm** _(fixes [D-097](#d-097))_
+
+**Reported as** "on smaller screens the answer panel is bigger than the question
+panel, so when it appears it shifts the Pokémon below it down."
+
+Measured at 390px: the card goes from **54.8px to 134.6px** — an **80px** growth
+in a grid row sized by its contents, split between the two panels, so both
+Pokémon jump 40px the instant you answer. Introduced by [D-097](#d-097), which
+made the overlay a real row precisely so the answer would stop covering the
+answer, and solved that at the cost of this.
+
+**Reserving the taller height was the obvious fix and it is the wrong one.** It
+would spend 80px of a 668px board on an empty gutter in the state you spend
+nearly all your time in — a quarter of a phone's artwork, permanently, to smooth
+over one transition. The transition is the thing that is wrong, not the gutter.
+
+**So the row keeps the question's height and the answer is lifted out of flow.**
+The question card stays in the row, invisible, once the round resolves; the
+verdict is absolutely positioned on top of it and grows **downward**.
+
+Downward is forced rather than chosen, and the reasoning is the whole point:
+above the gutter is the first Pokémon's value, which **is** the answer, and
+covering the answer with the answer is exactly the fault [D-097](#d-097) exists
+to have fixed. Below it is the second Pokémon's artwork, whose name, types and
+value sit lower still and stay visible. There is one safe direction and this is
+it.
+
+`display: contents` on the positioning wrapper at the side-by-side breakpoints
+makes the whole arrangement disappear, so a wide board goes back to a plainly
+centred child of the overlay layer and none of this applies there — it never had
+the problem, because the layer is absolute at those widths already.
+
+**Two measurement faults on the way, both mine, and both worth recording**
+because the second is the kind that ships a bug with a green check beside it:
+
+- `--window-size` is **ignored under `--dump-dom`**, so a "390px" measurement
+  was really 500px. That mattered because this project's `sm` is **480px**, not
+  Tailwind's default 640 — so the run was measuring the side-by-side layout,
+  which never had the bug, and reporting no shift.
+- The screenshot harness clicked a contender by matching `flex-col` in its class
+  list. Restructuring the panel for [D-102](#d-102) moved that class to an inner
+  span, so the click silently matched nothing and the "after" screenshot was
+  another picture of the **before** state. It reported a 0px shift, correctly,
+  about two identical images.
+
+The fix in both cases was to assert the thing the measurement assumed: address
+the panels by their grid cells rather than by a class that is free to move, and
+**look at the after-image** before believing the number computed from it.
+
+---
+
+<a id="d-102"></a>
+
+### D-102 · A clash is a shake, not a rebound — **Firm** _(replaces the aftershock in [D-100](#d-100) / [D-101](#d-101))_
+
+**Reported as** "it's more like a rebound than a clash — they should clash, each
+Pokémon shakes, then settles. And for four, each one should shake differently,
+so it looks natural rather than robotic."
+
+Right on both counts, and the first one names something the previous two entries
+kept missing. A **rebound** is what happens when two things bounce off each
+other; a **clash** is when they hit and stay hit, and everything about them
+rattles. [D-100](#d-100) built a rebound and [D-101](#d-101) tuned it, and no
+amount of tuning was going to turn one into the other.
+
+**So the charge stops dead**, and the response moved off the panels and into
+them.
+
+**That relocation is load-bearing, not tidiness.** Shaking the panels themselves
+would flicker the gaps between them open and shut a dozen times a round — which
+is precisely the fault [D-100](#d-100) exists to have fixed, reintroduced at
+higher frequency. Shaking the panel's _content_ inside an `overflow-hidden`
+panel opens nothing. It is also the better reading: boxes collide, and the
+things inside them rattle.
+
+**Two animations on two elements**, because CSS transforms do not compose — a
+second `animation` on the same element setting `transform` simply wins. The
+shake is delayed by exactly `--dur-charge`, so the impact is one moment rather
+than two that can drift apart.
+
+**The variation is the part that stops it looking robotic**, and it is
+deliberately **not random**. A render may not be a dice roll — React is entitled
+to run one twice — so amplitude, rotation and duration are derived from the
+round number and the panel's slot. The same round always shakes the same way and
+the next one differs, which is the property `higherQuestion`'s injected `rng`
+already established for the questions themselves. The first swing carries
+**onward in the direction of travel**, because that is what inertia does.
+
+Every parameter is a custom property set on the grid cell and **inherited** down
+into the panel, so `ContenderPanel` knows only that it is shaking, not how — the
+page owns the choreography and the component owns the mechanism.
+
+**Measured, not eyeballed.** Frozen frames of a pinned round, with the
+horizontal centroid of each panel's text read out per frame: at 250ms the four
+sit at **+5.1, +9.1, −8.8, −8.6px**, at 320ms at **+1.1, −6.1, +5.0, −0.1**, and
+by 520ms all four are back to zero. That is the check that they are genuinely
+out of phase rather than four copies of one curve — which is exactly what the
+first attempt was, silently, because the prop that turns the shake on was never
+passed and the whole thing rendered static.
+
+**The alternative was considered and declined.** The other idea on the table was
+to drop the shake entirely and have the question slam down from the top like a
+fight card's VERSUS. Two reasons not to. It leaves the collision with **no
+response at all** — two things meeting and nothing happening is just two things
+arriving. And it animates **chrome**: [D-101](#d-101) had just moved the question
+to the top precisely so it would stop competing with the board, and a slam on
+every round takes that back. It is a lovely idea for a _one-off_ — a game start
+screen — and it stays available for one.
+
+**One shared rule changed.** The reduced-motion block now collapses
+`animation-delay` as well as `animation-duration`. The shake is delayed by the
+length of the charge, so without it a reduced-motion user would wait out 220ms
+for a frame that never moves.
+
+---
+
+<a id="d-101"></a>
+
+### D-101 · Weight is velocity; the question is chrome and the answer is not — **Firm** _(refines [D-100](#d-100), [D-096](#d-096); its aftershock replaced by [D-102](#d-102))_
+
+Four notes from playing it, and the first one corrects the fix before it.
+
+**1 · "I don't feel the weight."** [D-100](#d-100) answered "too fast to
+register" by making the clash _longer_ — 300ms to 560ms, most of it charge. That
+was the wrong lever, and playing it proved so: a heavy thing is not a slow thing,
+it is a thing that **covers ground fast and stops dead**. The charge now takes
+**216ms instead of 325** over **5rem instead of 4** — roughly double the velocity
+— inside a shorter total (480ms), and what it buys back it spends on the
+aftershock.
+
+The aftershock changed shape too, for the same reason. It rang **three times at
+14%** of the travel, and fast low-amplitude ringing is what a _light_ thing does;
+heavy things throw one big rebound and damp out. It is **two oscillations, the
+first at 22%**. The diagnosis is worth keeping: when motion feels weightless,
+look at velocity and at the damping, not at the duration.
+
+**2 · The question goes to the top; the answer stays in the middle.** Reported as
+the centred prompt covering the artwork with four Pokémon on a wide screen — and
+it does, because at four panels each image is `object-contain`-ed into a tall
+box, so all the empty space is above and below the subject and none is in the
+middle. But the fix is not "move the card", it is that **the card holds two
+different things**: a question you read once and keep glancing back at is
+**chrome**, and chrome does not sit on the subject; an answer is an **event**,
+which should interrupt, and which carries the button you are about to press. So
+they get different positions, and only at the widths where the panels are side by
+side — stacked, the card is a real row _between_ the panels and covers nothing.
+
+**3 · "Correct." and its detail were two type sizes on one line.** They were,
+and [D-053](#d-053) had already settled what that looks like: _"two type sizes on
+one line, and no amount of aligning makes them sit together"_. Stacked, they read
+as a headline and its supporting line. It costs a row of height, which the
+stacked board pays out of its artwork — the trade [D-097](#d-097) made in the
+other direction, now that there is a reason.
+
+**4 · An inset ring has to be told about its container's curve.** The winner's
+marking is an inset ring, so it traces the **panel's** box; in a games-index
+thumbnail clipped by a card's `rounded-lg`, that gave square corners the card
+then sliced off. It cannot infer the radius from what is clipping it, so
+`ContenderPanel` takes a `className` — a layout hook only, under the same
+contract as `TypeBadge`'s, and safe to append because the panel sets no radius of
+its own.
+
+**Also: you can erase your record.** `clearRecord` had existed since
+[D-098](#d-098) with a comment saying the setup panel offers it, and the setup
+panel did not — the function was written and never wired, which is its own small
+lesson about comments that describe intentions. It is a **two-step button**: this
+site has no confirm pattern, and a nested `<dialog>` for one button would be
+absurd, so the button arms itself and the second press erases. Its armed state
+lives in its own component **so that closing the panel disarms it** — resetting
+the flag from the open/close effect is `setState` inside an effect, which
+`react-hooks` flags and is right to. Same move the arena makes with its session
+key: state belongs to the thing it is about, and then it cannot outlive it.
+
+_Forgetting is a feature, not a debug hook. The record is the only thing this
+site stores about anyone, so being able to throw it away is the other half of
+storing it at all._
+
+---
+
+<a id="d-100"></a>
+
+### D-100 · The clash, and the grey bar nobody designed — **Firm** _(rebuilds [D-097](#d-097); its rebound replaced by [D-102](#d-102))_
+
+**Reported as** "the next-round animation is a quick flash — the Pokémon come in
+from left and right and clash together? If so it's too fast to register." Both
+halves of that turned out to be right, and the first half was a bug.
+
+**The flash was real, and it was not the animation.** The panels converge on the
+board's centre, so for the length of the round change the gap between the two
+halves is **open** — and it was filled with the board's background, which was
+`--color-border-subtle` because that is the `gap-px` trick that draws the 1px
+divider. So every round opened a **64px light-grey bar down the middle of a
+near-black screen** and slammed it shut. Nobody designed that; it fell out of
+using one colour for two jobs. The board's background is `--color-base` now, so
+the gap the panels close on is the page's own black, and the resting divider is
+a near-black hairline — which the type tints already separate well enough.
+
+_Found by freezing the animation mid-flight and screenshotting it, which is the
+only way to look at 300ms. Worth keeping as a technique: `getAnimations()`,
+`pause()`, set `currentTime`, capture — and pin `Math.random` before the app's
+module runs, or every frame is a different round and the filmstrip shows
+nothing._
+
+**The reading was right, so it is now the design.** It was a generic slide-in
+that happened to converge; it is a **collision** on purpose:
+
+- **Further** — 4rem, not 2. At half the distance the charge was over before it
+  registered.
+- **Slower** — `--dur-clash`, 560ms, against the 300ms it had. Deliberately long
+  for this scale, and the justification is the one the scale asks for: every
+  other duration on the site answers something the user just did, while this is
+  an event that has to be _read_.
+- **Accelerating** — `--ease-clash` is the site's only accelerate curve. Things
+  that ease out are arriving gently, and two Pokémon running at each other are
+  not.
+- **An aftershock** — on impact they recoil apart and settle through three
+  decaying overshoots. Proportional to the distance travelled rather than a
+  fixed pixel count, so it reads the same on a phone and a monitor. It rebounds
+  **outward**, not inward: pressing inward would open gaps at the board's outer
+  edges, which is the fault this entry started with.
+
+One keyframe set rather than two animations with a delay, so the impact is a
+keyframe and cannot drift out of sync with itself; the two segments carry their
+own easings.
+
+**A correction this forced.** [D-097](#d-097) recorded `--dur-slow` and
+`--dur-base` as finally having consumers, and
+[06_style_guide §9](06_style_guide.md) said so in its status column. The round
+change outgrew `--dur-slow` one session later, so that rung is **unconsumed
+again** and the table now says so. A status column that quietly goes stale is
+worse than not having one.
+
+**Not done, and on the record:** the whole board does not shake. A tremor on the
+`overflow-hidden` board would open gaps at the screen edges — the same class of
+fault as the grey bar — and the per-panel recoil already reads as the aftershock
+that was asked for.
+
+---
+
+<a id="d-099"></a>
+
+### D-099 · The sweep can open a disclosure — **Firm** _(extends [D-059](#d-059))_
+
+**Decision.** A route in `scripts/sweep-widths.mjs` may now be a path **plus the
+visible text of a button to click before measuring**. A disclosure that never
+opens is reported as a failure rather than quietly measuring the closed page.
+
+**Why.** [D-059](#d-059) replaced a manual browser pass with a measured one, and
+it has been the check that catches what nobody eyeballs. But it could only ever
+measure what a page renders on load — so **every surface behind a click was
+invisible to it**, and two of them mattered: the games' setup dialog, which is
+the biggest panel on the site, and — the one this closes retroactively — the
+dex's mobile `Filters (N)` panel, unmeasured since the sweep was written.
+
+The failure mode being guarded against is the subtle one. A checker that clicks
+a button it cannot find and measures anyway does not fail; it passes, and it
+claims to have swept a panel it never opened. A renamed button is all it takes.
+So a missing button is its own reported failure, printed before anything else.
+
+**It found something immediately.** The arena's entrance animation translates
+each panel 2rem in from its own edge, and that 32px reached the document —
+horizontal overflow at 900, 1024, 1280 and 1440, on a board whose whole point is
+that it is exactly the size of the screen. Same fault as the type grid leaking
+its overflow onto every page until `contain: paint` ([D-052](#d-052)), and the
+same fix: a fixed-size board clips.
+
+_Worth noting how it was nearly missed: headless Chrome under a virtual clock
+does not always advance CSS animation time, so the sweep sees the animation's
+first frame and holds it. That makes it stricter than a real browser here, not
+less — an entrance that overflows for 300ms still overflows._
+
+---
+
+<a id="d-098"></a>
+
+### D-098 · One number cannot be the record — **Firm** _(pays off [D-092](#d-092))_
+
+**Decision.** Two records in `localStorage`, both pure functions over an
+**injected** storage object (`src/lib/record.js`):
+
+- **Best streak, keyed by the settings themselves.**
+- **A lifetime accuracy log per stat**, across every session and every settings
+  combination, shown worst-first in the setup panel.
+
+**Why two.** Once the setup panel can filter by stat, generation, type and form
+([D-096](#d-096)), "your best streak" is meaningless without saying _at what_: a
+run of 12 on BST across the whole dex is not a run of 12 on Gen 1 Speed. A
+single number would flatter the easiest settings and nothing else.
+
+**The key is the URL, and that is the point.** `settingsKey` already emits a
+canonical, defaults-omitted query string, so the same game always finds its own
+record and two ways of clicking to the same settings cannot become two records —
+asserted by a test that builds one settings object two ways. **This is the payoff
+of [D-092](#d-092) that was not visible when it was written**: keeping settings
+in the URL was argued for shareability, and it turns out to have handed us a
+storage key with a canonicalisation guarantee already attached.
+
+**The accuracy log is the half that makes this a training tool.** A high score is
+a scoreboard; "Sp. Defense 58%" is a thing to do something about — so it is
+sorted **worst first**, and it sits in the setup panel directly above the stat
+chips that act on it. Seeing what you are bad at and drilling it is one movement.
+Stats never asked about are absent rather than shown at 0%, which would read as
+having got them wrong.
+
+**Storage is injected, never reached for**, so the whole module unit-tests
+against a plain stub with no DOM — the same move as the injected `rng`, for the
+same reason. And every access is wrapped: private windows, cleared site data and
+browsers that refuse storage all **throw on access** rather than returning null,
+and a corrupt or hand-edited record degrades to an empty one rather than a blank
+page. That is the forgiving-parse rule the URL readers already follow, applied to
+the other untrusted input.
+
+---
+
+<a id="d-097"></a>
+
+### D-097 · The verdict must not cover the answer — **Firm** _(fixes [D-096](#d-096))_ _(its row's growth fixed by [D-103](#d-103))_
+
+**Decision.** The round's card — the prompt, then the verdict — is an absolutely
+centred layer **only while the panels are in one row**. The moment the board
+stacks (a pair below `sm`, or four in a 2×2 below `lg`) it becomes a **real grid
+row between the halves**.
+
+**Why.** Centring it absolutely is exactly right for a versus screen: it lands on
+the divider, over artwork nobody needs to read. Stacked, the centre of the board
+is not a divider — it is **where the top row's names and values are**. So the
+card announcing the answer sat on top of half of the answer, which is the one
+thing it must never do, and on a phone it hid the losing Pokémon's number
+entirely.
+
+It is also why the resolved card is **two rows rather than four**. As a real grid
+row, every pixel of it comes off the artwork above and below; at four rows a
+390px phone was left about 100px of Pokémon per panel. The verdict shares a
+baseline with its detail, and the Next button shares a row with the way out —
+two named styles side by side rather than one nested in the other, because
+inline emphasis may override family and weight but never size
+([06_style_guide §5](06_style_guide.md)).
+
+**Motion, and what was refused.** Each panel enters from **its own outer edge**,
+so a round reads as contenders arriving rather than as numbers silently changing;
+the direction is a CSS variable the page sets, because "outer" depends on which
+half of the grid a panel lands in. No stagger, matching the bar fill's existing
+rule — four panels arriving in sequence reads as a loading state. Both animations
+spend `--dur-slow` and `--dur-base`, the two rungs
+[06_style_guide §9](06_style_guide.md) has carried as "unconsumed" since the
+scale was written; a round change **is** the selection cross-fade `--dur-slow`
+was specified for. **The slot-machine randomiser was considered and refused**: it
+puts latency in front of every question in a game whose entire appeal is pace.
+
+---
+
+<a id="d-096"></a>
+
+### D-096 · The games take the field — **Firm** _(redesigns [D-091](#d-091); the site's second exception to [04_design §1](04_design.md))_
+
+**Decision.** `/games/higher` is an **arena**: a compact 56px game bar, and below
+it a board the height of the viewport, split into one full-height panel per
+contender. The settings move into a modal opened from that bar, and grow into
+the dex's full filter vocabulary.
+
+**Why the first build was wrong.** It was a tool page — `PageHeader`, a controls
+panel, then the game — because that is what the other three pages are. The result
+was a screen where the **configuration was the biggest thing on it** and the
+Pokémon were thumbnails underneath. For `/compare`, `/dex` and `/types` that
+shape is correct: the controls are why you came. For a game it is exactly
+backwards.
+
+**So this is a stated exception, and here is its argument.**
+[04_design §1](04_design.md) already scopes its principles to the **tools**,
+where "chrome that competes with the data is a defect". In a game **the Pokémon
+_are_ the data** — the thing you look at is the thing you are answering about —
+so a panel that fills half the screen is not decoration competing with content,
+it is the content. Home holds the site's other exception ([D-070](#d-070)); this
+is the second, and like that one it is an entry rather than a drift. The
+exception is deliberately narrow: it licenses the game surface, not a relaxation
+anywhere in the tools.
+
+**What the panels borrow rather than invent.** Each is **tinted by its Pokémon's
+primary type** at 10% over base — the site's oldest visual idea
+([04_design §3](04_design.md)), not a new colour system — which also does the
+board's structural work, since two panels of different colours read as two sides
+without a heavier divider. Audited as **group 10** of `npm run audit:contrast`,
+because a whole surface of type colour is eighteen new backgrounds for text and
+"obviously fine" is exactly what group 7 was before anyone measured it
+([D-058](#d-058)). The divider itself is `gap-px` over a border-coloured grid, so
+it is a token rather than a border on every panel.
+
+**Setup is a modal, and it edits a draft.** A native `<dialog>` with
+`showModal()`, which buys a focus trap, Esc, and the rest of the page going inert
+— so "opening setup pauses the game" costs nothing to implement. It also finally
+consumes `--z-overlay`, documented for "modals / dialogs" since the scale was
+written and never used. **Play commits; the chips edit a draft** — wiring them
+straight to the URL would restart the game on every click, so you would lose your
+streak choosing which stats to keep. Closing without changing anything leaves the
+round you were on alone.
+
+**Play starts immediately; the menu is not a gate.** The alternative — menu
+first, then Play — was considered and rejected on the record: nothing else on
+this site puts a form between a link and the answer, and
+`/games/higher?stats=speed` should _play_, not ask.
+
+**The filters are the dex's, reused whole.** Same parameter names, same parser
+(`parseList`, now exported rather than copied), same semantics: `?gen=` is
+"Introduced in" and `?type=` is a typing, meaning exactly what they mean on
+`/dex`. That is [D-049](#d-049)'s one-concept-one-name rule spending itself
+across a fourth surface, and it is why "Kanto Fire-types only" cost almost
+nothing to add.
+
+**One deliberate inconsistency, stated rather than left to look accidental.**
+The dex's rule is "an empty group is not a constraint" ([D-040](#d-040)), and
+_Introduced in_ and _Types_ keep it — they filter a pool. **The stats do not.**
+They are the **question space**, not a filter over something visible: "ask me
+about nothing" is not a game, so every chip starts lit, the last one cannot be
+turned off, and an empty selection resolves to all of them. The labels are what
+carry the difference — "Ask me about" reads as the rules, "Introduced in" and
+"Types" read as filters.
+
+**A pool can now be too small, so that is a real state.** The panel counts it
+live in its footer — the way `/dex` counts its rows — and refuses Play below the
+contender count. The count sits in the **footer** rather than at the end of the
+body because that is where the decision is made, and at the end of a scrolling
+body it was hidden under the Play bar: the one piece of feedback four filter axes
+produce was the one you had to scroll for. A hand-edited URL can still reach an
+unplayable game (`?asof=1&type=ghost&n=4` is three Pokémon for four seats), so
+the arena has a real empty screen rather than a blank one.
+
+**Also.** `ChipGroup` is extracted — it was private inside `DexFilters` and
+hand-copied into the game's controls, and the setup panel needs five of them.
+`FilterChip` gains `removable`, because the trailing × means "click to dismiss"
+and the game's single-select groups cannot be dismissed. The games index gets a
+**live thumbnail per game**, the same panel component at `sm` — [D-043](#d-043)'s
+"a preview is the real thing" applied one level down.
+
+---
+
+## 2026-09-06 — Session 23 (the games)
+
+<a id="d-095"></a>
+
+### D-095 · `/style` was still keeping a copy, and its excuse had expired — **Firm** _(enforces [D-048](#d-048), repeats [D-090](#d-090))_
+
+**Decision.** The playground's `DemoChip` is deleted. The filter-chip specimen is
+the real `FilterChip`, and it now shows the single-select variant too.
+
+**Why.** `DemoChip` was a hand-rebuilt filter chip carrying a comment that
+justified itself: _"rebuilt from the shared constants rather than imported:
+DexFilters keeps its Chip private and wires it to URL state, which this page has
+none of."_ That was true when it was written and **stopped being true at
+[D-058](#d-058)**, which merged the dex's chip and the type picker's into one
+exported component. The justification expired and the copy stayed, because
+nothing rechecks a comment's premise.
+
+It had already drifted by the time it was found: `FilterChip` gained a
+`removable` prop this session ([D-091](#d-091)) and the copy did not, so the page
+whose stated contract is _"renders the real tokens and components, never
+copies"_ was demonstrating a chip the app no longer had. That is the **third**
+time this file has been the offender ([D-048](#d-048), [D-090](#d-090)), and the
+pattern is now clear enough to name: **a specimen's excuse for being a copy needs
+rechecking whenever the thing it copies is refactored** — the copy does not
+announce itself, and the comment explaining it reads as settled.
+
+Deleting it also took `LuX`, `typeColorVar`, `typeTextVar` and four `chipStyles`
+constants out of the file's imports, which `npm run lint` flagged immediately —
+a useful signal that the copy was genuinely gone rather than half-removed.
+
+---
+
+<a id="d-094"></a>
+
+### D-094 · Credits leaves the nav so Games can enter it — **Firm** _(protects [D-062](#d-062))_
+
+**Decision.** The header's four nav slots go to the four **tools**: Compare, Dex,
+Types, Games. **Credits moves into the footer**, beside the byline and the
+attribution line it expands.
+
+**Why.** The header has a measured width budget and it was already spent.
+[D-062](#d-062) established that the wordmark plus four nav items needs **373px**,
+which is what allowed the `xs` breakpoint to sit at 384 and keep the wordmark
+visible on a 390px phone — after the previous attempt at 360 broke the header on
+every width from 360 to 383. A fifth 14px label plus its gap adds roughly 52px,
+putting the requirement past 430: the wordmark would have disappeared on every
+phone on the market, silently undoing the fix that session made deliberately.
+
+So the fifth item was never really available, and the question is only which four
+earn the slots. A tool people came to use beats a page they read once, and the
+footer is not a demotion — it is where Credits was always **about**: the line to
+its left already says "Data from PokéAPI. Statmon is an unofficial fan project",
+and Credits is that sentence with its sources attached. The link now sits beside
+its own subject instead of beside the tools.
+
+**One measured consequence.** The footer's authorship group went from two items
+to three and no longer fits 320px on one line, so it wraps — and the row gap is a
+**target-size** number, not a taste one. These are 12px links that clear WCAG
+2.5.8 only through its spacing exception, which needs 24px between neighbouring
+centres; wrapped at `gap-y-1` two of them sit ~19px apart and fail. `gap-y-3`
+lands at ~27px. `npm run sweep:widths` measures it at every width, and reports
+every target on the site passing at 320px.
+
+---
+
+<a id="d-093"></a>
+
+### D-093 · Right and wrong, without a red/green pair — **Firm** _(applies [D-051](#d-051))_
+
+**Decision.** A resolved round marks the winner with the **accent** — a border,
+a `--color-accent-muted` fill and a check icon — and lets everything else recede
+by a step: the card you picked wrongly keeps its surface and takes an ×, and the
+cards you did not pick drop to 60% opacity. **No success or error colour is
+added.**
+
+**Why.** A quiz wants green and red, and this palette does not have them, on
+purpose ([04_design §2](04_design.md)): with eighteen type colours already doing
+informational work, a red/green pair both clashes and fails colour-blind readers.
+[D-051](#d-051) hit this first on the type grid and answered it with **one loud
+state and three quiet ones**, which is exactly the shape a round needs — there is
+one right answer and everything else is context.
+
+**What it deliberately does not borrow.** The STAB chip's corrected state strikes
+through the superseded multiplier ([D-079](#d-079)), and that idiom does **not**
+transfer: there, the struck number is the chart's _wrong_ answer. Here every
+number on screen is a true base stat — your pick was wrong, its Speed was not —
+so the mark goes on the card rather than through the figure. Copying the
+treatment without checking what it encodes would have printed a line through a
+correct number.
+
+**And the new pairing is audited.** `--color-accent-muted` has been in
+[04_design §2](04_design.md) since the palette was written, described as "subtle
+accent fills", and **nothing had ever consumed it**. Being a token's first
+consumer is exactly when its pairings need measuring, because an unused token's
+contrast has never been anyone's problem — so it is now **group 9** of
+`npm run audit:contrast`: primary text on the fill at **10.64**, the accent check
+icon at **4.73** against 1.4.11's non-text 3.0, and the accent border at **7.98**
+against the page. If the marking ever proves too quiet, adding a semantic
+success token is the documented next step
+([06_style_guide §12 rule 1](06_style_guide.md)), not an improvisation.
+
+---
+
+<a id="d-092"></a>
+
+### D-092 · The settings are a view; the play-through is not — **Firm** _(scopes [D-022](#d-022))_
+
+**Decision.** A game's **settings** live in the URL like every other view on this
+site — `/games/higher?stat=speed&n=4&asof=1`, defaults omitted. The **round, the
+score and the streak do not**; they are local React state. Changing a setting
+starts a new game, implemented by keying the session subtree on the settings URL
+rather than by a reset branch or an effect.
+
+**Why.** [D-022](#d-022) says the URL is the single source of truth, and it has
+been absolute across three tools, so departing from it needs stating rather than
+doing. The line that holds is what a link is _for_: a Statmon URL reproduces
+**what you are looking at**, and for a game that is the game you chose to play,
+not the round you happen to be on. Putting a round in the URL would make Back
+replay it and a refresh re-ask it; putting the score there would make it
+editable. Neither is a view — a play-through is an event, and events are the one
+thing this site has never had.
+
+The consequence is pleasant rather than awkward: because settings are a URL and
+the session is scoped to it, `key={higherUrl(settings)}` is the whole
+implementation of "changing the stat starts a new game". No effect, no
+`useEffect` on a prop, no reset function — the state is simply scoped to the
+thing it belongs to. A score carried across a switch from BST to Speed is a
+score for neither.
+
+**What stays under the old rule.** Everything that _is_ a view: `?asof=` means
+the same thing here as on the other three tools, the stat and the count are
+canonicalised on read the way `parseView` and `parseTypes` canonicalise theirs,
+and a hand-edited or stale setting degrades to its default rather than throwing.
+`?stat=spAtk&asof=1` even maps **across the Gen 1 Special split** rather than
+resetting — the same question asked of the generation that had one stat for it —
+by reusing the dex's own `ACROSS_THE_SPLIT`, now exported rather than copied.
+
+---
+
+<a id="d-091"></a>
+
+### D-091 · The games, and the modes that were consolidated away — **Firm**
+
+**Decision.** Statmon gets a fourth section: `/games`, an index, with
+**`Higher.`** at `/games/higher` as the first game — two or four Pokémon, one
+stat, pick the highest. A second game, `Effective.`, is specified and not yet
+built.
+
+**The brief listed more modes than the game needs.** Highest BST, highest single
+stat, and "which of these four moves first" are **one game with two knobs**:
+`stat` (Any, or one of the era's stats, or BST) and `n` (2 or 4). "Who moves
+first" is not a mode, it is `stat: speed, n: 4` — writing it as one would have
+been a third code path for a value of two existing ones, and a third thing for a
+player to choose between before playing anything. `Any` is the default because a
+fresh stat each round is what actually trains you; picking one is the drill, and
+speed is the drill this whole project started over.
+
+**Two things were measured first, and both invalidated the obvious build.**
+
+- **A random type matchup is 1× about two thirds of the time.** Of the 324
+  single-type cells, **204 are 1×** and only 8 are 0×; across all 153 dual-type
+  defenders, 47% are 1× and just **2.2% are 4×**. So a uniformly sampled type
+  quiz is one where "always guess 1×" scores 63%, and `Effective.` must pick the
+  **answer** first and then find a question for it. Recorded now because it is
+  the constraint that shapes that game, and the engine is built to take it.
+- **A random stat pair is often not a question at all.** Over 200k draws from the
+  default forms: ties are **1.2% on BST and 2.5% on Speed** — rounds with two
+  right answers, which the game can only accept one of — and another ~10% land
+  within five points, which is a coin flip wearing a question's clothes.
+
+So `higherQuestion` rejects a tie **always** and rejects a margin under a floor
+(3 for a stat, 5 for BST, because five points of a 175–1125 BST range is nothing
+while five points of Speed is a real difference). It deliberately does **not**
+cap how easy a round can be: 21–38% of pairs are more than 50 apart, and a game
+that never lets you win easily is exhausting rather than rigorous.
+
+**Reuse, rather than a second data layer.** The pool is `filterRows(ALL_POKEMON,
+{ asof, includeForms: false })` — the dex's own filter, which already caps on
+`introducedIn` rather than `generation` ([D-049](#d-049)) and already hides
+alternate forms ([D-056](#d-056)), so a Gen 1 game is exactly 151 Pokémon without
+this module knowing that. Values come from `eraView`, the stat set from
+`statKeysFor`, the names from `SORT_LONG_LABEL`, and the follow-up links from
+`compareUrl` and `viewToSearch`. The only genuinely new component is the
+contender card, and it is new for a reason: `PokemonCard` opens with six stat
+bars, so reusing it would print the answer on screen before the question was
+asked.
+
+**Randomness is injected, not reached for.** Every generator takes an `rng`
+defaulting to `Math.random`, which is what makes a round reproducible in a test —
+and what would make the backlog's **daily puzzle** a caller rather than a rewrite.
+
+**Every round ends with a link into the tool that would have answered it** —
+`/compare/a/vs/b` for two contenders, the dex sorted by that stat for four. That
+is the argument for a game living on a reference site at all: it is the same data
+asking instead of answering, and the loop closes back into the tools.
+
+**Two things this session also cleaned up, both found by the work rather than by
+a check.**
+
+- **The site's own name disagreed with itself.** `index.html`'s `<title>` said
+  "Pokémon comparison, dex and type chart" while `Layout`'s `SITE_TITLE` said
+  "Pokémon stat tools" — under a comment asserting the two matched. A crawler
+  read one and a visitor who clicked Home read the other. Both now say the same
+  thing, and `routes.test.jsx` reads the two files and asserts it, because
+  [D-086](#d-086)'s finding was precisely that no check reads prose.
+- **Home's "soon" chip is gone with the last unlinked tool.** The tools row had a
+  greyed variant for exactly one entry, and now that Games is live nothing uses
+  it. Keeping the branch for a hypothetical fifth tool is the deleted
+  `StatBar.jsx` mistake — code held for a future caller — and the games index is
+  the honest home for "not built yet", where it can say what the thing will be
+  rather than only that it is coming.
+
+**Scope, stated.** Home now carries **four** preview sections, which is the count
+[D-043](#d-043) named as this pattern's limit. A fifth tool should turn the
+previews into a grid of compact ones rather than adding a fifth full-height band;
+the rule is "every feature is represented on Home", not "every feature gets 500px
+of it".
+
+---
+
 ## 2026-09-06 — Session 22 (three faults from using it)
 
 <a id="d-090"></a>

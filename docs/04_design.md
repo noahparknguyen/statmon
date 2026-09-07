@@ -17,7 +17,7 @@ _The style guide: color scheme, per-type bar colors, typography, dark mode, layo
 5. **Character from the flame.** A single Chandelure-inspired pastel-purple accent (with a purple→blue flame gradient) gives the brand personality without clutter. Volcarona remains the home mascot — both favorites represented.
 
 **Scope, stated because the home page now strains it.** These describe the
-**tools** — `/compare`, `/dex`, `/types` — where the data is the reason you came
+**tools** — `/compare`, `/dex`, `/types`, `/games` — where the data is the reason you came
 and chrome that competes with it is a defect. Home is a front door, not a tool,
 and since [D-070](03_decisions.md#d-070) it opens on a 72svh wall of sprites,
 which is decoration by any reading of principle 1 and does shout, against
@@ -26,6 +26,16 @@ principle 3. That is a deliberate exception with its own entry, not a quiet drif
 rendered by the tool's own components against real data
 ([D-043](03_decisions.md#d-043)). If a future change wants to relax one of these
 inside a tool, it needs an argument; Home already made one.
+
+**And `/games` is the second exception** ([D-096](03_decisions.md#d-096)), on a
+different argument from Home's. A game's board fills the viewport and its
+Pokémon are enormous — decoration by principle 1, if the principle applied.
+It does not apply here, and the reason is narrow enough to be worth stating: in
+a tool, chrome that competes with the data is a defect; in a game, **the Pokémon
+_are_ the data**. The thing you look at is the thing you are answering about, so
+a panel that fills half the screen is content, not chrome. The exception
+licenses the game surface and nothing else — the setup panel inside it is built
+from the same chips, labels and page rhythm as `/dex`'s filters.
 
 ---
 
@@ -217,16 +227,32 @@ A preview is always the tool's own components against real data — never a mock
 
 **The chip family** — four chip sets exist, and they share **one colour pair** with **four geometries**. The colours live once in `src/components/chipStyles.jsx`; only size and padding are set per call site, because each sits in a different space:
 
-| Chip                 | Geometry                            | Why                                                                                                                                              |
-| -------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Form chips**       | `px-2 py-1`, ~21px                  | Shares the card's 88px controls band with the abilities, which eight forms already fill to two rows — the one known 2.5.8 spacing exception (§9) |
-| **Ability chips**    | `px-2 py-1`, ~21px                  | The same band and the same compact geometry; carries the effect dot and the hidden-ability icon                                                  |
-| **Filter chips**     | `min-h-9`, `px-3 py-1.5`, `gap-1.5` | Carries a colour dot and a dismiss ×                                                                                                             |
-| **Generation chips** | `h-9 min-w-9`, `px-2`               | One numeral, nine of them in a row                                                                                                               |
+| Chip                 | Geometry                            | Why                                                                                                                                                                                                                                                                                                                         |
+| -------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Form chips**       | `px-2 py-1`, ~21px                  | Shares the card's 88px controls band with the abilities, which eight forms already fill to two rows — the one known 2.5.8 spacing exception (§9)                                                                                                                                                                            |
+| **Ability chips**    | `px-2 py-1`, ~21px                  | The same band and the same compact geometry; carries the effect dot and the hidden-ability icon                                                                                                                                                                                                                             |
+| **Filter chips**     | `min-h-9`, `px-3 py-1.5`, `gap-1.5` | Carries a colour dot and a dismiss ×. The × is `removable`, and it is behaviour rather than decoration: the dex and the type picker toggle an active chip **off**, while the game's stat and contender groups are single-select, so a × there would promise a dismissal that never happens ([D-091](03_decisions.md#d-091)) |
+| **Generation chips** | `h-9 min-w-9`, `px-2`               | One numeral, nine of them in a row                                                                                                                                                                                                                                                                                          |
 
 Selected is `--color-accent` with `--color-accent-contrast` text, or — where the chip has an inherent colour — that colour with the audited near-black badge label (§3), the border stepping aside. Unselected is `--color-elevated` with `--color-border-strong` and a `--color-secondary` label; hover brightens **only the label**, so a row of chips does not shimmer as the pointer crosses it. All four render side by side on `/style`, which is the check that they still agree.
 
 **Everything in this vocabulary is a pill sized to its content**, and that is a rule rather than a coincidence: the STAB chip was the one stretched control on the site — a `w-full justify-between` bar that reached **819px** to hold about 120px of text — and it was the one that looked wrong ([D-079](03_decisions.md#d-079)). It is now a pill too, in two sizes (`sm` for Home's three-column head, `md` for the board), with the group doing the layout.
+
+**Contender panel** ([D-091](03_decisions.md#d-091), [D-093](03_decisions.md#d-093), rebuilt as an arena panel by [D-096](03_decisions.md#d-096)) — one Pokémon in a round of `Higher.`, at three densities: `lg` for a two-up board, `md` for a four-up, `sm` for the games-index thumbnail. Artwork fills a **flexible** box with `object-contain` — never `aspect-square`, which takes its height from the panel's _width_ ([D-081](03_decisions.md#d-081)'s runaway) — over a **10% tint of the Pokémon's primary type**, which is §3's idea applied to a whole surface and does the board's structural work: two panels of different colours read as two sides without a heavier divider. Audited as **group 10** of `npm run audit:contrast`. Below it the name, its type badges, and a value band that **holds its space from the start**, sized one rung above its own numeral because `text-numeral-*` is `leading-none` and a 48px figure in a 36px band loses its feet. A resolved round is marked on [D-051](03_decisions.md#d-051)'s **one loud state and three quiet ones** scale rather than a red/green pair, which this palette does not have (§2): the winner takes an **inset** accent ring (a border would shift every neighbour by 2px, since these sit edge to edge), the loser you picked takes a neutral ring and an ×, and unpicked panels drop to 50%. Every mark is an icon plus `sr-only` text, never colour alone (§9).
+
+The densities are a **prop rather than a breakpoint**, and that is forced: the named text styles are hand-written `@layer components` classes, so `lg:text-h2` generates no CSS at all ([§13](06_style_guide.md), the [D-065](03_decisions.md#d-065) finding). A component that needs two sizes of a named style needs two call sites, not a variant.
+
+**The round card** ([D-096](03_decisions.md#d-096), positioned by [D-101](03_decisions.md#d-101)) — one card holds the question and then the verdict, and they do **not** sit in the same place, because they are not the same kind of thing. The question is chrome you read once and glance back at, so it goes to the **top** of the board, clear of the artwork. The answer is an event: it interrupts, it carries the button you are about to press, and it stays **centred**, where your eye already is. Both only at the widths where the panels are side by side — stacked, the card is a real grid row _between_ the panels and covers nothing to begin with. The verdict's headline and its detail are on **separate lines**, not baseline-aligned side by side, for [D-053](03_decisions.md#d-053)'s reason: two type sizes on one line never sit together.
+
+**Matchup panel** ([D-104](03_decisions.md#d-104)) — one side of a type-game round: the attacking type, or the defender. An `ATTACKING` / `DEFENDING` overline leads each, and it is not decoration — the question is directional and the panels are otherwise symmetrical. A typing is set as **coloured display text** rather than as a badge, the treatment [D-053](03_decisions.md#d-053) settled for `/types`' readout heading: an 11px pill is not something you read across a board. **In the hard tier a Pokémon defender is untinted and unbadged until you answer** — every other panel here is tinted by its primary type, and that would print the answer. The tint, the badges and the ability's effect dot all arrive with the reveal, where they are teaching rather than question.
+
+**Answer rail** ([D-104](03_decisions.md#d-104)) — the type game's answer control, along the bottom of the board rather than in the centre overlay the stat game uses. The two games answer differently: in `Higher.` the answer _is_ the panels, so the middle is free for the question; here it is separate, and the middle is where the Pokémon you are still reading sits. The bottom is also where a thumb is. The buttons are a property of the **tier**, computed once from the settings, so their number never hints at the round. Marked on [D-093](03_decisions.md#d-093)'s no-red/green scale, and the verdict row above them **holds its height from the start** — the [D-103](03_decisions.md#d-103) rule, in the one place this board needs it.
+
+**Game bar** ([D-096](03_decisions.md#d-096)) — the arena's 56px chrome, sticky under the site header at `--z-raised`: the game's name in the `Word.` motif at `text-h3`, then score / streak / best as a `<dl>` in `text-stat` (Inter with tabular figures, because these change under the reader every round — `text-numeral-*` is for big figures optically centred in a fixed band, [D-035](03_decisions.md#d-035)), then the Setup button. **The name truncates rather than pushing** ([D-106](03_decisions.md#d-106)): it was `shrink-0`, which held for exactly as long as there was one game — "Effective." is longer than "Higher." and shoved Setup 15px off a 320px screen. It exists **instead of** a `PageHeader` and a controls panel, which is the whole shape of the arena change.
+
+**Setup dialog** ([D-096](03_decisions.md#d-096)) — a native `<dialog>` at `--z-overlay`, opened with `showModal()` for its focus trap, Esc and inert backdrop. A flex column — header, scrolling body, footer — rather than one scrolling box with a `sticky` footer, because sticky content sits _on_ the scroll area and hid the pool count under the Play bar. The lens leads above a divider (the `DexFilters` argument, [D-049](03_decisions.md#d-049)); the groups are `ChipGroup`s; the footer carries Reset, the **live pool count** and Play, with Play refused below the contender count.
+
+**Chip group** ([D-096](03_decisions.md#d-096)) — a `text-overline` label over a wrapping row of chips, with an optional lowercase hint for a group whose rule is not obvious from its chips ("leave empty for all"). Extracted from `DexFilters`, where it was private, once the setup panel needed five of them. The label is the component's reason to exist: [D-040](03_decisions.md#d-040) and [D-050](03_decisions.md#d-050) both turn on a group being named, and a required prop is how that stops being something to remember.
 
 **Search input** — `--color-elevated`, `--color-border-subtle`, placeholder `--color-tertiary`; focus = `--color-border-strong` + 2px `--color-accent` focus ring. Results are a dropdown of rows: pixel sprite + name + type badges.
 
@@ -247,6 +273,20 @@ Selected is `--color-accent` with `--color-accent-contrast` text, or — where t
 ## 7. Motion
 
 - **Bar fill:** grow from 0 to value using `--dur-bar` + `--ease-standard` (as built, via `.animate-grow-w`); no stagger.
+- **The answer never moves the board** ([D-103](03_decisions.md#d-103)). Stacked, the overlay is a real grid row and the verdict card is **80px taller** than the question card (134.6 against 54.8, measured at 390px) — so in a row sized by its contents, answering shoved both Pokémon 40px apart. The row now keeps the **question's** height, and the verdict is lifted out of flow on top of it, growing **downward**: above the gutter is the first Pokémon's value, which is the answer, and below it is the second Pokémon's artwork, whose labels sit lower and stay visible. Reserving the taller height instead would have spent a quarter of a phone's artwork on an empty gutter, permanently, to smooth one transition.
+
+- **The clash** ([D-097](03_decisions.md#d-097), rebuilt by [D-100](03_decisions.md#d-100), split by [D-102](03_decisions.md#d-102)): a round arrives as a **collision**, in two parts.
+
+  **The charge.** Everything left of the board's centre runs right and everything right of it runs left, accelerating (`--ease-clash`) across 5rem in `--dur-charge`, and **stopping dead** — no easing out, no rebound. Weight is velocity, not duration. The board's background is `--color-base`, so the gap the two halves close on is the page's own black; in the divider's grey it flashed as a bar down the middle of the screen every round.
+
+  **The shake**, on impact. It is on each panel's **content**, never the panel: shaking the panels would flicker the gaps between them open and shut a dozen times a round, which is the fault the paragraph above exists to have fixed. Boxes collide; the things inside them rattle. Four decaying swings with a little rotation — a pure sideways slide reads as a glitch, a slide that tips reads as something being hit — and the first swing carries **onward in the direction of travel**, because that is what inertia looks like.
+
+  **Every shake parameter varies per panel**, set as custom properties on the grid cell and inherited down, so four contenders read as four things reacting rather than as one animation played four times. Derived from the round and the slot rather than drawn at random: a render may not be a dice roll, and the same round should always look the same.
+
+  **No stagger on the charge**, matching the bar fill's rule — four panels arriving in sequence reads as a loading state. The variation lives in the shake, where it reads as a reaction.
+
+  **No stagger**, for the bar fill's reason — four panels arriving in sequence reads as a loading state rather than as a collision. A slot-machine randomiser before each question was considered and refused: it puts latency in front of a game whose appeal is pace, and the clash already spends 560ms of it.
+
 - **Hover/focus:** `--dur-fast` (120ms) — wired as the global transition default, so every `transition-*` uses it ([D-033](03_decisions.md#d-033)).
 - **Selection/swap:** cross-fade at `--dur-slow` _(not implemented — selection swaps render instantly)_.
 - **`prefers-reduced-motion: reduce`:** disable fills/staggers — render final state instantly, keep only opacity fades. Non-negotiable.

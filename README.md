@@ -1,10 +1,12 @@
 # Statmon
 
-A simple set of Pokémon tools, built for myself. Three so far — and each of them can be read **as of any generation**:
+A simple set of Pokémon tools, built for myself. Three of them — and each can be read **as of any generation**:
 
 - **[Compare](https://statmon.noahparknguyen.workers.dev/compare)** — two Pokémon's base stats head to head, with the type matchup, their abilities, and a straight answer about who moves first.
 - **[Dex](https://statmon.noahparknguyen.workers.dev/dex)** — all 1,259 entries in one table, sortable by any stat and filterable by type and generation.
 - **[Types](https://statmon.noahparknguyen.workers.dev/types)** — the full effectiveness chart, and a dual-type readout on the same page — searchable by Pokémon, not just by type.
+
+And **[Games](https://statmon.noahparknguyen.workers.dev/games)** — two of them — which is the same data asking me the questions instead.
 
 **Live at [statmon.noahparknguyen.workers.dev](https://statmon.noahparknguyen.workers.dev/).**
 
@@ -34,6 +36,26 @@ The one part that isn't automatic is the effect itself. PokéAPI gives me the ro
 
 ![The Statmon type chart answering Water / Flying, with the full grid below it](docs/types.png)
 
+## The games
+
+Looking a matchup up is easy, and that is the problem: nothing on the site was helping me stop needing to. So the fourth section is the same three engines asking me the question instead — **[Higher](https://statmon.noahparknguyen.workers.dev/games/higher)** puts two or four Pokémon side by side and asks which wins a stat. Every round ends with a link into the tool that would have answered it, which is the whole argument for a game living on a reference site.
+
+It took two goes to get the shape right. The first build was a tool page — a heading, a settings panel, then the game underneath — because that is what the other three pages are, and the result was a screen where the configuration was the biggest thing on it. It is an arena now: the board fills the window, one full-height panel per Pokémon, tinted by primary type, with the settings behind a button. That is a deliberate exception to my own design rules, and the argument is narrow enough to write down — in a tool, chrome that competes with the data is a defect; in a game, the Pokémon _are_ the data.
+
+The settings are the dex's own filters, reused whole rather than reinvented: pick which stats you want asked, which generations they come from, which types, whether Megas are in. "Kanto Fire-types, Speed only" is a game. Your best streak is saved **per settings** — a run of 12 on the whole dex is not a run of 12 on Gen 1 Speed — and it is keyed by the URL itself, which was already canonical because the settings live there. There is a second record too, and it is the one I actually use: a running accuracy per stat, worst first, so the site can tell me that I am fine on BST and hopeless on Sp. Defense.
+
+The interesting part turned out to be the question generator, and only because I measured before building it. **1.2% of random BST pairs and 2.5% of Speed pairs are ties** — rounds with two right answers and no way to accept both — and another 10% land within five points, which is a coin flip rather than a hard question. Both are rejected. Easy rounds are not: 21–38% of pairs are more than 50 apart, and a game that never lets you win is exhausting rather than rigorous.
+
+That measuring pass also killed the obvious version of the second game. **[Effective](https://statmon.noahparknguyen.workers.dev/games/effective)** gives you an attacking type and a defender and asks for the multiplier — a single type, then a dual type, then a whole Pokémon whose typing you have to remember. Of the 324 single-type matchups **204 are 1×**, so a quiz that picks a random pairing is one where "always guess 1×" scores 63%. It picks the answer first and then goes looking for a question, which brings the best single guess down to **23.6%**.
+
+The hard tier is the one I actually wanted, and it turns on a detail. A Pokémon's ability is drawn at random from the ones it can have, so Chandelure is 0× to Fire when it shows up holding Flash Fire and **½× when it shows up holding Flame Body** — you have to read the card rather than recall the Pokémon. That also meant hiding three things until you answer: the typing, the type-coloured tint, and the little dot the rest of the site puts on an ability that changes matchups. The dot leaked in the first build, which would have given the whole thing away.
+
+There is one answer the game will never ask you for. **⅛× exists** — a double resistance plus an ability that halves again — but only four Pokémon in the dex can produce it, so asking about it evenly would put the Dewgong line in one round in seven. The type chart still answers it; the game does not quiz it.
+
+![The Statmon stat game, mid-round](docs/games.png)
+
+![Effective, the type game, on its hard tier: an attacking type against a Pokémon whose typing is hidden](docs/effective.png)
+
 ## How it works
 
 Everything comes from PokéAPI, pulled once at build time into a local JSON file; the sprites and artwork are downloaded and committed to the repo, and so are the two webfonts. So the site makes **zero** network requests to anyone at runtime — it's just static files. Search, the stat math, and the type matchups all run against that local dataset.
@@ -54,10 +76,10 @@ npm run dev
 The checks that keep things honest, all seven of which run in CI:
 
 - `lint`, `format:check`, `build`
-- `test:run` — Vitest: the stat math, the dataset codec round-trip, the dex sort/filter logic, the generation-era resolution, the ability effect table, a server-render smoke test of every route, and a set of accessibility regressions
-- `audit:contrast` — WCAG AA across all 18 type colours, in seven pairing groups
+- `test:run` — Vitest: the stat math, the dataset codec round-trip, the dex sort/filter logic, the generation-era resolution, the ability effect table, the game's question generator, a server-render smoke test of every route, and a set of accessibility regressions
+- `audit:contrast` — WCAG AA across all 18 type colours, in nine pairing groups
 - `check:docs` — every link and anchor in `docs/`
-- `sweep:widths` — headless Chrome across 14 routes × 14 widths, asserting no page ever scrolls sideways and every touch target meets WCAG 2.5.8
+- `sweep:widths` — headless Chrome across 18 routes × 14 widths, asserting no page ever scrolls sideways and every touch target meets WCAG 2.5.8
 
 That last one exists because I kept doing it by hand and kept doing it wrong: the type grid leaked horizontal overflow onto every page for as long as it had shipped, and I missed it three times because 390, 768 and 1280 are all clean while 600 and 700 are not. It has since caught a breakpoint that broke the header on every width between 360 and 383, and disproved a WCAG failure I had been asserting in two documents without ever measuring it.
 

@@ -6,7 +6,140 @@ _The phased build plan / task checklist: what to implement, in order. Sequenced 
 
 ---
 
-## Current status (2026-09-06 — Session 22, three faults from using it)
+## Current status (2026-09-07 — Session 25, the second game)
+
+**Done — `Effective.` ships, and the games section is complete as specified.**
+An attacking type against a defender; name the multiplier. One tier at a time:
+Easy is a single defending type, Medium a dual type, Hard a Pokémon whose typing
+you recall and whose **randomly drawn ability** you have to read
+([D-104](03_decisions.md#d-104)).
+
+- **The sampler picks the answer first**, because uniform sampling is a broken
+  quiz: 63% of single-type matchups are 1×. Measured over 4,000 rounds per tier,
+  the shipped spread is **25.6 / 23.6 / 25.2 / 25.5%** in Easy — the best single
+  guess fell from **63% to 23.6%**.
+- **`⅛×` is producible and never asked.** Four Pokémon in the dex reach it, so
+  an answer is offered only when 0.1% of the tier's space produces it.
+- **No thumb on the scale.** The ability decides the answer in 8.1% of Hard
+  rounds, 15.9% once balanced; biasing toward the instructive case was
+  considered and declined, with the numbers recorded.
+- **An answer leak, caught and guarded.** `AbilityChips`' "changes type
+  matchups" dot is information on `/compare` and the answer here — it would have
+  killed the Flame-Body-not-Flash-Fire trap entirely. Off until the round
+  resolves, with three rendered assertions over twelve random rounds each.
+- **The arena did not extract** ([D-105](03_decisions.md#d-105)). Two boards
+  that answer differently are two boards; what they share is the board's size,
+  the panel's look and the clash, and those live in `gameChrome.jsx` as
+  constants — the `chipStyles.jsx` pattern, one rung below where the plan
+  expected to apply D-058.
+- **The game bar fitted one game's name** ([D-106](03_decisions.md#d-106)):
+  "Effective." pushed the Setup button 15px off a 320px screen. Only
+  `sweep:widths` was ever going to find that, and it did so within a minute of
+  the second caller existing.
+
+Vitest is at **394 tests**. The width sweep is at **22 routes × 14 widths**.
+
+## Session 24, the games take the field)
+
+**Done — `Higher.` is an arena.** The first build was a tool page and it showed:
+the settings panel was the biggest thing on screen and the Pokémon were
+thumbnails under it. The board now fills the viewport, one full-height panel per
+contender, tinted by primary type; the chrome is a 56px bar; and the settings
+live in a modal behind it ([D-096](03_decisions.md#d-096)). This is the site's
+**second stated exception** to 04_design §1, after Home's sprite wall — and the
+argument is narrow: in a tool, chrome competing with the data is a defect; in a
+game, the Pokémon _are_ the data.
+
+- **The settings grew into the dex's whole filter vocabulary** — multi-select
+  stats, "Introduced in", types, alternate forms, and the `?asof=` lens — reusing
+  the dex's parameter names and its parser rather than copying either. "Kanto
+  Fire-types only" is a game now. One deliberate inconsistency, stated: an empty
+  filter group means "no constraint", but an empty **stat** group means "all of
+  them", because the stats are the question space rather than a filter.
+- **The verdict stopped covering the answer** ([D-097](03_decisions.md#d-097)).
+  Centred absolutely it lands on the divider; stacked, the centre of the board is
+  where the top row's values are, so on a phone the card announcing the answer
+  hid half of it. It is a real grid row between the halves whenever the board
+  stacks.
+- **The record is two records** ([D-098](03_decisions.md#d-098)): a best streak
+  keyed by the settings themselves — the canonical URL **is** the key, which is
+  D-092 paying off in a way nobody predicted — and a lifetime per-stat accuracy
+  log, worst first, sitting in the setup panel right above the chips that act on
+  it.
+- **The sweep can open a disclosure** ([D-099](03_decisions.md#d-099)), so the
+  setup dialog is measured at every width — and so, retroactively, is the dex's
+  mobile filter panel, unmeasured since the sweep was written. It immediately
+  caught a real bug: the arena's entrance animation leaked 32px onto the
+  document at four widths.
+- **Five notes from playing it** ([D-101](03_decisions.md#d-101)): the clash was
+  reweighted (weight is **velocity**, not duration — so the charge got faster and
+  further inside a _shorter_ total, and the aftershock went from three small
+  ringing bounces to two heavy ones); the question moved to the top of the board
+  while the answer stayed centred, because one is chrome and the other is an
+  event; the verdict's headline and detail went onto separate lines; the record
+  gained the erase button `clearRecord` had been waiting for since it was
+  written; and the winner's inset ring learned about its container's corner
+  radius.
+- **The round change became a clash** ([D-100](03_decisions.md#d-100)) — and
+  the report that prompted it ("a quick flash") turned out to name a real bug:
+  the gap the two halves close on was filled with the divider's light grey, so
+  every round flashed a 64px bar down the middle of a near-black screen. The
+  board's background is the page's own black now, the charge is twice as far and
+  nearly twice as long, it accelerates, and it recoils on impact.
+- **The answer stopped shoving the board** ([D-103](03_decisions.md#d-103)) —
+  stacked, the verdict card is 80px taller than the question card, and in a grid
+  row that growth moved both Pokémon 40px. The row keeps the question's height
+  now and the verdict overlays downward, which is the only direction that does
+  not cover the answer with the answer. Two of my own measurements lied on the
+  way — `--window-size` is ignored under `--dump-dom`, and a screenshot harness
+  clicked a class that D-102 had moved — so the numbers below were re-taken
+  against an after-image that was actually verified to be one.
+- **The rebound became a shake** ([D-102](03_decisions.md#d-102)) — reported as
+  "more like a rebound than a clash", which named the thing two previous passes
+  had been tuning instead of fixing. The charge stops dead and each panel's
+  **content** shakes inside it, varying per panel so four contenders read as
+  four things reacting. On the panels themselves it would have flickered the
+  gaps open and shut, which is the D-100 fault at higher frequency.
+- **`--dur-base`, `--z-overlay`, `--dur-charge`, `--dur-shake` and `--ease-clash`** — two rungs
+  that had documented purposes and no callers, and two new component tokens for
+  the clash. `--dur-slow` briefly had a caller and lost it again; the style
+  guide's status column is corrected rather than left stale.
+
+Vitest is at **356 tests**; the sweep at **21 routes × 14 widths**;
+`audit:contrast` at **ten** groups.
+
+## Session 23 (the games)
+
+**Done — Statmon is a four-tool site.** `/games` ships with **`Higher.`**, the
+stat game: two or four Pokémon, one stat, pick the highest, at any generation
+([D-091](03_decisions.md#d-091)). The brief's three modes consolidated into two
+knobs — "which of these four moves first" is `stat: speed, n: 4`, not a third
+code path.
+
+- **The generator is the game, and it was measured before it was written.**
+  Random stat pairs **tie 1.2–2.5% of the time** (a round with two right answers)
+  and land within five points another ~10% (a coin flip), so `higherQuestion`
+  rejects both — and deliberately does not reject easy rounds. The same
+  measurement pass found that a uniformly sampled **type** quiz would be **63%
+  1×**, which is the constraint `Effective.` is built to take next.
+- **The settings are a view; the play-through is not**
+  ([D-092](03_decisions.md#d-092)) — the one stated exception to D-022, and it
+  pays for itself: `key={higherUrl(settings)}` is the whole implementation of
+  "changing the stat starts a new game".
+- **Right and wrong with no red/green pair** ([D-093](03_decisions.md#d-093)), on
+  D-051's one-loud-state scale. `--color-accent-muted` had been in the palette
+  unused since it was written and is now audited as **group 9**.
+- **Credits moved to the footer** so Games could have a nav slot
+  ([D-094](03_decisions.md#d-094)) — the header's budget is four items, measured,
+  and a fifth would have undone D-062.
+- **Two faults the work turned up:** `index.html` and `Layout` had been shipping
+  two different names for the site under a comment claiming they matched, and
+  Home's tools row still carried a "soon" branch nothing used. Both fixed, the
+  first now asserted by a test that reads the two files.
+
+Vitest is at **323 tests**. The width sweep is at **18 routes × 14 widths**.
+
+## Session 22 (three faults from using it)
 
 **Done — the kind of faults only using the site finds.** None was visible to any
 of the seven checks; all three were found by hand and then reproduced in a real
@@ -310,7 +443,12 @@ _Goal: grow Statmon into a small family of tools & games, one clean addition at 
 
   _Home advertises both halves: the flagship board now shows Chandelure's Flash Fire zeroing Volcarona's Fire STAB, and the type preview shows Krookodile by name ([D-043](03_decisions.md#d-043))._
 
-- [ ] **Type-advantage quiz game** — quiz the user on the matchup between two (possibly dual) types. Sits directly on the type engine; a clean, well-scoped first game for retention + showcasing that Statmon is more than one tool. _+ Home preview — **Mienshao is reserved for its artwork** ([D-068](03_decisions.md#d-068)), the last unallocated member of the Black & White team._
+- [x] **Games** — the section shipped, with both planned games in it ([D-091](03_decisions.md#d-091)). _Mienshao's reservation ([D-068](03_decisions.md#d-068)) is spent: it flanks the Home preview._
+
+  1. [x] **`Higher.`** (`/games/higher`) — two or four Pokémon, one stat, pick the highest, on a full-height arena ([D-096](03_decisions.md#d-096)). Configurable from a setup modal with the dex's own filters — multi-select stats, origin generations, types, alternate forms — plus the `?asof=` lens, so a Gen 1 game is 151 Pokémon with five stats and a Special. Question generation is a tested `lib/games.js` with an injected `rng`; the best streak and a per-stat accuracy log persist in `localStorage` ([D-098](03_decisions.md#d-098)); every round ends with a link into `/compare` or `/dex`.
+  2. [x] **`Effective.`** (`/games/effective`) — an attacking type against a single type, a dual type, or a **Pokémon**, answered on the multiplier ladder (`formatMult`, `MULT_ORDER`). The defender axis _is_ the difficulty ladder, one tier at a time, so the answer buttons are a property of the tier and never leak a round. Abilities are always in play and drawn at random. The **answer is sampled first** — the measured spread and the 0.1% answer floor are in [D-104](03_decisions.md#d-104).
+
+  _The session reducer, the settings-in-URL rule and the resolved-round treatment are all already shared, so the second game is a page rather than a system._
 
 **Later:**
 
