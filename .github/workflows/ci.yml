@@ -30,6 +30,13 @@ jobs:
       - name: Formatting
         run: npm run format:check
 
+      # Pure static scan of src/, no build needed, so it sits high in the
+      # cheapest-first order. Catches the D-042 trap: two utilities setting the
+      # same property in one class string, which Tailwind resolves by
+      # stylesheet order rather than by the order they are written.
+      - name: Conflicting utilities
+        run: npm run audit:classes
+
       - name: Unit tests
         run: npm run test:run
 
