@@ -75,6 +75,25 @@ export const routes = [
         lazy: lazyPage(() => import("./pages/TypeChart")),
         handle: { title: "Types" },
       },
+      // The games index and one route per game (D-091). Two routes rather than
+      // `/games` rendering the default game: the index is what "Games" in the
+      // nav should land on, and it is where the rest of the backlog's games go
+      // as they ship.
+      {
+        path: "games",
+        lazy: lazyPage(() => import("./pages/Games")),
+        handle: { title: "Games" },
+      },
+      {
+        path: "games/higher",
+        lazy: lazyPage(() => import("./pages/GameHigher")),
+        handle: { title: "Higher" },
+      },
+      {
+        path: "games/effective",
+        lazy: lazyPage(() => import("./pages/GameEffective")),
+        handle: { title: "Effective" },
+      },
       {
         path: "credits",
         lazy: lazyPage(() => import("./pages/Credits")),

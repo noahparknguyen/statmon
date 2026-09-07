@@ -43,12 +43,21 @@ import { CHIP, CHIP_OFF, CHIP_ON, CHIP_STATIC } from "./chipStyles";
 // pointer and for the keyboard that would have to tab through it.
 const ABILITY_CHIP = `${CHIP} gap-1.5 px-2 py-1 transition-colors`;
 
+// `markEffect` turns the accent dot off, and it exists for exactly one caller.
+// On /compare and /types the dot is information — this ability is bending the
+// matchup, go and read it. In the type game it is the ANSWER: a dot would say
+// "this one counts" before you had worked out whether it does, which is the
+// whole of the hard tier's ability question and the whole of the trap that
+// makes drawing the ability at random worth doing — Chandelure with Flame Body
+// has to look exactly as consequential as Chandelure with Flash Fire until you
+// decide otherwise. (D-104)
 export default function AbilityChips({
   abilities,
   selected,
   onSelect = null,
   gen,
   label = "Ability",
+  markEffect = true,
 }) {
   if (!abilities.length) {
     return (
@@ -84,7 +93,7 @@ export default function AbilityChips({
                 alone, which 04_design §9 rules out. The button variant says it
                 through `aria-pressed` instead. */}
             {active && !onSelect && <span className="sr-only">In play: </span>}
-            {affectsTypes(slug, gen) && (
+            {markEffect && affectsTypes(slug, gen) && (
               <>
                 <span
                   aria-hidden

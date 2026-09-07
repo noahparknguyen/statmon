@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, it, expect } from "vitest";
 import { renderToString } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
@@ -6,6 +7,9 @@ import Home from "./pages/Home";
 import Compare from "./pages/Compare";
 import Dex from "./pages/Dex";
 import TypeChart from "./pages/TypeChart";
+import Games from "./pages/Games";
+import GameHigher from "./pages/GameHigher";
+import GameEffective from "./pages/GameEffective";
 import Credits from "./pages/Credits";
 import StyleGuide from "./pages/StyleGuide";
 import NotFound from "./pages/NotFound";
@@ -35,6 +39,9 @@ const routes = [
       { path: "types", element: <TypeChart /> },
       { path: "types/:t1", element: <TypeChart /> },
       { path: "types/:t1/:t2", element: <TypeChart /> },
+      { path: "games", element: <Games /> },
+      { path: "games/higher", element: <GameHigher /> },
+      { path: "games/effective", element: <GameEffective /> },
       { path: "credits", element: <Credits /> },
       { path: "style", element: <StyleGuide /> },
       { path: "*", element: <NotFound /> },
@@ -73,6 +80,11 @@ describe.each([
   "/types",
   "/types/water/flying",
   "/types/water/flying?asof=1",
+  "/games",
+  "/games/higher",
+  "/games/higher?stats=speed&n=4",
+  "/games/higher?stats=special&asof=1",
+  "/games/higher?stats=speed&gen=1&type=water",
   "/credits",
   "/style",
   "/no-such-page",
@@ -90,6 +102,9 @@ describe.each([
   ["/compare", "Compare"],
   ["/compare/volcarona/vs/chandelure", "Volcarona"],
   ["/dex", "Dex"],
+  ["/games", "Games"],
+  ["/games/higher", "Higher"],
+  ["/games/effective", "Effective"],
   ["/credits", "Credits"],
   ["/style", "Style"],
   ["/no-such-page", "Statmon"],
@@ -611,14 +626,18 @@ describe("Home's feature previews (D-043)", () => {
     expect(html()).toContain(SUBTITLE);
   });
 
-  it("heads all three sections, in page order", () => {
+  it("heads every section, in page order", () => {
     const page = text("/");
     const at = (s) => page.indexOf(s);
     expect(at("Compare")).toBeGreaterThan(-1);
     expect(at("Compare")).toBeLessThan(at("Dex"));
     expect(at("Dex")).toBeLessThan(at("Types"));
-    // One h1 (the wordmark) over one h2 per tool.
-    expect((html().match(/<h2/g) ?? []).length).toBe(3);
+    expect(at("Types")).toBeLessThan(at("Games"));
+    // One h1 (the wordmark) over one h2 per tool. Four now that the games
+    // shipped (D-091), which is the count D-043 named as this pattern's limit —
+    // a fifth tool should become a grid of compact previews rather than a fifth
+    // full-height band.
+    expect((html().match(/<h2/g) ?? []).length).toBe(4);
   });
 
   it("drops the sr-only heading that named the mascots, not the tool", () => {
@@ -776,5 +795,134 @@ describe("the real router's lazy routes (D-060)", () => {
         "function",
       );
     }
+  });
+});
+
+// The site's own name, in the two places it is written down.
+//
+// These had silently disagreed — index.html said "Pokémon comparison, dex and
+// type chart" while Layout's SITE_TITLE said "Pokémon stat tools", under a
+// comment asserting they matched. A crawler read one and a visitor who clicked
+// Home read the other. It survived because no check reads prose (D-086), so
+// this one does: it is the cheapest possible guard against the exact class of
+// fault that session catalogued. (D-091)
+//
+// Read as text rather than imported, because `SITE_TITLE` cannot be exported —
+// `react-refresh` requires a component file to export only components
+// (06_style_guide §12 rule 8).
+describe("the site's name", () => {
+  const read = (f) => readFileSync(new URL(f, import.meta.url), "utf8");
+
+  it("is identical in index.html and in Layout", () => {
+    const inHtml = read("../index.html").match(/<title>([^<]+)<\/title>/)?.[1];
+    const inLayout = read("./components/Layout.jsx").match(
+      /SITE_TITLE = "([^"]+)"/,
+    )?.[1];
+    expect(inHtml).toBeTruthy();
+    expect(inLayout).toBe(inHtml);
+  });
+
+  it("names every tool the site ships", () => {
+    const title = read("../index.html").match(/<title>([^<]+)<\/title>/)[1];
+    // The enumeration is the established voice (D-063), and this is the check
+    // that it keeps up: a fifth tool fails here rather than quietly shipping a
+    // title that describes the site as it was.
+    for (const tool of ["comparison", "dex", "type chart", "games"]) {
+      expect(title.toLowerCase(), tool).toContain(tool);
+    }
+  });
+});
+
+// The games' arena (D-096). These are server renders, so they say nothing about
+// layout — that is `npm run sweep:widths`' job. What they do catch is the class
+// of fault a smoke test is for: a round that renders no Pokémon, a settings
+// combination that throws, and the empty state being unreachable when it should
+// not be.
+describe("the stat game's arena", () => {
+  it("renders a playable round with its prompt and its contenders", () => {
+    const page = text("/games/higher?stats=speed");
+    expect(page).toContain("Higher Speed?");
+    // Two panels, so two dashes standing in for the unrevealed values.
+    expect(page.match(/–/g) ?? []).toHaveLength(2);
+  });
+
+  it("asks for the highest, not the higher, with four contenders", () => {
+    const page = text("/games/higher?stats=bst&n=4");
+    expect(page).toContain("Highest Base stat total?");
+    expect(page).not.toContain("Higher Base stat total?");
+  });
+
+  it("says so rather than rendering nothing when the filters leave no round", () => {
+    // Gen 1 has exactly three Ghost types, so a four-contender round cannot be
+    // seated. The setup panel refuses to Play this — it counts the pool and
+    // disables the button — so the only way in is a hand-edited URL, which is
+    // precisely why the page needs the state rather than assuming it away.
+    const page = text("/games/higher?asof=1&type=ghost&n=4");
+    expect(page).toContain("No round to play");
+    expect(page).toContain("Open setup");
+  });
+
+  it("self-heals a filter the era never had, rather than emptying the pool", () => {
+    // Fairy arrives in Gen 6, so `?type=fairy&asof=5` is not an empty game — it
+    // is a game with no type filter, the same forgiving parse /dex applies to
+    // the identical parameter (D-049). A stale link degrades to a plainer view
+    // of the same page rather than to a dead end.
+    const page = text("/games/higher?type=fairy&asof=5");
+    expect(page).not.toContain("No round to play");
+    expect(page).toContain("Setup");
+  });
+
+  it("keeps the game's own <h1> and does not add a second", () => {
+    const html = render("/games/higher");
+    expect((html.match(/<h1/g) ?? []).length).toBe(1);
+    expect(html).toContain("Higher");
+  });
+
+  // The record reads through `browserStorage()`, which is null under a server
+  // render — the same path a browser with site data blocked takes. A game that
+  // only works where localStorage does is a game that white-screens for some
+  // people (D-098).
+  it("renders with no storage available at all", () => {
+    expect(text("/games/higher")).toContain("Best");
+  });
+});
+
+// The type game's hard tier hides three things until you answer, and each is a
+// different way of printing the answer on screen (D-104). Rendered rather than
+// reasoned about, because every one of them is a prop being passed correctly
+// somewhere three components deep.
+describe("Effective's hard tier does not give the answer away", () => {
+  // Twelve rounds rather than one: the defender is drawn at random, so a single
+  // render could pass by drawing a Pokémon with no ability and one type.
+  const hard = () =>
+    Array.from({ length: 12 }, () => render("/games/effective?tier=hard"));
+
+  it("never shows the defender's typing before it is answered", () => {
+    for (const html of hard()) {
+      // TypeBadge's fill is the one thing on this page that sets a type token
+      // as a BACKGROUND colour directly. Deliberately not `text-badge`, which
+      // the ability pill shares — that assertion failed for the right reason
+      // and would have kept failing for the wrong one. The attacking type is
+      // `color:` and the defender's tint is a `color-mix()`, so neither is a
+      // false positive.
+      expect(html).not.toContain("background-color:var(--color-type-");
+    }
+  });
+
+  it("never marks the ability as one that changes matchups", () => {
+    // The accent dot is the marker AbilityChips shows on /compare and /types.
+    // Here it would say "this one counts" before you had decided whether it
+    // does — which is the whole of the hard tier's question, and the whole of
+    // the Flame-Body-not-Flash-Fire trap.
+    for (const html of hard()) {
+      expect(html).not.toContain("Changes type matchups");
+    }
+  });
+
+  it("still shows the ability itself, which is the question", () => {
+    // At least one of twelve rounds must name an ability — if none did, the
+    // two assertions above would be passing for the wrong reason.
+    const withAbility = hard().filter((html) => html.includes("In play: "));
+    expect(withAbility.length).toBeGreaterThan(0);
   });
 });
