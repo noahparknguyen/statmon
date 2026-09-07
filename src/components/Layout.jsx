@@ -78,6 +78,20 @@ export default function Layout() {
   useDocumentTitle();
   useFocusOnNavigate(mainRef);
 
+  // The two game boards ask for no footer (D-109). They are sized to fill the
+  // viewport exactly — `calc(100svh - 7rem)` — so a footer beneath one makes
+  // the page scroll by the footer's height on every game, every round.
+  //
+  // Read from the route's `handle`, the same channel `title` uses, rather than
+  // from the pathname: a route already declares what it is, and a second list
+  // of paths here would be a second thing to keep in step.
+  //
+  // **The cost is stated rather than absorbed:** Credits lives in this footer
+  // since D-094, so on those two routes it is one navigation away instead of on
+  // screen. The attribution and the unofficial-fan-project line stay on every
+  // other route, including the `/games` index you arrive through.
+  const bare = useMatches().some((m) => m.handle?.bare);
+
   return (
     <div className="min-h-screen flex flex-col bg-base text-primary">
       {/* Data mode does not reset scroll on navigation on its own; without this
@@ -179,16 +193,17 @@ export default function Layout() {
       {/* The bottom inset is the footer's alone: it is the only thing that ends
           up under a home indicator, and putting it on the body would add dead
           space to every page on devices that have one. */}
-      <footer
-        className="border-t border-border-subtle"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      >
-        <div className="max-w-content mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-5">
-          <p className="text-caption text-tertiary">
-            Data from PokéAPI. Statmon is an unofficial fan project, not
-            affiliated with Nintendo, Game Freak, or The Pokémon Company.
-          </p>
-          {/* Byline + credits + repo read as one authorship group, so they sit
+      {!bare && (
+        <footer
+          className="border-t border-border-subtle"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
+          <div className="max-w-content mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-5">
+            <p className="text-caption text-tertiary">
+              Data from PokéAPI. Statmon is an unofficial fan project, not
+              affiliated with Nintendo, Game Freak, or The Pokémon Company.
+            </p>
+            {/* Byline + credits + repo read as one authorship group, so they sit
               together on the right rather than leaving the links stranded
               mid-row.
 
@@ -196,33 +211,34 @@ export default function Layout() {
               is the better home for it: the line to its left is the attribution
               summary and this is the page that expands it, so the link now sits
               beside its own subject instead of beside the tools. */}
-          {/* Wraps, and `gap-y-3` is a target-size number rather than a taste
+            {/* Wraps, and `gap-y-3` is a target-size number rather than a taste
               one: these are 12px links, so they clear WCAG 2.5.8 only by its
               spacing exception, which needs 24px between neighbouring centres.
               A wrapped `gap-y-1` puts two of them ~19px apart and fails; 12px
               of row gap lands at ~27px. `npm run sweep:widths` measures it. */}
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3">
-            <span className="text-caption text-tertiary">
-              Built by Noah Park-Nguyen
-            </span>
-            <Link
-              to="/credits"
-              className="text-caption text-tertiary transition-colors hover:text-secondary"
-            >
-              Credits
-            </Link>
-            <a
-              href={REPO_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1.5 text-caption text-tertiary transition-colors hover:text-secondary"
-            >
-              <LuGithub aria-hidden />
-              GitHub
-            </a>
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3">
+              <span className="text-caption text-tertiary">
+                Built by Noah Park-Nguyen
+              </span>
+              <Link
+                to="/credits"
+                className="text-caption text-tertiary transition-colors hover:text-secondary"
+              >
+                Credits
+              </Link>
+              <a
+                href={REPO_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 text-caption text-tertiary transition-colors hover:text-secondary"
+              >
+                <LuGithub aria-hidden />
+                GitHub
+              </a>
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   );
 }

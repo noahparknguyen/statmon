@@ -87,12 +87,15 @@ export const routes = [
       {
         path: "games/higher",
         lazy: lazyPage(() => import("./pages/GameHigher")),
-        handle: { title: "Higher" },
+        // `bare` drops the footer: the board is sized to fill the viewport
+        // exactly, so anything beneath it makes every game page scroll by that
+        // much (D-109). Layout reads this the same way it reads `title`.
+        handle: { title: "Higher", bare: true },
       },
       {
         path: "games/effective",
         lazy: lazyPage(() => import("./pages/GameEffective")),
-        handle: { title: "Effective" },
+        handle: { title: "Effective", bare: true },
       },
       {
         path: "credits",

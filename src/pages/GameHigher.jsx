@@ -136,7 +136,7 @@ const PROMPT_SPACER = { 2: "invisible sm:hidden", 4: "invisible lg:hidden" };
 const CARD =
   "pointer-events-auto max-w-full rounded-lg border border-border-subtle bg-surface px-5 text-center";
 
-function Arena({ settings, record, onAnswer, onSetup }) {
+function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
   const [session, setSession] = useState(NEW_SESSION);
   // A lazy initialiser, so a round is drawn once on mount rather than on every
   // render. The draw is random, which is fine here in a way it would not be
@@ -179,6 +179,7 @@ function Arena({ settings, record, onAnswer, onSetup }) {
       session={session}
       best={bestFor(record, GAME, key)}
       onSetup={onSetup}
+      onRestart={onRestart}
     />
   );
 
@@ -463,6 +464,13 @@ export default function GameHigher() {
         record={record}
         onAnswer={saveAnswer}
         onSetup={() => setDraft(settings)}
+        // Back to the picker. It clears the URL as well as the flag, so a
+        // refresh from here asks again rather than replaying the game you
+        // just left (D-109).
+        onRestart={() => {
+          navigate("/games/higher", { replace: true });
+          setStarted(false);
+        }}
       />
       <HigherSetup
         draft={draft}

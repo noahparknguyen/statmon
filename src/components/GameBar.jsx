@@ -23,7 +23,7 @@ import Button from "./Button";
 // `best` is the saved best for THESE settings (D-098), not this session's — a
 // session best that resets on every reload is a number nobody is chasing. The
 // session's own run is `streak`, right beside it.
-export default function GameBar({ title, session, best, onSetup }) {
+export default function GameBar({ title, session, best, onSetup, onRestart }) {
   const cells = [
     { label: "Score", value: `${session.correct} / ${session.asked}` },
     { label: "Streak", value: session.streak },
@@ -51,9 +51,23 @@ export default function GameBar({ title, session, best, onSetup }) {
             shrink below its content's intrinsic width without it, so `truncate`
             alone would have changed nothing. Same pairing D-055 needed for the
             dex's sort control. */}
+        {/* The name is the way back to the difficulty picker (D-109) — the one
+            place on this bar that is not about the round in progress, so it is
+            the natural home for "start a different game". It fills the bar's
+            height the way the nav links do (D-065), which is what carries it
+            past WCAG 2.5.8's floor, and the `sr-only` clause says what it does
+            without displacing the visible word from its accessible name
+            (2.5.3). */}
         <h1 className="text-h3 min-w-0 truncate text-primary">
-          {title}
-          <span className="text-accent">.</span>
+          <button
+            type="button"
+            onClick={onRestart}
+            className="inline-flex h-14 max-w-full items-center truncate transition-colors hover:text-accent"
+          >
+            {title}
+            <span className="text-accent">.</span>
+            <span className="sr-only"> — choose a different game</span>
+          </button>
         </h1>
 
         {/* A description list, because that is what it is: three labelled
