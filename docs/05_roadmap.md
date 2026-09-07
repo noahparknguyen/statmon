@@ -6,7 +6,33 @@ _The phased build plan / task checklist: what to implement, in order. Sequenced 
 
 ---
 
-## Current status (2026-09-07 — Session 25, the second game)
+## Current status (2026-09-07 — Session 26, the board fills up)
+
+**Done — six notes from playing it, and five were the same complaint.** The type
+game's options sat outside a board that was mostly air, so the answers moved
+**into** it: attacker │ answers │ defender, the shape `/compare` has always used
+([D-107](03_decisions.md#d-107)). The verdict lands in that middle cell now, the
+way the stat game's does.
+
+- **Nothing that appears moves anything.** Three reservations — the middle cell,
+  the defender's type-badge band, the icon slot in every answer button — and all
+  three measured at **0px shift**. It is the opposite call from
+  [D-103](03_decisions.md#d-103), and the difference is that this board had the
+  room spare where the stat game's gutter did not.
+- **A dual type shows both colours** in both games, audited across all 153 pairs
+  at their midpoints (worst: Electric/Ice at 7.23).
+- **The games ask how you want to play** ([D-108](03_decisions.md#d-108)) —
+  three presets and a Customise door. It reverses "play immediately", and the
+  situation is what changed: that game had two knobs and now has six axes.
+- **`text-overline-lg`** is the 23rd named style, because the role labels needed
+  a size and §5's rule is that the table grows rather than the call site.
+- **The sweep needed teaching twice**: its bare game routes now land on the
+  start screen, and it was failing WCAG 2.5.8 against a footer link behind an
+  open modal — which is inert, and therefore not a target.
+
+Vitest is at **399 tests**. The width sweep is at **29 routes × 14 widths**.
+
+## Session 25, the second game)
 
 **Done — `Effective.` ships, and the games section is complete as specified.**
 An attacking type against a defender; name the multiplier. One tier at a time:

@@ -176,32 +176,35 @@ Anchored at `--text-base: 1rem` (16px, the accessibility floor), stepping at ≈
 
 **Every text style used anywhere on the site.** Each is a named style bundling family + size + weight + line-height + letter-spacing. Use these by name — do not hand-assemble type. If a design needs a style not listed here, the style gets **added to this table**, not improvised.
 
-| Style token         | Family      | Size               | Weight | Line-height | Tracking          | Used for                                     |
-| ------------------- | ----------- | ------------------ | ------ | ----------- | ----------------- | -------------------------------------------- |
-| `text-display-hero` | display     | `--text-4xl` (48)  | 700    | tight       | tighter           | Home hero headline / wordmark                |
-| `text-display`      | display     | `--text-3xl` (36)  | 700    | tight       | tighter           | Big page display titles                      |
-| `text-h1`           | display     | `--text-2xl` (30)  | 700    | snug        | tight             | Primary page heading (one per page)          |
-| `text-h2`           | display     | `--text-xl` (24)   | 500    | snug        | tight             | Section headings                             |
-| `text-h3`           | display     | `--text-lg` (20)   | 500    | snug        | normal            | Subsections · card titles · **Pokémon name** |
-| `text-h4`           | display     | `--text-md` (18)   | 500    | snug        | normal            | Minor headings                               |
-| `text-body-lg`      | body        | `--text-md` (18)   | 400    | relaxed     | normal            | Lead paragraphs                              |
-| `text-body`         | body        | `--text-base` (16) | 400    | base        | normal            | Default body text                            |
-| `text-body-sm`      | body        | `--text-sm` (14)   | 400    | base        | normal            | Secondary / helper text                      |
-| `text-label`        | body        | `--text-sm` (14)   | 500    | none        | normal            | Form + UI labels                             |
-| `text-caption`      | body        | `--text-xs` (12)   | 500    | snug        | normal            | Captions, hints, footnotes                   |
-| `text-overline`     | display     | `--text-2xs` (11)  | 500    | none        | wider · UPPERCASE | Eyebrows · **stat-row labels** (HP, Atk…)    |
-| `text-stat`         | body (tnum) | `--text-md` (18)   | 600    | none        | wide              | Stat values in the comparison                |
-| `text-stat-sm`      | body (tnum) | `--text-sm` (14)   | 600    | none        | wide              | Stat values in a dense row (the dex table)   |
-| `text-stat-lg`      | body (tnum) | `--text-lg` (20)   | 600    | none        | wide              | BST · emphasized stat                        |
-| `text-diff`         | body (tnum) | `--text-sm` (14)   | 600    | none        | wide              | Difference value + caret                     |
-| `text-badge`        | display     | `--text-2xs` (11)  | 600    | none        | wide              | Type badges                                  |
-| `text-button`       | body        | `--text-sm` (14)   | 600    | none        | normal            | Button labels                                |
-| `text-numeral-xl`   | display     | `--text-4xl` (48)  | 700    | none        | normal            | BST delta on the comparison card             |
-| `text-numeral-lg`   | display     | `--text-3xl` (36)  | 700    | none        | normal            | BST delta on Home · "Tied" on the card       |
-| `text-numeral-md`   | display     | `--text-2xl` (30)  | 700    | none        | normal            | "Tied" on Home                               |
-| `text-meta`         | display     | `--text-xs` (12)   | 600    | snug        | normal            | Small display label in a chip/pill           |
+| Style token         | Family      | Size               | Weight | Line-height | Tracking          | Used for                                        |
+| ------------------- | ----------- | ------------------ | ------ | ----------- | ----------------- | ----------------------------------------------- |
+| `text-display-hero` | display     | `--text-4xl` (48)  | 700    | tight       | tighter           | Home hero headline / wordmark                   |
+| `text-display`      | display     | `--text-3xl` (36)  | 700    | tight       | tighter           | Big page display titles                         |
+| `text-h1`           | display     | `--text-2xl` (30)  | 700    | snug        | tight             | Primary page heading (one per page)             |
+| `text-h2`           | display     | `--text-xl` (24)   | 500    | snug        | tight             | Section headings                                |
+| `text-h3`           | display     | `--text-lg` (20)   | 500    | snug        | normal            | Subsections · card titles · **Pokémon name**    |
+| `text-h4`           | display     | `--text-md` (18)   | 500    | snug        | normal            | Minor headings                                  |
+| `text-body-lg`      | body        | `--text-md` (18)   | 400    | relaxed     | normal            | Lead paragraphs                                 |
+| `text-body`         | body        | `--text-base` (16) | 400    | base        | normal            | Default body text                               |
+| `text-body-sm`      | body        | `--text-sm` (14)   | 400    | base        | normal            | Secondary / helper text                         |
+| `text-label`        | body        | `--text-sm` (14)   | 500    | none        | normal            | Form + UI labels                                |
+| `text-caption`      | body        | `--text-xs` (12)   | 500    | snug        | normal            | Captions, hints, footnotes                      |
+| `text-overline`     | display     | `--text-2xs` (11)  | 500    | none        | wider · UPPERCASE | Eyebrows · **stat-row labels** (HP, Atk…)       |
+| `text-overline-lg`  | display     | `--text-base` (16) | 500    | none        | wider · UPPERCASE | The arena's role labels (ATTACKING / DEFENDING) |
+| `text-stat`         | body (tnum) | `--text-md` (18)   | 600    | none        | wide              | Stat values in the comparison                   |
+| `text-stat-sm`      | body (tnum) | `--text-sm` (14)   | 600    | none        | wide              | Stat values in a dense row (the dex table)      |
+| `text-stat-lg`      | body (tnum) | `--text-lg` (20)   | 600    | none        | wide              | BST · emphasized stat                           |
+| `text-diff`         | body (tnum) | `--text-sm` (14)   | 600    | none        | wide              | Difference value + caret                        |
+| `text-badge`        | display     | `--text-2xs` (11)  | 600    | none        | wide              | Type badges                                     |
+| `text-button`       | body        | `--text-sm` (14)   | 600    | none        | normal            | Button labels                                   |
+| `text-numeral-xl`   | display     | `--text-4xl` (48)  | 700    | none        | normal            | BST delta on the comparison card                |
+| `text-numeral-lg`   | display     | `--text-3xl` (36)  | 700    | none        | normal            | BST delta on Home · "Tied" on the card          |
+| `text-numeral-md`   | display     | `--text-2xl` (30)  | 700    | none        | normal            | "Tied" on Home                                  |
+| `text-meta`         | display     | `--text-xs` (12)   | 600    | snug        | normal            | Small display label in a chip/pill              |
 
-That's **22 styles across 11 sizes** — the entire typographic surface of the site. Anything you're tempted to size by hand already has a home here.
+That's **23 styles across 11 sizes** — the entire typographic surface of the site. Anything you're tempted to size by hand already has a home here.
+
+**`text-overline-lg` is what §5's own rule looks like in use** ([D-107](03_decisions.md#d-107)). The type game's `ATTACKING` / `DEFENDING` labels carry the entire direction of the question, and at `text-overline`'s 11px they were the quietest thing on a board whose next-largest text is 36px. The eyebrow treatment was right; only the size was wrong — so the size got a style rather than the call site getting a hand-tune, which is the difference this table exists to enforce.
 
 **Why the numerals need their own styles.** `text-numeral-*` differ from
 `text-display*` in exactly one property — `leading-none` instead of

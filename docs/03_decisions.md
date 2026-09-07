@@ -4,6 +4,118 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ---
 
+## 2026-09-07 — Session 26 (the board fills up, and the games ask first)
+
+<a id="d-108"></a>
+
+### D-108 · The games ask how you want to play — **Firm** _(reverses part of [D-092](#d-092))_
+
+**Decision.** A bare `/games/higher` or `/games/effective` shows a start screen:
+three presets and a **Customise** button that opens the settings directly. A URL
+carrying settings goes straight to the board.
+
+**This reverses "play immediately", and the situation is what changed.** When
+that was decided the stat game had **two knobs**, and putting a form between a
+link and the game would have been friction for nothing. It now has **six axes**
+— stat, count, origin generation, type, forms, era. The overwhelm is one this
+project created, and the first thing a new player meets should be three answers
+rather than six questions.
+
+**The objection that killed setup-as-a-gate is answered rather than
+overridden.** A shared link still carries a game and never a form: parameters
+mean play. Only a fresh, bare arrival is asked.
+
+**Presets are settings, not modes.** Each writes a state the setup panel could
+also reach by hand, so there is no fourth code path and no preset that means
+something the filters cannot express — the rule `Effective.`'s tiers already
+follow.
+
+**One wrinkle decides the implementation.** `Higher.`'s Medium preset **is** the
+defaults, so it writes no parameters at all — reading "have you chosen" off the
+URL would land back on the bare URL and ask again, forever. So it is page state,
+seeded from the URL and living **above** the arena's settings key so picking a
+preset does not remount straight back into the picker. A test pins the wrinkle
+down rather than leaving it as a comment: exactly one stat-game preset must
+produce the bare URL.
+
+**Two checks needed teaching.** The sweep's bare game routes now measure the
+**start screen**, so parameterised routes were added back to keep measuring the
+**boards** — and its "open this before measuring" entries had to move off the
+bare URL, which no longer has a Setup button. Its virtual-time budget also ran
+out at 29 routes and failed as _"could not read the sweep results"_, which reads
+like a missing build rather than a timeout; raised, with the cause written down.
+
+**And it found a real defect in the checker.** With the setup dialog open, WCAG
+2.5.8 was failing on the footer's Credits link — measured against a chip inside
+the dialog it happens to sit 20px from. A modal dialog makes the rest of the
+document **inert**, so nothing behind it is a target at all. `targetFailures`
+now measures inside an open dialog only. An over-eager checker is a checker
+people learn to ignore.
+
+---
+
+<a id="d-107"></a>
+
+### D-107 · The answers move into the board, and nothing that appears moves anything — **Firm** _(rebuilds [D-104](#d-104))_
+
+**Reported as** four things, and the first three are one: the type game's
+options sit too far from the field, the field is mostly empty, the verdict
+appears below the board instead of on it, and the role labels are tiny.
+
+**The board is now attacker │ answers │ defender** — the shape `/compare` has
+always used, two subjects with the answer between them. The multipliers were a
+rail along the bottom, which put the thing you press as far from the thing you
+read as the screen allows, across a field holding two words. The empty middle is
+what pays for the move, and the verdict now lands in that same middle cell, the
+way the stat game's does.
+
+**Three reservations, and the board has the room precisely because it was
+empty.** This is the opposite call from [D-103](#d-103), which refused to
+reserve in the stat game's gutter because it would have cost a quarter of a
+phone's artwork; here the space is already spare, so reserving is simply right:
+
+- the middle cell holds the answered layout's height,
+- the defender panel holds a type-badge band, so revealing the typing does not
+  shove the name and ability up the panel,
+- every answer button holds a fixed icon slot, so a ✓ appearing does not nudge
+  its own multiplier sideways.
+
+**Measured, all three.** Defender name: **0px**. Answer grid bottom: **0px** —
+the verdict's top moves from 526 to 386 while its bottom does not move at all,
+which is what "it fills space already held" looks like in numbers.
+
+_The middle cell's reservation is a measured constant rather than a
+self-sizing one, and the reason is worth recording: the obvious way to size it
+is to render the verdict invisibly, but the caption names the defender's
+**typing**, and putting that in the markup before you answer is exactly the leak
+[D-104](#d-104)'s assertions exist to catch. So it is 208px, from measuring the
+verdict at 187 and leaving a wrapped line's headroom — and the first attempt at
+160 was caught by measuring the button row before and after, not by looking._
+
+**A dual type now shows both its colours.** `tintFor` takes the whole typing and
+returns a diagonal gradient between the two tints, in **both** games — the stat
+game's panels had been rendering Volcarona as Bug alone since the arena shipped.
+[04_design §2](04_design.md) reserves the _flame_ gradient for the hero and says
+never behind data; this is a different thing, and it is §3's own idea (a
+Pokémon's typing colours its representation) finally able to say both halves.
+It returns a `background` rather than a `background-color`, which is the one
+trap for a future caller: a background-color would drop a gradient silently.
+
+**Audited rather than argued.** Intermediate colours ought to sit between their
+endpoints, but "ought to" is not this file's standard, so the audit computes all
+**153 pairs at their midpoint** — where a blend is furthest from both ends — and
+checks both text colours against each. Worst is Electric/Ice at **7.23**.
+
+**And the role labels got a style rather than a hand-tune.** `ATTACKING` /
+`DEFENDING` carries the entire direction of the question, and at 11px it was the
+quietest thing on the board. [06_style_guide §5](06_style_guide.md)'s own rule
+is that a design needing a style the table lacks gets it **added to the table**,
+so `text-overline-lg` (display, 16px, uppercase, wide) is the 23rd named style —
+listed on `/style`, which walks the stylesheet and would have failed if it were
+not.
+
+---
+
 ## 2026-09-07 — Session 25 (`Effective.`)
 
 <a id="d-106"></a>
