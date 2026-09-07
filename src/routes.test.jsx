@@ -41,8 +41,21 @@ const routes = [
       { path: "types/:t1", element: <TypeChart /> },
       { path: "types/:t1/:t2", element: <TypeChart /> },
       { path: "games", element: <Games /> },
-      { path: "games/higher", element: <GameHigher /> },
-      { path: "games/effective", element: <GameEffective /> },
+      // The `handle` matters here, not just the element: Layout reads
+      // `handle.bare` to drop the footer on a board (D-109), so a copy of the
+      // table without it renders a footer the real app does not. This is the
+      // duplication the note above warns about, caught by the first test that
+      // depended on a handle.
+      {
+        path: "games/higher",
+        element: <GameHigher />,
+        handle: { title: "Higher", bare: true },
+      },
+      {
+        path: "games/effective",
+        element: <GameEffective />,
+        handle: { title: "Effective", bare: true },
+      },
       { path: "credits", element: <Credits /> },
       { path: "style", element: <StyleGuide /> },
       { path: "*", element: <NotFound /> },
@@ -965,4 +978,50 @@ describe("the games ask how you want to play", () => {
     );
     expect(bare).toHaveLength(1);
   });
+});
+
+// The two game boards drop the footer, because they are sized to fill the
+// viewport exactly and anything beneath one makes every game page scroll by
+// that much (D-109). Everything else keeps it — including the /games index you
+// arrive through, which is where the attribution and the Credits link stay
+// reachable from.
+describe("the footer", () => {
+  const ATTRIBUTION = "unofficial fan project";
+
+  it.each(["/games/higher?stats=speed", "/games/effective?tier=hard"])(
+    "is absent on the board at %s",
+    (path) => {
+      expect(render(path)).not.toContain(ATTRIBUTION);
+    },
+  );
+
+  it.each(["/", "/games", "/compare", "/dex", "/types", "/credits"])(
+    "is present on %s",
+    (path) => {
+      expect(render(path)).toContain(ATTRIBUTION);
+    },
+  );
+
+  // The one thing the boards give up. Asserted rather than left as a comment,
+  // so that if Credits ever stops being reachable from the games index the
+  // trade stops being the one that was agreed.
+  it("still reaches Credits from the games index", () => {
+    expect(render("/games")).toContain('href="/credits"');
+  });
+});
+
+// The game's name is the way back to the difficulty picker (D-109).
+describe("the game bar's title", () => {
+  it.each(["/games/higher?stats=speed", "/games/effective?tier=hard"])(
+    "is a control on %s, named by its visible word",
+    (path) => {
+      const html = render(path);
+      // WCAG 2.5.3: the visible text has to be inside the accessible name, so
+      // the clause is appended rather than replacing it with an aria-label.
+      expect(html).toContain("choose a different game");
+      expect(text(path)).toContain(
+        path.includes("higher") ? "Higher" : "Effective",
+      );
+    },
+  );
 });

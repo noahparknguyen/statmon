@@ -6,7 +6,30 @@ _The phased build plan / task checklist: what to implement, in order. Sequenced 
 
 ---
 
-## Current status (2026-09-07 — Session 26, the board fills up)
+## Current status (2026-09-07 — Session 27, the boards settle)
+
+**Done — seven notes from playing it, and three of them were one fault of
+mine.** [D-107](03_decisions.md#d-107)'s 208px reservation above the answer
+buttons was why they sat **~100px below centre**, why the verdict read as "in
+between", and why a phone wasted its best space. The verdict moved onto the
+attacking panel — the stat game's treatment — and the reservation went with it.
+Measured: the buttons are now **1.5px** off the board's centre and still shift
+**0px** when a round resolves ([D-109](03_decisions.md#d-109)).
+
+- **The footer comes off the two boards**, which are sized to fill the viewport
+  exactly. The cost — Credits is one navigation away there — is stated, and a
+  test asserts both its absence on the boards and its presence everywhere else.
+- **The artwork caps at 475px**, which is the vendored art's own resolution, so
+  the cap only bites where the upscale was visible. It amends
+  [D-096](03_decisions.md#d-096), which had let it upscale deliberately.
+- **The type game stacks at `md`**: three columns at 480px is a 110px Pokémon.
+- **The game's name returns you to the difficulty picker.**
+- And the test file's private copy of the route table had no `handle`s, so the
+  first assertion that needed one was testing a footer the app does not render.
+
+Vitest is at **410 tests**.
+
+## Session 26, the board fills up)
 
 **Done — six notes from playing it, and five were the same complaint.** The type
 game's options sat outside a board that was mostly air, so the answers moved

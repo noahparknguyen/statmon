@@ -4,6 +4,81 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ---
 
+## 2026-09-07 — Session 27 (the boards settle)
+
+<a id="d-109"></a>
+
+### D-109 · The reservation was the bug — **Firm** _(corrects [D-107](#d-107), amends [D-094](#d-094), [D-096](#d-096))_
+
+Seven notes from playing it. **Three were the same fault, and it was mine.**
+
+[D-107](#d-107) reserved 208px above the answer buttons so the verdict could
+land without shifting anything. It worked, and it is why the buttons rendered
+**~100px below the centre of the screen**, why the verdict read as sitting "in
+between" rather than on the board, and why a phone wasted its best space. The
+reservation solved a problem the verdict should not have been creating.
+
+**The verdict moved onto the attacking panel** — the stat game's treatment —
+and the reservation went with it. The buttons now measure **1.5px** off the
+board's centre, and still shift **0px** when a round resolves.
+
+**Why the attacker and never the defender.** The card restates it: the
+`StabChip` inside names the attacking type, so covering that panel hides
+nothing the card does not already say. Over the defender it would hide the
+typing that was just revealed — the answer covering the answer, which is the
+[D-097](#d-097) fault this whole arena has now made three times.
+
+_And one implementation note worth keeping, because the obvious version is
+wrong: placing the card explicitly at `col-start-1 row-start-1` **disturbs
+auto-placement for its siblings**. The answers slid into column three, the
+defender dropped into a row of its own, and the board came apart. Absolutely
+positioned **inside** the attacker's cell it needs no placement at all — and it
+lands on the attacker in both layouts, left column side by side and top row
+stacked, without a breakpoint._
+
+**The footer comes off the two boards.** They are sized to fill the viewport
+exactly, so anything beneath one makes every game page scroll by the footer's
+height, every round. It is a `handle` flag read through `useMatches()` — the
+channel `handle.title` already uses — rather than a list of paths in `Layout`,
+which would be a second thing to keep in step.
+
+**The cost is stated rather than absorbed.** Credits moved into the footer at
+[D-094](#d-094), so on those two routes it is one navigation away instead of on
+screen. The attribution and the unofficial-fan-project line stay on all eight
+other routes, including the `/games` index you arrive through — and a test now
+asserts both halves, the absence on the boards and the presence everywhere
+else, including that Credits is still reachable from the index.
+
+**The type game stacks at `md`, not `sm`.** Three columns at 480px leaves each
+panel about 110px wide, which is a Pokémon you cannot see. The stat game is
+untouched: its two-up is ~240px at those widths and its four-up already stacks
+below `lg`.
+
+**The artwork caps at 475px, and the number is measured rather than chosen.**
+The vendored official art is exactly 475×475 — every file, across a 400-file
+sample — so any box larger than that is enlarging a bitmap, which is the
+softness visible on a large monitor. This **amends [D-096](#d-096)**, which
+deliberately let the stat game's panels upscale on the argument that capping
+left a band of dead space above the name. That argument holds right up to the
+point where the upscale becomes visible, and the cap only bites past it: below
+475 nothing changes at all.
+
+**The game's name goes back to the picker.** It is the one thing on that bar
+that is not about the round in progress, so it is the natural home for "start a
+different game". It clears the URL as well as the flag, so a refresh from there
+asks again rather than replaying the game you just left. It fills the bar's
+height the way the nav links do ([D-065](#d-065)), and its `sr-only` clause is
+appended rather than replacing the visible word, so the name still contains what
+you can see (WCAG 2.5.3).
+
+_One thing this session caught about the tests themselves: `routes.test.jsx`
+builds its own copy of the route table, and that copy had no `handle`s — so the
+first assertion that depended on one was testing a footer the real app does not
+render. The note above that table has warned about the duplication since it was
+written; this is the first time it cost anything._
+
+---
+
 ## 2026-09-07 — Session 26 (the board fills up, and the games ask first)
 
 <a id="d-108"></a>
