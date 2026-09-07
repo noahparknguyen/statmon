@@ -18,6 +18,7 @@ import {
 import { capitalize } from "../lib/types";
 import { CHIP, CHIP_FILTER_GEOMETRY, CHIP_OFF, CHIP_ON } from "./chipStyles";
 import FilterChip from "./FilterChip";
+import ChipGroup from "./ChipGroup";
 
 // The dex's controls. Holds no view state of its own: it renders the view
 // parsed from the URL and reports the next one up, which the page writes back to
@@ -56,15 +57,6 @@ import FilterChip from "./FilterChip";
 const FIELD_LOOK =
   "rounded-sm border border-border-subtle bg-elevated px-3 text-body text-primary transition-colors focus-within:border-border-strong";
 const FIELD = `h-11 ${FIELD_LOOK}`;
-
-function Group({ label, children }) {
-  return (
-    <div role="group" aria-label={label}>
-      <div className="text-overline text-tertiary mb-2">{label}</div>
-      <div className="flex flex-wrap gap-1.5">{children}</div>
-    </div>
-  );
-}
 
 export default function DexFilters({ view, onChange }) {
   const [open, setOpen] = useState(false);
@@ -161,7 +153,7 @@ export default function DexFilters({ view, onChange }) {
         id="dex-filter-groups"
         className={`${open ? "" : "hidden"} mt-4 flex flex-col gap-4 md:mt-3 md:flex`}
       >
-        <Group label="Types">
+        <ChipGroup label="Types">
           {types.map((t) => (
             <FilterChip
               key={t}
@@ -171,7 +163,7 @@ export default function DexFilters({ view, onChange }) {
               color={t}
             />
           ))}
-        </Group>
+        </ChipGroup>
 
         <div className="flex flex-col gap-4 md:flex-row md:gap-10">
           {/* Hidden when the lens leaves it only one option: filtering the Gen 1
@@ -179,7 +171,7 @@ export default function DexFilters({ view, onChange }) {
               the control could only ever be a no-op sitting under a strip that
               looks just like it. */}
           {generations.length > 1 && (
-            <Group label="Introduced in">
+            <ChipGroup label="Introduced in">
               {generations.map((g) => (
                 <FilterChip
                   key={g}
@@ -188,10 +180,10 @@ export default function DexFilters({ view, onChange }) {
                   label={`Gen ${g}`}
                 />
               ))}
-            </Group>
+            </ChipGroup>
           )}
 
-          <Group label="Options">
+          <ChipGroup label="Options">
             <FilterChip
               active={!view.includeForms}
               onClick={() =>
@@ -199,7 +191,7 @@ export default function DexFilters({ view, onChange }) {
               }
               label="Hide alternate forms"
             />
-          </Group>
+          </ChipGroup>
         </div>
 
         {totalCount > 0 && (

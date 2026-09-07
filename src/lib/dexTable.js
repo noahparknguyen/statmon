@@ -174,7 +174,12 @@ export const DEFAULT_VIEW = {
 // Gen 1 dex and you get the Special ranking, which is the same question asked
 // of the generation that had one stat for it. Anything with no counterpart
 // falls back to the default column.
-const ACROSS_THE_SPLIT = {
+//
+// Exported because the stat game asks the same question of the same boundary
+// (lib/games.js): switching a Speed drill to a Gen 1 game keeps Speed, and
+// switching a Sp. Atk one keeps the Special that Sp. Atk came from. A second
+// hand-written copy of this map is precisely the pair that drifts.
+export const ACROSS_THE_SPLIT = {
   spAtk: SPECIAL,
   spDef: SPECIAL,
   [SPECIAL]: "spAtk",
@@ -234,7 +239,13 @@ export const generationsFor = (asof) =>
 // always produces the same URL however it was clicked, and a hand-edited URL
 // cannot reach a state the controls themselves could not. A single value
 // ("type=fire") parses as a one-item list, so older one-type links still work.
-function parseList(raw, canonical) {
+//
+// Exported because the games reuse this vocabulary verbatim — `?gen=` and
+// `?type=` mean the same thing on `/games/higher` as they do here (D-049's
+// one-concept-one-name rule), so they have to PARSE the same way too. A second
+// copy of a canonicalising parser is how two tools start disagreeing about what
+// `?type=fire,bogus,fire` means.
+export function parseList(raw, canonical) {
   if (!raw) return [];
   const picked = new Set(raw.split(",").map((v) => v.trim()));
   return canonical.filter((v) => picked.has(String(v)));

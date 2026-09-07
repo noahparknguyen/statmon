@@ -17,11 +17,20 @@ import { typeColorVar, typeTextVar } from "../lib/types";
 // markup itself duplicated in `DexFilters` and `TypePicker` — which is the exact
 // drift that module exists to prevent, one rung up.
 //
-// The only genuine difference between the two call sites is the type chart's
-// two-type cap, so that is the only prop that survives as behaviour:
-// `unavailable` dims the chip and marks it `aria-disabled` while keeping it in
-// the tab order, so a keyboard user who lands on one is told it is unavailable
-// rather than having it silently skipped (D-051).
+// Only genuine behavioural differences between call sites survive as props, and
+// there are two:
+//
+//   · `unavailable` dims the chip and marks it `aria-disabled` while keeping it
+//     in the tab order, so a keyboard user who lands on one is told it is
+//     unavailable rather than having it silently skipped — the type chart's
+//     two-type cap (D-051).
+//   · `removable` is what the trailing × means, and it is not decoration: in
+//     the dex and the type picker every active chip toggles OFF when clicked,
+//     and the × says so. The stat game's chips are single-select (D-091) —
+//     clicking the active one re-picks what is already picked — so a × there
+//     promises a dismissal that never happens. The affordance goes rather than
+//     the component being forked, which is the D-058 rule: this is a real
+//     difference in what the control does, so it is a prop.
 //
 // **No `aria-label`, deliberately.** The visible text is the accessible name.
 // Spelling the action out ("Filter by Generation 1") would replace the name with
@@ -34,6 +43,7 @@ export default function FilterChip({
   label,
   color,
   unavailable = false,
+  removable = true,
 }) {
   return (
     <button
@@ -60,7 +70,7 @@ export default function FilterChip({
         />
       )}
       {label}
-      {active && <LuX aria-hidden />}
+      {active && removable && <LuX aria-hidden />}
     </button>
   );
 }
