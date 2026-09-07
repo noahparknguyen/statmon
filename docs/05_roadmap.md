@@ -6,7 +6,28 @@ _The phased build plan / task checklist: what to implement, in order. Sequenced 
 
 ---
 
-## Current status (2026-09-07 — Session 27, the boards settle)
+## Current status (2026-09-07 — Session 28, the last pass)
+
+**Done — three consistency tweaks and a review pass** ([D-110](03_decisions.md#d-110)).
+The wordmark gained the game bar's hover rather than the game title losing it;
+the game title collapses to a mark below `xs`, keeping the control the way the
+wordmark keeps its flame; and the boards fit the viewport exactly.
+
+- **The boards were 904px in a 900px window.** `calc(100svh - 7rem)` knew about
+  the two 56px bars and not about their two 1px borders. The board takes
+  whatever is left now, which removes the arithmetic rather than correcting it.
+  Measured after: exactly 900 in 900.
+- **The review pass found two defects in that same fix** — two conflicting
+  `min-h` utilities in one class string (the D-042 trap), and an `sr-only`
+  clause that made a screen reader say the game's name twice.
+- Everything else it looked for was clean: no stale references, no icon button
+  without a name, no other conflicting utility pairs, and all 23 named text
+  styles present on `/style`.
+
+Vitest is at **410 tests**. The sweep is at **29 routes × 14 widths = 406
+checks**, and every game route now measures the viewport exactly.
+
+## Session 27, the boards settle)
 
 **Done — seven notes from playing it, and three of them were one fault of
 mine.** [D-107](03_decisions.md#d-107)'s 208px reservation above the answer

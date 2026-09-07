@@ -19,12 +19,25 @@
 // these class strings would be invisible from `lib/`, and `react-refresh`
 // requires a component file to export only components.
 
-// The site header is 56px and the game bar is another 56. `svh` rather than
-// `vh` so a mobile browser's collapsing toolbar cannot make the board taller
-// than the screen — the unit Home's wall already uses (D-070). The floor stops
-// a landscape phone from crushing the panels to nothing; it may scroll there,
-// which is the right trade.
-export const BOARD = "h-[calc(100svh-7rem)] min-h-[26rem]";
+// Whatever is left under the two bars, rather than a height computed from
+// them (D-110).
+//
+// It was `calc(100svh - 7rem)` — the two 56px bars subtracted by hand — and it
+// was 2px short, because each of those bars also carries a 1px bottom border
+// the arithmetic did not know about. Every game scrolled by a few pixels
+// forever. `flex-1` inside a viewport-height shell asks for the space that is
+// actually left, so there is no sum to get wrong and no border that can
+// reintroduce it.
+//
+// The floor stops a landscape phone crushing the panels to nothing; it may
+// scroll there, which is the right trade.
+// One `min-h-*` only. `min-h-0 ... min-h-[26rem]` was two conflicting
+// utilities in one string, and Tailwind resolves that by stylesheet order
+// rather than by the order they are written — the trap D-042 documents and
+// TypeBadge's `radius` prop exists to avoid. `flex-1` already sets
+// `flex-basis: 0`, so nothing needed `min-h-0` here; the floor is the one that
+// means something.
+export const BOARD = "flex-1 min-h-[26rem]";
 
 // `gap-px` over the board's own background is the divider — no border on any
 // panel, and it stays a hairline at every width.

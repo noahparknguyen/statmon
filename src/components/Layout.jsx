@@ -93,7 +93,21 @@ export default function Layout() {
   const bare = useMatches().some((m) => m.handle?.bare);
 
   return (
-    <div className="min-h-screen flex flex-col bg-base text-primary">
+    // A bare route is sized to the viewport EXACTLY (D-110). `min-h-screen`
+    // plus a board of `calc(100svh - 7rem)` came to 904px in a 900px window —
+    // 2px of it the two sticky bars' bottom borders, which the arithmetic did
+    // not know about — so every game scrolled by a few pixels. Pinning the
+    // height and letting the board take the remaining space with `flex-1`
+    // removes the arithmetic rather than correcting it, so a future border
+    // cannot reintroduce the same drift.
+    //
+    // `svh` rather than `vh`, the unit Home's wall already uses: on a phone a
+    // collapsing toolbar makes `vh` taller than what you can actually see.
+    <div
+      className={`flex flex-col bg-base text-primary ${
+        bare ? "h-[100svh]" : "min-h-screen"
+      }`}
+    >
       {/* Data mode does not reset scroll on navigation on its own; without this
           a deep link out of a long page lands part-way down the next one.
 
@@ -127,7 +141,16 @@ export default function Layout() {
             The labels all stay visible — it is the space between them that
             gives. */}
         <div className="max-w-content mx-auto flex items-center justify-between gap-2 px-4 h-14 sm:gap-4">
-          <Link to="/" className="flex items-center gap-2 text-h3 text-primary">
+          {/* The hover is the game bar's (D-110). Both are a name in the
+              `Word.` motif that navigates, and the nav links beside this one
+              already answer the pointer — the wordmark was the only control in
+              the header that gave nothing back. Consistency here means the
+              quieter one moving, not the newer one going quiet: a control that
+              does not look like one is the worse half of the pair. */}
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-h3 text-primary transition-colors hover:text-accent"
+          >
             <img
               src="/favicon.svg"
               alt=""
@@ -185,7 +208,11 @@ export default function Layout() {
         id="main"
         ref={mainRef}
         tabIndex={-1}
-        className="flex-1 focus:outline-none"
+        // `min-h-0` is what lets the board actually shrink to the space left:
+        // a flex child will not go below its content's height without it.
+        className={`flex-1 focus:outline-none ${
+          bare ? "flex min-h-0 flex-col" : ""
+        }`}
       >
         <Outlet />
       </main>

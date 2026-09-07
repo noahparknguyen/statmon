@@ -1,4 +1,4 @@
-import { LuSettings2 } from "react-icons/lu";
+import { LuChevronLeft, LuSettings2 } from "react-icons/lu";
 import Button from "./Button";
 
 // The game's own bar: what you are playing, how you are doing, and the way into
@@ -59,14 +59,35 @@ export default function GameBar({ title, session, best, onSetup, onRestart }) {
             without displacing the visible word from its accessible name
             (2.5.3). */}
         <h1 className="text-h3 min-w-0 truncate text-primary">
+          {/* Below `xs` the name gives way to a mark, which is exactly what
+              the site wordmark does at the same breakpoint (D-054) — and the
+              half of that pattern worth copying is that **the control stays**.
+              The wordmark's flame is still the link home; this is still the way
+              back to the difficulty picker, which at 320px it is the only one
+              of. Hiding the button outright would have matched the letter of
+              the wordmark's rule and broken its point. (D-110)
+
+              It is a truncation problem there and a fit problem here: this
+              title truncates rather than pushing (D-106), so the bar never
+              overflowed — "Effective." simply arrived as "Effe…". A mark says
+              more than four letters and an ellipsis. */}
           <button
             type="button"
             onClick={onRestart}
-            className="inline-flex h-14 max-w-full items-center truncate transition-colors hover:text-accent"
+            className="inline-flex h-14 max-w-full items-center gap-1 truncate transition-colors hover:text-accent"
           >
-            {title}
-            <span className="text-accent">.</span>
-            <span className="sr-only"> — choose a different game</span>
+            <LuChevronLeft aria-hidden className="shrink-0 xs:hidden" />
+            {/* `aria-hidden` on the visible half, with the whole accessible
+                name in the `sr-only` half. Without it a screen reader hears the
+                name twice — "Effective. Effective, choose a different game" —
+                and with the visible half hidden below `xs` the name would
+                otherwise lose the game entirely. The visible word is still
+                inside the accessible name, which is what WCAG 2.5.3 asks. */}
+            <span aria-hidden className="hidden truncate xs:inline">
+              {title}
+              <span className="text-accent">.</span>
+            </span>
+            <span className="sr-only">{title} — choose a different game</span>
           </button>
         </h1>
 

@@ -4,6 +4,51 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ---
 
+## 2026-09-07 — Session 28 (three consistency tweaks, and a final pass)
+
+<a id="d-110"></a>
+
+### D-110 · The header answers the pointer, and the board stops being 4px too tall — **Firm** _(refines [D-054](#d-054), [D-106](#d-106), [D-109](#d-109))_
+
+**The wordmark gained the game bar's hover, rather than the game title losing
+it.** Both are a name in the `Word.` motif that navigates, and the nav links
+beside the wordmark already answer the pointer — it was the only control in the
+header giving nothing back. Consistency between a control that looks like one
+and a control that does not is achieved by moving the second, not the first.
+
+**The game title collapses to a mark below `xs`, and the control stays.** That
+is the half of [D-054](#d-054)'s wordmark rule worth copying: the flame is still
+the link home, so the chevron is still the way back to the difficulty picker —
+which at 320px it is the only one of. Hiding the button outright would have
+matched the letter of that rule and broken its point.
+
+_The two are the same shape and different faults. The wordmark hides because
+the header genuinely cannot fit it. This title never overflowed — it truncates
+rather than pushing ([D-106](#d-106)) — so "Effective." simply arrived as
+"Effe…", and a mark says more than four letters and an ellipsis._
+
+**The boards were 904px in a 900px viewport**, so every game scrolled a few
+pixels. `calc(100svh - 7rem)` subtracted the two 56px bars and knew nothing
+about their two 1px bottom borders. The board now takes **whatever is left** —
+`flex-1` inside a viewport-height shell — which removes the arithmetic instead
+of correcting it, so a future border cannot reintroduce the same drift.
+Measured after: every game route is exactly 900px in a 900px window.
+
+**Two defects in that fix, both mine, both caught in the review pass:**
+
+- `BOARD` came out as `min-h-0 flex-1 min-h-[26rem]` — **two conflicting
+  `min-h` utilities in one string**, which Tailwind resolves by stylesheet order
+  rather than by the order they are written. That is the [D-042](#d-042) trap
+  exactly, and `flex-1` already sets `flex-basis: 0`, so nothing needed the
+  first one.
+- The title button's `sr-only` clause **duplicated the visible name**: a screen
+  reader heard "Effective. Effective, choose a different game". The visible half
+  is `aria-hidden` now and the `sr-only` half carries the whole accessible name,
+  which also fixes the `xs` case where the visible half is gone entirely and the
+  name would otherwise have lost the game.
+
+---
+
 ## 2026-09-07 — Session 27 (the boards settle)
 
 <a id="d-109"></a>
