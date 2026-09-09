@@ -1,4 +1,4 @@
-# Statmon — https://statmon.noahparknguyen.workers.dev/
+# Statmon — https://statmon.noahpn.dev/
 #
 # Everything is public and worth indexing except /style, which is the design
 # system playground: it renders every token and component on one page, so it
@@ -8,4 +8,4 @@ User-agent: *
 Allow: /
 Disallow: /style
 
-Sitemap: https://statmon.noahparknguyen.workers.dev/sitemap.xml
+Sitemap: https://statmon.noahpn.dev/sitemap.xml

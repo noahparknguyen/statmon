@@ -4,6 +4,57 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ---
 
+## 2026-09-09 — Session 30 (a domain, because the old one could not be posted)
+
+<a id="d-132"></a>
+
+### D-132 · Moved to `statmon.noahpn.dev`, and turned the workers.dev origin off — **Firm**
+
+**Decision.** The site is served from **`https://statmon.noahpn.dev/`**, a
+Cloudflare Custom Domain on the `noahpn.dev` zone. `wrangler.jsonc` declares the
+route and sets `workers_dev: false` and `preview_urls: false`, so
+`statmon.noahparknguyen.workers.dev` no longer resolves. Every user-facing
+reference moved with it: `index.html`'s `og:url` / `og:image` / `twitter:image`,
+all six `sitemap.xml` entries, `robots.txt`, `package.json`'s `homepage`, the
+README, and the roadmap. [D-030](#d-030) keeps the old URL, because it is a
+record of what was deployed at the time and was true when written.
+
+**Why.** LinkedIn refuses to accept a link to `*.workers.dev` at all. It is a
+free shared subdomain anyone can register in seconds, so it is heavily used for
+phishing, and platforms blanket-block the domain rather than assess sites on it
+one at a time. Nothing about Statmon triggered it. That made the site
+unpostable on the one place it most needed to be posted.
+
+Routing around the block was the wrong instinct. A shortener or a redirect
+resolves to the same final URL, gets flagged anyway, and looks worse than the
+bare link, because obfuscating a destination is the exact pattern the scanners
+are screening for. A domain nobody blocks is the actual fix, and the portfolio
+had already made this move — its own config carries a note that custom domains
+also clear the workers.dev TLS/HTTPS/HSTS security warnings.
+
+Two things were considered and rejected. **Keeping both origins alive** would
+have preserved old links, but two hosts serving identical content split search
+ranking and contradict a canonical `og:url` that can only name one of them.
+**Redirecting the old origin** is the friendliest option for anyone holding a
+stale link, and it is the one thing this project cannot do cheaply: Statmon
+ships as static assets with **no Worker script** ([D-030](#d-030)), so a
+redirect means adding one and reversing that decision for a handful of links.
+
+The cost is real and worth naming: whatever search ranking the workers.dev
+origin had accrued is gone, and re-adding the subdomain later would not bring it
+back. For a personal project with few inbound links that is a fair trade, but it
+is the only irreversible part of this change.
+
+One surprise worth recording. Declaring `routes` makes Wrangler default
+`workers_dev` to **false on its own**, and it warns on every deploy that it is
+making that choice for you. The first deploy was planned as a safe one that
+added the domain while leaving the old origin up, and it silently took the old
+origin down instead. Both settings are now written out explicitly, which
+silences the warnings and, more usefully, means the file states what is true
+rather than leaning on a default that does not look like one.
+
+---
+
 ## 2026-09-07 — Session 29 (a check for the trap, Home's cameos, two things that move, a picker that is a page, and a voice)
 
 <a id="d-131"></a>

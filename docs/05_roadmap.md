@@ -392,7 +392,7 @@ Vitest is at **213 tests**.
 
 **Done — Statmon is a two-tool site, and Home advertises both.** Every feature now ships with a live preview on Home ([D-043](03_decisions.md#d-043)) — a rule, a `FeaturePreview` component, and a line in each tool's checklist below. The **full-dex stats table** shipped at `/dex` ([D-039](03_decisions.md#d-039)): all 1,259 entries, sortable on every stat, multi-select filterable by type and generation ([D-040](03_decisions.md#d-040)), with alternate forms toggleable (hidden by default since [D-056](03_decisions.md#d-056)) — windowed so only ~26 rows are ever in the DOM. The foundation work it depended on landed first ([D-038](03_decisions.md#d-038)): scroll + focus reset on navigation (closing the last [D-024](03_decisions.md#d-024) item), per-route `<title>`s, and **Vitest** with 94 tests.
 
-**Done — the MVP is live.** Phases 0–4 are complete: a polished, multi-page, self-contained, WCAG-AA site, responsive from phone to desktop, deployed on Cloudflare Workers at **https://statmon.noahparknguyen.workers.dev/**. The one Phase-4 item intentionally left for later is the optional SSR/framework-mode upgrade (per-route meta).
+**Done — the MVP is live.** Phases 0–4 are complete: a polished, multi-page, self-contained, WCAG-AA site, responsive from phone to desktop, deployed on Cloudflare Workers at **https://statmon.noahpn.dev/**. The one Phase-4 item intentionally left for later is the optional SSR/framework-mode upgrade (per-route meta).
 
 - **Phases 0–2:** plain Vite + React (JS) + Tailwind v4 CSS-first tokens; build-time data pipeline → **1,259 entries**; design-system primitives (22 named text styles, shared `Button` / `CmpRow` / `CmpStatCard` / `SpeedBanner`).
 - **Phase 3 — comparison tool:** search, two hero cards with form switching, the comparison card (BST summary, STAB matchup, mirrored **type-colored** diffs, speed banner), swap.
@@ -506,7 +506,7 @@ _Goal: a complete, showcase-ready site. This is where the **Cloudflare Workers/W
 - [x] Implement the **mobile layout**: per-stat cards under 768px. ([D-010](03_decisions.md#d-010), [D-029](03_decisions.md#d-029))
 - [x] Add the **Cloudflare Workers + Wrangler** deploy layer — shipped as a **static-assets SPA** (no Worker code); SSR adapter deferred (optional). ([D-005](03_decisions.md#d-005), [D-030](03_decisions.md#d-030))
 - [x] Polished **README** and `/docs` up to date.
-- [x] Final **Cloudflare production deploy** — live at https://statmon.noahparknguyen.workers.dev/. ([D-030](03_decisions.md#d-030))
+- [x] Final **Cloudflare production deploy** — live at https://statmon.noahpn.dev/. ([D-030](03_decisions.md#d-030))
 
 **Exit:** MVP is live, looks great, works on phone and desktop, and the repo is presentable. 🎉 **✅ Done 2026-07-29.**
 

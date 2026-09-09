@@ -2,13 +2,13 @@
 
 A simple set of Pokémon tools, built for myself. Three of them — and each can be read **as of any generation**:
 
-- **[Compare](https://statmon.noahparknguyen.workers.dev/compare)** — two Pokémon's base stats head to head, with the type matchup, their abilities, and a straight answer about who moves first.
-- **[Dex](https://statmon.noahparknguyen.workers.dev/dex)** — all 1,259 entries in one table, sortable by any stat and filterable by type and generation.
-- **[Types](https://statmon.noahparknguyen.workers.dev/types)** — the full effectiveness chart, and a dual-type readout on the same page — searchable by Pokémon, not just by type.
+- **[Compare](https://statmon.noahpn.dev/compare)** — two Pokémon's base stats head to head, with the type matchup, their abilities, and a straight answer about who moves first.
+- **[Dex](https://statmon.noahpn.dev/dex)** — all 1,259 entries in one table, sortable by any stat and filterable by type and generation.
+- **[Types](https://statmon.noahpn.dev/types)** — the full effectiveness chart, and a dual-type readout on the same page — searchable by Pokémon, not just by type.
 
-And **[Games](https://statmon.noahparknguyen.workers.dev/games)** — two of them — which is the same data asking me the questions instead. There is an **[About](https://statmon.noahparknguyen.workers.dev/about)** page for why any of it exists.
+And **[Games](https://statmon.noahpn.dev/games)** — two of them — which is the same data asking me the questions instead. There is an **[About](https://statmon.noahpn.dev/about)** page for why any of it exists.
 
-**Live at [statmon.noahparknguyen.workers.dev](https://statmon.noahparknguyen.workers.dev/).**
+**Live at [statmon.noahpn.dev](https://statmon.noahpn.dev/).**
 
 ![Statmon's home page: a wall of Pokémon sprites behind the wordmark](docs/home.png)
 
@@ -38,7 +38,7 @@ The one part that isn't automatic is the effect itself. PokéAPI gives me the ro
 
 ## The games
 
-Looking a matchup up is easy, and that is the problem: nothing on the site was helping me stop needing to. So the fourth section is the same three engines asking me the question instead — **[Higher](https://statmon.noahparknguyen.workers.dev/games/higher)** puts two or four Pokémon side by side and asks which wins a stat. Every round ends with a link into the tool that would have answered it, which is the whole argument for a game living on a reference site.
+Looking a matchup up is easy, and that is the problem: nothing on the site was helping me stop needing to. So the fourth section is the same three engines asking me the question instead — **[Higher](https://statmon.noahpn.dev/games/higher)** puts two or four Pokémon side by side and asks which wins a stat. Every round ends with a link into the tool that would have answered it, which is the whole argument for a game living on a reference site.
 
 It took two goes to get the shape right. The first build was a tool page — a heading, a settings panel, then the game underneath — because that is what the other three pages are, and the result was a screen where the configuration was the biggest thing on it. It is an arena now: the board fills the window, one full-height panel per Pokémon, tinted by primary type, with the settings behind a button. That is a deliberate exception to my own design rules, and the argument is narrow enough to write down — in a tool, chrome that competes with the data is a defect; in a game, the Pokémon _are_ the data.
 
@@ -46,7 +46,7 @@ The settings are the dex's own filters, reused whole rather than reinvented: pic
 
 The interesting part turned out to be the question generator, and only because I measured before building it. **1.2% of random BST pairs and 2.5% of Speed pairs are ties** — rounds with two right answers and no way to accept both — and another 10% land within five points, which is a coin flip rather than a hard question. Both are rejected. Easy rounds are not: 21–38% of pairs are more than 50 apart, and a game that never lets you win is exhausting rather than rigorous.
 
-That measuring pass also killed the obvious version of the second game. **[Effective](https://statmon.noahparknguyen.workers.dev/games/effective)** gives you an attacking type and a defender and asks for the multiplier — a single type, then a dual type, then a whole Pokémon whose typing you have to remember. Of the 324 single-type matchups **204 are 1×**, so a quiz that picks a random pairing is one where "always guess 1×" scores 63%. It picks the answer first and then goes looking for a question, which brings the best single guess down to **23.6%**.
+That measuring pass also killed the obvious version of the second game. **[Effective](https://statmon.noahpn.dev/games/effective)** gives you an attacking type and a defender and asks for the multiplier — a single type, then a dual type, then a whole Pokémon whose typing you have to remember. Of the 324 single-type matchups **204 are 1×**, so a quiz that picks a random pairing is one where "always guess 1×" scores 63%. It picks the answer first and then goes looking for a question, which brings the best single guess down to **23.6%**.
 
 The hard tier is the one I actually wanted, and it turns on a detail. A Pokémon's ability is drawn at random from the ones it can have, so Chandelure is 0× to Fire when it shows up holding Flash Fire and **½× when it shows up holding Flame Body** — you have to read the card rather than recall the Pokémon. That also meant hiding three things until you answer: the typing, the type-coloured tint, and the little dot the rest of the site puts on an ability that changes matchups. The dot leaked in the first build, which would have given the whole thing away.
 

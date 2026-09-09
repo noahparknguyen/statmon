@@ -6,4 +6,18 @@
     "directory": "./dist",
     "not_found_handling": "single-page-application",
   },
+  // Served from a custom domain on the noahpn.dev zone. The default
+  // *.workers.dev subdomain is a free shared host anyone can register, so it is
+  // heavily used for phishing and LinkedIn blanket-blocks the whole domain —
+  // a link to the site could not be posted at all (D-132). Cloudflare creates
+  // the DNS record itself, because the zone is on the same account.
+  "routes": [{ "pattern": "statmon.noahpn.dev", "custom_domain": true }],
+  // Both are explicit because declaring `routes` already flips them off by
+  // default, and Wrangler warns on every deploy that it is making that choice
+  // for you. Saying it here silences the warnings and, more to the point, means
+  // the file states what is actually true rather than leaving it to a default.
+  // Same settings the portfolio uses, and they also clear the workers.dev
+  // TLS/HTTPS/HSTS security warnings.
+  "workers_dev": false,
+  "preview_urls": false,
 }
