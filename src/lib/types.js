@@ -52,11 +52,19 @@ export const typeColorVar = (slug) => `var(--color-type-${slug})`;
  * rest. Reusing `tintFor` here would have pinned every bar to the page
  * background and killed the row hover.
  *
- * **The gradient runs along the bar (90deg), not diagonally like the arena's
- * 135deg.** A stat bar is a horizontal strip whose width is the value, so a
- * diagonal has almost no vertical run to travel and degrades into a hard edge.
- * Running it along the length also means both colours are visible at every bar
- * width, from a 5 HP sliver to a 255 Speed full bar.
+ * **The gradient runs ACROSS the bar (180deg), not along it.** It ran along the
+ * length (90deg) and that was the bug, because this gradient is painted on the
+ * fill element, whose width IS the stat. A seam at 50% of the fill is a seam at
+ * a different absolute position in every bar, sliding rightwards as the number
+ * grows — so one Pokemon's six stats split in six different places and the row
+ * stopped reading as one typing. Type identity was being drawn on the axis that
+ * already encodes the value, and the value won.
+ *
+ * Across the bar, the split is identical in every cell no matter how long the
+ * fill is. It also serves the goal the old note claimed for 90deg better than
+ * 90deg did: at a 5 HP sliver a horizontal gradient is a few pixels wide and
+ * both stops land inside one of them, where a vertical one still shows a clean
+ * top half and bottom half. Both colours ARE visible at every bar width now.
  *
  * @param {string[]} types one or two type slugs, primary first
  * @param {string} alpha a CSS percentage, e.g. `"28%"`
@@ -84,7 +92,7 @@ export function typeFill(types, alpha) {
   // `oklch` would arc around the hue circle and stay saturated, but it would
   // sweep through hues belonging to neither type — a green midpoint on a
   // Grass-less Pokémon says something false on a site about types.
-  return `linear-gradient(90deg, ${stop(a)} 0%, ${stop(a)} 45%, ${stop(b)} 55%, ${stop(b)} 100%)`;
+  return `linear-gradient(180deg, ${stop(a)} 0%, ${stop(a)} 45%, ${stop(b)} 55%, ${stop(b)} 100%)`;
 }
 
 // Badge label color. Every type color is light enough on the dark UI that

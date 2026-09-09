@@ -200,10 +200,16 @@ describe("typeFill", () => {
     );
   });
 
-  it("runs along the bar, not diagonally like the arena's panels", () => {
-    // A stat bar is a horizontal strip whose width is the value; a diagonal has
-    // no vertical run to travel across and degrades into a hard edge.
-    expect(typeFill(["bug", "fire"], "28%")).toContain("90deg");
+  it("runs ACROSS the bar, never along it", () => {
+    // This is the D-133 regression guard, and it is worth stating plainly: the
+    // gradient is painted on the fill element, whose width IS the stat. Along
+    // the bar (90deg) the seam sits at 50% of the fill, which is a different
+    // absolute position in every cell and slides right as the value grows — one
+    // Pokemon's six stats split in six places. Across the bar the split is the
+    // same in every cell at every width, so the row reads as one typing.
+    const fill = typeFill(["bug", "fire"], "28%");
+    expect(fill).toContain("180deg");
+    expect(fill).not.toContain("90deg");
   });
 
   it("mixes with transparent, never with a background colour", () => {

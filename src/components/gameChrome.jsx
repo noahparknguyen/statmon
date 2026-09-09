@@ -61,7 +61,14 @@ export const BOARD_SURFACE = "relative grid gap-px overflow-hidden bg-base";
 // How much of the defending type's colour sits over the page background. Low,
 // because it is a field behind artwork rather than a fill: enough to tell two
 // panels apart at a glance, not enough to compete with what is on them.
-export const TINT = 10;
+//
+// **Raised from 10 to 16 (D-133).** At 10 neither hue of a dual type actually
+// registered as colour over near-black, so the only thing the eye could find on
+// the panel was the seam between them — the artifact was more legible than the
+// thing it was an artifact of. 16 is still a field rather than a fill, and the
+// contrast audit has room: worst-case secondary text over a tint is 6.18 at 16
+// against groups 10/11's AA floor of 4.5, and does not reach it until past 20.
+export const TINT = 16;
 
 const tintOf = (type) =>
   `color-mix(in srgb, var(--color-type-${type}) ${TINT}%, var(--color-base))`;
@@ -77,13 +84,29 @@ const tintOf = (type) =>
  * both halves. Volcarona has been rendering as Bug alone since the arena
  * shipped.
  *
- * The stops hold each colour flat to 45% and blend across the middle tenth.
- * They used to hold to 25% and blend across the middle HALF, which went muddy:
- * two type colours are often near-complementary in hue, and a straight line
- * between opposite hues passes close to neutral. Measured across the 65 pairs
- * with a muddy midpoint, 29.7% of the surface was visibly desaturated at 25/75
- * against 5.9% at 45/55. Interpolating in oklab was measured and rejected — it
+ * **The stops are back to 25/75, and 45/55 was the mistake (D-133).** The
+ * measurement that produced 45/55 optimised the wrong quantity. It asked what
+ * FRACTION OF THE SURFACE was visibly desaturated and drove it from 29.7% to
+ * 5.9% — but the eye does not detect absolute desaturation, it detects rate of
+ * change. Compressing the whole A→B transition into a tenth of the gradient
+ * made the muddy region small and the gradient STEEP, and a steep transition
+ * across a 300px panel is a visible band. Every dual-type panel had a diagonal
+ * stripe across it that read as a light leak. The mud was traded for an edge,
+ * and the edge is far more noticeable than the mud ever was.
+ *
+ * At panel scale a long blend is the right answer, because it spreads the
+ * desaturated midpoint over hundreds of pixels where it reads as depth rather
+ * than as a muddy zone. That is NOT true at bar scale, which is why `typeFill`
+ * keeps 45/55 over its 28px height and solves the same problem by choosing a
+ * better axis instead. Interpolating in oklab was measured and rejected — it
  * fixes gamma darkening, not opposite hues, and scored slightly worse (D-130).
+ *
+ * **`to bottom right`, not a fixed 135deg.** 135deg is 45° regardless of the
+ * box, but these panels are not a fixed shape: a two-up board gives each one
+ * roughly a square and a four-up board gives it something near 1:2. A keyword
+ * corner tracks the panel's own diagonal at every count and width, so the wash
+ * always runs corner to corner instead of slicing across at an angle the panel
+ * does not have.
  *
  * Returns a **background**, not a background-color — a caller setting
  * `backgroundColor` from this will silently render nothing for a dual type.
@@ -92,7 +115,7 @@ export function tintFor(types = []) {
   if (!types.length) return "var(--color-base)";
   if (types.length === 1) return tintOf(types[0]);
   const [a, b] = types;
-  return `linear-gradient(135deg, ${tintOf(a)} 0%, ${tintOf(a)} 45%, ${tintOf(b)} 55%, ${tintOf(b)} 100%)`;
+  return `linear-gradient(to bottom right, ${tintOf(a)} 0%, ${tintOf(a)} 25%, ${tintOf(b)} 75%, ${tintOf(b)} 100%)`;
 }
 
 // The marking is an INSET ring rather than a border, because these panels sit

@@ -4,6 +4,76 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ---
 
+## 2026-09-09 — Session 31 (the dual-type gradients, on the right axis)
+
+<a id="d-133"></a>
+
+### D-133 · The dual-type gradients: `typeFill` runs across the bar, and the panels go back to a wide blend — **Firm**
+
+**Decision.** Two changes to the dual-type gradients [D-107](#d-107) and
+[D-115](#d-115) introduced. `typeFill` (the dex stat bars) rotates from **90deg
+to 180deg**, keeping its 45/55 stops. `tintFor` (the arena panels) goes from
+**`135deg` to `to bottom right`**, from **45/55 back to 25/75**, and its `TINT`
+rises from **10 to 16**.
+
+**Why the bars were wrong: the split was a function of the stat.** The gradient
+is painted on the fill element, and that element's width IS the value. A seam at
+50% of the fill is therefore a seam at a different _absolute_ position in every
+cell, sliding rightwards as the number grows — one Pokémon's six stats split in
+six different places, and the row stopped reading as one typing. Type identity
+was being drawn on the axis that already encodes the value, and the value won.
+Below about 40 the bar is only a few pixels wide and both stops land inside one
+of them, so the fill degenerated into two-pixel noise.
+
+Rotating it fixes this outright, and it also serves the goal [D-115](#d-115)
+claimed for 90deg _better than 90deg did_. That note argued that running along
+the length keeps both colours visible "from a 5 HP sliver to a 255 Speed full
+bar". It does the opposite: at a sliver, a horizontal gradient has no room to
+show two colours, where a vertical one still shows a clean top half and bottom
+half. The old reasoning compared "along the bar" against "diagonal" and never
+considered the third option, which was the correct one.
+
+**Why the panels were wrong: [D-130](#d-130) optimised the wrong quantity.** It
+asked what fraction of the surface was visibly desaturated and drove it from
+29.7% to 5.9% by narrowing the blend from the middle half to the middle tenth.
+But the eye does not detect absolute desaturation — it detects _rate of change_.
+Compressing the whole A→B transition into a tenth of the gradient made the muddy
+region small and the gradient **steep**, and a steep transition across a 300px
+panel is a visible band. Every dual-type panel had a diagonal stripe across it
+that read as a light leak or a compression artifact. The mud was traded for an
+edge, and the edge is much more noticeable than the mud ever was.
+
+That is the general lesson worth keeping: **a small region of rapid change is
+more visible than a large region of slow change.** Minimising the area of a
+defect can maximise its salience.
+
+At panel scale the long blend is right, because it spreads the desaturated
+midpoint across hundreds of pixels where it reads as depth rather than as a
+muddy zone. This does **not** generalise down to the bars, which is why
+`typeFill` keeps 45/55 over its 28px height and solves the same problem by
+choosing a better axis instead. Same defect, two scales, two different fixes.
+
+`TINT` rose with it because 10 was too faint for either hue of a dual type to
+register as colour over near-black, so the only thing the eye could find on the
+panel was the seam — the artifact was more legible than the thing it was an
+artifact of. The contrast audit has room: worst-case secondary text over a tint
+is **6.18 at 16** against groups 10/11's AA floor of 4.5, and does not reach the
+floor until past 20. `PANEL_TINT` is read out of `gameChrome.jsx` by
+`contrast-audit.mjs`, so the audit re-checked itself.
+
+`135deg` became `to bottom right` because 135deg is 45° regardless of the box,
+and these panels are not a fixed shape — a two-up board gives each one roughly a
+square, a four-up gives it something near 1:2. A keyword corner tracks the
+panel's own diagonal at every count and width.
+
+**What was rejected.** A hard 50/50 diagonal split was rendered and considered:
+it is unambiguous and reads as fully intentional, but it is assertive for a
+field whose job is to sit behind artwork. Interpolating in `oklab` or `oklch`
+was not revisited — [D-130](#d-130) measured both and its reasoning still
+holds; the fault was never the interpolation space.
+
+---
+
 ## 2026-09-09 — Session 30 (a domain, because the old one could not be posted)
 
 <a id="d-132"></a>
