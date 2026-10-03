@@ -1,101 +1,93 @@
 # Statmon
 
-A simple set of Pokémon tools, built for myself. Three of them — and each can be read **as of any generation**:
+Pokémon reference tools, built for myself: a side-by-side stat comparison, the whole dex in one sortable table, and a type chart that handles dual types. Each can be read as of any generation, with that generation's stats, typings and type chart. Two games use the same data to quiz you instead.
 
-- **[Compare](https://statmon.noahpn.dev/compare)** — two Pokémon's base stats head to head, with the type matchup, their abilities, and a straight answer about who moves first.
-- **[Dex](https://statmon.noahpn.dev/dex)** — all 1,259 entries in one table, sortable by any stat and filterable by type and generation.
-- **[Types](https://statmon.noahpn.dev/types)** — the full effectiveness chart, and a dual-type readout on the same page — searchable by Pokémon, not just by type.
-
-And **[Games](https://statmon.noahpn.dev/games)** — two of them — which is the same data asking me the questions instead. There is an **[About](https://statmon.noahpn.dev/about)** page for why any of it exists.
-
-**Live at [statmon.noahpn.dev](https://statmon.noahpn.dev/).**
+**Live at [statmon.noahpn.dev](https://statmon.noahpn.dev/).** The [About](https://statmon.noahpn.dev/about) page says more about why it exists.
 
 ![Statmon's home page: a wall of Pokémon sprites behind the wordmark](docs/home.png)
 
 ## Why
 
-Sometimes I go on a nostalgia trip and play a ton of old childhood games. One summer that turned into playing every mainline Pokémon game end to end, generation 1 through 5. Every playthrough I'd hit a fork in the road where I had to pick between two Pokémon, and what mattered most to me was speed and attack. The sites I found for comparing them either looked a little outdated or were cluttered with features I didn't need, so I built a lighter version of my own — minimal, quick, and clear, with all the bloat and fluff stripped out.
+Sometimes I go on a nostalgia trip and play a ton of old childhood games. One summer that turned into playing every mainline Pokémon game end to end, Generation 1 through 5. Every playthrough, I'd hit a fork in the road where I had to pick between two Pokémon, and what mattered most to me was speed and attack. The sites I found for comparing them either looked a little outdated or were cluttered with features I didn't need. So I built a lighter version of my own: minimal, quick and clear.
 
-Playing the old games again also turned up something the site was quietly getting wrong. Generation 1 has no Sp. Attack or Sp. Defense — one **Special** stat covers both — and plenty of Pokémon have had their stats or typing revised since. So a comparison can now be read **as of an earlier generation**: five stats and a Special for Gen 1, the base stats and typings that were actually in the game then, and that generation's own type chart, so Gen 1 Ghost does nothing to Psychic the way it really did. The control offers every generation the two you picked both existed in, with a dot on the ones where something actually changed — so pairing a Gen 1 Pokémon with a Gen 5 one visibly starts at 5, and the generation is in the URL like everything else.
+Playing the old games again also turned up something the site was quietly getting wrong. Generation 1 has no Sp. Attack or Sp. Defense: one Special stat covers both. Plenty of Pokémon have had their stats or typing changed since, too. So every tool can now be read as of an earlier generation, with the numbers that were actually in the game then.
 
-![The Statmon comparison board: Volcarona against Chandelure, with the generation strip above it](docs/compare.png)
+## The tools
 
-That reading applies to the dex too, where it does a bit more: pick a generation and the table becomes the dex _as it was_ — Gen 3 is 392 Pokémon with their Gen 3 stats, and Gen 1 is 151 with five stat columns and a Special you can actually sort by. It filters as well as re-reads, because a table headed "Gen 3" that lists Pokémon which didn't exist yet is just wrong.
+- **[Compare](https://statmon.noahpn.dev/compare):** two Pokémon's base stats side by side, with the type matchup between them, their abilities, and a straight answer about who moves first.
+- **[Dex](https://statmon.noahpn.dev/dex):** all 1,259 entries in one table, sortable by any stat and filterable by type and generation. The sort and filters live in the URL, so a view is a link you can send someone.
+- **[Types](https://statmon.noahpn.dev/types):** the full effectiveness chart. Pick up to two types and the 18 attacking types sort themselves into tiers, with the full grid still underneath. You can also search a Pokémon instead of its types, so "what beats Corviknight" works without looking up that it's Steel/Flying.
+- **Any generation:** Compare offers every generation both Pokémon existed in, with a dot on each one where the board differs from today's. The dex becomes the dex as it was: Gen 3 is 392 entries with their Gen 3 stats, and Gen 1 is 151 with five stats, Special included. The type chart goes back to Gen 1's 15 types, where Ghost does nothing to Psychic. The generation is in the URL like everything else.
+- **Abilities:** Ground beats Electric, unless the Electric type is Eelektross, which has Levitate. Every Pokémon's abilities are on its card, and the 20 that change type effectiveness feed into the matchup. That's generation-aware too: Gengar had Levitate until Gen 7, so as of Gen 6, Ground does nothing to it.
 
-The dex table came next, for the other half of the same question: not "which of these two", but "who has the highest Speed in the whole game". All 1,259 entries in one sortable table, filterable by any combination of types and generations, with the sort and filters kept in the URL so a view is a link you can send someone.
+![The comparison board: Volcarona against Chandelure, with the generation strip above it](docs/compare.png)
 
-![The Statmon dex: every Pokémon in one sortable, filterable table](docs/dex.png)
+![The dex: every Pokémon in one sortable, filterable table](docs/dex.png)
 
-The type chart came from the same itch. Every other one I found either stops at single types or gives each dual-type pairing its own page, so answering "what beats Water/Flying" means going somewhere else. Here you pick up to two types and the eighteen attacking types sort themselves into tiers, with the full grid still on screen underneath. It's generation-aware too — the chart really has changed, six times, and Gen 1 is a 15×15 grid where Ghost does nothing to Psychic.
-
-You can also just search a Pokémon, which is how the question actually gets asked. "What beats Corviknight" used to mean looking up that it's Steel/Flying somewhere else first — the exact complaint I had about everyone else's chart, sitting in my own. The typing is still what the page is about; the Pokémon is a way to name one, and it gets dropped automatically if you change a type or a generation out from under it.
-
-And a Pokémon is more than its typing, which is the other half of this. Ground is strong against Electric types — unless the Electric type is Eelektross, which has **Levitate** and takes nothing at all. Every Pokémon's abilities are now on its card, and the ~20 that change type effectiveness feed the matchup, so the comparison board stops being confidently wrong in exactly the cases people look up. That's generation-aware as well, and it turns up things I didn't know: **Gengar had Levitate until Gen 7**, so read the same matchup as of Gen 6 and Ground does nothing to it.
-
-The one part that isn't automatic is the effect itself. PokéAPI gives me the roster and its whole history for free, but it describes what an ability _does_ only in prose — Levitate's entry reads "Evades Ground moves." — so the twenty-odd that matter are a hand-written table. The build can't check that Levitate means Ground 0×, but it does check that every ability I've named is real and actually appears in the dex, and the rest is unit tests.
-
-![The Statmon type chart answering Water / Flying, with the full grid below it](docs/types.png)
+![The type chart answering Water / Flying, with the full grid below it](docs/types.png)
 
 ## The games
 
-Looking a matchup up is easy, and that is the problem: nothing on the site was helping me stop needing to. So the fourth section is the same three engines asking me the question instead — **[Higher](https://statmon.noahpn.dev/games/higher)** puts two or four Pokémon side by side and asks which wins a stat. Every round ends with a link into the tool that would have answered it, which is the whole argument for a game living on a reference site.
+The same data, asking the questions instead. Every round ends with a link into the tool that would have answered it.
 
-It took two goes to get the shape right. The first build was a tool page — a heading, a settings panel, then the game underneath — because that is what the other three pages are, and the result was a screen where the configuration was the biggest thing on it. It is an arena now: the board fills the window, one full-height panel per Pokémon, tinted by primary type, with the settings behind a button. That is a deliberate exception to my own design rules, and the argument is narrow enough to write down — in a tool, chrome that competes with the data is a defect; in a game, the Pokémon _are_ the data.
+- **[Higher](https://statmon.noahpn.dev/games/higher):** two or four Pokémon, one stat, pick the highest. The settings are the dex's own filters, so "Kanto Fire types, Speed only" is a game. It never asks a tie, or a gap too small to know: under 3 points for a stat, or 5 for a stat total. Your best streak is saved for each set of settings, and a lifetime accuracy for each stat lists your weakest first. Both stay in your browser.
+- **[Effective](https://statmon.noahpn.dev/games/effective):** an attacking type against a defender, answered with the multiplier. The defender is a single type on Easy, a dual type on Medium, and a whole Pokémon on Hard, whose typing you have to remember. 204 of the 324 single-type matchups are 1×, so the game picks the answer first and then finds a question for it: on Easy, each of the four answers comes up about a quarter of the time. On Hard, the Pokémon's ability is drawn from the ones it can have. Chandelure is 0× to Fire with Flash Fire and ½× with Flame Body, so you have to read the card.
 
-The settings are the dex's own filters, reused whole rather than reinvented: pick which stats you want asked, which generations they come from, which types, whether Megas are in. "Kanto Fire-types, Speed only" is a game. Your best streak is saved **per settings** — a run of 12 on the whole dex is not a run of 12 on Gen 1 Speed — and it is keyed by the URL itself, which was already canonical because the settings live there. There is a second record too, and it is the one I actually use: a running accuracy per stat, worst first, so the site can tell me that I am fine on BST and hopeless on Sp. Defense.
+![Higher, mid-round](docs/games.png)
 
-The interesting part turned out to be the question generator, and only because I measured before building it. **1.2% of random BST pairs and 2.5% of Speed pairs are ties** — rounds with two right answers and no way to accept both — and another 10% land within five points, which is a coin flip rather than a hard question. Both are rejected. Easy rounds are not: 21–38% of pairs are more than 50 apart, and a game that never lets you win is exhausting rather than rigorous.
-
-That measuring pass also killed the obvious version of the second game. **[Effective](https://statmon.noahpn.dev/games/effective)** gives you an attacking type and a defender and asks for the multiplier — a single type, then a dual type, then a whole Pokémon whose typing you have to remember. Of the 324 single-type matchups **204 are 1×**, so a quiz that picks a random pairing is one where "always guess 1×" scores 63%. It picks the answer first and then goes looking for a question, which brings the best single guess down to **23.6%**.
-
-The hard tier is the one I actually wanted, and it turns on a detail. A Pokémon's ability is drawn at random from the ones it can have, so Chandelure is 0× to Fire when it shows up holding Flash Fire and **½× when it shows up holding Flame Body** — you have to read the card rather than recall the Pokémon. That also meant hiding three things until you answer: the typing, the type-coloured tint, and the little dot the rest of the site puts on an ability that changes matchups. The dot leaked in the first build, which would have given the whole thing away.
-
-There is one answer the game will never ask you for. **⅛× exists** — a double resistance plus an ability that halves again — but only four Pokémon in the dex can produce it, so asking about it evenly would put the Dewgong line in one round in seven. The type chart still answers it; the game does not quiz it.
-
-![The Statmon stat game, mid-round](docs/games.png)
-
-![Effective, the type game, on its hard tier: an attacking type against a Pokémon whose typing is hidden](docs/effective.png)
+![Effective on Hard: an attacking type against a Pokémon whose typing is hidden](docs/effective.png)
 
 ## How it works
 
-Everything comes from PokéAPI, pulled once at build time into a local JSON file; the sprites and artwork are downloaded and committed to the repo, and so are the two webfonts. So the site makes **zero** network requests to anyone at runtime — it's just static files. Search, the stat math, and the type matchups all run against that local dataset.
+Everything comes from [PokéAPI](https://pokeapi.co), pulled once at build time into a local JSON file. The sprites, the artwork and both webfonts are downloaded and committed to the repo. So the site requests nothing from any other server: it's static files, and its Content Security Policy only allows its own origin. Search, the stat math and the type matchups all run against the local data.
 
-## Stack
+Two parts are written by hand. The type chart has three eras (Gen 1, Gen 2 to 5, and Gen 6 on), and every data build checks all three against PokéAPI, so a typo fails the build. The 20 ability effects are a table too, because PokéAPI describes what an ability does only in prose: Levitate's entry reads "Evades Ground moves." The build checks that each one is a real ability some Pokémon has, and unit tests cover what each one does.
 
-React + Vite, Tailwind (CSS-first tokens), React Router, plain JavaScript. Deployed on Cloudflare Workers as static assets.
+It's built with React, Vite, Tailwind, React Router and plain JavaScript, and served as static assets on Cloudflare Workers.
 
 ## Run it
 
-```bash
+Node 22 or later. From the root of the repo:
+
+```
 npm install
 npm run dev
 ```
 
-`npm run build:data` regenerates the dataset from PokéAPI, `npm run vendor:images` fetches the sprites and artwork, and `npm run vendor:fonts` fetches the two webfonts — all three only needed when something upstream changes, and all three cache or commit their output so re-runs are free. The data build also re-checks the hardcoded type chart against PokéAPI across all three of its historical eras, so a typo in 18×18 of hand-written data fails the build instead of reaching a user.
+The dataset, sprites and fonts are already committed, so that's all it takes. When something upstream changes, `npm run build:data` rebuilds the dataset from PokéAPI, `npm run vendor:images` fetches the sprites and artwork, and `npm run vendor:fonts` fetches the fonts with their licences.
 
-The checks that keep things honest, all eight of which run in CI — and `npm run check` runs the lot locally, in CI's own order, cheapest first so a typo fails in seconds rather than after the browser sweep:
+## Checks
 
-- `lint`, `format:check`, `build`
-- `audit:classes` — every class string in `src/`, checked for two utilities setting the same property; Tailwind resolves those by stylesheet order rather than the order they are written, so the one that wins is not the one you meant
-- `test:run` — Vitest: the stat math, the dataset codec round-trip, the dex sort/filter logic, the generation-era resolution, the ability effect table, the game's question generator, a server-render smoke test of every route, and a set of accessibility regressions
-- `audit:contrast` — WCAG AA across all 18 type colours, in nine pairing groups
-- `check:docs` — every link and anchor in `docs/`
-- `sweep:widths` — headless Chrome across 29 routes × 14 widths, asserting no page ever scrolls sideways and every touch target meets WCAG 2.5.8
+`npm run check` runs all eight checks, in CI's order, cheapest first:
 
-That last one exists because I kept doing it by hand and kept doing it wrong: the type grid leaked horizontal overflow onto every page for as long as it had shipped, and I missed it three times because 390, 768 and 1280 are all clean while 600 and 700 are not. It has since caught a breakpoint that broke the header on every width between 360 and 383, and disproved a WCAG failure I had been asserting in two documents without ever measuring it.
+- `lint`: ESLint.
+- `format:check`: Prettier.
+- `audit:classes`: no class string sets the same CSS property twice. Tailwind resolves those by stylesheet order, not by the order they're written, so the one that wins isn't the one you meant.
+- `test:run`: 480 unit tests, covering the stat math, the dex's sorting and filters, the generation lens, the ability table, both games' question generators, a server render of every route, and accessibility regressions.
+- `build`: the production build.
+- `audit:contrast`: WCAG AA contrast for every text and colour pairing, in 12 groups, including all 153 dual-type gradients.
+- `check:docs`: every link and anchor in this README and in `docs/`.
+- `sweep:widths`: headless Chrome across 29 routes at 14 widths. No page may scroll sideways, and every touch target has to meet WCAG 2.5.8.
 
-`npm run shoot:docs` regenerates the screenshots in this README from the built site, for the same reason.
+On every push to `main`, GitHub Actions runs the same eight. `npm run shoot:docs` regenerates this README's screenshots from the built site.
+
+## Limits
+
+- **Stats, types and abilities only.** No moves, movesets, EVs, IVs or natures, and no damage calculator.
+- **Only the 20 abilities in the table change the numbers.** Every other ability is shown on its card without affecting a matchup. Dry Skin's extra damage from Fire (1.25×) isn't modelled either, because the chart has no room for it.
+- **The data is a snapshot.** It's rebuilt from PokéAPI by hand, so Pokémon released after the last build aren't in it.
+- **Effective never asks for ⅛×.** A double resistance plus an ability that halves again reaches it, but only four Pokémon can: Dewgong, Spheal, Sealeo and Walrein. The type chart still shows it.
 
 ## Docs
 
-I keep my working notes in [`docs/`](docs/) — the original brainstorm, the design system, and a dated decision log for why things are built the way they are. If you want to see how I think through a project, start with the [decision log](docs/03_decisions.md).
+My working notes are in [`docs/`](docs/): the original brainstorm, the spec, the design system and a dated log of why things are built the way they are. To see how I think through a project, start with the [decision log](docs/03_decisions.md).
 
 ## Credits
 
-Data and images from [PokéAPI](https://pokeapi.co) (sprites are CC0). The two
-webfonts are SIL OFL and the dex's sort carets are Font Awesome Free (CC BY
-4.0); every third-party notice is in [`licenses/`](licenses/NOTICE.md), and the
-font licences are fetched by `npm run vendor:fonts` alongside the fonts so a
-re-vendor cannot drop them. Pokémon is © Nintendo / Game Freak / The Pokémon
-Company; Statmon is an unofficial fan project. My code is MIT — see
-[`LICENSE`](LICENSE).
+Data and images come from [PokéAPI](https://pokeapi.co), and the sprites are CC0. The two webfonts, Inter and Space Grotesk, are under the SIL Open Font License, and the dex's sort carets are from Font Awesome Free (CC BY 4.0). Every third-party notice is in [`licenses/NOTICE.md`](licenses/NOTICE.md). `npm run vendor:fonts` fetches the font licences along with the fonts, so a re-vendor can't drop them.
+
+Pokémon is © Nintendo, Game Freak and The Pokémon Company. Statmon is an unofficial fan project.
+
+## Licence
+
+The code is MIT. See [`LICENSE`](LICENSE).
