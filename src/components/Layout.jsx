@@ -29,7 +29,7 @@ const DEX_SIZE = ALL_POKEMON.length;
 // tools", so a crawler and a visitor who clicked Home read two different names
 // for the same page. Nothing checked it, because no check reads prose (D-086) —
 // routes.test.jsx now reads both files and asserts they agree. (D-091)
-const SITE_TITLE = "Statmon — Pokémon comparison, dex, type chart and games";
+const SITE_TITLE = "Statmon — Pokémon comparison, dex, type chart, and games";
 
 // `h-14` is the header's own height, and it is a target-size fix rather than a
 // layout one: these were bare 14px text with no padding, so the clickable box
@@ -459,7 +459,7 @@ export default function Layout() {
                   repository
                   <span className="sr-only"> (opens in a new tab)</span>
                 </a>
-                . Pokémon is © Nintendo, Game Freak and The Pokémon Company.
+                . Pokémon is © Nintendo, Game Freak, and The Pokémon Company.
                 Statmon is an unofficial fan project.
               </p>
               <p className="shrink-0 text-caption text-tertiary sm:text-right">

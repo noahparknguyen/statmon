@@ -8,9 +8,9 @@ _The phased build plan / task checklist: what to implement, in order. Sequenced 
 
 ## Current status (2026-10-04 — Session 32, the rulebook)
 
-**Done — the style guide is a rulebook, and the build enforces it.** Eleven
+**Done — the style guide is a rulebook, and the build enforces it.** Twelve
 decisions ([D-134](03_decisions.md#d-134) through
-[D-144](03_decisions.md#d-144)).
+[D-145](03_decisions.md#d-145)).
 
 - **A ninth check.** `audit:styles` fails on any utility the guide does not
   allow: semantic colours, the 22 named styles, the spacing scale, five role
@@ -26,8 +26,9 @@ decisions ([D-134](03_decisions.md#d-134) through
   for them.
 - **Six layout faults**, from the difficulty picker's title touching the header
   to the generation strip leaving its selected chip alone on a phone.
-- **A copy pass**: no em dash in a sentence, a hero line that describes the site
-  instead of praising it, and a copy test that could not see wrapped sentences.
+- **A copy pass**: no em dash in a sentence, the serial comma always, a hero
+  line that describes the site instead of praising it, and a copy test that
+  could not see wrapped sentences.
 - **An alignment pass, measured across the site.** The tools' controls panel
   spaces its own blocks, so the dex and the type chart line up; the dex's number
   headers sit over their numbers; a dex row's text shares one line; selecting a

@@ -6,6 +6,35 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ## 2026-10-04 — Session 32 (the rulebook, and every near-copy it found)
 
+<a id="d-145"></a>
+
+### D-145 · The serial comma, always — **Firm** _(extends [D-138](#d-138))_
+
+**Reported as** "why not use an Oxford comma for our tagline?"
+
+**There was no rule, and the copy was split.** Counted before anything
+changed: on the site, lists with the serial comma ("faster, hits harder, and is
+bulkier", the site's description) sat beside lists without it (the tagline,
+the page title, the footer's legal line), and the README had 3 with it and 12
+without. The site's owner writes it unprompted: the portfolio's voice guide
+records it as his form, and his GitHub profile uses it in all five of its
+lists.
+
+**So it is a rule, §14's tenth, rather than a one-line fix.** The tagline, the
+page title (in `index.html`, `Layout`, and the web manifest), the footer's
+legal line, the README's twelve lists, and the trademark line in
+`licenses/NOTICE.md` all take it. `/style` is left out, as it is from every
+copy rule, because it is documentation for whoever builds the site; so is
+`docs/`, which is working notes. The social image, the GitHub preview, and the
+README's home screenshot carry the tagline, and were regenerated.
+
+**It is the one copy rule that is read for rather than tested.** A pattern
+that finds "A, B and C" also finds sentences that are not lists, like "Name the
+multiplier, dual types and abilities included.", and a check that flags good
+copy is a check people learn to ignore.
+
+---
+
 <a id="d-144"></a>
 
 ### D-144 · One colour per surface: a dual type loses its gradient — **Firm** _(reverses part of [D-107](#d-107) and [D-115](#d-115), retires [D-130](#d-130) and [D-133](#d-133))_

@@ -1,6 +1,6 @@
 # Statmon
 
-Pokémon reference tools, built for myself: a side-by-side stat comparison, the whole dex in one sortable table, and a type chart that handles dual types. Each can be read as of any generation, with that generation's stats, typings and type chart. Two games use the same data to quiz you instead.
+Pokémon reference tools, built for myself: a side-by-side stat comparison, the whole dex in one sortable table, and a type chart that handles dual types. Each can be read as of any generation, with that generation's stats, typings, and type chart. Two games use the same data to quiz you instead.
 
 **Live at [statmon.noahpn.dev](https://statmon.noahpn.dev/).** The [About](https://statmon.noahpn.dev/about) page says more about why it exists.
 
@@ -8,7 +8,7 @@ Pokémon reference tools, built for myself: a side-by-side stat comparison, the 
 
 ## Why
 
-Sometimes I go on a nostalgia trip and play a ton of old childhood games. One summer that turned into playing every mainline Pokémon game end to end, Generation 1 through 5. Every playthrough, I'd hit a fork in the road where I had to pick between two Pokémon, and what mattered most to me was speed and attack. The sites I found for comparing them either looked a little outdated or were cluttered with features I didn't need. So I built a lighter version of my own: minimal, quick and clear.
+Sometimes I go on a nostalgia trip and play a ton of old childhood games. One summer that turned into playing every mainline Pokémon game end to end, Generation 1 through 5. Every playthrough, I'd hit a fork in the road where I had to pick between two Pokémon, and what mattered most to me was speed and attack. The sites I found for comparing them either looked a little outdated or were cluttered with features I didn't need. So I built a lighter version of my own: minimal, quick, and clear.
 
 Playing the old games again also turned up something the site was quietly getting wrong. Generation 1 has no Sp. Attack or Sp. Defense: one Special stat covers both. Plenty of Pokémon have had their stats or typing changed since, too. So every tool can now be read as of an earlier generation, with the numbers that were actually in the game then.
 
@@ -39,11 +39,11 @@ The same data, asking the questions instead. Every round ends with a link into t
 
 ## How it works
 
-Everything comes from [PokéAPI](https://pokeapi.co), pulled once at build time into a local JSON file. The sprites, the artwork and both webfonts are downloaded and committed to the repo. So the site requests nothing from any other server: it's static files, and its Content Security Policy only allows its own origin. Search, the stat math and the type matchups all run against the local data.
+Everything comes from [PokéAPI](https://pokeapi.co), pulled once at build time into a local JSON file. The sprites, the artwork, and both webfonts are downloaded and committed to the repo. So the site requests nothing from any other server: it's static files, and its Content Security Policy only allows its own origin. Search, the stat math, and the type matchups all run against the local data.
 
 Two parts are written by hand. The type chart has three eras (Gen 1, Gen 2 to 5, and Gen 6 on), and every data build checks all three against PokéAPI, so a typo fails the build. The 20 ability effects are a table too, because PokéAPI describes what an ability does only in prose: Levitate's entry reads "Evades Ground moves." The build checks that each one is a real ability some Pokémon has, and unit tests cover what each one does.
 
-It's built with React, Vite, Tailwind, React Router and plain JavaScript, and served as static assets on Cloudflare Workers.
+It's built with React, Vite, Tailwind, React Router, and plain JavaScript, and served as static assets on Cloudflare Workers.
 
 ## Run it
 
@@ -54,7 +54,7 @@ npm install
 npm run dev
 ```
 
-The dataset, sprites and fonts are already committed, so that's all it takes. When something upstream changes, `npm run build:data` rebuilds the dataset from PokéAPI, `npm run vendor:images` fetches the sprites and artwork, and `npm run vendor:fonts` fetches the fonts with their licences.
+The dataset, sprites, and fonts are already committed, so that's all it takes. When something upstream changes, `npm run build:data` rebuilds the dataset from PokéAPI, `npm run vendor:images` fetches the sprites and artwork, and `npm run vendor:fonts` fetches the fonts with their licences.
 
 ## Checks
 
@@ -63,7 +63,7 @@ The dataset, sprites and fonts are already committed, so that's all it takes. Wh
 - `lint`: ESLint.
 - `format:check`: Prettier.
 - `audit:classes`: no class string sets the same CSS property twice. Tailwind resolves those by stylesheet order, not by the order they're written, so the one that wins isn't the one you meant.
-- `audit:styles`: every utility is one the [style guide](docs/06_style_guide.md) allows. Colours are semantic tokens, text uses the 22 named styles, and spacing, radius, opacity and layering each come from a closed set. A value the guide doesn't list fails.
+- `audit:styles`: every utility is one the [style guide](docs/06_style_guide.md) allows. Colours are semantic tokens, text uses the 22 named styles, and spacing, radius, opacity, and layering each come from a closed set. A value the guide doesn't list fails.
 - `test:run`: 497 unit tests, covering the stat math, the dex's sorting and filters, the generation lens, the ability table, both games' question generators, a server render of every route, accessibility and copy regressions, and one implementation of each shared component.
 - `build`: the production build.
 - `audit:contrast`: WCAG AA contrast for every text and colour pairing, in 12 groups, including text on all 18 type tints, text on the flame gradient, and the edges of the text fields.
@@ -74,20 +74,20 @@ On every push to `main`, GitHub Actions runs the same nine. `npm run shoot:docs`
 
 ## Limits
 
-- **Stats, types and abilities only.** No moves, movesets, EVs, IVs or natures, and no damage calculator.
+- **Stats, types, and abilities only.** No moves, movesets, EVs, IVs, or natures, and no damage calculator.
 - **Only the 20 abilities in the table change the numbers.** Every other ability is shown on its card without affecting a matchup. Dry Skin's extra damage from Fire (1.25×) isn't modelled either, because the chart has no room for it.
 - **The data is a snapshot.** It's rebuilt from PokéAPI by hand, so Pokémon released after the last build aren't in it.
-- **Effective never asks for ⅛×.** A double resistance plus an ability that halves again reaches it, but only four Pokémon can: Dewgong, Spheal, Sealeo and Walrein. The type chart still shows it.
+- **Effective never asks for ⅛×.** A double resistance plus an ability that halves again reaches it, but only four Pokémon can: Dewgong, Spheal, Sealeo, and Walrein. The type chart still shows it.
 
 ## Docs
 
-My working notes are in [`docs/`](docs/): the original brainstorm, the spec, the design system and a dated log of why things are built the way they are. To see how I think through a project, start with the [decision log](docs/03_decisions.md).
+My working notes are in [`docs/`](docs/): the original brainstorm, the spec, the design system, and a dated log of why things are built the way they are. To see how I think through a project, start with the [decision log](docs/03_decisions.md).
 
 ## Credits
 
 Data and images come from [PokéAPI](https://pokeapi.co), and the sprites are CC0. The two webfonts, Inter and Space Grotesk, are under the SIL Open Font License, and the carets on the comparison board and the dex are from Font Awesome Free (CC BY 4.0). Every third-party notice is in [`licenses/NOTICE.md`](licenses/NOTICE.md). `npm run vendor:fonts` fetches the font licences along with the fonts, so a re-vendor can't drop them.
 
-Pokémon is © Nintendo, Game Freak and The Pokémon Company. Statmon is an unofficial fan project.
+Pokémon is © Nintendo, Game Freak, and The Pokémon Company. Statmon is an unofficial fan project.
 
 ## Licence
 

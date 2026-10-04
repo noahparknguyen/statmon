@@ -929,7 +929,7 @@ Every user-facing string describes a **mechanism rather than a benefit**:
 > "See who's faster, hits harder, and is bulkier." · "The same data, asking you
 > the questions." · "Every matchup, including dual types."
 
-Not one claims the site is fast, clean or minimal. The pages demonstrate that;
+Not one claims the site is fast, clean, or minimal. The pages demonstrate that;
 saying it would be the site arguing with the reader about its own qualities.
 There is exactly one joke, **"This page fainted."**, delivered flat and never
 explained. That is the calibration point for humour: one, dry, unremarked.
@@ -948,20 +948,27 @@ explained. That is the calibration point for humour: one, dry, unremarked.
 7. **Say it once.** No sentence whose only job is to restate the one before it.
 8. **Contractions on.** It is a person talking, not a product.
 9. **No em dash in a sentence** ([D-138](03_decisions.md#d-138)). A colon, a
-   comma or a full stop does the job, and a sentence leaning on em dashes is
+   comma, or a full stop does the job, and a sentence leaning on em dashes is
    the habit most often read as machine-written. The dash survives only as a
    glyph that stands alone: a tie, an empty slot, a separator between a label
    and its value in a heading, a page title's separator. _Checked by
-   `routes.test.jsx` over every JSX text node, the tier sentences and the
+   `routes.test.jsx` over every JSX text node, the tier sentences, and the
    site's description._
+10. **The serial comma, always** ([D-145](03_decisions.md#d-145)): "Pokémon
+    stats, matchups, and games." It is the form the site's author writes
+    unprompted and the portfolio's rule, and it never leaves the last two items
+    reading as a pair. It covers the README and the other front-facing files
+    too. _Read for rather than tested_: a pattern that finds these lists also
+    finds sentences that are not lists, like "Name the multiplier, dual types
+    and abilities included."
 
 **No adjective the site applies to itself.** The hero line was "A simple set of
 Pokémon tools." until D-138, the one string on the site that called the site
-something; it says what is here now: "Pokémon stats, matchups and games."
+something; it says what is here now: "Pokémon stats, matchups, and games."
 
 ### 14.1 The UI voice
 
-Everything above applies to **controls, labels, empty states and section
+Everything above applies to **controls, labels, empty states, and section
 descriptions**: the strings that sit next to something rather than being the
 something. A fragment is fine here; "Pick two Pokémon to compare." is a whole
 empty state.

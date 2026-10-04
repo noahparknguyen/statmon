@@ -710,7 +710,7 @@ describe("Home's feature previews (D-043)", () => {
     // was true of every layout this page has had.
     // Found first, then ordered: an `indexOf` of -1 is less than anything,
     // so a renamed tagline would otherwise pass this by not being there.
-    const tagline = page.indexOf("Pokémon stats, matchups and games");
+    const tagline = page.indexOf("Pokémon stats, matchups, and games");
     expect(tagline).toBeGreaterThan(-1);
     expect(tagline).toBeLessThan(page.indexOf("Volcarona"));
   });
@@ -910,7 +910,7 @@ describe("Home's feature previews (D-043)", () => {
   // guarantee — the audit proves the number, this proves the site still uses it.
   it("keeps the hero tagline on the colour the scrim was audited for", () => {
     const tagline = render("/").match(
-      /<p[^>]*>Pokémon stats, matchups and games\.<\/p>/,
+      /<p[^>]*>Pokémon stats, matchups, and games\.<\/p>/,
     )?.[0];
     expect(tagline).toBeDefined();
     expect(tagline).toContain("text-primary");

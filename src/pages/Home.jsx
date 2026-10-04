@@ -52,7 +52,7 @@ export default function Home() {
             site that called the site something, which §14 rules out. This one
             says what is here. */}
         <p className="mx-auto mt-3 max-w-xl text-body-lg text-primary">
-          Pokémon stats, matchups and games.
+          Pokémon stats, matchups, and games.
         </p>
       </SpriteWall>
 

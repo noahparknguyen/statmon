@@ -63,6 +63,6 @@ credit is a courtesy rather than a requirement.
 
 ## Trademarks
 
-Pokémon and Pokémon character names are trademarks of Nintendo, Game Freak and
+Pokémon and Pokémon character names are trademarks of Nintendo, Game Freak, and
 The Pokémon Company. Statmon is an unofficial fan project and is not affiliated
 with, endorsed by, or sponsored by any of them.
