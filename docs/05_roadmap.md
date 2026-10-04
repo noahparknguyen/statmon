@@ -8,9 +8,9 @@ _The phased build plan / task checklist: what to implement, in order. Sequenced 
 
 ## Current status (2026-10-04 — Session 32, the rulebook)
 
-**Done — the style guide is a rulebook, and the build enforces it.** Twelve
+**Done — the style guide is a rulebook, and the build enforces it.** Thirteen
 decisions ([D-134](03_decisions.md#d-134) through
-[D-145](03_decisions.md#d-145)).
+[D-146](03_decisions.md#d-146)).
 
 - **A ninth check.** `audit:styles` fails on any utility the guide does not
   allow: semantic colours, the 22 named styles, the spacing scale, five role
@@ -43,8 +43,11 @@ decisions ([D-134](03_decisions.md#d-134) through
 - **One colour per surface.** A dual type's dex bars and game panels take the
   primary type's tint instead of a gradient that read as mud; the badges carry
   the typing, and `audit:contrast` drops its two gradient groups for 12.
+- **A final polish pass, measured live with axe.** A game's thumbnail is hidden
+  from assistive tech, so its card is named by its title; type names on panel
+  tints are audit group 13; and the not-found page asks not to be indexed.
 
-`npm run check` runs all **nine** checks in CI's own order. Vitest is at **497
+`npm run check` runs all **nine** checks in CI's own order. Vitest is at **501
 tests across 15 files**. The sweep is at **29 routes × 14 widths = 406 checks**.
 
 **For the owner:** the GitHub social preview (`docs/preview.png`) carries the
@@ -570,7 +573,7 @@ _Goal: sharpen the core and add the low-cost, high-value extras._
 - [~] Copy-link button, **random matchup**, full keyboard flow — **random matchup shipped** ([D-123](03_decisions.md#d-123)): a `Random` button beside Swap, drawing from the pool that existed at the generation being read so it never silently drops the lens, and never disabled because an empty board is the state it is most useful in. The draw is a tested `lib/randomMatchup.js` with an injected `rng`, like the games'. The copy-link button and a full keyboard audit are what remain.
 - [x] ~~Search **filters** (type / generation), recently-compared list.~~ **Closed as won't-do** ([D-128](03_decisions.md#d-128)). `/dex` filters by any number of types and generations at once and every row links into `/compare`, so the filtered search already exists — one page over. A recently-compared list is the only thing here the site cannot otherwise do, and it would be the first state stored about a reader beyond the game record.
 - [~] **About** page; **light-mode** toggle — **`/about` shipped** ([D-118](03_decisions.md#d-118)), carrying the origin story in the author's own voice with the credits folded into a redesigned footer ([D-119](03_decisions.md#d-119)). **Light mode is closed as won't-do** ([D-128](03_decisions.md#d-128)): every token in `index.css` is dark-first and `audit:contrast` validates exactly one theme, so it is a second palette and a second audit rather than a toggle.
-- [~] Tooling — **ESLint + Prettier are both in** (flat ESLint config + `npm run lint`; Prettier as a devDependency with `npm run format` / `format:check`, whole tree passing on stock config). **Vitest is in** ([D-038](03_decisions.md#d-038)): **497 tests across 15 files** — the stat math, the type-matchup engine, dataset queries, the codec (including the whole-dataset round-trip), the dex sort/filter/URL logic, both games' generators, the ability effect table, a `react-dom/server` smoke test of every route, and a growing set of accessibility and copy regressions — node environment, no jsdom. **GitHub Actions CI is in** (`.github/workflows/ci.yml`): every check runs on push and PR, cheapest-first, ending with the browser sweep. **Playwright** and auto-deploy to Cloudflare are still outstanding — though `scripts/sweep-widths.mjs` now covers, headlessly and without a framework, the specific thing Playwright was wanted for: real layout measurement across widths.
+- [~] Tooling — **ESLint + Prettier are both in** (flat ESLint config + `npm run lint`; Prettier as a devDependency with `npm run format` / `format:check`, whole tree passing on stock config). **Vitest is in** ([D-038](03_decisions.md#d-038)): **501 tests across 15 files** — the stat math, the type-matchup engine, dataset queries, the codec (including the whole-dataset round-trip), the dex sort/filter/URL logic, both games' generators, the ability effect table, a `react-dom/server` smoke test of every route, and a growing set of accessibility and copy regressions — node environment, no jsdom. **GitHub Actions CI is in** (`.github/workflows/ci.yml`): every check runs on push and PR, cheapest-first, ending with the browser sweep. **Playwright** and auto-deploy to Cloudflare are still outstanding — though `scripts/sweep-widths.mjs` now covers, headlessly and without a framework, the specific thing Playwright was wanted for: real layout measurement across widths.
 
 **Exit:** the comparison tool feels finished and the repo has real engineering rigor.
 

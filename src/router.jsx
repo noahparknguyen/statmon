@@ -123,7 +123,9 @@ export const routes = [
       {
         path: "*",
         lazy: lazyPage(() => import("./pages/NotFound")),
-        handle: { title: "Page not found" },
+        // Kept out of search results by Layout (D-146): an unknown URL is
+        // answered 200 with this page, since there is no Worker (D-030).
+        handle: { title: "Page not found", noindex: true },
       },
     ],
   },

@@ -56,6 +56,24 @@ function useDocumentTitle() {
   }, [title]);
 }
 
+// A route that should stay out of search results says so with
+// `handle.noindex`, read through the same channel as `title` (D-146). It is the
+// 404. Statmon is static assets with no Worker (D-030), so an unknown URL is
+// answered 200 with the not-found page, and without the tag a crawler that
+// followed a bad link could index "This page fainted." as a real page. Google
+// renders the app before indexing it, so a tag added here is one it reads.
+function useNoIndex() {
+  const noindex = useMatches().some((m) => m.handle?.noindex);
+  useEffect(() => {
+    if (!noindex) return;
+    const meta = document.createElement("meta");
+    meta.name = "robots";
+    meta.content = "noindex";
+    document.head.appendChild(meta);
+    return () => meta.remove();
+  }, [noindex]);
+}
+
 // Moves focus to <main> after a client-side navigation so keyboard and screen
 // reader users are told the page changed — the other half of the D-024 item that
 // <ScrollRestoration> closes. Skips the initial render (nothing navigated yet)
@@ -177,6 +195,7 @@ function FooterGroup({ title, links }) {
 export default function Layout() {
   const mainRef = useRef(null);
   useDocumentTitle();
+  useNoIndex();
   useFocusOnNavigate(mainRef);
 
   // The two game boards ask for no footer (D-109). They are sized to fill the

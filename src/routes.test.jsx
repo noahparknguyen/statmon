@@ -61,7 +61,11 @@ const routes = [
       },
       { path: "about", element: <About /> },
       { path: "style", element: <StyleGuide /> },
-      { path: "*", element: <NotFound /> },
+      {
+        path: "*",
+        element: <NotFound />,
+        handle: { title: "Page not found", noindex: true },
+      },
     ],
   },
 ];
@@ -1871,6 +1875,36 @@ describe("things that line up stay lined up", () => {
     const grid = html.slice(html.indexOf("<table"), html.indexOf("</table>"));
     expect(grid).toContain("box-shadow:inset");
     expect(grid).not.toMatch(/border-(left|right|top|bottom):/);
+  });
+});
+
+// A game's card is named by its title, not by the round drawn on it (D-146).
+// The thumbnail sits inside the link or button it advertises, so unless it is
+// hidden its text becomes the control's name.
+describe("a game's thumbnail is a picture, hidden from assistive tech", () => {
+  it.each(["/games", "/games/higher", "/games/effective"])(
+    "hides every thumbnail on %s",
+    (path) => {
+      const thumbs = [
+        ...render(path).matchAll(/<div[^>]*class="h-48[^"]*"[^>]*>/g),
+      ].map((m) => m[0]);
+      expect(thumbs.length).toBeGreaterThan(1);
+      for (const t of thumbs) expect(t).toContain('aria-hidden="true"');
+    },
+  );
+});
+
+// An unknown URL is answered 200 with the not-found page (D-030), so that page
+// asks not to be indexed. Layout adds the tag in an effect, which a server
+// render cannot see, so this holds the route's flag; D-146 records the tag
+// measured in a browser.
+describe("the not-found page stays out of search results", () => {
+  it("flags the catch-all route noindex, and Layout reads the flag", () => {
+    const router = readFileSync("src/router.jsx", "utf8");
+    expect(router).toMatch(/path: "\*",[\s\S]{0,300}noindex: true/);
+    expect(readFileSync("src/components/Layout.jsx", "utf8")).toContain(
+      "m.handle?.noindex",
+    );
   });
 });
 

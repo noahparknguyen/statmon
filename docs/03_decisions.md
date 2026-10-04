@@ -6,6 +6,49 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ## 2026-10-04 — Session 32 (the rulebook, and every near-copy it found)
 
+<a id="d-146"></a>
+
+### D-146 · The polish pass: a thumbnail is a picture, and the 404 is not indexed — **Firm** _(amends [D-030](#d-030))_
+
+**Reported as** a final polish pass across every project. On this site it was
+measured live with axe-core 4.13 (WCAG 2.2 AA and best practice) at 1280 and
+390 on 16 routes and states, beside a keyboard pass. No request failed, nothing
+reached the console, and every tab stop showed a visible focus ring. It found
+one real fault, one rule nothing enforced, and one gap in what the audits
+measure.
+
+**1 · A game's thumbnail was part of its control's name.** The thumbnail sits
+inside the link or button it advertises, and a control's name is the text
+inside it, so a screen reader announced "Probopass 40 Glalie Highest Speed. 80
+Higher. Two or four Pokémon…": a random round before the game. Every thumbnail
+root is `aria-hidden` now. Measured after, the links read "Higher. Two or four
+Pokémon, one stat. …" and the picker's buttons "Easy Two Pokémon, base stat
+total." A test fails if a thumbnail is not hidden.
+
+**2 · The contrast axe still reports, and why it stands.** 33 nodes on the
+games pages and Home: 29 inside hidden thumbnails, which are decoration, and 4
+in the receded panels of Home's resolved preview, which are part of an inactive
+control. WCAG 1.4.3 exempts both, and nothing outside them was flagged. The
+style guide's opacity section says so now (§7.4), because a rule that is only
+in the reviewer's head is not a rule.
+
+**3 · A pairing nothing measured.** The type game's panels print a typing as
+coloured text on a type tint, and no audit group covered it. Group 13 checks
+all 324 pairings at the board's size, 36px bold, which is large text: the worst
+is Fighting on the Ice tint at 3.48 against 3.0. At the thumbnails' 18px, 88 of
+them were under 4.5; those are the hidden pictures.
+
+**4 · The not-found page asks not to be indexed.** [D-030](#d-030) serves
+static assets with no Worker, so every unknown URL is answered 200 with the
+not-found page, and a crawler that followed a bad link could index "This page
+fainted." as a page. The catch-all route carries `handle.noindex`, and `Layout`
+adds a robots `noindex` tag while it shows. Measured: present on `/nope`, absent
+on `/about`, and removed when you navigate away from the 404. A true 404 status
+would need a Worker script, which D-030 chose not to have, and the tag does the
+part of its job that matters here.
+
+---
+
 <a id="d-145"></a>
 
 ### D-145 · The serial comma, always — **Firm** _(extends [D-138](#d-138))_

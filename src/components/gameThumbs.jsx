@@ -55,6 +55,17 @@ const THUMB = "h-48 shrink-0 border-b border-border-subtle";
 // `bg-base` is the divider, matching the real board (D-100).
 const GRID = `${THUMB} grid gap-px bg-base`;
 
+// **A thumbnail is a picture of a game, so it is hidden from assistive tech**
+// (D-146). It sits inside the control it advertises, a link on the games index
+// and a button on the difficulty picker, and a control's name is the text
+// inside it: a screen reader announced "Probopass 40 Glalie Highest Speed. 80
+// Higher. Two or four Pokémon…", a random round before the game's own name.
+// The card's title and sentence say what it is; the round only shows it.
+//
+// Hidden, it is decoration for contrast too, which is what WCAG 1.4.3 exempts:
+// its receded panels and an 18px type name on its own tint fell under 4.5:1.
+// Every root below carries `aria-hidden`, the empty fallbacks included.
+
 /**
  * The stat game: `n` contenders on one stat.
  *
@@ -66,11 +77,12 @@ export function HigherThumb({ settings = HIGHER_DEFAULTS, className = "" }) {
   const round = drawOnce(`h:${higherKey(settings)}`, () =>
     higherQuestion(settings),
   );
-  if (!round) return <div className={`${GRID} ${className}`} />;
+  if (!round) return <div aria-hidden className={`${GRID} ${className}`} />;
 
   const four = round.contenders.length > 2;
   return (
     <div
+      aria-hidden
       className={`${GRID} ${four ? "grid-cols-2 grid-rows-2" : "grid-cols-2"} ${className}`}
     >
       {round.contenders.map((p, i) => (
@@ -109,11 +121,12 @@ export function EffectiveThumb({
   const round = drawOnce(`e:${effectiveKey(settings)}`, () =>
     effectiveQuestion(settings),
   );
-  if (!round) return <div className={`${GRID} grid-cols-2 ${className}`} />;
+  if (!round)
+    return <div aria-hidden className={`${GRID} grid-cols-2 ${className}`} />;
 
   const { attack, defender } = round;
   return (
-    <div className={`${GRID} grid-cols-2 ${className}`}>
+    <div aria-hidden className={`${GRID} grid-cols-2 ${className}`}>
       <MatchupPanel
         size="sm"
         role="Attacking"

@@ -16,6 +16,7 @@
  *  10. Game arena — panel text over the primary-type tint
  *  11. The flame — the speed banner's text, and the BST numeral set in it
  *  12. Non-text (1.4.11) — field edges, the focus ring, a selected chip
+ *  13. Type names on a game panel's tint, at the board's large size
  *
  * Two groups audited the midpoint of every dual-type gradient until those
  * gradients went (D-144): a panel and a dex bar are one colour now, the
@@ -386,6 +387,34 @@ console.log(
     3.0,
   ),
 );
+
+// The type game's panels print a typing as COLOURED TEXT over the panel's own
+// tint: the attacker its type over that type's tint, a dual defender both of
+// its types over its primary's (D-104, D-144). Nothing measured this pairing
+// until D-146. On a board the typing is `text-display`, 36px bold, which is
+// large text, so the floor is 3.0, and all 18 × 18 pairings are checked
+// because a defender's second type sits on its first type's tint. The 18px
+// thumbnails are pictures, hidden from assistive tech, and decoration has no
+// floor.
+console.log(
+  "\n=== 13. Type names on a game panel's tint — large text (AA 3.0) ===",
+);
+let worstName = null;
+let worstNameRatio = Infinity;
+for (const t of TYPES) {
+  for (const p of TYPES) {
+    const r = ratio(
+      hex(`type-${t}`),
+      blend(hex(`type-${p}`), base, PANEL_TINT),
+    );
+    if (r < worstNameRatio) {
+      worstNameRatio = r;
+      worstName = `${t} on ${p}`;
+    }
+  }
+}
+console.log(`  324 pairings — worst is ${worstName}`);
+console.log(row("worst type name on a tint", worstNameRatio, 3.0));
 
 console.log(`\n── ${fails.length} failure(s) ─────────────────────────────`);
 for (const f of fails) console.log(`  ✗ ${f}`);

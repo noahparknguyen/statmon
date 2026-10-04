@@ -131,19 +131,19 @@ Each is the share of one colour mixed into another, set by one component and
 read by `npm run audit:contrast` from `index.css` ([D-134](03_decisions.md#d-134)).
 Change one and the audit re-measures it.
 
-| Token                                       | Value                    | Where                                               | Audited  |
-| ------------------------------------------- | ------------------------ | --------------------------------------------------- | -------- |
-| `--mix-stab-fill`                           | 14%                      | The STAB chip's type fill over `elevated`           | group 7  |
-| `--mix-stab-border`                         | 28%                      | The STAB chip's border, quiet tiers                 | —        |
-| `--mix-stab-border-strong`                  | 55%                      | The STAB chip's border, 2×                          | —        |
-| `--mix-panel-tint`                          | 16%                      | A game panel's type tint over `base`                | group 10 |
-| `--mix-dex-fill`                            | 28%                      | The dex stat cell's fill                            | group 5  |
-| `--mix-grid-strong`                         | 55%                      | The type chart's 2× cell, accent over `elevated`    | group 6  |
-| `--mix-grid-wash`                           | 12%                      | A selected column's wash                            | group 6  |
-| `--mix-grid-hover`                          | 7%                       | The type chart's cross-hair                         | —        |
-| `--flame-text-inset`                        | 18%                      | How far from each end the speed banner's text stays | group 11 |
-| `--shadow-text-art`                         | `0 1px 6px` at 75% black | Text over artwork (`.shadow-on-art`)                | —        |
-| `--focus-ring-width`, `--focus-ring-offset` | 2px, 2px                 | The one focus ring (§12.3)                          | group 12 |
+| Token                                       | Value                    | Where                                               | Audited       |
+| ------------------------------------------- | ------------------------ | --------------------------------------------------- | ------------- |
+| `--mix-stab-fill`                           | 14%                      | The STAB chip's type fill over `elevated`           | group 7       |
+| `--mix-stab-border`                         | 28%                      | The STAB chip's border, quiet tiers                 | —             |
+| `--mix-stab-border-strong`                  | 55%                      | The STAB chip's border, 2×                          | —             |
+| `--mix-panel-tint`                          | 16%                      | A game panel's type tint over `base`                | groups 10, 13 |
+| `--mix-dex-fill`                            | 28%                      | The dex stat cell's fill                            | group 5       |
+| `--mix-grid-strong`                         | 55%                      | The type chart's 2× cell, accent over `elevated`    | group 6       |
+| `--mix-grid-wash`                           | 12%                      | A selected column's wash                            | group 6       |
+| `--mix-grid-hover`                          | 7%                       | The type chart's cross-hair                         | —             |
+| `--flame-text-inset`                        | 18%                      | How far from each end the speed banner's text stays | group 11      |
+| `--shadow-text-art`                         | `0 1px 6px` at 75% black | Text over artwork (`.shadow-on-art`)                | —             |
+| `--focus-ring-width`, `--focus-ring-offset` | 2px, 2px                 | The one focus ring (§12.3)                          | group 12      |
 
 **A colour-mix share that sets a text pairing is a token; one that only adds
 `base` is not.** Home's radial pool and bottom fade over the sprite wall only
@@ -535,6 +535,14 @@ content scrolling beneath them.
 | `/70` on `base` | A modal's backdrop                                             |
 | `/85` on `base` | A sticky bar over scrolling content                            |
 
+**Disabled and receded text may fall under AA, and that is WCAG's own
+exemption rather than an oversight** ([D-146](03_decisions.md#d-146)). 1.4.3
+asks nothing of text in an inactive control: a disabled button, or a resolved
+round's panel, which can no longer be pressed. Measured on the receded panels,
+it is 2.6 to 4.4:1. It is still legible on purpose, because the losing value
+is part of the answer. A **game thumbnail** is the other exemption, as a
+picture: it is hidden from assistive tech, so its text is decoration.
+
 ---
 
 ## 8. Breakpoints and Page Layout
@@ -724,7 +732,7 @@ differently on every platform and read as unpolished.
 | ----------------------------------------------------------------------- | ---------------------------------------------- |
 | Every utility is one this guide allows                                  | `npm run audit:styles`                         |
 | No class string sets one property twice                                 | `npm run audit:classes`                        |
-| Every text and non-text pairing clears AA                               | `npm run audit:contrast` (12 groups)           |
+| Every text and non-text pairing clears AA                               | `npm run audit:contrast` (13 groups)           |
 | No page scrolls sideways or shows its footer on load; every target ≥ 24 | `npm run sweep:widths` (29 routes × 14 widths) |
 | One component per job; one list of the 18 types; copy rules             | `npm run test:run`                             |
 | Every doc link and anchor resolves                                      | `npm run check:docs`                           |
