@@ -1,4 +1,4 @@
-import { FaCaretDown, FaCaretUp } from "react-icons/fa6";
+import DexHeadLabel from "./DexHeadLabel";
 import DexRow from "./DexRow";
 import { useWindowedRows } from "../lib/useWindowedRows";
 import { SORT_LABEL, SORT_LONG_LABEL } from "../lib/dexTable";
@@ -29,10 +29,11 @@ import {
 // Layout sets the site header. (D-041)
 const STICKY_HEAD = { zIndex: "var(--z-raised)" };
 
-function SortHeader({ colKey, view, onSort, className, align = "center" }) {
+// `align` defaults to right, because every sortable column but two holds a
+// number (DexHeadLabel); `#` and Name pass `left`.
+function SortHeader({ colKey, view, onSort, className, align = "right" }) {
   const active = view.sort === colKey;
   const dir = active ? view.dir : null;
-  const Caret = dir === "asc" ? FaCaretUp : FaCaretDown;
 
   return (
     <th
@@ -48,8 +49,8 @@ function SortHeader({ colKey, view, onSort, className, align = "center" }) {
         onClick={() => onSort(colKey)}
         className={`${HEAD_INNER} transition-colors hover:text-primary ${HEAD_ALIGN[align]} ${active ? "text-accent" : "text-tertiary"}`}
       >
-        {SORT_LABEL[colKey]}
-        {/* The on-screen label is an abbreviation ("SpA", "#"), so the full name
+        <DexHeadLabel colKey={colKey} dir={dir} align={align}>
+          {/* The on-screen label is an abbreviation ("SpA", "#"), so the full name
             is appended for screen readers. It is appended rather than replacing
             the name with aria-label because WCAG 2.5.3 (Label in Name) requires
             the accessible name to contain the visible text — "Sort by Attack"
@@ -61,12 +62,12 @@ function SortHeader({ colKey, view, onSort, className, align = "center" }) {
             survived. The name is added only when it says something the visible
             label did not, and the comma is what stops "Atk sort by Attack"
             running together as one word. */}
-        <span className="sr-only">
-          {SORT_LONG_LABEL[colKey] === SORT_LABEL[colKey]
-            ? ", sort"
-            : `, sort by ${SORT_LONG_LABEL[colKey]}`}
-        </span>
-        <Caret aria-hidden className={active ? "" : "invisible"} />
+          <span className="sr-only">
+            {SORT_LONG_LABEL[colKey] === SORT_LABEL[colKey]
+              ? ", sort"
+              : `, sort by ${SORT_LONG_LABEL[colKey]}`}
+          </span>
+        </DexHeadLabel>
       </button>
     </th>
   );
@@ -99,7 +100,10 @@ export default function DexTable({ rows, view, keys, onSort, mobileStat }) {
 
   if (rows.length === 0) {
     return (
-      <p className="border-t border-border-subtle py-16 text-center text-body text-tertiary">
+      // An inline empty state (§12.3): one sentence in `text-body-sm`
+      // tertiary, where the content would have been. It was `text-body`, the
+      // one empty state on the site set a size up from the rest.
+      <p className="border-t border-border-subtle py-16 text-center text-body-sm text-tertiary">
         No Pokémon match these filters.
       </p>
     );

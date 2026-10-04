@@ -3,6 +3,12 @@ import { LuArrowRight } from "react-icons/lu";
 import PageHeader from "../components/PageHeader";
 import { PAGE_CONTENT } from "../components/pageChrome";
 import { EffectiveThumb, HigherThumb } from "../components/gameThumbs";
+import {
+  GAME_CARD,
+  GAME_CARD_ARROW,
+  GAME_CARD_BODY,
+  GAME_CARD_TITLE,
+} from "../components/gameChrome";
 import { DEFAULT_SETTINGS } from "../lib/games";
 import { DEFAULT_SETTINGS as EFFECTIVE_DEFAULTS } from "../lib/effective";
 
@@ -31,10 +37,6 @@ import { DEFAULT_SETTINGS as EFFECTIVE_DEFAULTS } from "../lib/effective";
 const HIGHER_PREVIEW = { ...DEFAULT_SETTINGS, stats: ["speed"] };
 const EFFECTIVE_PREVIEW = { ...EFFECTIVE_DEFAULTS, tier: "medium" };
 
-const CARD =
-  "flex h-full flex-col overflow-hidden rounded-lg border bg-surface transition-colors";
-const BODY = "flex flex-1 flex-col gap-2 p-5";
-
 export default function Games() {
   return (
     <div className={PAGE_CONTENT}>
@@ -45,26 +47,20 @@ export default function Games() {
 
       <ul className="grid gap-4 sm:grid-cols-2">
         <li>
-          <Link
-            to="/games/higher"
-            className={`${CARD} group border-border-subtle hover:border-border-strong`}
-          >
+          <Link to="/games/higher" className={GAME_CARD}>
             <HigherThumb settings={HIGHER_PREVIEW} />
-            <span className={BODY}>
-              <span className="flex items-center gap-1.5 text-h4 text-primary">
+            <span className={GAME_CARD_BODY}>
+              <span className={GAME_CARD_TITLE}>
                 {/* The name and its dot are ONE flex child. As three children
                     the row's gap fell between the word and the dot, so the
                     `Word.` motif rendered as "Higher ." */}
                 <span>
                   Higher<span className="text-accent">.</span>
                 </span>
-                <LuArrowRight
-                  aria-hidden
-                  className="text-tertiary transition-colors group-hover:text-secondary"
-                />
+                <LuArrowRight aria-hidden className={GAME_CARD_ARROW} />
               </span>
               <span className="text-body-sm text-secondary">
-                Two or four Pokémon, one stat. Pick the highest — any stat, any
+                Two or four Pokémon, one stat. Pick the highest: any stat, any
                 generation, filtered however you like.
               </span>
             </span>
@@ -72,23 +68,17 @@ export default function Games() {
         </li>
 
         <li>
-          <Link
-            to="/games/effective"
-            className={`${CARD} group border-border-subtle hover:border-border-strong`}
-          >
+          <Link to="/games/effective" className={GAME_CARD}>
             <EffectiveThumb settings={EFFECTIVE_PREVIEW} />
-            <span className={BODY}>
-              <span className="flex items-center gap-1.5 text-h4 text-primary">
+            <span className={GAME_CARD_BODY}>
+              <span className={GAME_CARD_TITLE}>
                 <span>
                   Effective<span className="text-accent">.</span>
                 </span>
-                <LuArrowRight
-                  aria-hidden
-                  className="text-tertiary transition-colors group-hover:text-secondary"
-                />
+                <LuArrowRight aria-hidden className={GAME_CARD_ARROW} />
               </span>
               <span className="text-body-sm text-secondary">
-                An attacking type and a defender. Name the multiplier — dual
+                An attacking type and a defender. Name the multiplier, dual
                 types and abilities included.
               </span>
             </span>

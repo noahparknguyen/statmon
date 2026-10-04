@@ -1,12 +1,18 @@
 import { Link } from "react-router";
 
-// The shared button/CTA. Two variants and two sizes cover every control on the
-// site; before this existed the same class strings were hand-copied across
-// Home, Compare, NotFound and the style playground, which is exactly how
-// variants drift apart (04_design §6).
+// The shared button/CTA. Three variants and two sizes cover every control on
+// the site that has a text label; before this existed the same class strings
+// were hand-copied across Home, Compare, NotFound and the style playground,
+// which is exactly how variants drift apart (04_design §6).
 //
 // Pass `to` to render a react-router <Link> that looks identical to a <button>
 // — the CTAs on Home and 404 are navigations, not actions.
+//
+// **`ghost` is the quiet one** (D-135): no fill and no border until the pointer
+// arrives, for an action that should not compete with what it sits under —
+// "Clear all filters", "Clear record". 04_design §6 said to add it here when a
+// use appeared rather than hand-roll one; two had appeared, both hand-rolled,
+// at two different heights.
 //
 // Class strings are written out in full rather than composed from fragments so
 // Tailwind's scanner can see every utility (cf. D-028).
@@ -17,6 +23,7 @@ const VARIANT = {
   primary: "bg-accent text-accent-contrast hover:bg-accent-hover",
   secondary:
     "bg-elevated border border-border-subtle text-secondary hover:text-primary hover:border-border-strong",
+  ghost: "text-tertiary hover:bg-elevated hover:text-primary",
 };
 
 const SIZE = {

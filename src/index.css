@@ -72,8 +72,6 @@
   --color-accent-600: #6a70c4;
   --color-accent-blue: #a8c3dd;
   --color-accent-core: #7352e6;
-  --color-accent-muted: #34355c;
-  --color-accent-contrast: #12121c;
 
   /* Type colors (18) — tuned for the dark background. (04_design §3) */
   --color-type-normal: #b5b394;
@@ -118,6 +116,17 @@
   ); /* text-tertiary — neutral-400 for AA on dark bg (D-027) */
   --color-accent: var(--color-accent-400); /* bg-accent / text-accent */
   --color-accent-hover: var(--color-accent-300); /* hover:bg-accent-hover */
+  /* Two role tokens that carry their own value, because no ramp holds them:
+     text and icons on a solid accent fill, and the quiet accent fill behind a
+     correct answer (D-093). They are semantic — each names a job — and are
+     listed with the semantic tokens in 06_style_guide §3. */
+  --color-accent-contrast: #12121c; /* text-accent-contrast */
+  --color-accent-muted: #34355c; /* bg-accent-muted */
+  /* The border of a text field or select, and only those (D-136). Every other
+     border here is decoration, but a field's edge is the one thing that says
+     "type here", so WCAG 1.4.11 asks 3:1 of it against what it sits on: 3.74
+     on surface, audited as group 12. border-subtle is 1.33. */
+  --color-border-field: var(--color-neutral-500); /* border-border-field */
   --color-diff-tie: var(
     --color-neutral-400
   ); /* text-diff-tie — AA on dark bg (D-027) */
@@ -170,13 +179,15 @@
   --tracking-wider: 0.14em;
 
   /* ---------------------------------------------------------------------------
-      RADII (06_style_guide §7) — overrides Tailwind defaults to doc values.
+      RADII (06_style_guide §7). One radius per ROLE, not per taste:
+      lg a surface, md something nested in one, sm a text field, xs a grid
+      cell, and `rounded-full` anything you press or that labels. `--radius-xl`
+      went with D-134: no surface on the site was ever "large" enough for it.
      ------------------------------------------------------------------------ */
   --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
-  --radius-xl: 24px;
 
   /* ---------------------------------------------------------------------------
       BREAKPOINTS (06_style_guide §8). md = comparison collapses to cards.
@@ -195,8 +206,11 @@
       the exact failure D-054 was written to prevent, at the boundary it chose.
       384 clears the measured requirement with a margin for platforms that
       render the wordmark a little wider, and still covers every current phone
-      from the iPhone 12 (390) up. `npm run sweep:widths` tests 360, 375 and
-      384 so the boundary cannot drift back. (D-062)
+      from the iPhone 12 (390) up. `npm run sweep:widths` tests 360, 375, 383
+      and 384 so the boundary cannot drift back. (D-062)
+
+      Measured again 2026-10-04, at the `gap-2` the nav takes below `sm`: 361px
+      (32 + 121 + 8 + 200), so 384 leaves 23px of room. (D-134)
      ------------------------------------------------------------------------ */
   --breakpoint-xs: 384px;
   --breakpoint-sm: 480px;
@@ -219,8 +233,8 @@
   --container-content: 1120px;
 
   /* Motion durations (06_style_guide §9). --dur-fast is the transition default
-     below; --dur-bar drives .animate-grow-w. --dur-base/--dur-slow are the
-     remaining rungs of the scale, currently unconsumed. */
+     below, --dur-base drives .animate-reveal and --dur-bar drives
+     .animate-grow-w. --dur-slow is the one rung currently unconsumed. */
   --dur-fast: 120ms;
   --dur-base: 180ms;
   --dur-slow: 300ms;
@@ -245,6 +259,14 @@
   --default-transition-duration: var(--dur-fast);
 }
 
+/*  The one HEIGHT variant (D-143): a window too short to show a whole game
+    board, which is the board's 26rem floor under the two 3.5rem bars. Below
+    it the board scrolls, so the type game keeps its answers on the centre line
+    and puts its verdict on the attacking panel instead of above them, where
+    it would push the answers off the bottom of the screen. Only `md:short:`
+    is used; a stacked board handles a short screen on its own. */
+@custom-variant short (@media (max-height: 33rem));
+
 /*  NOTE ON SPACING: Tailwind v4's default spacing base (--spacing: 0.25rem)
     already yields our 4px scale exactly — p-1=4px, p-6=24px, gap-8=32px, etc.
     (06_style_guide §6). We keep the default rather than redefining it. */
@@ -268,6 +290,38 @@
     --shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.5);
     /* Lift under the Pokémon artwork (card backdrop + Home mascots) */
     --shadow-art: 0 8px 22px rgba(0, 0, 0, 0.5);
+    /* Text that sits over artwork: the Pokémon card's head, its controls band
+       and its stat rows. One value for all three; it was two (8px and 5px of
+       blur) for no reason either comment gave. (D-134) */
+    --shadow-text-art: 0 1px 6px rgba(0, 0, 0, 0.75);
+
+    /* The focus ring (06_style_guide §12.3). One ring for everything that takes
+       focus, including the text fields, which draw it on their wrapper. */
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 2px;
+
+    /* Component tokens (06_style_guide §1, tier 3). Each is the share of one
+       colour mixed into another, set by a component and read back by
+       `npm run audit:contrast`, which is why they live here rather than as
+       numbers in the component files they used to be (D-134): a pairing the
+       audit measures has to come from the place the browser paints it from.
+       Values and reasons are in 06_style_guide §3.1. */
+    --mix-stab-fill: 14%;
+    --mix-stab-border: 28%;
+    --mix-stab-border-strong: 55%;
+    --mix-panel-tint: 16%;
+    --mix-dex-fill: 28%;
+    --mix-grid-strong: 55%;
+    --mix-grid-wash: 12%;
+    --mix-grid-hover: 7%;
+
+    /* How far in from each end of the flame the speed banner's text must stay
+       (D-136). The flame's dark end measures 3.61:1 against the banner's text;
+       18% in, it is 4.71, so text inside this inset clears AA wherever it
+       falls. 18 rather than a round 20, because 20 wraps "Volcarona moves
+       first" at 320px and 18 does not. Audited as group 11, which reads this
+       value. */
+    --flame-text-inset: 18%;
   }
 
   html {
@@ -300,8 +354,8 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
+    outline: var(--focus-ring-width) solid var(--color-accent);
+    outline-offset: var(--focus-ring-offset);
   }
 
   ::selection {
@@ -336,6 +390,7 @@
 /* =============================================================================
     COMPONENTS LAYER — the 22 named text styles (06_style_guide §5).
     Usage: class="text-h1" / class="text-stat" — never re-specify size/weight.
+    `npm run audit:styles` fails on any other `text-*` size in a component.
    ========================================================================== */
 @layer components {
   .text-display-hero {
@@ -399,13 +454,6 @@
     font-size: var(--text-sm);
     font-weight: var(--font-weight-regular);
     line-height: var(--leading-base);
-    letter-spacing: var(--tracking-normal);
-  }
-  .text-label {
-    font-family: var(--font-body);
-    font-size: var(--text-sm);
-    font-weight: var(--font-weight-medium);
-    line-height: var(--leading-none);
     letter-spacing: var(--tracking-normal);
   }
   .text-caption {
@@ -537,10 +585,52 @@
     );
   }
 
+  /* The speed banner's text inset (D-136): keeps text off the dark end of the
+     flame, where it falls below AA. A percentage of the banner's own width,
+     because the gradient is too. */
+  .flame-inset {
+    padding-inline: var(--flame-text-inset);
+  }
+
   /* Lift under official artwork. Was an inline `drop-shadow(…)` literal copied
      into both PokemonCard and Home; now one token, one utility. */
   .drop-shadow-art {
     filter: drop-shadow(var(--shadow-art));
+  }
+
+  /* Legibility for text that sits over artwork (PokemonCard). A utility rather
+     than two inline style objects with different blurs (D-134). Not named
+     `text-*`: that prefix is the named text styles' (§5), and both audits read
+     it as one. */
+  .shadow-on-art {
+    text-shadow: var(--shadow-text-art);
+  }
+
+  /* The Pokémon card's scrim: transparent across the portrait, then surface by
+     90% of the card's height so the stat bars below read cleanly (04_design §5).
+     It was a string built in the component; it is a utility so the card's
+     markup carries a name instead of a gradient. */
+  .bg-scrim-art {
+    background-image: linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 38%,
+      color-mix(in srgb, var(--color-surface) 35%, transparent) 52%,
+      color-mix(in srgb, var(--color-surface) 80%, transparent) 66%,
+      var(--color-surface) 90%
+    );
+  }
+
+  /* A text field draws the focus ring on its WRAPPER, because the wrapper is
+     what looks like the field: the icon and the input sit inside it, and the
+     input itself is borderless (D-136). Before this the input carried
+     `outline-none` and the only cue was the border stepping from border-subtle
+     to border-strong, 1.33 to 1.72 against the panel, where every other control
+     on the site draws the 2px accent ring. Same tokens as `:focus-visible`, so
+     the two rings cannot drift apart. */
+  .focus-ring-within:has(:focus-visible) {
+    outline: var(--focus-ring-width) solid var(--color-accent);
+    outline-offset: var(--focus-ring-offset);
   }
 
   /* The type grid's scroll panel. `contain: paint` is doing real work here, not
@@ -615,7 +705,11 @@
     content: "";
     position: absolute;
     pointer-events: none;
-    background-color: color-mix(in srgb, var(--color-primary) 7%, transparent);
+    background-color: color-mix(
+      in srgb,
+      var(--color-primary) var(--mix-grid-hover),
+      transparent
+    );
   }
   .type-grid tbody tr:hover td::before {
     inset: 0;
@@ -806,11 +900,6 @@
   }
 }
 
-/* The aftershock. `--shake-x` is SIGNED and points the way the panel was
-   already travelling: on impact the contents carry on for an instant before
-   snapping back, which is what inertia looks like. Four decaying swings, and
-   a little rotation with them — a pure sideways slide reads as a glitch, a
-   slide that tips reads as something being hit. */
 /* The aftershock, in two axes that are deliberately OUT OF PHASE.
    `--shake-x` is signed and points the way the panel was already travelling:
    on impact the contents carry on for an instant before snapping back, which

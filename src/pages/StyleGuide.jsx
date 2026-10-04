@@ -5,7 +5,11 @@
 // See docs/06_style_guide.md (tokens) and docs/04_design.md (rationale).
 
 import { useState } from "react";
+import { LuArrowRight, LuX } from "react-icons/lu";
+import { FaCaretDown } from "react-icons/fa6";
 import Button from "../components/Button";
+import IconButton from "../components/IconButton";
+import StatBar from "../components/StatBar";
 import PageHeader from "../components/PageHeader";
 import { PAGE_CONTENT } from "../components/pageChrome";
 import TypeBadge from "../components/TypeBadge";
@@ -61,14 +65,15 @@ function readMissingTextStyles(listed) {
   return [...found].filter((c) => !listed.includes(c)).sort();
 }
 
-// Literal `rounded-*` strings so Tailwind's scanner keeps the utilities.
+// Literal `rounded-*` strings so Tailwind's scanner keeps the utilities. Each
+// radius is a ROLE (06_style_guide §7.1), so each specimen is labelled with
+// the job it does rather than only its number.
 const RADII = [
-  ["rounded-xs", "xs · 4"],
-  ["rounded-sm", "sm · 6"],
-  ["rounded-md", "md · 10"],
-  ["rounded-lg", "lg · 16"],
-  ["rounded-xl", "xl · 24"],
-  ["rounded-full", "full · pill"],
+  ["rounded-xs", "xs · 4 · grid cell"],
+  ["rounded-sm", "sm · 6 · text field"],
+  ["rounded-md", "md · 10 · inset"],
+  ["rounded-lg", "lg · 16 · surface"],
+  ["rounded-full", "full · control"],
 ];
 
 // [label, CSS var, note] — the value is read from the live stylesheet at
@@ -79,7 +84,8 @@ const NEUTRALS = [
   ["surface", "--color-surface", "cards / surfaces"],
   ["elevated", "--color-elevated", "elevated / inputs / tracks"],
   ["border-subtle", "--color-border-subtle", "default border"],
-  ["border-strong", "--color-border-strong", "hover/focus border"],
+  ["border-strong", "--color-border-strong", "chip edge, hover border"],
+  ["border-field", "--color-border-field", "text field edge (3:1)"],
   ["tertiary", "--color-tertiary", "hints, captions, overlines"],
   ["secondary", "--color-secondary", "labels, secondary text"],
   ["primary", "--color-primary", "headings, values, body"],
@@ -91,6 +97,7 @@ const ACCENTS = [
   ["accent-hover", "--color-accent-hover", "hover / active"],
   ["accent-blue", "--color-accent-blue", "flame blue"],
   ["accent-contrast", "--color-accent-contrast", "text on an accent fill"],
+  ["accent-muted", "--color-accent-muted", "the correct answer's fill"],
 ];
 
 // Semantic tokens that aren't part of the neutral or accent ramps.
@@ -113,7 +120,6 @@ const TEXT_STYLES = [
   ["text-body-lg", "Body large — lead paragraph text.", "18 · 400"],
   ["text-body", "Body — the default paragraph size for reading.", "16 · 400"],
   ["text-body-sm", "Body small — secondary and helper text.", "14 · 400"],
-  ["text-label", "Label — form and UI labels", "14 · 500"],
   ["text-caption", "Caption — hints and footnotes", "12 · 500"],
   ["text-overline", "Overline · stat labels", "11 · 500"],
   ["text-overline-lg", "Overline large · arena role labels", "16 · 500"],
@@ -196,7 +202,7 @@ export default function StyleGuide() {
           `text-h1` — drift in the one file whose stated job is not to have any. */}
       <PageHeader
         title="Style guide"
-        subtitle="Every colour, text style, and core component — rendered from the live tokens and real components, so this page can't drift from the app."
+        subtitle="Every colour, text style, and core component, rendered from the live tokens and real components, so this page can't drift from the app."
       />
 
       <Section title="Core palette">
@@ -260,7 +266,7 @@ export default function StyleGuide() {
       <Section title="Type scale — named text styles">
         {missingStyles.length > 0 && (
           <p className="text-body-sm text-primary bg-elevated border border-border-strong rounded-md p-3 mb-6">
-            ⚠ {missingStyles.length} named style(s) exist in the stylesheet but
+            {missingStyles.length} named style(s) exist in the stylesheet but
             are missing from this page: <code>{missingStyles.join(", ")}</code>.
             Add them to <code>TEXT_STYLES</code>.
           </p>
@@ -298,19 +304,101 @@ export default function StyleGuide() {
         </div>
       </Section>
 
-      <Section title="Controls">
-        <div className="flex flex-col gap-6 max-w-md">
-          <SearchBar label="Search a Pokémon" onSelect={noop} />
-          <div className="flex flex-wrap items-center gap-3">
-            <Button>Primary action</Button>
-            <Button variant="secondary" size="sm">
-              Secondary
-            </Button>
-            <Button variant="secondary" size="sm" disabled>
-              Disabled
-            </Button>
+      {/* Every surface on the site is one of two boxes (06_style_guide §6.2,
+          §7.1): a surface, 16px in and 16px round, and an inset nested inside
+          one, 12px in and 10px round. Shown nested, because that is the only
+          way an inset is ever used. */}
+      <Section title="Surfaces — a surface and an inset">
+        <div className="max-w-md rounded-lg border border-border-subtle bg-surface p-4">
+          <span className="text-overline text-tertiary">
+            Surface · p-4 · lg
+          </span>
+          <div className="mt-2 rounded-md border border-border-subtle p-3">
+            <span className="text-caption text-secondary">
+              Inset · p-3 · md
+            </span>
           </div>
         </div>
+      </Section>
+
+      <Section title="Controls">
+        <div className="flex flex-col gap-6 max-w-md">
+          <ChipRow
+            label="Text field · 44px, the 3:1 field edge, the focus ring on its wrapper"
+            note="Shared by every text field on the site (fieldStyles.jsx, D-135, D-136)."
+          >
+            <SearchBar label="Search a Pokémon" onSelect={noop} />
+          </ChipRow>
+          <ChipRow
+            label="Buttons · md 44px for a page's action, sm 36px inline"
+            note="Primary, secondary, and ghost for the quiet action. Disabled is 40%."
+          >
+            <div className="flex flex-wrap items-center gap-3">
+              <Button>
+                Primary action
+                <LuArrowRight aria-hidden />
+              </Button>
+              <Button variant="secondary" size="sm">
+                Secondary
+              </Button>
+              <Button variant="ghost" size="sm">
+                Ghost
+              </Button>
+              <Button variant="secondary" size="sm" disabled>
+                Disabled
+              </Button>
+            </div>
+          </ChipRow>
+          <ChipRow
+            label="Icon buttons · 36px, a 16px icon"
+            note="Ghost on its own, outline in a row of bordered controls (D-135)."
+          >
+            <div className="flex items-center gap-3">
+              <IconButton label="Close (demo)" onClick={noop}>
+                <LuX aria-hidden />
+              </IconButton>
+              <IconButton
+                variant="outline"
+                label="Reverse (demo)"
+                onClick={noop}
+              >
+                <FaCaretDown aria-hidden />
+              </IconButton>
+            </div>
+          </ChipRow>
+        </div>
+      </Section>
+
+      {/* The one stat bar (D-135), in each of the ways it is used. */}
+      <Section title="Stat bars — one bar, 8px">
+        {volcarona ? (
+          <div className="flex max-w-md flex-col gap-6">
+            <ChipRow
+              label="Solid track · the comparison card and the phone cards"
+              note="Scaled to 255, the same length for the same number on every surface (D-011)."
+            >
+              <StatBar value={volcarona.stats.spAtk} type={t0} />
+            </ChipRow>
+            <ChipRow
+              label="Mirrored · the comparison card's rows"
+              note="The left bar grows from the centre outward."
+            >
+              <div className="grid grid-cols-2 gap-1.5">
+                <StatBar value={volcarona.stats.speed} type={t1} side="end" />
+                <StatBar value={volcarona.stats.hp} type={t2} />
+              </div>
+            </ChipRow>
+            <ChipRow
+              label="Glass track · over artwork, on the Pokémon card"
+              note="The only bar that sits on art, so the only one the art shows through."
+            >
+              <StatBar value={volcarona.stats.speed} type={t3} track="glass" />
+            </ChipRow>
+            <ChipRow label="Empty · no Pokémon yet" note="The track alone.">
+              <StatBar />
+            </ChipRow>
+          </div>
+        ) : null}
       </Section>
 
       {/* All four chip families side by side. They share one colour pair
@@ -321,7 +409,7 @@ export default function StyleGuide() {
         <div className="flex flex-col gap-6">
           <ChipRow
             label="Form chips · compact, sharing the card's 88px controls band"
-            note="The one known WCAG 2.5.8 spacing exception (D-042)."
+            note="21px tall, so they pass WCAG 2.5.8 by spacing rather than size: 27.1px between the tightest centres (D-059)."
           >
             {/* Shown at roughly the width of the card band they live in, so
                 the wrapping reads as the real layout it is. Left-aligned since
@@ -334,8 +422,8 @@ export default function StyleGuide() {
           </ChipRow>
 
           <ChipRow
-            label="Generation strip · 36px, near-square around one numeral"
-            note="A dot marks a generation whose board differs from today (D-046)."
+            label="Generation strip · 36px, one line at every width"
+            note="A dot marks a generation whose board differs from today (D-046). The strip never wraps: its chips share the width, from 36px down to about 25 on a 320px phone (D-137)."
           >
             {charizard ? (
               <GenerationStrip

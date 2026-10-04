@@ -3,7 +3,8 @@
  * Statmon — responsive width sweep
  * ---------------------------------------------------------------------------
  * Loads every route at every width that has ever mattered and asserts the page
- * does not scroll sideways.
+ * does not scroll sideways, and that no page shows its footer before you
+ * scroll (D-142).
  *
  * This exists because that check kept being done by hand and kept being done
  * incompletely. The type grid leaked its overflow into the document for as long
@@ -151,6 +152,9 @@ const ENTRIES = ${JSON.stringify(ENTRIES)};
 const WIDTHS = ${JSON.stringify(WIDTHS)};
 // A tall frame so lazy content and sticky elements settle the way they would on
 // a real screen; height does not affect the horizontal question being asked.
+// It is also the screen the footer check measures against. One height is
+// enough for that: the rule is written in viewport units (D-142), so it holds
+// at every height or at none.
 const HEIGHT = 900;
 
 const load = (entry, width) => new Promise((resolve) => {
@@ -214,11 +218,18 @@ const load = (entry, width) => new Promise((resolve) => {
                 width: Math.round(r.width),
               }))
           : [];
+      // Where the footer starts, against the bottom of the first screen. A
+      // game board has no footer, and reads as null.
+      const foot = doc.querySelector("footer");
       return {
         scrollWidth,
         clientWidth,
         scrollHeight: d.scrollHeight,
         offenders,
+        footerTop: foot
+          ? Math.round(foot.getBoundingClientRect().top + f.contentWindow.scrollY)
+          : null,
+        viewHeight: d.clientHeight,
       };
     };
     const same = (a, b) =>
@@ -462,17 +473,39 @@ if (tooSmall.length === 0) {
     );
 }
 
+// The footer stays below the fold, at every width (D-142). A failure here is a
+// page shorter than the screen that got past `<main>`'s floor.
+const early = results.filter(
+  (r) => r.footerTop != null && r.footerTop < r.viewHeight,
+);
+
+console.log("\nThe footer on the first screen:");
+if (early.length === 0) {
+  console.log("  No page shows its footer before you scroll. ✓");
+} else {
+  for (const r of early)
+    console.log(
+      `  ✗ ${r.route} @ ${r.width}px — footer at ${r.footerTop}px on a ${r.viewHeight}px screen`,
+    );
+}
+
 if (missing.length) {
   console.log(`\n── ${missing.length} unopened disclosure(s) ────────────\n`);
   process.exit(1);
 }
-if (overflow.length === 0 && tooSmall.length === 0) {
+if (overflow.length === 0 && tooSmall.length === 0 && early.length === 0) {
   console.log("\n── 0 horizontal overflow(s) ─────────────────");
   console.log("  No route scrolls sideways at any width. ✓\n");
   process.exit(0);
 }
 if (overflow.length === 0) {
-  console.log(`\n── ${tooSmall.length} target-size failure(s) ──────────\n`);
+  if (tooSmall.length)
+    console.log(`\n── ${tooSmall.length} target-size failure(s) ──────────`);
+  if (early.length)
+    console.log(
+      `\n── ${early.length} footer(s) on the first screen ──────────`,
+    );
+  console.log();
   process.exit(1);
 }
 

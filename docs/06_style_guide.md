@@ -1,112 +1,199 @@
 # Statmon — Style Guide (Step 6)
 
-_The complete, authoritative token reference. Where [04_design](04_design.md) explains the **rationale** (why the palette, why these fonts), this doc is the **exhaustive spec**: every color, every font size, every spacing step — named as a token — so nothing on the site is ever an ad-hoc value. If a value isn't in this document, it doesn't get used._
+_The rulebook. Where [04_design](04_design.md) explains the **rationale** (why
+the palette, why these fonts), this document is the **specification**: every
+colour, size, space, radius, layer and component on the site, each as a closed
+set, each with the check that enforces it. If a value isn't in this document,
+it doesn't get used — and since [D-134](03_decisions.md#d-134), that sentence is
+a check rather than a hope._
 
-> **The one rule:** components reference **tokens**, never raw hex/px/rem literals. This is what keeps the whole site uniform. Section 12 lists the guardrails; Section 13 maps everything to the Tailwind theme (next build step).
+> **How to read it.** Every section states its rule first and its reasons
+> after. Every rule that can be measured is: §12's enforcement table names the
+> check. A design that needs something this document does not have gets it
+> **added here first**, with its reason, and then built. Never the other way
+> round.
 
 ---
 
 ## 1. Token Architecture
 
-Three tiers, following standard design-system practice ([research](02_research.md)):
+Three tiers, following standard design-system practice
+([research](02_research.md)):
 
-1. **Primitive tokens** — raw values, the palette of possible choices (e.g. `--color-neutral-900`, `--text-lg`). Never used directly in components.
-2. **Semantic tokens** — role-based aliases that point at primitives (e.g. `--color-surface` → `--color-neutral-900`, `--color-primary` → `--color-neutral-50`). **These are what components use.**
-3. **Component tokens** — per-component overrides, only when a component needs its own knob (e.g. a hypothetical `--statbar-track` → `--color-elevated`). **None exist yet**; the semantic layer has covered every case so far. Introduced only when a real need appears.
+1. **Primitive tokens** — raw values, the palette of possible choices (e.g.
+   `--color-neutral-900`, `--text-lg`). **Never used directly in components.**
+2. **Semantic tokens** — role-based names (e.g. `--color-surface`,
+   `--color-primary`). Most point at a primitive; two carry their own value
+   because no ramp holds them (§3). **These are what components use.**
+3. **Component tokens** — a value one component owns that another part of the
+   system must read back. Since [D-134](03_decisions.md#d-134) these are the
+   colour-mix shares the contrast audit measures, the focus ring's geometry,
+   the text-over-art shadow and the flame's text inset (§3.1). A number that a
+   check measures lives in `index.css`, where the browser paints it from, and
+   never as a literal in a component file.
 
-**Naming convention:** `category-property-modifier` — lowercase, hyphenated, no abbreviations beyond the established set (`bg`, `fs`, `fw`, `lh`, `ls`). Examples: `--color-accent-hover`, `--text-2xl`, `--radius-lg`.
-
-**Namespace note.** Tailwind v4 is CSS-first: a token's _prefix decides which utilities it generates_, so the emitted names carry required namespaces — colors are `--color-*` (hence `--color-primary`, not `--text-primary`), font sizes own `--text-*`, weights `--font-weight-*`, line-heights `--leading-*`, tracking `--tracking-*`, breakpoints `--breakpoint-*`. Every name in this document is the **real emitted name** in `src/index.css`. Theming (e.g. future light mode) swaps only the **semantic** layer — primitives and components stay put.
+**Naming:** `category-property-modifier`, lowercase, hyphenated. Tailwind v4 is
+CSS-first, so a token's prefix decides which utilities it generates: colours
+are `--color-*`, font sizes own `--text-*`, weights `--font-weight-*`,
+line-heights `--leading-*`, tracking `--tracking-*`, breakpoints
+`--breakpoint-*`. Every name here is the real emitted name in `src/index.css`.
 
 ---
 
 ## 2. Color — Primitive Palette
 
-**Tailwind's default colour palette is cleared** (`--color-*: initial` at the top
-of the `@theme` block), so `bg-red-500`, `bg-neutral-200` and every other stock
-colour simply do not exist — an off-palette class is an inert no-op you notice,
-rather than a silently-rendered off-brand colour. `transparent` is the one stock
-value kept, because `text-transparent` / `border-transparent` are genuinely used.
-This is what makes §12 rule 1 enforceable instead of merely aspirational. ([D-033](03_decisions.md#d-033))
+**Tailwind's stock palette is cleared** (`--color-*: initial`), so `bg-red-500`,
+`bg-neutral-200` and every other stock colour simply do not exist: an
+off-palette class is a no-op you notice rather than an off-brand colour that
+ships ([D-033](03_decisions.md#d-033)). `transparent` is the one stock value
+kept.
 
-**On unused primitives.** A primitive is "the palette of possible choices" (§1),
-so an unreferenced one is not drift — it is headroom, and the ramp reads as a
-designed system rather than a list of exactly-what-got-used. `--color-neutral-100`,
-`--color-neutral-500`, `--color-neutral-800`, `--color-accent-500` and
-`--color-accent-600` are currently unreferenced and are kept deliberately. An
-unused **semantic** token is a different matter — it claims a role nothing plays
-— and gets removed.
-
-`--color-accent-muted` used to be on that list and now is not: the stat game's
-winning card is its first consumer ([D-093](03_decisions.md#d-093)). Worth noting
-what that cost — **a token's pairings are unaudited until something uses it**,
-because until then its contrast has never been anyone's problem. Being a first
-consumer means adding a group to `npm run audit:contrast`, which is what group 9
-is.
+**Unused primitives are kept; unused semantic tokens are deleted.** A
+primitive is the palette of possible choices, so an unreferenced one is
+headroom: `--color-neutral-100`, `-500` (now the field edge's value), `-800`,
+`--color-accent-500` and `-600` are kept on purpose. A semantic token names a
+role, and one that nothing plays is a claim nothing backs, so it goes.
 
 ### Neutrals (dark-first ramp)
 
-| Token                 | Hex       |                   |
-| --------------------- | --------- | ----------------- |
-| `--color-neutral-950` | `#0B0C0F` | ▉ page background |
-| `--color-neutral-900` | `#14161B` | ▉ surfaces        |
-| `--color-neutral-850` | `#1C1F27` | ▉ elevated        |
-| `--color-neutral-800` | `#23262F` | ▉                 |
-| `--color-neutral-700` | `#2A2E37` | ▉ borders         |
-| `--color-neutral-600` | `#3A3F4B` | ▉ strong borders  |
-| `--color-neutral-500` | `#6B7280` | ▉                 |
-| `--color-neutral-400` | `#8A909C` | ▉ tertiary text   |
-| `--color-neutral-300` | `#A8AEBA` | ▉ secondary text  |
-| `--color-neutral-100` | `#D7DAE0` | ▉                 |
-| `--color-neutral-50`  | `#F4F5F7` | ▉ primary text    |
+| Token                 | Hex       | Behind                   |
+| --------------------- | --------- | ------------------------ |
+| `--color-neutral-950` | `#0B0C0F` | `base`                   |
+| `--color-neutral-900` | `#14161B` | `surface`                |
+| `--color-neutral-850` | `#1C1F27` | `elevated`               |
+| `--color-neutral-800` | `#23262F` |                          |
+| `--color-neutral-700` | `#2A2E37` | `border-subtle`          |
+| `--color-neutral-600` | `#3A3F4B` | `border-strong`          |
+| `--color-neutral-500` | `#6B7280` | `border-field`           |
+| `--color-neutral-400` | `#8A909C` | `tertiary`, `diff-tie`   |
+| `--color-neutral-300` | `#A8AEBA` | `secondary`              |
+| `--color-neutral-100` | `#D7DAE0` |                          |
+| `--color-neutral-50`  | `#F4F5F7` | `primary`, `track-glass` |
 
-### Accent (Chandelure flame — periwinkle purple → blue)
+### Accent (Chandelure's flame: periwinkle into blue)
 
-| Token                     | Hex       |                                    |
-| ------------------------- | --------- | ---------------------------------- |
-| `--color-accent-300`      | `#B3B8F0` | ▉ lighter / hover                  |
-| `--color-accent-400`      | `#9AA0E8` | ▉ **base accent**                  |
-| `--color-accent-500`      | `#7E85D8` | ▉ pressed                          |
-| `--color-accent-600`      | `#6A70C4` | ▉ deep                             |
-| `--color-accent-blue`     | `#A8C3DD` | ▉ flame blue stop                  |
-| `--color-accent-core`     | `#7352E6` | ▉ flame gradient start (hero only) |
-| `--color-accent-muted`    | `#34355C` | ▉ subtle fills / tags              |
-| `--color-accent-contrast` | `#12121C` | ▉ text/icon on a solid accent fill |
+| Token                 | Hex       |                                  |
+| --------------------- | --------- | -------------------------------- |
+| `--color-accent-300`  | `#B3B8F0` | behind `accent-hover`            |
+| `--color-accent-400`  | `#9AA0E8` | behind `accent`                  |
+| `--color-accent-500`  | `#7E85D8` | headroom                         |
+| `--color-accent-600`  | `#6A70C4` | headroom                         |
+| `--color-accent-blue` | `#A8C3DD` | the flame's blue stop            |
+| `--color-accent-core` | `#7352E6` | the flame's core, its first stop |
 
-Flame gradient (hero only): `linear-gradient(90deg, var(--color-accent-core), var(--color-accent-400), var(--color-accent-blue))`.
+The **flame gradient** is `linear-gradient(90deg, accent-core, accent, accent-blue)`,
+the `.bg-flame` utility. See §3.2 for where it may appear.
 
-### Type colors (18)
+### Type colours (18)
 
-The per-type primitives, tuned for the dark background. Full table with badge-text rules and ⚠ contrast-checks lives in [04_design §3](04_design.md); tokens are `--color-type-<name>` (e.g. `--color-type-fire: #FF9741`), consumed through `typeColorVar()` / `typeTextVar()`. The generated `type → { fill, badgeText }` JSON map once planned here was **never built** and is closed as won't-do — the CSS tokens made it a redundant second source of truth ([D-031](03_decisions.md#d-031), [04_design §3](04_design.md)). The canonical list of the 18 type slugs is `TYPES` in `src/lib/types.js` ([D-038](03_decisions.md#d-038)).
+The per-type primitives, tuned for the dark background. The table with each
+colour's notes is [04_design §3](04_design.md); the tokens are
+`--color-type-<name>`, consumed through `typeColorVar()` and never as a class.
+The canonical list of the 18 slugs is `TYPES` in `src/lib/types.js`
+([D-038](03_decisions.md#d-038)).
 
 ---
 
 ## 3. Color — Semantic Tokens
 
-**These are the only color tokens components should reference.**
+**These are the only colour tokens a component may name.** `npm run
+audit:styles` fails on a primitive used as a class.
 
-> `--color-diff-favor` (the flat white winning-value colour) was **removed** in
-> [D-033](03_decisions.md#d-033): [D-023](03_decisions.md#d-023) replaced it with the winner's own type colour, leaving it
-> referenced by nothing. Unused semantic tokens are deleted, not kept on spec.
+| Semantic token            | Value                 | Role                                                                        |
+| ------------------------- | --------------------- | --------------------------------------------------------------------------- |
+| `--color-base`            | `neutral-950`         | The page                                                                    |
+| `--color-surface`         | `neutral-900`         | A surface: panels, cards, boards, the dialog                                |
+| `--color-elevated`        | `neutral-850`         | Inside a surface: fields, chips, bar tracks, the 1× cell                    |
+| `--color-border-subtle`   | `neutral-700`         | Every border that only separates                                            |
+| `--color-border-strong`   | `neutral-600`         | A chip's edge; a border answering hover; an underline                       |
+| `--color-border-field`    | `neutral-500`         | A text field's edge, and nothing else (§7.2)                                |
+| `--color-primary`         | `neutral-50`          | Headings, values, primary text                                              |
+| `--color-secondary`       | `neutral-300`         | Labels and supporting text                                                  |
+| `--color-tertiary`        | `neutral-400`         | Hints, captions, overlines ([D-027](03_decisions.md#d-027))                 |
+| `--color-accent`          | `accent-400`          | Actions, links, brand, selection, the focus ring                            |
+| `--color-accent-hover`    | `accent-300`          | An accent control under the pointer                                         |
+| `--color-accent-contrast` | `#12121C` (own value) | Text and icons on a solid accent fill, or on the flame                      |
+| `--color-accent-muted`    | `#34355C` (own value) | The correct answer's quiet fill ([D-093](03_decisions.md#d-093))            |
+| `--color-diff-tie`        | `neutral-400`         | A tie in a difference cell                                                  |
+| `--color-track-glass`     | `neutral-50` at 16%   | A stat bar's track where it sits over artwork                               |
+| `--hero-scrim`            | 65% of `base`         | How much page sits over Home's sprite wall ([D-070](03_decisions.md#d-070)) |
 
-| Semantic token            | → Primitive                | Use                                                                                   |
-| ------------------------- | -------------------------- | ------------------------------------------------------------------------------------- |
-| `--color-base`            | `--color-neutral-950`      | Page background                                                                       |
-| `--color-surface`         | `--color-neutral-900`      | Cards, panels, the comparison board                                                   |
-| `--color-elevated`        | `--color-neutral-850`      | Inputs, raised elements, stat-bar tracks                                              |
-| `--color-border-subtle`   | `--color-neutral-700`      | Hairlines, dividers                                                                   |
-| `--color-border-strong`   | `--color-neutral-600`      | Hover/focus borders                                                                   |
-| `--color-primary`         | `--color-neutral-50`       | Headings, stat values, primary text                                                   |
-| `--color-secondary`       | `--color-neutral-300`      | Labels, secondary text                                                                |
-| `--color-tertiary`        | `--color-neutral-400`      | Hints, captions, overlines (AA — D-027)                                               |
-| `--color-accent`          | `--color-accent-400`       | Actions, links, brand, and the 2px `:focus-visible` outline (no separate focus token) |
-| `--color-accent-hover`    | `--color-accent-300`       | Hover/active                                                                          |
-| `--color-accent-contrast` | _(primitive; no alias)_    | Text/icon on a solid accent fill                                                      |
-| `--color-diff-tie`        | `--color-neutral-400`      | Zero-difference state                                                                 |
-| `--color-track-glass`     | `--color-neutral-50` @ 16% | Translucent stat-bar track over artwork                                               |
-| `--hero-scrim`            | `--color-base` @ 65%       | How much base sits over Home's sprite wall ([D-070](03_decisions.md#d-070))           |
+**`--hero-scrim` exists to be audited.** Home's wordmark and tagline sit on a
+wall of sprites, so their backdrop is whatever pixel lands behind them. Group 8
+of `npm run audit:contrast` composites base over pure white (the worst a sprite
+can produce) at this value and checks `primary` on it: 5.68:1. It is also why
+the hero's line is `primary` where every other subtitle is `secondary`, which
+lands at 2.78:1 there.
 
-**`--hero-scrim` is the one token here that exists to be audited.** Home's wordmark and tagline sit on a wall of sprites, so their backdrop is not a token — it is whatever pixel happens to be behind them. Group 8 of `npm run audit:contrast` reads this value out of the stylesheet, composites base over **pure white** (the worst a sprite can produce), and checks `--color-primary` against it: 5.68:1. Lowering the scrim fails the audit rather than quietly failing a reader. It is also why the hero tagline is `primary` where every other tagline on the site is `secondary` — `secondary` on that same backdrop is 2.78:1. ([D-070](03_decisions.md#d-070))
+### 3.1 Component tokens
+
+Each is the share of one colour mixed into another, set by one component and
+read by `npm run audit:contrast` from `index.css` ([D-134](03_decisions.md#d-134)).
+Change one and the audit re-measures it.
+
+| Token                                       | Value                    | Where                                               | Audited  |
+| ------------------------------------------- | ------------------------ | --------------------------------------------------- | -------- |
+| `--mix-stab-fill`                           | 14%                      | The STAB chip's type fill over `elevated`           | group 7  |
+| `--mix-stab-border`                         | 28%                      | The STAB chip's border, quiet tiers                 | —        |
+| `--mix-stab-border-strong`                  | 55%                      | The STAB chip's border, 2×                          | —        |
+| `--mix-panel-tint`                          | 16%                      | A game panel's type tint over `base`                | group 10 |
+| `--mix-dex-fill`                            | 28%                      | The dex stat cell's fill                            | group 5  |
+| `--mix-grid-strong`                         | 55%                      | The type chart's 2× cell, accent over `elevated`    | group 6  |
+| `--mix-grid-wash`                           | 12%                      | A selected column's wash                            | group 6  |
+| `--mix-grid-hover`                          | 7%                       | The type chart's cross-hair                         | —        |
+| `--flame-text-inset`                        | 18%                      | How far from each end the speed banner's text stays | group 11 |
+| `--shadow-text-art`                         | `0 1px 6px` at 75% black | Text over artwork (`.shadow-on-art`)                | —        |
+| `--focus-ring-width`, `--focus-ring-offset` | 2px, 2px                 | The one focus ring (§12.3)                          | group 12 |
+
+**A colour-mix share that sets a text pairing is a token; one that only adds
+`base` is not.** Home's radial pool and bottom fade over the sprite wall only
+ever deepen the audited scrim, so they stay inside `SpriteWall` as art
+direction. The STAB chip has **two** border strengths, loud and quiet, which is
+[D-051](03_decisions.md#d-051)'s one-loud-state scale; it had four, two of them
+28% and 30% ([D-135](03_decisions.md#d-135)).
+
+### 3.2 How the colours fit together
+
+**One hue family.** Measured in OKLCH, the neutrals are a faintly violet grey
+(hue 264–271°, chroma ≤ 0.023), the accent sits at 280°, the flame's core at
+288° and its blue stop at 247°. The blacks and the purples are one family, which
+is Chandelure, and none of them fights another.
+
+**Surfaces are told apart by their edges.** `surface` on `base` is 1.08:1 and
+`elevated` on `surface` is 1.10:1: on a near-black UI the dark end has no room,
+so a surface is always drawn with its `border-subtle` edge (1.33:1). That is
+deliberate dark-UI practice, not a contrast failure; nothing is identified by
+those fills alone.
+
+**The 18 type colours are Pokémon's, and some sit close together by nature.**
+The nearest pairs are Grass/Bug (ΔE 0.062 in OKLab), Electric/Ground (0.070) and
+Ground/Rock (0.075). It is acceptable because a type colour never appears
+without the type's name beside it (§12 rule 6).
+
+**The accent sits among them, and is closest to Flying** (ΔE 0.054, nearer than
+any two types are to each other). 04_design used to claim the accent was "kept
+bluer and lighter than the purple-family types so it never reads as a type";
+measured, that is not true of Flying. Moving the accent does not fix it: the
+best hue found (272°) reaches 0.074 from Flying by arriving 0.074 from Water.
+So the colour stays, and the rule that does the real work is structural rather
+than chromatic: **the accent never colours a type, and a type's colour never
+appears without the type's name.** A selected Flying chip and a selected
+"Gen 5" chip look alike because both are selected, which is true.
+
+**The flame appears in exactly two places:** the BST delta numeral (`text-numeral-*`
+in `bg-clip-text`) and the speed banner, on the comparison card and Home's
+board. Not on the hero, which is sprites ([D-070](03_decisions.md#d-070)); not
+behind any other data. Text in the flame is held to the flame's own audit:
+the numeral is large text (3.51:1 at its darkest stop, against 3.0), and the
+banner's words stay `--flame-text-inset` from each end, where the worst point
+is 4.71:1 against AA's 4.5 ([D-136](03_decisions.md#d-136)).
+
+**Type colours are never blended with each other.** A surface tinted by a
+Pokémon's type takes its primary type, one colour even for a dual type, and its
+badges carry the whole typing ([D-144](03_decisions.md#d-144)). Darkened to a
+tint, a yellow is olive, an orange brown and a red maroon, and two of them
+together read as mud however the blend is tuned. The flame is the site's only
+colour gradient.
 
 ---
 
@@ -114,414 +201,744 @@ The per-type primitives, tuned for the dark background. Full table with badge-te
 
 ### 4.1 Families
 
-| Token            | Stack                            | Role                         |
-| ---------------- | -------------------------------- | ---------------------------- |
-| `--font-display` | `'Space Grotesk', sans-serif`    | Logo, headings, titles, hero |
-| `--font-body`    | `'Inter', system-ui, sans-serif` | Body, UI, **stat numbers**   |
+| Token            | Stack                            | Role                              |
+| ---------------- | -------------------------------- | --------------------------------- |
+| `--font-display` | `'Space Grotesk', sans-serif`    | Wordmark, headings, names, labels |
+| `--font-body`    | `'Inter', system-ui, sans-serif` | Body, UI, **every stat number**   |
 
-Stat numbers always add tabular figures: `font-feature-settings: "tnum" 1;`.
+Stat numbers always carry tabular figures (`font-feature-settings: "tnum" 1`),
+which is built into the stat styles, so digits align and a changing number does
+not shift what sits beside it. Both families are self-hosted
+([D-061](03_decisions.md#d-061)).
 
-### 4.2 Weight tokens
+### 4.2 Weights
 
-| Token                    | Value | Family availability   |
-| ------------------------ | ----- | --------------------- |
-| `--font-weight-regular`  | 400   | Inter                 |
-| `--font-weight-medium`   | 500   | Inter · Space Grotesk |
-| `--font-weight-semibold` | 600   | Inter                 |
-| `--font-weight-bold`     | 700   | Space Grotesk         |
+| Token                    | Value | Family               |
+| ------------------------ | ----- | -------------------- |
+| `--font-weight-regular`  | 400   | Inter                |
+| `--font-weight-medium`   | 500   | Inter, Space Grotesk |
+| `--font-weight-semibold` | 600   | Inter                |
+| `--font-weight-bold`     | 700   | Space Grotesk        |
 
-### 4.3 Font-size ramp (primitive)
+### 4.3 The size ramp: eleven sizes, closed
 
-`--text-5xl` read "home marketing hero (optional)" until the home hero was actually built and used `text-display-hero` (48px) instead — on a full-bleed sprite wall, at 60px, the wordmark would crowd the tagline under it. Labelled as an unconsumed rung now, the way `--dur-base` and `--dur-slow` are in §9, rather than describing a use it does not have.
+Anchored at `--text-base: 1rem`, all in `rem` so they honour user zoom.
+**No size exists outside this ramp, and no component names a ramp size
+directly:** components use the named styles of §5, and `audit:styles` fails a
+stock size such as `text-sm`.
 
-Anchored at `--text-base: 1rem` (16px, the accessibility floor), stepping at ≈1.2 (compact enough for a data UI, with room for a dramatic hero). **All sizes in `rem`** so they honor user zoom. This is the complete set — no size exists outside this ramp.
+| Token         | rem       | px  | Step role                   |
+| ------------- | --------- | --- | --------------------------- |
+| `--text-2xs`  | 0.6875rem | 11  | overline, badge             |
+| `--text-xs`   | 0.75rem   | 12  | caption, chip label         |
+| `--text-sm`   | 0.875rem  | 14  | small UI, dense numbers     |
+| `--text-base` | 1rem      | 16  | body, fields                |
+| `--text-md`   | 1.125rem  | 18  | large body, h4, stat value  |
+| `--text-lg`   | 1.25rem   | 20  | h3, Pokémon name            |
+| `--text-xl`   | 1.5rem    | 24  | h2                          |
+| `--text-2xl`  | 1.875rem  | 30  | h1                          |
+| `--text-3xl`  | 2.25rem   | 36  | display                     |
+| `--text-4xl`  | 3rem      | 48  | hero display                |
+| `--text-5xl`  | 3.75rem   | 60  | a rung of the scale, unused |
 
-| Token         | rem       | px  | Step role               |
-| ------------- | --------- | --- | ----------------------- |
-| `--text-2xs`  | 0.6875rem | 11  | micro / overline        |
-| `--text-xs`   | 0.75rem   | 12  | caption / badge         |
-| `--text-sm`   | 0.875rem  | 14  | small UI / labels       |
-| `--text-base` | 1rem      | 16  | body (base)             |
-| `--text-md`   | 1.125rem  | 18  | large body / stat value |
-| `--text-lg`   | 1.25rem   | 20  | h3 / card title         |
-| `--text-xl`   | 1.5rem    | 24  | h2                      |
-| `--text-2xl`  | 1.875rem  | 30  | h1                      |
-| `--text-3xl`  | 2.25rem   | 36  | display                 |
-| `--text-4xl`  | 3rem      | 48  | hero display            |
-| `--text-5xl`  | 3.75rem   | 60  | scale rung, unconsumed  |
+The steps are 1px apart at the small end and widen as the sizes grow (ratios
+1.09 to 1.33), which is the right shape for a data UI: the small sizes do the
+labelling and need fine steps, the large ones make hierarchy and need big ones.
+11 and 12 are 1px apart and are kept as two sizes on purpose: 11 is always
+uppercase and tracked or a chip label, 12 is always mixed case, so case and
+tracking separate them where 1px could not.
 
-### 4.4 Line-height tokens
+### 4.4 Line-height
 
-| Token               | Value | Use                                           |
-| ------------------- | ----- | --------------------------------------------- |
-| `--leading-tight`   | 1.1   | Display / hero                                |
-| `--leading-snug`    | 1.2   | Headings                                      |
-| `--leading-base`    | 1.5   | Body                                          |
-| `--leading-relaxed` | 1.6   | Long-form paragraphs                          |
-| `--leading-none`    | 1     | Single-line UI (buttons, badges, stat digits) |
+| Token               | Value | Use                                          |
+| ------------------- | ----- | -------------------------------------------- |
+| `--leading-tight`   | 1.1   | Display, hero                                |
+| `--leading-snug`    | 1.2   | Headings, captions                           |
+| `--leading-base`    | 1.5   | Body                                         |
+| `--leading-relaxed` | 1.6   | Lead paragraphs                              |
+| `--leading-none`    | 1     | Single-line UI: buttons, badges, stat digits |
 
-### 4.5 Letter-spacing tokens
+### 4.5 Letter-spacing
 
-| Token                | Value   | Use                                   |
-| -------------------- | ------- | ------------------------------------- |
-| `--tracking-tighter` | -0.02em | Display / hero                        |
-| `--tracking-tight`   | -0.01em | H1 / H2                               |
-| `--tracking-normal`  | 0       | Body, most UI                         |
-| `--tracking-wide`    | 0.02em  | Stat digits, badges                   |
-| `--tracking-wider`   | 0.14em  | Uppercase overlines / stat-row labels |
-
----
-
-## 5. Typography — Semantic Text Styles (the exhaustive scale)
-
-**Every text style used anywhere on the site.** Each is a named style bundling family + size + weight + line-height + letter-spacing. Use these by name — do not hand-assemble type. If a design needs a style not listed here, the style gets **added to this table**, not improvised.
-
-| Style token         | Family      | Size               | Weight | Line-height | Tracking          | Used for                                        |
-| ------------------- | ----------- | ------------------ | ------ | ----------- | ----------------- | ----------------------------------------------- |
-| `text-display-hero` | display     | `--text-4xl` (48)  | 700    | tight       | tighter           | Home hero headline / wordmark                   |
-| `text-display`      | display     | `--text-3xl` (36)  | 700    | tight       | tighter           | Big page display titles                         |
-| `text-h1`           | display     | `--text-2xl` (30)  | 700    | snug        | tight             | Primary page heading (one per page)             |
-| `text-h2`           | display     | `--text-xl` (24)   | 500    | snug        | tight             | Section headings                                |
-| `text-h3`           | display     | `--text-lg` (20)   | 500    | snug        | normal            | Subsections · card titles · **Pokémon name**    |
-| `text-h4`           | display     | `--text-md` (18)   | 500    | snug        | normal            | Minor headings                                  |
-| `text-body-lg`      | body        | `--text-md` (18)   | 400    | relaxed     | normal            | Lead paragraphs                                 |
-| `text-body`         | body        | `--text-base` (16) | 400    | base        | normal            | Default body text                               |
-| `text-body-sm`      | body        | `--text-sm` (14)   | 400    | base        | normal            | Secondary / helper text                         |
-| `text-label`        | body        | `--text-sm` (14)   | 500    | none        | normal            | Form + UI labels                                |
-| `text-caption`      | body        | `--text-xs` (12)   | 500    | snug        | normal            | Captions, hints, footnotes                      |
-| `text-overline`     | display     | `--text-2xs` (11)  | 500    | none        | wider · UPPERCASE | Eyebrows · **stat-row labels** (HP, Atk…)       |
-| `text-overline-lg`  | display     | `--text-base` (16) | 500    | none        | wider · UPPERCASE | The arena's role labels (ATTACKING / DEFENDING) |
-| `text-stat`         | body (tnum) | `--text-md` (18)   | 600    | none        | wide              | Stat values in the comparison                   |
-| `text-stat-sm`      | body (tnum) | `--text-sm` (14)   | 600    | none        | wide              | Stat values in a dense row (the dex table)      |
-| `text-stat-lg`      | body (tnum) | `--text-lg` (20)   | 600    | none        | wide              | BST · emphasized stat                           |
-| `text-diff`         | body (tnum) | `--text-sm` (14)   | 600    | none        | wide              | Difference value + caret                        |
-| `text-badge`        | display     | `--text-2xs` (11)  | 600    | none        | wide              | Type badges                                     |
-| `text-button`       | body        | `--text-sm` (14)   | 600    | none        | normal            | Button labels                                   |
-| `text-numeral-xl`   | display     | `--text-4xl` (48)  | 700    | none        | normal            | BST delta on the comparison card                |
-| `text-numeral-lg`   | display     | `--text-3xl` (36)  | 700    | none        | normal            | BST delta on Home · "Tied" on the card          |
-| `text-numeral-md`   | display     | `--text-2xl` (30)  | 700    | none        | normal            | "Tied" on Home                                  |
-| `text-meta`         | display     | `--text-xs` (12)   | 600    | snug        | normal            | Small display label in a chip/pill              |
-
-That's **23 styles across 11 sizes** — the entire typographic surface of the site. Anything you're tempted to size by hand already has a home here.
-
-**`text-overline-lg` is what §5's own rule looks like in use** ([D-107](03_decisions.md#d-107)). The type game's `ATTACKING` / `DEFENDING` labels carry the entire direction of the question, and at `text-overline`'s 11px they were the quietest thing on a board whose next-largest text is 36px. The eyebrow treatment was right; only the size was wrong — so the size got a style rather than the call site getting a hand-tune, which is the difference this table exists to enforce.
-
-**Why the numerals need their own styles.** `text-numeral-*` differ from
-`text-display*` in exactly one property — `leading-none` instead of
-`leading-tight` — and that is the whole point. The big BST figures are optically
-centred inside **fixed-height bands** (the comparison card's `h-68` top zone,
-the featured board's BST row); `leading-tight`'s half-leading would push them off
-centre. They were hand-assembled for years because the scale had no style for
-"display numeral in a band". Adding one is the fix §5 prescribes — the design was
-right, the table was incomplete. ([D-035](03_decisions.md#d-035))
-
-**On `text-stat-sm` sharing `text-diff`'s values.** They are identical today and
-are still two styles, because §12 rule 2 is one style per **role**: a dex-table
-cell and a comparison delta are different roles and are free to diverge. Naming
-the role is the point — reusing `text-diff` in a table would make the next reader
-think the number is a difference. ([D-039](03_decisions.md#d-039))
-
-**The one permitted exception: inline emphasis.** Overriding **family and weight
-only** — inheriting size and line-height from the surrounding named style — is
-allowed for emphasis inside a run of text, the way `<strong>` works. The leader's
-name in the comparison card's BST line (`font-display font-semibold` inside a
-`text-body-sm` parent) is the single instance. Anything that also sets a **size**
-is not inline emphasis and needs a named style.
+| Token                | Value   | Use                 |
+| -------------------- | ------- | ------------------- |
+| `--tracking-tighter` | -0.02em | Display, hero       |
+| `--tracking-tight`   | -0.01em | h1, h2              |
+| `--tracking-normal`  | 0       | Body, most UI       |
+| `--tracking-wide`    | 0.02em  | Stat digits, badges |
+| `--tracking-wider`   | 0.14em  | Uppercase overlines |
 
 ---
 
-## 6. Spacing Scale
+## 5. Typography — The Named Text Styles
 
-4px base unit; use the scale for all margin, padding, and gap. No arbitrary spacing.
+**Every piece of text on the site uses exactly one of these 22 styles.** Each
+bundles family, size, weight, line-height and tracking. A design that needs a
+style not listed here gets it **added to this table**, not improvised
+([D-035](03_decisions.md#d-035)). Measured across 15 routes at two widths, every
+type combination the site renders is one of these, apart from the one inline
+emphasis below.
 
-**No `--space-*` tokens are emitted, by design.** Tailwind v4's default spacing base (`--spacing: 0.25rem`) already produces this exact scale, so `src/index.css` keeps the default rather than redefining it — the utility _is_ the token. Write `p-6`, not `p-[var(--space-6)]`.
+| Style token         | Family      | Size | Weight | Leading | Tracking          | Role                                                           |
+| ------------------- | ----------- | ---- | ------ | ------- | ----------------- | -------------------------------------------------------------- |
+| `text-display-hero` | display     | 48   | 700    | tight   | tighter           | Home's wordmark, the 404 numeral                               |
+| `text-display`      | display     | 36   | 700    | tight   | tighter           | A typing set as the whole content of a panel                   |
+| `text-h1`           | display     | 30   | 700    | snug    | tight             | Page title (one per page)                                      |
+| `text-h2`           | display     | 24   | 500    | snug    | tight             | A round's question; a Pokémon in a two-up arena                |
+| `text-h3`           | display     | 20   | 500    | snug    | normal            | **A Pokémon's name at card scale**; the wordmark in the header |
+| `text-h4`           | display     | 18   | 500    | snug    | normal            | Section title inside a page; a card's title                    |
+| `text-body-lg`      | body        | 18   | 400    | relaxed | normal            | Home's hero line                                               |
+| `text-body`         | body        | 16   | 400    | base    | normal            | Long-form prose; every form field                              |
+| `text-body-sm`      | body        | 14   | 400    | base    | normal            | Subtitles, descriptions, supporting text                       |
+| `text-caption`      | body        | 12   | 500    | snug    | normal            | Captions, metadata, footnotes                                  |
+| `text-overline`     | display     | 11   | 500    | none    | wider · UPPERCASE | Group labels, stat labels, column headers                      |
+| `text-overline-lg`  | display     | 16   | 500    | none    | wider · UPPERCASE | The arena's ATTACKING / DEFENDING                              |
+| `text-stat-lg`      | body (tnum) | 20   | 600    | none    | wide              | BST, an answer's multiplier                                    |
+| `text-stat`         | body (tnum) | 18   | 600    | none    | wide              | A stat value with a row of its own                             |
+| `text-stat-sm`      | body (tnum) | 14   | 600    | none    | wide              | A stat value in a dense row                                    |
+| `text-diff`         | body (tnum) | 14   | 600    | none    | wide              | A difference, and a multiplier on a chip                       |
+| `text-numeral-xl`   | display     | 48   | 700    | none    | normal            | A display number in a fixed band (the BST delta)               |
+| `text-numeral-lg`   | display     | 36   | 700    | none    | normal            | The same, one size down                                        |
+| `text-numeral-md`   | display     | 30   | 700    | none    | normal            | The same, two sizes down                                       |
+| `text-meta`         | display     | 12   | 600    | snug    | normal            | A type's name on a STAB chip                                   |
+| `text-badge`        | display     | 11   | 600    | none    | wide              | Type badges and compact chips                                  |
+| `text-button`       | body        | 14   | 600    | none    | normal            | Buttons, nav links, the speed banner                           |
 
-| Utility | rem     | px  |
-| ------- | ------- | --- |
-| `*-0`   | 0       | 0   |
-| `*-1`   | 0.25rem | 4   |
-| `*-2`   | 0.5rem  | 8   |
-| `*-3`   | 0.75rem | 12  |
-| `*-4`   | 1rem    | 16  |
-| `*-5`   | 1.25rem | 20  |
-| `*-6`   | 1.5rem  | 24  |
-| `*-8`   | 2rem    | 32  |
-| `*-10`  | 2.5rem  | 40  |
-| `*-12`  | 3rem    | 48  |
-| `*-16`  | 4rem    | 64  |
-| `*-20`  | 5rem    | 80  |
+**22 styles on 11 sizes.** `text-label` was the 23rd and was used by nothing
+on the site, so it went, by the rule that deletes an unused semantic token
+([D-134](03_decisions.md#d-134)).
 
-**Half-steps are in the scale too, and are used.** Tailwind's default spacing
-emits `*-0.5`, `*-1.5` and `*-2.5` (2, 6 and 10px) and this table omitted them
-while the code used `gap-1.5` **nineteen times** — every chip group on the site
-sits on it, because 4px reads as touching and 8px breaks a row of pills into
-separate objects. They are legitimate; the omission was the table's. Reach for a
-whole step first and a half-step only when the whole one is visibly wrong.
+**One style per ROLE, even when two share their values.** `text-stat-sm` and
+`text-diff` are identical today and are two styles, because a stat value and a
+difference are different roles that are free to diverge. The comparison card's
+mirrored rows set their values in `text-diff` until D-135, which made a stat
+value read as a difference to the next person who touched it.
 
-| Utility | rem      | px  | Where                                                |
-| ------- | -------- | --- | ---------------------------------------------------- |
-| `*-0.5` | 0.125rem | 2   | inside a badge (`py-0.5`), name-to-number offsets    |
-| `*-1.5` | 0.375rem | 6   | **every chip group**, icon-to-label gaps             |
-| `*-2.5` | 0.625rem | 10  | two fine-tuned bands (`MatchupSummary`, `SearchBar`) |
+**Why the numerals have their own styles.** `text-numeral-*` differ from
+`text-display*` in one property: `leading-none`. They sit optically centred in
+fixed-height bands, and `leading-tight`'s half-leading would push them off
+centre ([D-035](03_decisions.md#d-035)).
 
-**Arbitrary values are allowed when the number is DERIVED**, which is the other
-place this section overstated itself: "no arbitrary spacing" is right about
-taste and wrong about arithmetic. Five values are arbitrary on purpose, and each
-is a number computed from something else and written down beside it —
-`min-h-[21px]` (a compact chip: 11px `leading-none` + `py-1` + two 1px borders,
-[D-125](03_decisions.md#d-125)), `min-h-[26rem]` (the arena's floor), `h-[100svh]`
-and `h-[72svh]` (viewport-sized surfaces), and `w-[min(36rem,calc(100vw-2rem))]`
-(the setup dialog). The rule is that an arbitrary value must show its working;
-a magic number with no derivation is still banned.
+**Named styles do not take responsive variants.** They are hand-written
+`@layer components` rules, so `md:text-body-sm` generates no CSS. A component
+that needs two sizes of a style takes a prop and two call sites
+([D-065](03_decisions.md#d-065)).
 
-**Applying spacing — the proximity rule (`internal ≤ external`).** Spacing communicates grouping, so it must be _relative_, never uniform. Inside a group (a label and its value, an eyebrow and its content) use a **tight** gap (`gap-1`/`gap-2`). Between groups (one section and the next, the stats and the footer) use a **generous** gap (`gap-4`+). Uniform gaps make everything read as one undifferentiated block ("claustrophobic"); the contrast between tight and loose is what creates hierarchy and breathing room. ([D-019](03_decisions.md#d-019))
+**The one exception: inline emphasis.** Inside a run of text, family and weight
+may change and nothing else, the way `<strong>` works. The leader's name in the
+comparison card's BST line (`font-display font-semibold`) is the single
+instance, and `audit:styles` allows exactly that pair.
 
-**Never touch a divider or edge.** Any content adjacent to a border/divider or the card edge gets padding on both sides (≥ `p-3`), so nothing looks cramped against a line.
+### 5.1 Which style for which job
 
-**Vertical rhythm.** Component band and row heights follow the 8px rhythm (e.g. stat rows 36, footer 56, card 568). Keeping heights on multiples of 4/8 keeps rows aligned across components.
+| The text is…                              | Style                                  | Colour                                       |
+| ----------------------------------------- | -------------------------------------- | -------------------------------------------- |
+| A page's title                            | `text-h1` + the accent dot             | `primary`                                    |
+| The line under a page's title             | `text-body-sm`                         | `secondary`                                  |
+| A section's title inside a page           | `text-h4`                              | `primary` or `secondary` with coloured types |
+| A card's title (games index, picker)      | `text-h4`                              | `primary`                                    |
+| A Pokémon's name on a card                | `text-h3`                              | `primary`                                    |
+| A Pokémon's name in a row                 | `text-body-sm`                         | `primary`                                    |
+| A Pokémon's name in a thumbnail           | `text-caption`                         | `primary`                                    |
+| A label over a group of controls          | `text-overline`                        | `tertiary`                                   |
+| A label beside a value (stat row, footer) | `text-overline`                        | `tertiary` or `secondary`                    |
+| A dex number, a count, a footnote         | `text-caption`                         | `tertiary`                                   |
+| An inline empty state                     | `text-body-sm`                         | `tertiary`                                   |
+| Prose (About)                             | `text-body`                            | `secondary`                                  |
+| Any text field                            | `text-body` (16px: iOS zooms below it) | `primary`, placeholder `tertiary`            |
 
 ---
 
-## 7. Radii, Borders & Elevation
+## 6. Spacing and Layout
 
-**Radii**
+Spacing is on a **4px base**. Tailwind's default `--spacing: 0.25rem` already
+yields it, so no `--space-*` tokens are emitted: the utility is the token.
 
-| Token          | Value  | Use                                                                    |
-| -------------- | ------ | ---------------------------------------------------------------------- |
-| `--radius-xs`  | 4px    | tags, small chips                                                      |
-| `--radius-sm`  | 6px    | inputs, buttons                                                        |
-| `--radius-md`  | 10px   | cards inner, callouts                                                  |
-| `--radius-lg`  | 16px   | panels, the comparison board                                           |
-| `--radius-xl`  | 24px   | large hero cards                                                       |
-| `rounded-full` | 9999px | stat bars, badges, pills, toggles — Tailwind built-in, no token needed |
+### 6.1 The spacing scale, closed
 
-**Borders** — `border` (1px) is the default width, `border-2` where a heavier rule is wanted; `:focus-visible` draws a 2px outline. No width tokens are emitted — Tailwind's defaults cover it. Color comes from `--color-border-subtle` / `--color-border-strong`; `index.css` sets `--color-border-subtle` as the global default border color so a bare `border` is already on-brand.
+**Padding, margin and gap take only these steps.** `audit:styles` fails any
+other.
 
-**Elevation** — dark UI favors borders over shadows. One shadow token, reserved for floating layers (dropdowns, menus):
+| Step  | px  | Step | px  | Step | px  |
+| ----- | --- | ---- | --- | ---- | --- |
+| `0`   | 0   | `3`  | 12  | `12` | 48  |
+| `px`  | 1   | `4`  | 16  | `16` | 64  |
+| `0.5` | 2   | `5`  | 20  | `20` | 80  |
+| `1`   | 4   | `6`  | 24  | `24` | 96  |
+| `1.5` | 6   | `8`  | 32  | `36` | 144 |
+| `2`   | 8   | `10` | 40  | `40` | 160 |
+| `2.5` | 10  |      |     |      |     |
 
-| Token              | Value                        |
-| ------------------ | ---------------------------- |
-| `--shadow-overlay` | `0 8px 24px rgba(0,0,0,0.5)` |
-| `--shadow-art`     | `0 8px 22px rgba(0,0,0,0.5)` |
+**Reach for a whole step first.** The half steps are real (every chip group
+sits on `1.5`, because 4px reads as touching and 8px breaks a row of pills
+apart), but a half step is the exception that has to be visibly right.
+**36 and 40 are layout steps** and nothing else: Home's section rhythm
+([D-083](03_decisions.md#d-083)) and the flanking art's anchor off the centre
+line ([D-072](03_decisions.md#d-072)).
 
-Panels and cards use `p-4`, not the `p-6` [04_design §6](04_design.md) used to specify — nothing ever shipped `p-6`, and at 390px it leaves the chips inside a control panel cramped for width ([D-058](03_decisions.md#d-058)).
+### 6.2 Padding, by kind of box
 
-`--shadow-overlay` is for floating layers (the search dropdown). `--shadow-art` is the lift under official artwork, applied via the `.drop-shadow-art` utility — it is a `filter: drop-shadow()`, not a `box-shadow`, so it follows the artwork's transparent silhouette rather than its bounding box. (No `--shadow-none` token — omit the shadow instead.)
+| Box                                        | Padding                       | Examples                                                                        |
+| ------------------------------------------ | ----------------------------- | ------------------------------------------------------------------------------- |
+| **Surface**                                | 16 (`p-4`)                    | Every panel, card body, board band, dialog body, the verdict card               |
+| **Inset** (nested in a surface)            | 12 (`p-3`)                    | A phone's per-stat card, a tier row, the search's "No matches"                  |
+| **Bar** (one line, inside or as a surface) | 16 across, 12 down            | A dialog's header and footer, a round's question card                           |
+| **Field**                                  | 12 across                     | Every text field and select                                                     |
+| **Exception: the arena**                   | 8–12 on a phone, 16 from `sm` | Game panels, sized by density ([D-096](03_decisions.md#d-096))                  |
+| **Exception: the type chart panel**        | 6 (`p-1.5`)                   | Keeps the panel's corner off the corner badges ([D-053](03_decisions.md#d-053)) |
+
+A structured surface (a Pokémon card, the comparison card, Home's board) applies
+the surface's 16 to each band across, and sets each band's height by its own
+spec. There were 20px cards (`p-5`) and a 20px board (`px-5`) beside 12px and
+16px ones until [D-135](03_decisions.md#d-135); the surface number is 16.
+
+### 6.3 Gaps, by relationship
+
+**Proximity: internal ≤ external** ([D-019](03_decisions.md#d-019)). Things
+that belong together sit closer than things that do not, and every gap below is
+one of a handful of relationships.
+
+| Relationship                                                                | Gap                                                                                                           |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| A heading and the line that supports it                                     | 4                                                                                                             |
+| A marker dot or icon and its label                                          | 6                                                                                                             |
+| Chip to chip in a group                                                     | 6 (the generation strip: 4, §12.2)                                                                            |
+| A label over its group                                                      | 8                                                                                                             |
+| A group and the note under it                                               | 8                                                                                                             |
+| A section heading and its content                                           | 12                                                                                                            |
+| Group to group inside a panel (the panel's own gap, never a child's margin) | 16                                                                                                            |
+| A divider and what it divides, each side                                    | 16                                                                                                            |
+| Sibling surfaces (cards in a grid, the board)                               | 16                                                                                                            |
+| A tool's controls panel and what it controls                                | 24                                                                                                            |
+| A page title and the first block                                            | 32                                                                                                            |
+| A section's content and its call to action                                  | 32                                                                                                            |
+| Section to section within a page                                            | 32                                                                                                            |
+| Home's sections                                                             | 144                                                                                                           |
+| The last block and the footer                                               | the page's bottom padding: 80 on a tool, 96 on a content page, or more on a page shorter than the screen (§8) |
+
+**Never touch an edge.** Content beside a border, a divider or a card edge gets
+padding on both sides. The speed banner was the one surface whose text could
+reach its edges, with a long name; it can't now ([D-136](03_decisions.md#d-136)).
+
+**The footer has no margin of its own.** The space above it is the page's bottom
+padding, the one number [D-083](03_decisions.md#d-083) set; the footer's own
+`mt-16` was adding 64px on top of it until [D-139](03_decisions.md#d-139).
+
+### 6.4 Sizes and positions
+
+**Heights, widths and positions are on the 4px grid** (any step, or a half
+step), a fraction, or a keyword (`full`, `svh`, `auto`, `max`, `min`,
+`fit`). **A screen's height is `svh`**, the small viewport, which is what a
+phone shows with its toolbar out. Never `screen`: its `vh` is taller than that
+([D-110](03_decisions.md#d-110)). Measures are capped at named widths only: `max-w-content` (1120px, the
+page), `max-w-4xl`, `max-w-2xl` (the boards, prose), `max-w-xl` (a subtitle, a
+legal line), `max-w-md`, `max-w-sm`.
+
+**Control heights are five numbers.**
+
+| Height | What                                                                              |
+| ------ | --------------------------------------------------------------------------------- |
+| 21     | A compact chip, in the card's 88px controls band ([D-125](03_decisions.md#d-125)) |
+| 36     | Every compact control: chips, `Button sm`, icon buttons, the sort select          |
+| 40     | A table's column header                                                           |
+| 44     | A page's call to action (`Button md`), a text field, an answer                    |
+| 56     | Bar-filling: the header's nav links, the game bar's title                         |
+
+WCAG 2.5.8 (AA) is the target-size floor: 24×24, or clear of a neighbour's
+centre by 24. Everything above 24 passes by size. The 21px chips pass by
+spacing (27.1px between the tightest centres, [D-059](03_decisions.md#d-059)),
+and `npm run sweep:widths` measures every target at 320px.
+
+### 6.5 Arbitrary values
+
+**An arbitrary value must show its working.** "No arbitrary values" is right
+about taste and wrong about arithmetic, so the rule is that each one is a number
+derived from something else, written down with its derivation. The list is
+closed and lives in `scripts/style-audit.mjs`; a new one is added there, with
+its reason, or the audit fails.
+
+| Value                                           | Derivation                                                                                                                                                         |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `min-h-[21px]`                                  | A compact chip: 11px text, `py-1`, a 1px border each side                                                                                                          |
+| `min-h-[26rem]`                                 | The game board's floor on a landscape phone                                                                                                                        |
+| `h-[72svh]`                                     | Home's hero, so the board crests the fold ([D-070](03_decisions.md#d-070))                                                                                         |
+| `max-h-[85svh]`                                 | The setup dialog stays inside the viewport                                                                                                                         |
+| `w-[min(36rem,calc(100vw-2rem))]`               | The setup dialog, inside the page's gutters                                                                                                                        |
+| `max-h-[475px]`, `max-w-[475px]`                | The vendored artwork's own size ([D-109](03_decisions.md#d-109))                                                                                                   |
+| `right-[calc(50%+8rem+1px)]`                    | The type game's attacking column, measured from the board's right edge: half the board, half the 16rem answer column, one divider ([D-143](03_decisions.md#d-143)) |
+| `[image-rendering:pixelated]`                   | Pixel sprites drawn at whole multiples                                                                                                                             |
+| `[--wall-tile:6rem]`, `[--wall-tile:12rem]`     | A hero tile at 1× and exactly 2× the sprite's 96px                                                                                                                 |
+| The `grid-cols-[…]` / `grid-rows-[…]` templates | One per layout: the mirrored row, a stat row, a tier row, the controls band, two sides and a middle                                                                |
 
 ---
 
-## 8. Breakpoints & Layout
+## 7. Radius, Borders, Elevation and Opacity
 
-| Token             | Min-width | Note                                                                                                                                                                                          |
-| ----------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--breakpoint-xs` | 384px     | **the wordmark drops to the bare flame mark below this** ([D-054](03_decisions.md#d-054), corrected by [D-062](03_decisions.md#d-062))                                                        |
-| `--breakpoint-sm` | 480px     | large phone                                                                                                                                                                                   |
-| `--breakpoint-md` | 768px     | **the comparison board collapses below this** — per-stat cards, the Pokémon cards drop their bars, the comparison card leads ([D-010](03_decisions.md#d-010), [D-057](03_decisions.md#d-057)) |
-| `--breakpoint-lg` | 1024px    | tablet / small laptop                                                                                                                                                                         |
-| `--breakpoint-xl` | 1280px    | desktop                                                                                                                                                                                       |
+### 7.1 Radius, by role
 
-Content max-width `--container-content: 1120px` (utility: `max-w-content`), centered. **Gutters are a uniform `px-4` (16px) at every width as built** — the responsive 24px desktop gutter originally specified here was never implemented; see [04_design §5](04_design.md). `/style` was the one page breaking that rule with its own `px-6`, in the one file whose stated job is not to have drift; it now renders through the shared shell ([D-058](03_decisions.md#d-058)).
+**Five radii, and a radius is chosen by what the box IS, never by eye.**
 
-**`xs` was wrong for three sessions.** [D-054](03_decisions.md#d-054) set it to 360 after finding the header broken at 320 and never measured 360 itself; the header needs 385px, so every width from 360 to 383 turned the wordmark on into a header that scrolled the whole site sideways. No round device width lands in that range, which is why nobody hit it. `xs` is 384 and the nav's sub-`sm` gap tightened to `gap-2` to keep the wordmark on a 390px phone. `npm run sweep:widths` brackets the boundary at 360 / 375 / 383 / 384. ([D-062](03_decisions.md#d-062))
+| Token          | Value  | Role                                                                                           |
+| -------------- | ------ | ---------------------------------------------------------------------------------------------- |
+| `rounded-lg`   | 16px   | **A surface**: panel, card, board, dialog, a round's card                                      |
+| `rounded-md`   | 10px   | **An inset**, nested in a surface: per-stat card, tier row, the search dropdown, a sprite tile |
+| `rounded-sm`   | 6px    | **A text field** or select                                                                     |
+| `rounded-xs`   | 4px    | **A grid cell**: type chart cells and axis badges, the dex's stat fill                         |
+| `rounded-full` | 9999px | **Anything you press or that labels**: buttons, chips, badges, bars, dots, the skip link       |
 
-**Page containers.** Two rhythms, from `components/pageChrome.jsx`: `PAGE_TOOL` (`py-8`) for `/compare`, `/dex` and `/types`, where the controls are the reason you came; `PAGE_CONTENT` (`py-16`) for `/credits`, the 404 and `/style`. Home sets its own. Before this there were six, none of them a decision ([D-058](03_decisions.md#d-058)).
+A side radius (`rounded-tl-lg`, `rounded-l-lg`, …) is only ever the outer corner
+of something clipped by a surface's `lg` curve, such as a panel at the corner
+of a games thumbnail. `--radius-xl` (24px) was defined for "large hero cards"
+and used by nothing, so it went ([D-134](03_decisions.md#d-134)). The skip link
+was a 10px box of its own until then.
+
+### 7.2 Borders
+
+- **Width:** 1px (`border`, or one side). 2px only as the focus ring
+  (§12.3) and the arena's inset marking ring.
+- **Colour:** `border-subtle` by default (it is the global default, so a bare
+  `border` is already right); `border-strong` for a chip's edge and a border
+  answering hover; **`border-field` for a text field's edge only.**
+- **Style:** solid. **Dashed means empty**: the empty Pokémon card.
+
+**Why the field has its own border.** WCAG 1.4.11 asks 3:1 of whatever
+identifies a control, against what is next to it. A chip is identified by its
+label, but a text field's edge is the only thing that says "type here", and
+`border-subtle` was 1.33:1 against the panel. `border-field` is 3.74 against
+`surface`, 4.05 against `base` and 3.41 against the field's own fill; group 12
+of `audit:contrast` measures it ([D-136](03_decisions.md#d-136)).
+
+### 7.3 Elevation and effects
+
+Dark UI separates surfaces with edges rather than shadows. **Three shadows,
+each for one job, and no stock shadow, ring or blur in a component.**
+
+| Token               | Value                     | Job                                                                                           |
+| ------------------- | ------------------------- | --------------------------------------------------------------------------------------------- |
+| `--shadow-overlay`  | `0 8px 24px` at 50% black | A layer floating over content: the search dropdown, a round's card                            |
+| `--shadow-art`      | `0 8px 22px` at 50% black | Lift under official artwork, as `.drop-shadow-art` (a `filter`, so it follows the silhouette) |
+| `--shadow-text-art` | `0 1px 6px` at 75% black  | Text over artwork, as `.shadow-on-art`                                                        |
+
+**Scrims.** `.bg-scrim-art` fades a Pokémon card's artwork into its surface;
+`--hero-scrim` sets Home's. **Backdrop blur** belongs to the two sticky bars
+(the site header and the game bar) and nothing else: they sit translucent over
+content scrolling beneath them.
+
+### 7.4 Opacity
+
+**Four steps, each a state.**
+
+| Step            | Means                                                          |
+| --------------- | -------------------------------------------------------------- |
+| `opacity-40`    | Disabled or unavailable: a disabled button, a capped type chip |
+| `opacity-50`    | Receded: what you did not pick, once a round resolves          |
+| `/70` on `base` | A modal's backdrop                                             |
+| `/85` on `base` | A sticky bar over scrolling content                            |
+
+---
+
+## 8. Breakpoints and Page Layout
+
+| Token             | Min-width | What changes                                                                                                           |
+| ----------------- | --------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `--breakpoint-xs` | 384px     | The wordmark appears beside the flame mark ([D-062](03_decisions.md#d-062))                                            |
+| `--breakpoint-sm` | 480px     | Rows that stacked go side by side; a two-up game splits left and right                                                 |
+| `--breakpoint-md` | 768px     | The comparison board's mirrored rows; the dex's stat columns; the Pokémon cards' bars ([D-057](03_decisions.md#d-057)) |
+| `--breakpoint-lg` | 1024px    | Three-column board; flanking art on Home; a four-up game in one row                                                    |
+| `--breakpoint-xl` | 1280px    | Unused rung                                                                                                            |
+
+`xs` exists for one thing, the header's wordmark, and is measured rather than
+chosen: with the wordmark beside four nav items at their phone gaps the header
+needs 361px (32 gutter, 121 brand, 8 gap, 200 nav, measured 2026-10-04), so
+`xs` at 384 leaves 23px of room for a platform that renders the wordmark wider,
+and `npm run sweep:widths` brackets it at 360, 375, 383 and 384.
+
+**One height variant, `short`**: a window under 33rem tall, which is a game
+board's 26rem floor under the two 3.5rem bars. Below it the board cannot fit
+the screen, which in practice is a phone held sideways. It is used once, as
+`md:short:`, to keep the type game's answers on screen there
+([D-143](03_decisions.md#d-143)). A new use of it is a new rule, written here
+first.
+
+**The page.** Content is capped at `max-w-content` (1120px) and centred. **The
+gutter is a uniform 16px (`px-4`) at every width**: a responsive gutter would
+change nothing above 1152px, where the content is capped, and cost 16px where
+space is tightest ([D-128](03_decisions.md#d-128)).
+
+**Page shells**, from `components/pageChrome.jsx`:
+
+| Shell          | Padding           | Pages                                                                  |
+| -------------- | ----------------- | ---------------------------------------------------------------------- |
+| `PAGE_TOOL`    | 40 top, 80 bottom | `/compare`, `/dex`, `/types`                                           |
+| `PAGE_CONTENT` | 64 top, 96 bottom | `/about`, `/games`, a game's difficulty picker, `/style`, 404          |
+| none           |                   | Home (its hero sets its own rhythm); a game board (it is the viewport) |
+
+The top edge is tight because the sticky header stays attached to it; the
+bottom is generous because nothing is gained by ending close to the footer
+([D-083](03_decisions.md#d-083)). The difficulty picker used to centre itself
+in the board's viewport box instead, which put its title flush against the
+header at 1280×900 and on every phone ([D-137](03_decisions.md#d-137)).
+
+**No page shows its footer before you scroll.** `<main>` is at least one screen
+tall (`min-h-svh`) on every page but a game board, so a page shorter than the
+screen ends in empty canvas and the footer starts 57px below the fold
+([D-142](03_decisions.md#d-142)). A short page does not pin the footer to the
+bottom of the window: at 368px on a desktop, it was the largest thing on
+`/games` and the 404. A page taller than the screen is unaffected.
+
+**No page scrolls sideways at any width.** The type chart's panel is the one
+surface that scrolls on its own, inside its bordered panel and keyboard-
+reachable, because a matrix has no columns it can drop
+([D-051](03_decisions.md#d-051), [D-065](03_decisions.md#d-065)).
 
 ---
 
 ## 9. Motion
 
-| Token             | Value                            | Intended use           | Status                        |
-| ----------------- | -------------------------------- | ---------------------- | ----------------------------- |
-| `--dur-fast`      | 120ms                            | hover, focus           | ✅ **the transition default** |
-| `--dur-base`      | 180ms                            | most transitions       | ✅ `.animate-reveal`          |
-| `--dur-slow`      | 300ms                            | selection cross-fades  | scale rung, unconsumed        |
-| `--dur-bar`       | 450ms                            | stat-bar fill          | ✅ `.animate-grow-w`          |
-| `--dur-charge`    | 220ms                            | the clash's run-in     | ✅ `.animate-clash-charge`    |
-| `--dur-shake`     | 280ms                            | the clash's aftershock | ✅ `.animate-clash-shake`     |
-| `--dur-wall`      | 120s                             | Home's hero wall       | ✅ `.animate-wall`            |
-| `--ease-standard` | `cubic-bezier(0.2, 0, 0, 1)`     | default                | ✅ `.animate-grow-w`          |
-| `--ease-clash`    | `cubic-bezier(0.55, 0, 1, 0.45)` | accelerate             | ✅ `.animate-clash-charge`    |
+| Token             | Value                            | Use                    | Consumed by                          |
+| ----------------- | -------------------------------- | ---------------------- | ------------------------------------ |
+| `--dur-fast`      | 120ms                            | hover, focus           | **every `transition-*`, by default** |
+| `--dur-base`      | 180ms                            | a reveal               | `.animate-reveal`                    |
+| `--dur-slow`      | 300ms                            | a rung of the scale    | nothing                              |
+| `--dur-bar`       | 450ms                            | a stat bar growing in  | `.animate-grow-w`                    |
+| `--dur-charge`    | 220ms                            | the clash's run-in     | `.animate-clash-charge`              |
+| `--dur-shake`     | 280ms                            | the clash's aftershock | `.animate-clash-shake`               |
+| `--dur-wall`      | 120s                             | Home's hero wall       | `.animate-wall`                      |
+| `--ease-standard` | `cubic-bezier(0.2, 0, 0, 1)`     | decelerate (default)   | most                                 |
+| `--ease-clash`    | `cubic-bezier(0.55, 0, 1, 0.45)` | accelerate             | the clash                            |
 
-`--dur-fast` is wired as `--default-transition-duration`, so **every** `transition-*` utility picks it up with no per-component opt-in — write `transition-colors` and you get the documented 120ms. Override per element with `duration-*` when a specific motion needs it. ([D-033](03_decisions.md#d-033))
+**`--dur-fast` is the default transition duration**, so `transition-colors`
+gets 120ms with no opt-in, and `audit:styles` fails a `duration-*`,
+`ease-*` or `delay-*` in a component ([D-033](03_decisions.md#d-033)).
 
-`--dur-wall` is deliberately three orders of magnitude off the rest of the scale: every other duration answers something the user just did, while the hero wall is ambient — a field that large only needs to creep for the movement to register. It is linear rather than eased, because easing an endless loop reads as a stutter. ([D-070](03_decisions.md#d-070))
+**Every duration answers something the user just did, with two named
+exceptions:** the hero wall, which is ambient and three orders of magnitude
+slower, and linear because easing an endless loop reads as a stutter
+([D-070](03_decisions.md#d-070)); and the clash, which is an event that has to
+be read: two halves, accelerating, stopping dead, then each part of each panel
+shaking on its own phase in two axes ([D-100](03_decisions.md#d-100),
+[D-102](03_decisions.md#d-102), [D-114](03_decisions.md#d-114)).
 
-**The clash is two axes and per-part** ([D-114](03_decisions.md#d-114)). Its
-horizontal throw peaks at 14% and its vertical at 32%, deliberately out of
-phase — reusing one decay for both would only rotate the motion, and every part
-would slide along a fixed diagonal. Each direct child of a shaking panel
-animates on its own `--part-delay`, `--part-dur` and `--part-amp`, so the
-variation is mostly in TIMING rather than distance; phase offsets are what read
-as independent mass. Text throws less than artwork (`--throw`), because a
-clipped letterform reads as a bug where a clipped Pokémon reads as impact.
+**Bars grow in, and re-grow only when they would move.** Every stat bar on the
+comparison surfaces animates on mount, keyed on its numbers
+([D-124](03_decisions.md#d-124)); Home's phone cards did not until
+[D-135](03_decisions.md#d-135). The dex's fills do not: the table windows its
+rows, so every row would animate as it scrolled in.
 
-`--dur-base` is spent by the arena's answer reveal. **`--dur-slow` is not, and this table said it was for one session** — the round change used it until it was rebuilt as the clash and outgrew it ([D-100](03_decisions.md#d-100)). Corrected here rather than left, because a status column that drifts is worse than no status column.
-
-`--dur-charge`, `--dur-shake` and `--ease-clash` are component tokens in the `--dur-bar` / `--dur-wall` tradition: a named motion that is nobody else's. **560ms is deliberately long for this scale**, and the reason is the one §9 exists to make explicit — every other duration here answers something the user just did, while the clash is a thing that has to be _read_: two Pokémon charging in and colliding. At `--dur-slow` it registered as a flicker rather than as an event. `--ease-clash` is the scale's only accelerating curve, for the same reason: things that ease **out** are arriving gently, and these are not.
-
-A second easing (`--ease-out-soft`) was specified here once and referenced by nothing; it was removed. `--ease-clash` earns its place by having a caller on the day it lands — which is the bar §12 rule 1 sets for adding anything to this document.
-
-**Reduced motion is mandatory:** under `prefers-reduced-motion: reduce`, disable bar fills/staggers and render final state instantly; keep only opacity fades. ([04_design §7](04_design.md))
+**Reduced motion is mandatory:** under `prefers-reduced-motion: reduce`, every
+animation and delay collapses to a frame, and the final state renders at once.
 
 ---
 
-## 10. Z-Index Scale
+## 10. Z-Index
 
-| Token          | Value | Layer                                          |
-| -------------- | ----- | ---------------------------------------------- |
-| `--z-base`     | 0     | normal flow                                    |
-| `--z-raised`   | 1     | lifted above sibling content, below all chrome |
-| `--z-dropdown` | 1000  | search results, menus                          |
-| `--z-sticky`   | 1100  | sticky header                                  |
-| `--z-overlay`  | 1200  | modals / dialogs                               |
-| `--z-toast`    | 1300  | toasts / copied-link confirmation              |
+| Token          | Value | Layer                                                                                           |
+| -------------- | ----- | ----------------------------------------------------------------------------------------------- |
+| `--z-base`     | 0     | normal flow                                                                                     |
+| `--z-raised`   | 1     | above sibling content, below all chrome: the dex's sticky headers, the game bar, a round's card |
+| `--z-dropdown` | 1000  | the search results                                                                              |
+| `--z-sticky`   | 1100  | the site header                                                                                 |
+| `--z-overlay`  | 1200  | the setup dialog                                                                                |
+| `--z-toast`    | 1300  | the skip link, while focused                                                                    |
 
-`--z-dropdown` (search results), `--z-sticky` (site header), `--z-raised` (the
-dex table's sticky column headers, and the games' game bar) and `--z-overlay`
-(the games' setup dialog) are consumed. The remaining unused rungs stay: a
-z-index scale's whole value is being a **complete ladder** — an incomplete one
-is what makes someone reach for `z-9999`. This is the opposite call from unused
-semantic colour tokens, and deliberately so.
+**Two kinds of stacking, two rules.** Something that must sit above or below
+**another component** takes a rung of the ladder, by token (`var(--z-sticky)`
+inline, or `z-(--z-toast)` as a class). Paint order **inside one component**
+(art under its scrim under its content) uses `z-0`, `z-1` and `z-2`, and
+nothing higher. `audit:styles` fails a `z-10` or a bare `z-1300`.
 
-**`--z-overlay` is that argument paying off a second time.** It sat unused from
-the day the scale was written until the games needed a modal
-([D-096](03_decisions.md#d-096)) — at which point the right rung was simply
-there, with a documented meaning, instead of being guessed at.
-
-**`--z-raised` is that argument proving itself.** The ladder had no rung between
-"normal flow" and "floating chrome", so a sticky table header that only needed
-to out-paint its own rows had nowhere on the scale to sit — and shipped at
-`z-index: auto`, where the rows' positioned cells painted over it. The rung was
-added rather than reaching for a bare `z-10`. ([D-041](03_decisions.md#d-041))
+The ladder is kept complete even where rungs are unused: an incomplete ladder is
+what makes someone reach for `z-9999` ([D-041](03_decisions.md#d-041)).
 
 ---
 
 ## 11. Iconography
 
-Vector icons via **`react-icons`** — primarily the Lucide set (`react-icons/lu`), with other sets used sparingly when a specific glyph is needed (e.g. `react-icons/fa6` carets for the diff indicator). Icons default to `1em` and inherit the surrounding text size; where a specific size is needed it is passed inline (`<LuGauge size={19} />`). No `--icon-*` tokens are emitted. Icons inherit `currentColor`; never introduce off-token colors.
+Vector icons through **`react-icons`**: Lucide (`react-icons/lu`) for
+everything, and Font Awesome 6 (`react-icons/fa6`) for the carets of the
+difference indicator and the dex's sort, whose attribution the footer carries
+([D-120](03_decisions.md#d-120)).
 
-**No emoji in the UI.** Emoji render inconsistently across platforms and read as unpolished ("vibe-coded"). Always use a vector icon instead. ([D-015](03_decisions.md#d-015))
+**An icon is 1em of the text it sits with.** It takes its size from its label:
+14px in a button, 18px after a card's title, 11px in a compact chip. **An icon
+with no text beside it is 16px**, `text-body`'s 1em, which is what `IconButton`
+sets. There was one icon outside this rule, the speed banner's 19px gauge, and
+it follows it now ([D-134](03_decisions.md#d-134)).
 
----
+**An icon takes its colour from its text** (`currentColor`) and never a colour
+of its own; the footer's external-link icon was painted with a border token
+until D-134. **A decorative icon is `aria-hidden`**, and an icon that carries
+meaning says it in `sr-only` text too.
 
-## 12. Usage Rules (consistency guardrails)
-
-1. **Tokens only.** No raw hex, px, or rem literals in components — reference a token. If the value you want doesn't exist, add it to this doc first. **This is enforced:** Tailwind's stock palette is cleared, so an off-palette colour class produces no CSS at all (§2).
-2. **One style per role.** Every piece of text maps to exactly one Section 5 style. No hand-tuned sizes, weights, or spacing. The sole exception is **inline emphasis** (family/weight override inheriting size and leading) — see §5.
-3. **Semantic over primitive.** Components use semantic tokens (`--color-primary`), not primitives (`--color-neutral-50`), so theming stays a one-layer swap.
-4. **Sizes come from the ramp.** The only font sizes that exist are §4.3's eleven steps. This is the rule that fixes the "too many inconsistent sizes" habit.
-5. **Accent is chrome-only.** The purple accent is for brand/actions/focus — never a stat/type color (§2, [04_design §2](04_design.md)).
-6. **Never color alone.** Meaning always pairs color with text/number/icon (accessibility).
-7. **Spacing from the scale.** All spacing uses §6 tokens; no arbitrary margins.
-8. **Shared look lives in one module.** When two components should look alike, the class strings go in a shared constants module and the components add only what genuinely differs. `Button` is the component form of this; `components/chipStyles.jsx` is the constants form — one colour pair behind the four chip geometries ([04_design §6](04_design.md)), after the same four strings had been hand-copied into a third component. Note the constraint: such a module **must be `.jsx`** — Tailwind only scans `.jsx` (§13), so class strings in `lib/` are invisible to it, and `react-refresh` requires a component file to export only components. `components/dexColumns.jsx` and `components/pageChrome.jsx` are the others.
-
-   **Go all the way up.** Extracting the _colours_ two components share and leaving their _markup_ duplicated is where this rule gets applied halfway, and it happened twice: the dex's filter chip and the type picker were the same component after `chipStyles` unified their palette, and the two STAB pills stayed two components with different fill percentages. Both are now single components (`FilterChip`, `StabChip`), and merging the second is what finally put its colour pairing in front of `audit:contrast` — where it failed AA on 17 of 18 types ([D-058](03_decisions.md#d-058)). Duplication does not just drift; it hides.
-
-9. **A consistency claim that is not checked is decoration.** Every rule this document states that _can_ be measured, is: `audit:contrast` for colour, `check:docs` for links and anchors, `sweep:widths` for horizontal overflow and WCAG 2.5.8 target size, `/style`'s own stylesheet walk for missing text styles. Two claims survived for three sessions purely because nobody measured them — `FormChips` "likely fails" 2.5.8 (it passes, [D-059](03_decisions.md#d-059)) and `xs: 360` fits the header (it does not, [D-062](03_decisions.md#d-062)).
+**No emoji, anywhere** ([D-015](03_decisions.md#d-015)). They render
+differently on every platform and read as unpolished.
 
 ---
+
+## 12. Usage Rules
+
+1. **Tokens only.** No raw hex, px or rem in a component. If the value you want
+   does not exist, add it to this document first. _Checked by `audit:styles`
+   and the cleared palette (§2)._
+2. **One style per role.** Every piece of text maps to one §5 style; the only
+   exception is inline emphasis. _`audit:styles`; `/style`'s own stylesheet
+   walk._
+3. **Semantic over primitive.** Components name semantic colour tokens, never
+   primitives, so a theme is one layer to swap. _`audit:styles`._
+4. **Sizes come from the ramp**, through the named styles. _`audit:styles`._
+5. **Accent is chrome.** It marks brand, action, selection and focus, and never
+   a type or a stat (§3.2).
+6. **Never colour alone.** Every meaning carried by colour is also carried by
+   text, a number or an icon, and an icon's meaning is in `sr-only` text.
+7. **Spacing from the scale, by relationship** (§6). _`audit:styles`._
+8. **Shared look lives in one module.** When two components should look alike,
+   the class strings go in a shared constants module and each component keeps
+   only what genuinely differs: `chipStyles.jsx`, `fieldStyles.jsx`,
+   `dexColumns.jsx`, `pageChrome.jsx`, `gameChrome.jsx`. Such a module **must
+   be `.jsx`**: Tailwind only scans `.jsx` (§13), and `react-refresh` needs a
+   component file to export only components.
+
+   **Go all the way up.** Sharing the _colours_ two components have and leaving
+   their _markup_ duplicated is this rule applied halfway, and it is how the
+   site's near-copies kept appearing ([D-058](03_decisions.md#d-058),
+   [D-135](03_decisions.md#d-135)). Duplication does not just drift, it hides:
+   merging the two STAB pills is what put their colour pairing in front of the
+   contrast audit, where it failed on 17 of 18 types.
+
+   **But only when they are the same thing.** Two boards that answer
+   differently are two boards ([D-105](03_decisions.md#d-105)); what they
+   share goes in a constants module, and each lays itself out.
+
+9. **A consistency claim that is not checked is decoration.** Every rule here
+   that can be measured, is, and names its check.
+10. **One component per job** (§12.2). A second implementation of a job that
+    already has a component is a defect, however small the difference. _Guarded
+    by `routes.test.jsx`'s "one component per job" suite._
+11. **A button only when it does something.** Without a handler, a chip renders
+    as a pill and a panel as a `<div>`, never a disabled `<button>`
+    ([D-078](03_decisions.md#d-078), [D-111](03_decisions.md#d-111)).
+
+### Enforcement
+
+| Rule                                                                    | Check                                          |
+| ----------------------------------------------------------------------- | ---------------------------------------------- |
+| Every utility is one this guide allows                                  | `npm run audit:styles`                         |
+| No class string sets one property twice                                 | `npm run audit:classes`                        |
+| Every text and non-text pairing clears AA                               | `npm run audit:contrast` (12 groups)           |
+| No page scrolls sideways or shows its footer on load; every target ≥ 24 | `npm run sweep:widths` (29 routes × 14 widths) |
+| One component per job; one list of the 18 types; copy rules             | `npm run test:run`                             |
+| Every doc link and anchor resolves                                      | `npm run check:docs`                           |
+| `/style` lists every named style                                        | `/style`'s stylesheet walk                     |
+
+`npm run check` runs all of them in CI's order, and CI runs `check` on every
+push.
 
 ## 12.1 The `/style` playground
 
-The route at `/style` is the executable half of this document: it renders the
-**real** tokens and components, never copies, so it cannot drift from the app.
-Swatches read their values out of the live stylesheet, badges are `TypeBadge`,
-the sample board is the actual `FeaturedComparison`, and all four chip
-geometries sit side by side so a divergence is visible rather than theoretical.
-The `StabChip`'s four tiers and its corrected state sit there too — they used to
-appear only incidentally, inside that sample board, which is the drift this page
-exists to prevent happening in the page whose job is preventing it
-([D-079](03_decisions.md#d-079)).
-It also renders through the shared page shell now, rather than its own gutter
-and title size ([D-058](03_decisions.md#d-058)) — the page that demonstrates the
-system should not be the page opting out of it. Its `StatBar` specimen is gone
-with the component: nothing outside this page ever used it.
+`/style` is the executable half of this document. It renders the **real**
+tokens and components, never copies, so it cannot drift from the app: swatches
+read their values from the live stylesheet, every specimen is a call site of
+the real component, and it walks the stylesheet at render to report any named
+style it has failed to list ([D-035](03_decisions.md#d-035)). It shows the
+palette, the 22 styles, the five radii by role, a surface and an inset, the
+text field, every button and icon button, the four chip geometries, the STAB
+chip's tiers, the stat bar in each of its uses, and Home's comparison board.
 
-It also **checks itself**. `readMissingTextStyles` walks the stylesheet for every
-`.text-*` rule that bundles a font-family — i.e. a §5 named style rather than a
-colour utility — and reports any the page has failed to list. That is what
-caught `text-stat-sm` the moment it was added ([D-035](03_decisions.md#d-035)).
+**A specimen is a call site.** The page has been the offender three times by
+keeping a hand-made copy of something it was meant to show
+([D-048](03_decisions.md#d-048), [D-090](03_decisions.md#d-090),
+[D-095](03_decisions.md#d-095)). When this page needs data, it imports it.
 
-**One limit, learned the hard way.** "Renders the real thing" is a claim, not a
-guarantee: the page shipped its own hand-written copy of the 18 type slugs for
-months — a fourth copy, in the one file whose stated job is not to have one —
-because [D-038](03_decisions.md#d-038) consolidated the copies it knew about and
-missed this one. It now imports `TYPES`, and a test asserts no second list of
-the 18 exists anywhere in `src/`. When this page needs data, it imports it.
+## 12.2 The components: one per job
+
+| Job                             | Component / module                 | Fixed                                                                                                                                      | Varies (and only this)                                                     |
+| ------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| A button with a label           | `Button`                           | Pill, `text-button`, 1em icons                                                                                                             | `primary` / `secondary` / `ghost`; `md` 44 / `sm` 36; `to` makes it a link |
+| A button with only an icon      | `IconButton`                       | 36px pill, 16px icon, a required name                                                                                                      | `ghost` on its own / `outline` in a row of bordered controls               |
+| A toggle chip                   | `FilterChip` + `chipStyles`        | Colour pair, pill, 36px                                                                                                                    | `removable` (the ×), `unavailable`, a type colour                          |
+| A compact chip (card band)      | `FormChips`, `AbilityChips`        | 21px, colour pair                                                                                                                          | read-only pills without a handler                                          |
+| A labelled group of chips       | `ChipGroup`                        | Overline label 8px over the row; chips 6px apart                                                                                           | `hint`, `note`; `fit` (one line, shared width)                             |
+| The generation lens             | `GenerationStrip`                  | A fitted `ChipGroup`: one line, chips 36px down to the 24px floor, 4px apart                                                               | which generations are offered                                              |
+| A text field                    | `fieldStyles` (`FIELD`)            | 44px, 6px radius, the field edge, the focus ring on its wrapper                                                                            | the search's combobox behaviour                                            |
+| A stat bar                      | `StatBar`                          | 8px, pill, scaled to 255, the type's colour                                                                                                | `side`; `track` solid or glass (glass only over art); `animate`            |
+| A dex column's header label     | `DexHeadLabel`                     | The sort caret's slot always held; a number column right-aligned with the caret before the label, a text column left-aligned with it after | which column, its sort                                                     |
+| A mirrored stat row             | `CmpRow`                           | values `text-stat-sm`, difference `text-diff`, carets                                                                                      | `animate`                                                                  |
+| A phone's per-stat card         | `CmpStatCard`                      | An inset; values `text-stat`                                                                                                               | `animate`                                                                  |
+| A type badge                    | `TypeBadge`                        | Type fill, near-black label, `text-badge`                                                                                                  | `md` beside a card-scale name / `sm` in a row; `radius` (xs in a grid)     |
+| A STAB chip                     | `StabChip`                         | 14% type fill, two border strengths, 6px dot, tier icon                                                                                    | `sm` / `md`                                                                |
+| A page's heading block          | `PageHeader`                       | `text-h1` + accent dot, subtitle 4px under, 32px to content                                                                                | `as` (the heading level)                                                   |
+| A page's container              | `pageChrome`                       | gutter, measure, top and bottom padding                                                                                                    | tool or content                                                            |
+| A tool's controls panel         | `pageChrome` (`PANEL`)             | Surface, 16px in, its blocks 16px apart by the panel's own gap, a divider by `RULE_BELOW` / `RULE_ABOVE`                                   | what the panel holds                                                       |
+| A Home preview section          | `FeaturePreview`                   | heading block, preview, CTA 32px under                                                                                                     | the preview                                                                |
+| A game's card (index, picker)   | `gameChrome` (`GAME_CARD*`)        | Surface, thumbnail band, 16px body, `text-h4` title + arrow                                                                                | the thumbnail                                                              |
+| A round's verdict, and no round | `RoundCard` (`Verdict`, `NoRound`) | Surface, headline 6px over its detail, `Button md` Next                                                                                    | the detail                                                                 |
+| A game panel                    | `ContenderPanel`, `MatchupPanel`   | Primary-type tint, label at top, artwork filling, name at the foot                                                                         | density (`lg` / `md` / `sm`)                                               |
+
+**Things that look alike and are deliberately not one component**, each for a
+stated reason: the dex's stat cell (a number over a proportional wash, not a
+bar, [D-039](03_decisions.md#d-039)); the two game boards
+([D-105](03_decisions.md#d-105)); the type picker not collapsing on a phone
+where the dex's type filter does ([D-058](03_decisions.md#d-058)).
+
+## 12.3 Patterns
+
+### States
+
+| State           | Treatment                                                                                                                                                                                             |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Hover**       | One idiom per family, below.                                                                                                                                                                          |
+| **Focus**       | The one ring: 2px `accent`, 2px offset, on everything that takes focus. A text field draws it on its wrapper. `<main>` is a programmatic focus target and draws none.                                 |
+| **Selected**    | `accent` fill and `accent-contrast` label, or a type's fill and the near-black label; the border steps aside. Never colour alone: `aria-pressed`, or `sr-only` text on a read-only pill.              |
+| **Disabled**    | 40%, no pointer events (a real `disabled` button).                                                                                                                                                    |
+| **Unavailable** | 40%, still focusable, `aria-disabled` (the type picker's cap), so a keyboard user is told rather than skipped.                                                                                        |
+| **Receded**     | 50%: what you did not pick, once a round resolves.                                                                                                                                                    |
+| **Correct**     | `accent`: the ring on the stat game's winner, the border, fill and check on the type game's answer. **The accent ring means "this is the answer" and nothing else** ([D-137](03_decisions.md#d-137)). |
+
+**Hover idioms.**
+
+| Family                    | On hover                                                        |
+| ------------------------- | --------------------------------------------------------------- |
+| Primary button            | the fill lightens (`accent-hover`)                              |
+| Secondary button          | the label and the border brighten                               |
+| Ghost button, icon button | the label brightens and an `elevated` fill appears              |
+| Chip, answer choice       | **only the label** brightens, so a row of them does not shimmer |
+| A card that is a link     | its border brightens, and its arrow                             |
+| A table row               | the row takes `surface`                                         |
+| A type chart cell         | its row and column light ([D-052](03_decisions.md#d-052))       |
+| A link                    | its colour shifts, below                                        |
+
+### Tables and number columns
+
+**A column's header aligns with its content.** Text columns are left-aligned
+and numbers right-aligned, and so are their headers, at the same inset as the
+cells (8px). A sort caret goes on the header's **inner** side — after a left
+label, before a right one — so it never takes the place of the label's edge.
+**Every cell in a row centres its content in the same box**, so a row's text
+shares one centre line ([D-141](03_decisions.md#d-141)).
+
+**A selection that frames something draws its frame without taking space.** The
+type chart's selected column is outlined with inset shadows, not borders: in a
+table, a border is layout, and a frame that grows the grid moves every row
+when it appears ([D-141](03_decisions.md#d-141)).
+
+### Links
+
+| Kind                          | Look                                                          | Where                         |
+| ----------------------------- | ------------------------------------------------------------- | ----------------------------- |
+| **Navigation**                | No underline; `secondary` → `primary`, current page `primary` | The header                    |
+| **List link**                 | No underline; `tertiary` → `secondary`, 28px tall             | The footer's columns          |
+| **Data link**                 | `primary` → `accent`                                          | A Pokémon's name in a dex row |
+| **Action link**               | `text-body-sm`, `accent` → `accent-hover`                     | A round's follow-up           |
+| **Inline link in a sentence** | Underlined in `border-strong`, offset 2px; colour shifts      | The footer's legal line       |
+
+A link that leaves the site says so in `sr-only` text, "(opens in a new tab)";
+in a list it also carries the external icon.
+
+### Empty, blocked and placeholder states
+
+- **Inline empty state** — a slot with nothing in it yet: one sentence,
+  `text-body-sm` `tertiary`, centred where the content would be. "Pick two
+  Pokémon to compare.", "No Pokémon match these filters."
+- **Blocked state** — a page that cannot do its job: a `text-h4` headline, one
+  `text-body-sm` `secondary` line 4px under it, and a primary `Button` 24px
+  under that (`NoRound`).
+- **A value not known yet** — an en dash, `–`, in `tertiary`, in the slot the
+  value will take.
+- **None, or a tie** — an em dash, `—`: "no alternate forms" in the card's
+  band, and a tie in a difference cell (`diff-tie`).
+
+A control that appears with its first use pushes the page around as it lands,
+so a reserved slot keeps its space from the start
+([D-050](03_decisions.md#d-050), [D-125](03_decisions.md#d-125)).
+
+### A round's cards
+
+**A card sits where you are reading, and covers only what it restates**
+([D-101](03_decisions.md#d-101), [D-143](03_decisions.md#d-143)).
+
+- **The question is chrome**: at the top of the board, for the whole round.
+- **A verdict is an event**: next to what you just pressed. In the type game
+  that is directly above the answers; in the stat game, where the answer is the
+  panels themselves, it is the centre.
+- **A card may cover only what it says again.** The type game's verdict covers
+  the attacking panel because its STAB chip names that type; the stat game's
+  covers the question card on a phone because its line says the question.
+- **Nothing that appears moves anything** ([D-107](03_decisions.md#d-107)): a
+  card is laid over the board, never into its flow, and any room it needs is
+  there before you answer.
+
+### Marker dots
+
+**6px (`size-1.5`), round, one size everywhere.** In a type's colour, a dot
+names the type beside it (an unselected filter chip, a STAB chip). In `accent`,
+a dot says "this option changes the answer" (the generation strip, an ability,
+the STAB caption), and says it in `sr-only` text too.
 
 ---
 
-## 13. How These Tokens Reach Tailwind (as built)
+## 13. How These Tokens Reach Tailwind
 
-There is **no `tailwind.config.js`**. Tailwind v4 is CSS-first: `src/index.css` declares every token inside a single `@theme static { … }` block, and Tailwind generates the matching utilities from the token's namespace. That is the whole configuration.
+There is **no `tailwind.config.js`**. Tailwind v4 is CSS-first: `src/index.css`
+declares the theme tokens inside one `@theme static { … }` block, and Tailwind
+generates the matching utilities from each token's namespace.
 
-| Token namespace                | Utilities generated                         | §       |
-| ------------------------------ | ------------------------------------------- | ------- |
-| `--color-*`                    | `bg-*`, `text-*`, `border-*`, `fill-*`      | 2–3     |
-| `--text-*`                     | font-size utilities `text-2xs` … `text-5xl` | 4.3     |
-| `--font-*`                     | `font-display`, `font-body`                 | 4.1     |
-| `--font-weight-*`              | `font-regular` … `font-bold`                | 4.2     |
-| `--leading-*` / `--tracking-*` | `leading-*` / `tracking-*`                  | 4.4–4.5 |
-| `--radius-*`                   | `rounded-*`                                 | 7       |
-| `--breakpoint-*`               | the `sm:` `md:` `lg:` `xl:` variants        | 8       |
-| `--ease-*`                     | `ease-*`                                    | 9       |
-| `--container-*`                | `max-w-content`                             | 8       |
+| Token namespace                | Utilities generated                            | §       |
+| ------------------------------ | ---------------------------------------------- | ------- |
+| `--color-*`                    | `bg-*`, `text-*`, `border-*`, …                | 2–3     |
+| `--text-*`                     | the ramp sizes (used only by the named styles) | 4.3     |
+| `--font-*`                     | `font-display`, `font-body`                    | 4.1     |
+| `--font-weight-*`              | `font-regular` … `font-bold`                   | 4.2     |
+| `--leading-*` / `--tracking-*` | `leading-*` / `tracking-*`                     | 4.4–4.5 |
+| `--radius-*`                   | `rounded-*`                                    | 7.1     |
+| `--breakpoint-*`               | the `xs:` … `xl:` variants                     | 8       |
+| `--ease-*`                     | `ease-*`                                       | 9       |
+| `--container-*`                | `max-w-content`                                | 8       |
 
-**Spacing** is the deliberate exception: Tailwind's default `--spacing: 0.25rem` already yields our 4px scale, so it is left alone (§6). **Durations** and **z-index** live as plain `:root` custom properties rather than theme tokens, because they're consumed as `var(--z-sticky)` in inline styles, not as utilities.
+**Spacing** keeps Tailwind's default base (§6). **Durations, z-index, shadows
+and the component tokens** live as plain `:root` custom properties, because
+they are consumed as `var(--…)` inline or by named utilities, not as theme
+utilities. The **named text styles** and the site's own utilities
+(`.bg-flame`, `.drop-shadow-art`, `.shadow-on-art`, `.bg-scrim-art`,
+`.flame-inset`, `.focus-ring-within`, the `.animate-*` hooks) are hand-written
+in `index.css`'s component and utility layers.
 
-### What Tailwind scans — why detection is off
+**Detection is off.** `@import "tailwindcss" source(none)` plus two `@source`
+globs (`../index.html`, `./**/*.jsx`): automatic detection scanned prose too, so
+an ordinary English word that is also a utility name shipped that utility
+([D-038](03_decisions.md#d-038)). Comments inside `.jsx` are still scanned and
+can still leak a utility; rewording accurate comments to dodge a scanner is the
+worse trade.
 
-`src/index.css` opens with **`@import "tailwindcss" source(none)`** plus two
-explicit `@source` globs (`../index.html` and `./**/*.jsx`), rather than letting
-Tailwind detect content automatically.
+**`@theme static`, not `@theme`.** Plain `@theme` drops any token no scanned
+class references, and the 18 type colours are only ever reached through
+`typeColorVar()` at run time, so they vanished ([D-028](03_decisions.md#d-028)).
 
-Automatic detection scans every non-gitignored file for class-name candidates,
-**prose included** — so an ordinary English word that happens to be a utility
-name silently ships that utility. Writing "a visible ring" in a source comment
-emitted `.visible`, `.ring` and the whole ring/shadow `@property` block: 1.7 kB
-of dead CSS from one sentence. Writing "filter" emitted `.filter`. Excluding
-`docs/` (the previous fix) only ever addressed one directory.
-
-Class names exist in exactly two places — `index.html` and the `.jsx`
-components — so those are declared and nothing else is scanned. Narrowing a scan
-can drop a real class, which is the [D-028](03_decisions.md#d-028) failure in
-reverse, so the change was verified by diffing the emitted selector list before
-and after: two selectors disappeared, both junk, none added.
-**Limit:** comments inside `.jsx` files are still scanned and can still leak
-(`.table`, `.fixed`, `.static` currently do). ([D-038](03_decisions.md#d-038))
-
-### `@theme static` — why not plain `@theme`
-
-Plain `@theme` **tree-shakes** any token Tailwind doesn't see referenced by a scanned class name. Statmon reads many tokens — above all the 18 `--color-type-*` — only through inline `var(--color-…)` built in JavaScript (`typeColorVar`), which the scanner cannot see. Under plain `@theme` those variables were dropped and **type colors vanished app-wide**. `static` forces every token to emit regardless of class usage; the cost is a slightly larger `:root`, which is negligible. ([D-028](03_decisions.md#d-028))
-
-### The named text styles
-
-The §5 styles are hand-written utility classes in an `@layer components` block in `src/index.css` — each bundles family + size + weight + line-height + tracking. A component writes `className="text-stat"` and never re-specifies any of it. That is the payoff: uniform, and hard to drift.
-
-**Status:** every call site now uses a named style; `/style` walks the stylesheet
-at render and warns if one is missing from its own list, which is what caught
-`text-stat-sm` the moment it was added. The BST numerals and chip labels that used to hand-assemble type were resolved by _adding_ the four styles they needed (`text-numeral-*`, `text-meta`) rather than bending the design to fit the table ([D-035](03_decisions.md#d-035)). The single remaining family/weight override is the documented inline-emphasis case in §5.
+**Both style audits read the same class strings** through
+`scripts/classes.mjs`: every string literal in `src/` with comments blanked
+first (they quote utilities in backticks constantly), and any literal written
+straight into a `className`, so a typo cannot pass by not being read
+([D-134](03_decisions.md#d-134)).
 
 ---
 
 ## 14. Voice — the words on screen
 
-The site has one, and it was consistent before it was written down. Every
-user-facing string describes a **mechanism rather than a benefit**:
+The site has one voice, and it was consistent before it was written down.
+Every user-facing string describes a **mechanism rather than a benefit**:
 
 > "See who's faster, hits harder, and is bulkier." · "The same data, asking you
 > the questions." · "Every matchup, including dual types."
 
 Not one claims the site is fast, clean or minimal. The pages demonstrate that;
 saying it would be the site arguing with the reader about its own qualities.
-There is exactly one joke — **"This page fainted."** — delivered flat and never
+There is exactly one joke, **"This page fainted."**, delivered flat and never
 explained. That is the calibration point for humour: one, dry, unremarked.
 
 **The rules.**
 
 1. **First person singular.** One person built it; "we" would be a lie.
-2. **Prefer a number to an adjective.** "1,259 entries", not "comprehensive" —
-   this is a stats site and the numbers _are_ the personality.
+2. **Prefer a number to an adjective.** "1,259 entries", not "comprehensive":
+   this is a stats site, and the numbers are the personality.
 3. **Name a real Pokémon** rather than describing a category. Gengar keeping
    Levitate until Gen 7 says more than "handles historical edge cases".
 4. **Describe decisions, never virtues.**
@@ -530,11 +947,22 @@ explained. That is the calibration point for humour: one, dry, unremarked.
 6. **One joke at most, and never explain it.**
 7. **Say it once.** No sentence whose only job is to restate the one before it.
 8. **Contractions on.** It is a person talking, not a product.
+9. **No em dash in a sentence** ([D-138](03_decisions.md#d-138)). A colon, a
+   comma or a full stop does the job, and a sentence leaning on em dashes is
+   the habit most often read as machine-written. The dash survives only as a
+   glyph that stands alone: a tie, an empty slot, a separator between a label
+   and its value in a heading, a page title's separator. _Checked by
+   `routes.test.jsx` over every JSX text node, the tier sentences and the
+   site's description._
+
+**No adjective the site applies to itself.** The hero line was "A simple set of
+Pokémon tools." until D-138, the one string on the site that called the site
+something; it says what is here now: "Pokémon stats, matchups and games."
 
 ### 14.1 The UI voice
 
 Everything above applies to **controls, labels, empty states and section
-descriptions** — the strings that sit next to something rather than being the
+descriptions**: the strings that sit next to something rather than being the
 something. A fragment is fine here; "Pick two Pokémon to compare." is a whole
 empty state.
 
@@ -546,31 +974,27 @@ project has an opinion, not a position**, and the things the UI voice forbids
 are exactly what make writing sound like a person. So on `/about`:
 
 1. **Hedges are wanted, not tolerated.** "I'd say", "I think", "which I'd argue
-   still counts". They are the difference between someone talking and a product
-   describing itself.
-2. **Sentences may build on each other.** §14's "say it once" is a UI rule; a
-   story is allowed a second sentence that only softens the first.
-3. **Conversational openers are fine** — "So", "Of course", "Now" — where the
-   UI voice would start with the noun.
+   still counts".
+2. **Sentences may build on each other.** "Say it once" is a UI rule; a story
+   is allowed a second sentence that only softens the first.
+3. **Conversational openers are fine**, "So", "Of course", "Now", where the UI
+   voice would start with the noun.
 4. **The loose word beats the precise one.** "Nostalgia trip" over "replay
    project"; "HM mule" over "utility Pokémon".
-5. **Commas and full stops.** The site voice is em-dash heavy; this one is not.
+5. **Commas and full stops**, as everywhere else on the site now (rule 9).
 6. **No implementation detail.** If it belongs in the README or the decision
-   log, it does not belong here. A build-time verification gap is the most
-   credible sentence on the page to a developer evaluating the project, and
-   noise to someone who just came from the type chart.
-   6b. **Write it in the author's voice by having the author write it.** Two drafts
-   in this register still read as an impression. The page ships his own account,
-   edited for grammar and nothing else ([D-118b](03_decisions.md#d-118b)).
-7. **Earn it with one unfakeable detail.** A visitor wants who made this, why it
-   exists, and one thing nobody would include unless it were true. Beartic being
-   the HM mule does more work than any claim about the site's quality.
+   log, it does not belong here.
+7. **Write it in the author's voice by having the author write it.** The page
+   ships his own account, edited for grammar and nothing else
+   ([D-118b](03_decisions.md#d-118b)).
+8. **Earn it with one unfakeable detail.** Beartic being the HM mule does more
+   work than any claim about the site's quality.
 
-**Still off the table**, in both registers: a tagline, a benefits list, an
-exclamation mark, the second-person imperative ("Dive in", "Discover"), and any
-adjective the site applies to itself.
+**Off the table in both registers:** a benefits list, an exclamation mark, the
+second-person imperative ("Dive in", "Discover"), and any adjective the site
+applies to itself.
 
 **What this rules out**, because these are the failure modes worth naming: the
 sentence that congratulates the reader for arriving, the feature-benefit
-pairing, and the paragraph that explains how something was built to a reader who
-only wanted to know why it exists. ([D-118](03_decisions.md#d-118))
+pairing, and the paragraph that explains how something was built to a reader
+who only wanted to know why it exists ([D-118](03_decisions.md#d-118)).

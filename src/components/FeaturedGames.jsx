@@ -73,7 +73,7 @@ export default function FeaturedGames() {
       {/* One rung under the section's own <h2>, and the same sentence the
           game asks — the prompt IS the preview's heading, because a pair of
           cards means nothing without the question they answer. */}
-      <h3 className="mb-4 text-center text-h4 text-secondary">
+      <h3 className="mb-3 text-center text-h4 text-secondary">
         Which has the higher {statName(ROUND.stat)}?
       </h3>
       {/* The arena's own panels at the arena's own size, on a `gap-px`

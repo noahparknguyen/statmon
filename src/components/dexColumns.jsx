@@ -41,9 +41,9 @@ export const HEAD_INNER =
   "flex h-10 w-full items-center gap-0.5 px-2 text-overline";
 
 // Written out in full rather than composed, so Tailwind's scanner sees each one
-// (cf. D-028).
+// (cf. D-028). No `center`: a header aligns with its column's content, which is
+// text on the left or a number on the right (D-141).
 export const HEAD_ALIGN = {
   left: "justify-start",
-  center: "justify-center",
   right: "justify-end",
 };

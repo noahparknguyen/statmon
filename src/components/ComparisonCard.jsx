@@ -81,7 +81,10 @@ export default function ComparisonCard({ p1, p2, v1, v2, keys, ability }) {
           phone the odd one out. Reduced motion is handled globally by the rule
           that collapses animation duration (index.css). */}
       <div key={barKey}>
-        <div className="hidden md:block px-3 pt-2 pb-4">
+        {/* `px-4`, the padding every band on every card takes (§6.2). It was
+            `px-3` here and `px-4` on the cards either side, so the board's three
+            stats bands started at two different insets. */}
+        <div className="hidden md:block px-4 pt-2 pb-4">
           {keys.map((k) => (
             <CmpRow
               key={k}
@@ -96,7 +99,7 @@ export default function ComparisonCard({ p1, p2, v1, v2, keys, ability }) {
         </div>
 
         {/* Stats: per-stat cards (<768px, D-010) */}
-        <div className="md:hidden flex flex-col gap-2 px-3 pt-2 pb-4">
+        <div className="md:hidden flex flex-col gap-2 px-4 pt-2 pb-4">
           {keys.map((k) => (
             <CmpStatCard
               key={k}

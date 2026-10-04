@@ -58,70 +58,48 @@ export const BOARD_SURFACE = "relative grid gap-px overflow-hidden bg-base";
    The panel's look.
    ---------------------------------------------------------------------- */
 
-// How much of the defending type's colour sits over the page background. Low,
-// because it is a field behind artwork rather than a fill: enough to tell two
-// panels apart at a glance, not enough to compete with what is on them.
+// How much of the type's colour sits over the page background:
+// `--mix-panel-tint` in index.css, where `npm run audit:contrast` reads it for
+// group 10 (D-134). Low, because it is a field behind artwork rather than a
+// fill: enough to tell two panels apart at a glance, not enough to compete
+// with what is on them.
 //
-// **Raised from 10 to 16 (D-133).** At 10 neither hue of a dual type actually
-// registered as colour over near-black, so the only thing the eye could find on
-// the panel was the seam between them — the artifact was more legible than the
-// thing it was an artifact of. 16 is still a field rather than a fill, and the
-// contrast audit has room: worst-case secondary text over a tint is 6.18 at 16
-// against groups 10/11's AA floor of 4.5, and does not reach it until past 20.
-export const TINT = 16;
-
+// **16, raised from 10 (D-133).** At 10 a tint did not register as colour over
+// near-black at all. The contrast audit has room: worst-case secondary text
+// over a tint is 6.18 (Ice) against AA's 4.5, and does not reach the floor
+// until past 20.
 const tintOf = (type) =>
-  `color-mix(in srgb, var(--color-type-${type}) ${TINT}%, var(--color-base))`;
+  `color-mix(in srgb, var(--color-type-${type}) var(--mix-panel-tint), var(--color-base))`;
 
 /**
- * A panel's background for a whole TYPING rather than one type (D-107).
+ * A panel's background: a tint of the Pokémon's PRIMARY type.
  *
- * A dual type gets a diagonal gradient between its two tints, which is the one
- * place on this site a gradient sits behind content — 04_design §2 reserves the
- * *flame* gradient for the hero and says never behind data, and this is a
- * different thing: two type colours saying "this is two types", which is the
- * §3 idea (a Pokémon's typing colours its representation) finally able to say
- * both halves. Volcarona has been rendering as Bug alone since the arena
- * shipped.
+ * **One colour per panel, never two (D-144).** A dual type was a diagonal
+ * gradient between both tints (D-107), retuned twice (D-130, D-133), and it
+ * still looked muddy: at 16% over near-black a yellow is olive, an orange
+ * brown and a red maroon, so two of them side by side read as camouflage and
+ * the blend between them greyer still. One tint reads as its type; the badges
+ * under the name carry the whole typing at full strength. `typeFill` in
+ * lib/types.js is the same rule at the dex's bar scale, and says more.
  *
- * **The stops are back to 25/75, and 45/55 was the mistake (D-133).** The
- * measurement that produced 45/55 optimised the wrong quantity. It asked what
- * FRACTION OF THE SURFACE was visibly desaturated and drove it from 29.7% to
- * 5.9% — but the eye does not detect absolute desaturation, it detects rate of
- * change. Compressing the whole A→B transition into a tenth of the gradient
- * made the muddy region small and the gradient STEEP, and a steep transition
- * across a 300px panel is a visible band. Every dual-type panel had a diagonal
- * stripe across it that read as a light leak. The mud was traded for an edge,
- * and the edge is far more noticeable than the mud ever was.
- *
- * At panel scale a long blend is the right answer, because it spreads the
- * desaturated midpoint over hundreds of pixels where it reads as depth rather
- * than as a muddy zone. That is NOT true at bar scale, which is why `typeFill`
- * keeps 45/55 over its 28px height and solves the same problem by choosing a
- * better axis instead. Interpolating in oklab was measured and rejected — it
- * fixes gamma darkening, not opposite hues, and scored slightly worse (D-130).
- *
- * **`to bottom right`, not a fixed 135deg.** 135deg is 45° regardless of the
- * box, but these panels are not a fixed shape: a two-up board gives each one
- * roughly a square and a four-up board gives it something near 1:2. A keyword
- * corner tracks the panel's own diagonal at every count and width, so the wash
- * always runs corner to corner instead of slicing across at an angle the panel
- * does not have.
- *
- * Returns a **background**, not a background-color — a caller setting
- * `backgroundColor` from this will silently render nothing for a dual type.
+ * Two panels of different colours still read as two sides of the board
+ * without a heavier divider, which was the tint's structural job before it
+ * said anything about types.
  */
 export function tintFor(types = []) {
   if (!types.length) return "var(--color-base)";
-  if (types.length === 1) return tintOf(types[0]);
-  const [a, b] = types;
-  return `linear-gradient(to bottom right, ${tintOf(a)} 0%, ${tintOf(a)} 25%, ${tintOf(b)} 75%, ${tintOf(b)} 100%)`;
+  return tintOf(types[0]);
 }
 
 // The marking is an INSET ring rather than a border, because these panels sit
 // edge to edge in a grid — a border would move every neighbour by 2px the
 // moment a round resolved. Inline `var()` rather than a utility for the reason
 // TypeBadge and StabChip already use one: the token is the value.
+//
+// **The accent ring means one thing: this is the answer** (D-137). The stat
+// game rings the winner; the type game rang its defender on every reveal, which
+// is not an answer, so the same mark said two things on the two boards. It
+// rings nothing now — the type game's answer is its button.
 export const ring = (color) => ({ boxShadow: `inset 0 0 0 2px var(${color})` });
 
 // The panel itself is a static box; its CONTENT is what moves (D-102).
@@ -175,3 +153,33 @@ export function clashVars(i, n, dealt = 0) {
     "--dur-shake": `${250 + v * 30}ms`,
   };
 }
+
+/* -------------------------------------------------------------------------
+   The cards around the games (D-135).
+   ---------------------------------------------------------------------- */
+
+// A game's card: a thumbnail band over a text body. The games index and the
+// difficulty picker are "the same object at two scales" (D-117), and each
+// wrote it out for itself; they had not drifted, which is the moment to stop
+// them. The body takes the 16px every surface takes (§6.2) — it was 20.
+//
+// The whole card is the control, so the panels in its thumbnail take no
+// handler and render as `<div>`s, never controls nested in a control (D-111).
+export const GAME_CARD =
+  "group flex h-full w-full flex-col overflow-hidden rounded-lg border border-border-subtle bg-surface text-left transition-colors hover:border-border-strong";
+export const GAME_CARD_BODY = "flex flex-1 flex-col gap-1 p-4";
+export const GAME_CARD_TITLE = "flex items-center gap-1.5 text-h4 text-primary";
+// The arrow after a card's title answers the card's hover.
+export const GAME_CARD_ARROW =
+  "text-tertiary transition-colors group-hover:text-secondary";
+
+// The round's card, which carries the question and then the verdict on the
+// board (D-101). A surface: 16px of padding, the lg radius, and the overlay
+// shadow, because it floats over the panels. `pointer-events-auto` because the
+// layer that positions it lets clicks through to the panels beneath.
+export const ROUND_CARD =
+  "pointer-events-auto max-w-full rounded-lg border border-border-subtle bg-surface text-center";
+
+// Inline because the shadow tokens are plain `:root` properties rather than
+// theme tokens (06_style_guide §13), the way the z-index ladder is consumed.
+export const OVERLAY_SHADOW = { boxShadow: "var(--shadow-overlay)" };

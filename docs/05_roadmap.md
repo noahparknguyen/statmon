@@ -6,7 +6,51 @@ _The phased build plan / task checklist: what to implement, in order. Sequenced 
 
 ---
 
-## Current status (2026-09-07 — Session 29, the polish pass)
+## Current status (2026-10-04 — Session 32, the rulebook)
+
+**Done — the style guide is a rulebook, and the build enforces it.** Eleven
+decisions ([D-134](03_decisions.md#d-134) through
+[D-144](03_decisions.md#d-144)).
+
+- **A ninth check.** `audit:styles` fails on any utility the guide does not
+  allow: semantic colours, the 22 named styles, the spacing scale, five role
+  radii, four opacities, the z-index ladder, and arbitrary values only with a
+  written derivation. It shares one class-string reader with `audit:classes`.
+- **One component per job.** A stat bar, an icon button, a quiet button, a text
+  field, a labelled chip group, a round's verdict and a game's card were each
+  two or three near-copies that had drifted; each is one now, and a test suite
+  guards that it stays one.
+- **Three accessibility failures that nothing measured**: the speed banner's
+  text on the flame with a long name, the text fields' edges under WCAG 1.4.11,
+  and the text fields' missing focus ring. `audit:contrast` gained two groups
+  for them.
+- **Six layout faults**, from the difficulty picker's title touching the header
+  to the generation strip leaving its selected chip alone on a phone.
+- **A copy pass**: no em dash in a sentence, a hero line that describes the site
+  instead of praising it, and a copy test that could not see wrapped sentences.
+- **An alignment pass, measured across the site.** The tools' controls panel
+  spaces its own blocks, so the dex and the type chart line up; the dex's number
+  headers sit over their numbers; a dex row's text shares one line; selecting a
+  type no longer moves the type chart; the card's remove button sits on its
+  first badge; and the footer's columns stay on one row on a tablet.
+- **No page shows its footer before you scroll.** A page shorter than the
+  screen is held to one screen tall, and the sweep fails any footer it finds on
+  the first screen.
+- **The games' cards sit where you are reading.** The type game's verdict sits
+  directly above the answers; the stat game's question stays on screen for the
+  whole round, and its verdict's line says the question.
+- **One colour per surface.** A dual type's dex bars and game panels take the
+  primary type's tint instead of a gradient that read as mud; the badges carry
+  the typing, and `audit:contrast` drops its two gradient groups for 12.
+
+`npm run check` runs all **nine** checks in CI's own order. Vitest is at **497
+tests across 15 files**. The sweep is at **29 routes × 14 widths = 406 checks**.
+
+**For the owner:** the GitHub social preview (`docs/preview.png`) carries the
+new hero line and is uploaded by hand, under the repo's Settings → Social
+preview ([D-034](03_decisions.md#d-034)).
+
+## Session 29 (the polish pass)
 
 **Done — the loose ends closed and the site polished end to end.** Ten decisions
 ([D-112](03_decisions.md#d-112) through [D-128](03_decisions.md#d-128)), and the
@@ -403,13 +447,13 @@ Vitest is at **213 tests**.
 
 **Launch-pass leftovers:** all done — personal-credit line + `LICENSE` ([D-029](03_decisions.md#d-029)), the OG image (`public/og-image.png`), and the production deploy ([D-030](03_decisions.md#d-030)). _(The 1280×640 GitHub social frame is already exported to `docs/preview.png`; it still needs uploading by hand at repo Settings → Social preview, which is a GitHub-side setting and not something the repo can carry.)_
 
-**npm scripts:** `dev` · `build` · `test` / `test:run` · `build:data` · `vendor:images` (after `build:data`) · `vendor:fonts` · `audit:contrast` · `check:docs` · `sweep:widths` · `shoot:docs` · `lint` · `format` · `format:check` · `preview` · `deploy` (`build` + `wrangler deploy`).
+**npm scripts:** `dev` · `build` · `test` / `test:run` · `build:data` · `vendor:images` (after `build:data`) · `vendor:fonts` · `audit:classes` · `audit:styles` · `audit:contrast` · `check:docs` · `sweep:widths` · `shoot:docs` · `lint` · `format` · `format:check` · `preview` · `deploy` (`build` + `wrangler deploy`).
 
-**The eight checks that must stay green:** `npm run check` runs all of them, in this order — `lint`, `format:check`, `audit:classes`, `test:run`, `build`, `audit:contrast`, `check:docs`, `sweep:widths`. Cheapest first, so a typo fails in seconds rather than after the browser sweep, and the order is CI's own. All eight run in CI on every push and PR (`.github/workflows/ci.yml`); the sweep needs `build` first and a Chrome binary (`CHROME_PATH` to override).
+**The nine checks that must stay green:** `npm run check` runs all of them, in this order — `lint`, `format:check`, `audit:classes`, `audit:styles`, `test:run`, `build`, `audit:contrast`, `check:docs`, `sweep:widths`. Cheapest first, so a typo fails in seconds rather than after the browser sweep, and the order is CI's own. All nine run in CI on every push and PR (`.github/workflows/ci.yml`); the sweep needs `build` first and a Chrome binary (`CHROME_PATH` to override).
 
 **Reading a past generation (D-045, D-049):** all of the resolution logic is pure functions in `src/lib/eras.js` — `eraView(pokemon, gen)` returns `{ gen, keys, stats, bst, types }`, `generationOptions([p1, p2])` returns the generations both existed in (each flagged for whether it differs from today), and `dexGenerations()` is the dex's plainer equivalent. The dex layers `statKeysFor` / `sortKeysFor` / `typesFor` / `generationsFor` / `setAsOf` on top in `lib/dexTable.js`, so the columns, the sort keys and the filter chips all narrow together. The lens is `?asof=` on both tools; the dex's `?gen=` is the unrelated origin filter. Home and `/style` stay current-generation. `STAT_ORDER` is still exactly the modern six; Gen 1's `special` lives outside it because the stored stat array's order depends on it. The dex, Home and `/style` are all deliberately current-generation.
 
-**Notes:** `StatBar.jsx` is **deleted**. It was kept "for the future stats table", but the dex table did not use it — a table cell is not a label·bar·value row ([D-039](03_decisions.md#d-039)) — leaving it a playground specimen with no claimant, which is what this note flagged. Its `/style` section went with it. The dataset ships in the compact form defined by `src/lib/pokemonCodec.js` and is decoded at import ([D-036](03_decisions.md#d-036)) — read/write it through the codec, never as raw JSON. Shared primitives as of [D-032](03_decisions.md#d-032): `CmpRow` (desktop mirrored row + diff cell) and `CmpStatCard` (mobile per-stat card) are used by **both** `ComparisonCard` and Home's `FeaturedComparison`; `SpeedBanner` and `Button` are shared across the site. The dex adds `DexRow` (used by both the table and Home's preview) with its geometry in `components/dexColumns.jsx`, and `FeaturePreview` — the shell every Home preview is built from ([D-043](03_decisions.md#d-043)). Shared _styling_ constants live in their own `.jsx` modules for the reasons in [D-048](03_decisions.md#d-048): `components/dexColumns.jsx` (table geometry) and `components/chipStyles.jsx` (the one colour pair behind all four chip families). New tools should build on these rather than re-rolling them.
+**Notes:** `StatBar.jsx` is **back, with callers this time** ([D-135](03_decisions.md#d-135)). The first one was deleted as a playground specimen nothing used; the new one is the bar the Pokémon cards, the mirrored rows and the phone's per-stat cards all draw, which had been three copies at two heights. The dex's cell fill is still not a bar ([D-039](03_decisions.md#d-039)). The dataset ships in the compact form defined by `src/lib/pokemonCodec.js` and is decoded at import ([D-036](03_decisions.md#d-036)) — read/write it through the codec, never as raw JSON. Shared primitives as of [D-032](03_decisions.md#d-032): `CmpRow` (desktop mirrored row + diff cell) and `CmpStatCard` (mobile per-stat card) are used by **both** `ComparisonCard` and Home's `FeaturedComparison`; `SpeedBanner` and `Button` are shared across the site. The dex adds `DexRow` (used by both the table and Home's preview) with its geometry in `components/dexColumns.jsx`, and `FeaturePreview` — the shell every Home preview is built from ([D-043](03_decisions.md#d-043)). Shared _styling_ constants live in their own `.jsx` modules for the reasons in [D-048](03_decisions.md#d-048): `components/dexColumns.jsx` (table geometry) and `components/chipStyles.jsx` (the one colour pair behind all four chip families). New tools should build on these rather than re-rolling them.
 
 ---
 
@@ -525,7 +569,7 @@ _Goal: sharpen the core and add the low-cost, high-value extras._
 - [~] Copy-link button, **random matchup**, full keyboard flow — **random matchup shipped** ([D-123](03_decisions.md#d-123)): a `Random` button beside Swap, drawing from the pool that existed at the generation being read so it never silently drops the lens, and never disabled because an empty board is the state it is most useful in. The draw is a tested `lib/randomMatchup.js` with an injected `rng`, like the games'. The copy-link button and a full keyboard audit are what remain.
 - [x] ~~Search **filters** (type / generation), recently-compared list.~~ **Closed as won't-do** ([D-128](03_decisions.md#d-128)). `/dex` filters by any number of types and generations at once and every row links into `/compare`, so the filtered search already exists — one page over. A recently-compared list is the only thing here the site cannot otherwise do, and it would be the first state stored about a reader beyond the game record.
 - [~] **About** page; **light-mode** toggle — **`/about` shipped** ([D-118](03_decisions.md#d-118)), carrying the origin story in the author's own voice with the credits folded into a redesigned footer ([D-119](03_decisions.md#d-119)). **Light mode is closed as won't-do** ([D-128](03_decisions.md#d-128)): every token in `index.css` is dark-first and `audit:contrast` validates exactly one theme, so it is a second palette and a second audit rather than a toggle.
-- [~] Tooling — **ESLint + Prettier are both in** (flat ESLint config + `npm run lint`; Prettier as a devDependency with `npm run format` / `format:check`, whole tree passing on stock config). **Vitest is in** ([D-038](03_decisions.md#d-038)): **480 tests across 15 files** — the stat math, the type-matchup engine, dataset queries, the codec (including the whole-dataset round-trip), the dex sort/filter/URL logic, both games' generators, the ability effect table, a `react-dom/server` smoke test of every route, and a growing set of accessibility and copy regressions — node environment, no jsdom. **GitHub Actions CI is in** (`.github/workflows/ci.yml`): every check runs on push and PR, cheapest-first, ending with the browser sweep. **Playwright** and auto-deploy to Cloudflare are still outstanding — though `scripts/sweep-widths.mjs` now covers, headlessly and without a framework, the specific thing Playwright was wanted for: real layout measurement across widths.
+- [~] Tooling — **ESLint + Prettier are both in** (flat ESLint config + `npm run lint`; Prettier as a devDependency with `npm run format` / `format:check`, whole tree passing on stock config). **Vitest is in** ([D-038](03_decisions.md#d-038)): **497 tests across 15 files** — the stat math, the type-matchup engine, dataset queries, the codec (including the whole-dataset round-trip), the dex sort/filter/URL logic, both games' generators, the ability effect table, a `react-dom/server` smoke test of every route, and a growing set of accessibility and copy regressions — node environment, no jsdom. **GitHub Actions CI is in** (`.github/workflows/ci.yml`): every check runs on push and PR, cheapest-first, ending with the browser sweep. **Playwright** and auto-deploy to Cloudflare are still outstanding — though `scripts/sweep-widths.mjs` now covers, headlessly and without a framework, the specific thing Playwright was wanted for: real layout measurement across widths.
 
 **Exit:** the comparison tool feels finished and the repo has real engineering rigor.
 
@@ -533,7 +577,7 @@ _Goal: sharpen the core and add the low-cost, high-value extras._
 
 ## Phase 6+ — The Suite (Someday)
 
-_Goal: grow Statmon into a small family of tools & games, one clean addition at a time. Near-term priorities firmed in [D-023](03_decisions.md#d-023) — all reuse the existing data layer + type engine, so each is an addition, not a rewrite. The Home tools row already advertises them ("soon")._
+_Goal: grow Statmon into a small family of tools & games, one clean addition at a time. Near-term priorities firmed in [D-023](03_decisions.md#d-023) — all reuse the existing data layer + type engine, so each is an addition, not a rewrite._
 
 > **Definition of done for every tool below:** it ships with a **live preview on Home** ([D-043](03_decisions.md#d-043)) — a `FeaturePreview` section built from the tool's own components against real data, not a mockup. A tool is not finished until Home advertises it.
 

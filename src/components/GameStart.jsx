@@ -1,6 +1,13 @@
 import { LuArrowRight, LuSettings2 } from "react-icons/lu";
 import Button from "./Button";
-import { BOARD } from "./gameChrome";
+import PageHeader from "./PageHeader";
+import {
+  GAME_CARD,
+  GAME_CARD_ARROW,
+  GAME_CARD_BODY,
+  GAME_CARD_TITLE,
+} from "./gameChrome";
+import { PAGE_CONTENT } from "./pageChrome";
 
 // The screen a game opens on: three ways to play, and a way to the settings
 // (D-108).
@@ -21,6 +28,13 @@ import { BOARD } from "./gameChrome";
 // could also reach by hand, so nothing here is a fourth code path, and
 // Customise is not an escape hatch from a mode system — it is the same
 // controls, opened directly.
+//
+// **It is a page, so it takes the page shell** (D-137): `PAGE_CONTENT` and
+// `PageHeader`, the way the games index it was drawn to match already does.
+// It used to centre itself in the board's viewport-height box with a heading
+// of its own, which put the title flush against the site header at 1280 x 900
+// and 390px, the content being taller than the box, and 32 to 42px below it
+// on a taller screen. Every other page sits at a fixed distance.
 export default function GameStart({
   title,
   presets,
@@ -29,49 +43,29 @@ export default function GameStart({
   onCustomise,
 }) {
   return (
-    <div
-      className={`${BOARD} mx-auto flex max-w-content flex-col items-center justify-center gap-8 px-4`}
-    >
-      <header className="text-center">
-        <h1 className="text-h1">
-          {title}
-          <span className="text-accent">.</span>
-        </h1>
-        <p className="mt-1 text-body-sm text-secondary">
-          How do you want to play?
-        </p>
-      </header>
+    <div className={PAGE_CONTENT}>
+      <PageHeader title={title} subtitle="How do you want to play?" />
 
-      {/* Wider than the old `max-w-3xl`, because each card now carries a board
-          rather than two lines of text — at 768px across three cards a
-          four-contender thumbnail was 80px of Pokémon. The cards are equal
-          weight: nothing here is recommended, and a highlighted middle option
-          would be the page making a choice it has no basis for. */}
-      <ul className="grid w-full max-w-5xl gap-4 sm:grid-cols-3">
+      {/* The cards are equal weight: nothing here is recommended, and a
+          highlighted middle option would be the page making a choice it has
+          no basis for. The full content width, like the games index, since
+          they are the same object at two scales (D-117). */}
+      <ul className="grid gap-4 sm:grid-cols-3">
         {presets.map((preset) => (
           <li key={preset.id}>
-            {/* The card anatomy is the games index's — a fixed thumbnail band
-                over a text body — so the page you pick a GAME on and the page
-                you pick a DIFFICULTY on are the same object at two scales
-                (D-117). `overflow-hidden` is what lets the thumbnail sit flush
-                inside the card's radius.
-
-                The whole card is the control, and the panels inside it are
+            {/* The whole card is the control, and the panels inside it are
                 given no handler, so they render as `<div>`s rather than
                 controls nested in a control — the rule D-111 exists for. */}
             <button
               type="button"
               onClick={() => onPick(preset)}
-              className="group flex h-full w-full flex-col overflow-hidden rounded-lg border border-border-subtle bg-surface text-left transition-colors hover:border-border-strong"
+              className={GAME_CARD}
             >
               {preview?.(preset)}
-              <span className="flex flex-1 flex-col gap-1 p-5">
-                <span className="flex items-center gap-1.5 text-h4 text-primary">
+              <span className={GAME_CARD_BODY}>
+                <span className={GAME_CARD_TITLE}>
                   {preset.label}
-                  <LuArrowRight
-                    aria-hidden
-                    className="text-tertiary transition-colors group-hover:text-secondary"
-                  />
+                  <LuArrowRight aria-hidden className={GAME_CARD_ARROW} />
                 </span>
                 <span className="text-body-sm text-secondary">
                   {preset.blurb}
@@ -84,11 +78,15 @@ export default function GameStart({
 
       {/* Secondary, and below: the presets are the answer for almost everyone,
           and this is the door for the person who already knows what they want.
-          It opens the settings without playing a round first. */}
-      <Button variant="secondary" size="sm" onClick={onCustomise}>
-        <LuSettings2 aria-hidden />
-        Customise
-      </Button>
+          It opens the settings without playing a round first. 32px under the
+          cards, the distance every section's button keeps from what it
+          follows (FeaturePreview). */}
+      <div className="mt-8 flex justify-center">
+        <Button variant="secondary" size="sm" onClick={onCustomise}>
+          <LuSettings2 aria-hidden />
+          Customise
+        </Button>
+      </div>
     </div>
   );
 }

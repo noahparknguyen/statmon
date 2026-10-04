@@ -2,6 +2,7 @@ import ChipGroup from "./ChipGroup";
 import FilterChip from "./FilterChip";
 import GameSetup from "./GameSetup";
 import GenerationStrip from "./GenerationStrip";
+import { RULE_BELOW } from "./pageChrome";
 import { allGenerations } from "../lib/eras";
 import { generationsFor, typesFor } from "../lib/dexTable";
 import {
@@ -51,7 +52,9 @@ export default function HigherSetup({ draft, onChange, ...shell }) {
     >
       {draft && (
         <>
-          <div className="border-b border-border-subtle pb-5">
+          {/* A divider sits 16px from what it divides on both sides (§6.3):
+              this padding above it, the body's gap below. */}
+          <div className={RULE_BELOW}>
             <GenerationStrip
               label="Stats as of"
               options={allGenerations()}

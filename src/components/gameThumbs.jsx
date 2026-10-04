@@ -46,10 +46,10 @@ const drawOnce = (key, draw) => {
 // A fixed band, so a card whose round failed to generate is the same shape as
 // one that worked and the grid does not go ragged.
 //
-// 160px rather than 128: a two-up round has room to spare at either size, but a
-// four-up splits the band in half, and 64px is not a Pokémon. The panels take
-// their height from here (`h-full`) instead of carrying their own, so one
-// number decides it for both layouts.
+// 192px (`h-48`): a two-up round has room to spare at any of the sizes tried,
+// but a four-up splits the band in half, and at 128 that left 64px, which is
+// not a Pokémon. The panels take their height from here (`h-full`) instead of
+// carrying their own, so one number decides it for both layouts.
 const THUMB = "h-48 shrink-0 border-b border-border-subtle";
 
 // `bg-base` is the divider, matching the real board (D-100).

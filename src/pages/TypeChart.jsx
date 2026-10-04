@@ -1,7 +1,7 @@
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import GenerationStrip from "../components/GenerationStrip";
 import PageHeader from "../components/PageHeader";
-import { PAGE_TOOL } from "../components/pageChrome";
+import { PAGE_TOOL, PANEL, RULE_BELOW } from "../components/pageChrome";
 import MatchupSummary, {
   DefenderHeading,
   MatchupHeading,
@@ -101,8 +101,8 @@ export default function TypeChart() {
         subtitle="Every matchup, including dual types."
       />
 
-      <div className="rounded-lg border border-border-subtle bg-surface p-4">
-        <div className="mb-4 border-b border-border-subtle pb-4">
+      <div className={PANEL}>
+        <div className={RULE_BELOW}>
           <GenerationStrip
             label="Chart as of"
             options={allGenerations()}
@@ -118,7 +118,7 @@ export default function TypeChart() {
             heart. `SearchBar` is the comparison tool's own control, unchanged —
             it is already a labelled combobox that announces its result count
             (D-065), and a second search box built here would drift from it. */}
-        <div role="search" className="mb-4">
+        <div role="search">
           <SearchBar label="Search Pokémon" onSelect={selectMon} />
         </div>
         <TypePicker types={types} asof={asof} onChange={(t) => go(t)} />
@@ -154,8 +154,7 @@ export default function TypeChart() {
           Full chart
         </h2>
         <p className="mb-3 text-caption text-tertiary">
-          Rows attack, columns defend. Blank is 1× — only the matchups that
-          deviate are marked.
+          Rows attack, columns defend. A cell with no label is 1×.
           {/* Said out loud only where it is true. The cut-off column at the
               panel's edge is the affordance for a pointer, and the focus ring
               is the one for a keyboard, but neither tells you the grid is

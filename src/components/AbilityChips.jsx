@@ -107,7 +107,7 @@ export default function AbilityChips({
             {abilityLabel(slug)}
             {hidden && (
               <>
-                <LuEyeOff aria-hidden size={11} className="shrink-0" />
+                <LuEyeOff aria-hidden className="shrink-0" />
                 <span className="sr-only">, hidden ability</span>
               </>
             )}

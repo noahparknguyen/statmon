@@ -1,3 +1,4 @@
+import ChipGroup from "./ChipGroup";
 import FilterChip from "./FilterChip";
 import { capitalize } from "../lib/types";
 import { typesIn } from "../lib/typeChart";
@@ -28,32 +29,25 @@ import { toggleType } from "../lib/typeView";
 export default function TypePicker({ types, asof = null, onChange }) {
   const full = types.length >= 2;
 
+  // The cap is not spelled out on screen: no other control on the site
+  // captions itself, and the dimming says it at the moment it matters. Screen
+  // reader users get it up front, in the group's name, where dimming is harder
+  // to notice at a glance. (D-052)
   return (
-    <div role="group" aria-label="Defending type">
-      {/* The cap is not spelled out on screen: no other control on the site
-          captions itself, and the dimming says it at the moment it matters.
-          Screen reader users get it up front, where dimming is harder to
-          notice at a glance. (D-052) */}
-      <div className="text-overline text-tertiary mb-1.5">
-        Defending type
-        <span className="sr-only"> — pick up to two</span>
-      </div>
-
-      <div className="flex flex-wrap gap-1.5">
-        {typesIn(asof).map((type) => {
-          const active = types.includes(type);
-          return (
-            <FilterChip
-              key={type}
-              active={active}
-              unavailable={full && !active}
-              onClick={() => onChange(toggleType(types, type))}
-              label={capitalize(type)}
-              color={type}
-            />
-          );
-        })}
-      </div>
-    </div>
+    <ChipGroup label="Defending type" name="Defending type, pick up to two">
+      {typesIn(asof).map((type) => {
+        const active = types.includes(type);
+        return (
+          <FilterChip
+            key={type}
+            active={active}
+            unavailable={full && !active}
+            onClick={() => onChange(toggleType(types, type))}
+            label={capitalize(type)}
+            color={type}
+          />
+        );
+      })}
+    </ChipGroup>
   );
 }

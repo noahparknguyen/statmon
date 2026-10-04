@@ -4,6 +4,500 @@ _A dated log of what's decided and **why**. The highest-value doc for a solo dev
 
 ---
 
+## 2026-10-04 — Session 32 (the rulebook, and every near-copy it found)
+
+<a id="d-144"></a>
+
+### D-144 · One colour per surface: a dual type loses its gradient — **Firm** _(reverses part of [D-107](#d-107) and [D-115](#d-115), retires [D-130](#d-130) and [D-133](#d-133))_
+
+**Reported as** "the dual-type gradients look muddy and off, though the colours
+by themselves look fine. Can we pick more vibrant colours, like the purples in
+the BST and speed banner?"
+
+**The type colours were never the problem; the darkening is.** A game panel
+mixes its type at 16% into the near-black page, a dex bar at 28%. Measured in
+OKLCH, that takes every type from a badge's lightness of 0.61 to 0.88 down to
+0.23 to 0.39, with at most a quarter of its colour left. Darkened, colours
+change name: Electric, Bug and Rock go olive; Fire and Fighting go brown and
+maroon; Normal, Ice, Ground, Dark, Steel and Fairy go nearly grey (a panel
+chroma under 0.025). Purples and blues survive darkness, which is why Poison
+over Water looked fine and Rock over Psychic did not. One dark tint reads as
+its type, beside its badge. Two together read as camouflage, and the blend
+between them is greyer still. The dex bars proved the blend was not the main
+fault: at 45/55 a bar is nearly a hard split, about 3px of blend in 28, and it
+still looked muddy.
+
+**The flame works for two reasons the types cannot share.** It is at full
+strength (lightness 0.56 to 0.81), and its three colours are neighbours on the
+hue circle (288°, 280°, 247°), so its blend never passes near grey. Two types
+are any two hues, often opposite.
+
+**Brighter type colours would not have fixed it.** Pure `#ffff00` at the
+panels' 16% is lightness 0.31, chroma 0.056: dark olive. The darkening decides
+the result, not the starting colour, and louder badges would have cost the
+palette its restraint for nothing.
+
+**So a surface takes the primary type's tint, one colour, and the badges carry
+the typing.** Every surface that was tinted by a whole typing has both badges
+beside it at full strength, where the colours look right: the dex's bars and
+Home's preview of them, and both games' panels with every thumbnail of them on
+Home, the games index and the difficulty pickers. Volcarona's panel and bars
+say Bug and its
+badges say Bug and Fire, which is the cost D-107 was written to avoid,
+accepted: the badges say it better than a muddy blend did. 04_design §3's
+original rule is true again: a Pokémon's primary type colours its stat bars,
+and its typing is the badges.
+
+**What went with it.** `typeFill` and `tintFor` lose their gradient branches,
+and a fill is a `background-color` again, so the background-image trap D-115
+tested for no longer exists. `audit:contrast` drops the two groups that checked
+all 153 gradients at their midpoint and is at 12; groups 5 and 10 already audit
+every single tint. The flame is the site's only colour gradient again
+(06_style_guide §3.2). The gradient tests became a render test, Bulbasaur's
+bars Grass and never Poison, and a source test that no file tinting by type
+draws a gradient.
+
+---
+
+<a id="d-143"></a>
+
+### D-143 · A round's cards sit where you are reading — **Firm** _(amends [D-101](#d-101), [D-109](#d-109))_
+
+Two notes from playing.
+
+**1 · The type game's verdict sat far from the answers.** It landed on the
+middle of the attacking panel ([D-109](#d-109)), 176px from the buttons you had
+just pressed at 1440 wide. It sits **directly above the answers** now: 16px at
+every side-by-side size measured (1280×720, 1366×657, 768×1024, 1440×900), and
+33px on a phone, 28 in the 664px Safari leaves an iPhone.
+
+Side by side, the answer column is its own three-row grid: room, answers,
+room. The rooms share the column equally, so the answers stay on the board's
+centre line, and the verdict's layer is the top room with the card at its
+bottom edge. The top room never drops below **15rem**: the tallest verdict at
+the column's width is 206px, when an ability wraps its caption, measured over
+240 rounds, plus 16px each side. That is a floor and not D-109's reservation:
+at 900px tall the room is 319px and the floor does nothing. Only a shorter
+board moves the answers below centre, 11px at 1280×720 and 43px in a
+1366×768 laptop's 657px, and they sit there before you answer, so the verdict
+still moves nothing (measured: 0px over every round).
+
+Stacked, the answer column is `contents`: the answers are the board's middle
+row, and the verdict's layer is its top row, over the attacking panel. The card
+sits on that row's bottom edge, and on a phone too short for it, it centres on
+the row, which is where it always sat.
+
+**A window too short to show the whole board keeps the old placement.** That
+is a phone held sideways: the board's 26rem floor plus the two bars is 33rem,
+and below it the page already scrolls. There the 15rem floor pushed the answers
+106px down and off the bottom of the screen, so you had to scroll to answer.
+Under the new `short` variant the rooms go back to equal and the verdict goes
+back onto the attacking panel, centred, measured on the panel's centre at
+844×390 and 932×430.
+
+It is one element in every layout, placed by the grid it lands in: an
+absolutely positioned child of a grid takes the grid area it names as its box
+and takes no part in placing the in-flow items, so naming row 1 cannot push the
+defender into a row of its own the way an in-flow item did in D-109. **It has
+to name its end line too.** For an absolutely positioned child an unnamed end
+is the container's far edge, and `row-start-1` alone put every card at the
+bottom of the column, 451px below the answers. A test now holds both the end
+line and the floor.
+
+**2 · The stat game's question disappeared once you answered.** Nobody decided
+that. [D-101](#d-101) gave the question and the verdict different positions
+but kept them in one slot, so the verdict replaced the question. Side by side,
+the question now stays at the top for the whole round with the verdict
+centred, the two sharing the layer's one cell so neither moves the other.
+
+Stacked, the plan was to open the verdict below the question instead of on it,
+and measuring killed it. In the 664px Safari leaves an iPhone, a verdict
+starting under the question covered the second Pokémon's name, and on a
+smaller phone its value, which is the answer: [D-097](#d-097)'s fault again.
+So stacked, the verdict still covers the question card, and **its line says the
+question**: "Higher Speed: Teddiursa, by 5.", where it said "Teddiursa leads by
+5." and was the one card on the board that never named the stat. The line is
+the same at every width.
+
+---
+
+<a id="d-142"></a>
+
+### D-142 · No page shows its footer before you scroll — **Firm** _(extends [D-083](#d-083))_
+
+**Reported as** "small pages where the footer appears in full don't look
+right", about `/games`.
+
+**Measured, it was four kinds of page.** The shell pinned a short page's footer
+to the bottom of the window, and the footer is 368px tall on a desktop, taller
+than the games' cards (294). How much of it showed on load: on `/games`, 32% at
+1280×720, 80% at 1440×900 and all of it at 1920×1080; on the two difficulty
+pickers, about the same; on the 404, 83% or more at every desktop size and 61%
+on a phone; on `/about`, 40% at 1920×1080. On those pages the footer was the
+largest thing on screen.
+
+**So the rule is the shell's, not the Games page's.** `<main>` is at least one
+screen tall (`min-h-svh`) on every page but a game board. A page shorter than
+the screen ends in empty canvas, and the footer waits below the fold. A page
+taller than the screen is unchanged, and a board still fills the screen exactly
+with no footer ([D-109](#d-109), [D-110](#d-110)). The floor is a full screen,
+not a screen less the header, so the footer starts 57px below the fold rather
+than on it: subtracting the header is the arithmetic D-110 took out of the
+boards.
+
+**The Games page gets no new content.** It is short because there are two
+games. Every way to make it taller was worse. A "more coming" card or a
+how-to-play paragraph is filler, and the style guide's §14.1 rule 4 already
+took one line off this page. Each game's three difficulties on the index would work for two games
+but not for the six the roadmap lists. Taller previews would make the type
+game's emptier, and the index's cards would stop matching the picker's
+([D-117](#d-117)).
+
+**A screen's height has one spelling now.** `audit:styles` refused
+`min-h-svh`, because the guide's size keywords had `screen` and not `svh`. `svh`
+replaces it: the board's `h-[100svh]` is `h-svh`, the same CSS with one
+arbitrary value fewer, and the loading placeholder's `min-h-screen` is
+`min-h-svh`, the unit D-110 chose.
+
+**The sweep measures it.** `sweep:widths` fails a page whose footer starts on
+the first screen, which is 900px tall in its frames. Against the build before
+this change it failed 42 of its 406 checks; after it, none. Two tests hold the
+markup: the floor is on `/games`, a picker and `/about`, and is not on a board.
+
+---
+
+<a id="d-141"></a>
+
+### D-141 · Five misalignments, found by measuring the whole site — **Firm** _(follows [D-140](#d-140))_
+
+**Reported as** "a very thorough check for other misalignments", after D-140
+found one. The site was measured in a browser at 1280, 768 and 390px: every
+page header, the site header and footer on every route, the three comparison
+cards row by row, the game panels, the game bar, the setup dialog, the games'
+cards, the left and right edges of every stacked block, and the centre of the
+text and icon in every button and chip. Nearly all of it lines up to the
+pixel; text and icons sit within half a pixel of centre in every control. Five
+things did not.
+
+**1 · The dex's number headers sat beside their numbers, not over them.** The
+stat columns' headers were centred while their numbers sit against the cell's
+right edge: 27px apart at 1280, and the same on a phone and in Home's preview.
+BST was right-aligned and still 13px off, because its sort caret came after the
+label and took the place the label's edge belonged. A number column's header
+is right-aligned now with the caret before the label, so the label's right
+edge lands on the numbers'; text columns stay left-aligned with the caret
+after. The table and Home's preview drew the caret two ways (the preview had no
+slot for it on unsorted columns), so the label is one component,
+`DexHeadLabel`. The numbers moved from 10px in from the cell's edge to 8, the
+header's inset. Measured after: every number header 0px from its numbers.
+
+**2 · A dex row's text sat at three heights.** The stat numbers are centred in a
+28px box; the dex number and the total were bare text on the cell's line box,
+which put the dex number 2px lower and the total 1px lower. Every cell centres
+in the same box now, and a row's text shares one line within half a pixel.
+
+**3 · Selecting a type moved the type chart.** The selected column's frame was
+borders, and in a collapsed table a border is layout: picking a type grew the
+grid by 2px and moved every row below the header down by one, each time you
+picked or dropped one. The frame is inset shadows now, drawn in the cells' 1px
+gutter, which their fills do not cover, so the lines still run unbroken. The
+grid measures 570px with nothing, one or two types selected. [D-055](#d-055)'s
+warning was about an OUTSET shadow painted over by neighbouring cells; an inset
+one stays inside its own.
+
+**4 · The remove × sat low on a single-type Pokémon.** Top-aligned beside the
+badges, it was centred on the PAIR of them, which reads as right on a dual type
+and left a single type's × 10.5px below its only badge. It centres on the first
+badge now (24 against 23.5), the same on both.
+
+**5 · The footer's columns broke between 480 and 1023px.** The brand and the
+three link columns sat side by side from `sm`, and the columns did not fit
+beside the brand until about 1,000px, so "Fonts & icons" dropped under "Tools"
+and left a hole beside it. The brand sits beside the columns from `lg` now;
+below that it sits above them and the three fit one row from 480px. Narrower
+than that they wrap, because three do not fit a phone at any spacing.
+
+Two of these are guarded at the markup that decides them: a test fails if a
+number header is centred or carries its caret after the label, and if the type
+chart's selection draws a border.
+
+---
+
+<a id="d-140"></a>
+
+### D-140 · A panel spaces its blocks; its blocks do not space themselves — **Firm** _(applies [D-135](#d-135))_
+
+**Reported as** "in Dex and Types, 'Defending type' is a few pixels lower than
+'Types', so the chips under them don't line up when I click between the two."
+
+**Measured: 4px, and only that.** Both pages agree to the pixel down to the
+bottom of the search field (title at 97, panel at 190, field 295 to 339 at 1280
+and 768). Then the dex put its type label 12px under the field and the type
+chart 16px. "Introduced in" was not the cause; it sits below the chips and
+cannot move anything above it.
+
+**Each page spaced the same gap from a different element.** The type chart
+gave its search field a 16px bottom margin, which is the guide's group-to-group
+number; the dex gave its filter groups a 12px top margin from `md` up, which is
+a legal step on the scale and the wrong one for the relationship. So
+`audit:styles` passed it, correctly: it checks that a value is allowed, not
+that a gap uses the value its relationship calls for.
+
+**So the panel owns the spacing.** `PANEL` in `pageChrome.jsx` is the controls
+surface `/compare`, `/dex` and `/types` share, and it spaces its blocks with one
+`gap-4`; `RULE_BELOW` and `RULE_ABOVE` are the lens's divider and the
+comparison's. No block on any of the three carries a margin toward the next
+one, so there is one number for "the next group" and a page cannot put a
+different one between two blocks without visibly going around it. The setup
+dialog's two dividers take the same constants. A test fails on a tool page
+that writes its own panel.
+
+**One consequence on a phone, accepted:** the dex's sort row sat 12px under
+the name filter and now sits 16, the panel's gap like every other block in it.
+
+---
+
+<a id="d-139"></a>
+
+### D-139 · Home loses its tools row, and the footer loses its margin — **Firm**
+
+**The tools row is gone.** Four outlined pills closed Home: a chip style of
+its own (an accent border at 45%, set inline), the fourth way to reach the
+tools on a page that already has the nav, a section with a button per tool, and
+the footer's Tools column. It also named two of them "Dex table" and "Type
+chart" where every other surface says Dex and Types, which is the
+one-tool-three-names fault [D-067](#d-067) fixed once already. It was built to
+advertise tools that were "soon" ([D-023](#d-023)); none are, and each section's
+button is the way in.
+
+**The footer has no margin of its own.** [D-083](#d-083) made the space before
+the footer one number, the page's bottom padding, and the footer then added
+`mt-16` on top of it: a tool page ended 144px above the footer's rule and a
+content page 160px, which read as a void under the board. The page's padding is
+now the only number, 80 and 96. Home is 216px shorter at 1280 and 240px shorter
+at 390, the two changes together.
+
+---
+
+<a id="d-138"></a>
+
+### D-138 · The copy pass, again — em dashes, the hero line, and a test that could not see — **Firm** _(applies [06_style_guide §14](06_style_guide.md))_
+
+**§14 called the site's voice "em-dash heavy", and that is the opposite of the
+rule now.** A sentence that leans on em dashes is the habit most often read as
+machine-written, and the site's owner set the rule for all his projects on
+2026-10-03. §14 gains a ninth rule: no em dash in a sentence. The dash survives
+only as a glyph that stands alone: a tie, an empty slot, a separator between a
+label and its value in a heading, a page title's separator. Rewritten: both
+games-index blurbs, two of the type game's tier sentences, the `/types`
+caption, the footer's legal line, the site's description in all four places it
+lives, and four strings only a screen reader hears.
+
+**The `/types` caption was also false.** "Blank is 1×" stopped being true at
+[D-052](#d-052), when the 1× cells were filled so the eye had something to
+track along. It says "A cell with no label is 1×." now.
+
+**The hero line called the site something.** "A simple set of Pokémon tools."
+was the one string on the site applying an adjective to the site, which §14
+rules out in both registers. It says what is here: "Pokémon stats, matchups and
+games." The social image and its alt text carry the same line, so both moved;
+the GitHub social preview is uploaded by hand ([D-034](#d-034)), so that copy
+waits on its owner.
+
+**The copy tests could not see most sentences, and the em-dash test is how that
+was found.** The extractor read a JSX text node only if it reached a `<` on the
+line it started on. Every sentence long enough for Prettier to wrap never does,
+so it matched nothing, and neither does a sentence that runs into an expression
+like `{" "}` before a link. Putting an em dash back into the games index and
+watching the new test pass was the first sign. Both shapes are read now, and the
+existing "never shouts" and spelling tests run over the larger set and still
+pass; four mutations (the games index, the footer, a tier sentence, the type
+game's ring) each fail the test written for them.
+
+**And one licence line was wrong.** The footer, the README and
+`licenses/NOTICE.md` all said Font Awesome supplies "the dex's sort carets".
+The comparison board's difference carets have been Font Awesome since
+[D-015](#d-015), which [D-120](#d-120) missed. All three name both now.
+
+---
+
+<a id="d-137"></a>
+
+### D-137 · Six layout faults, each found by measuring — **Firm**
+
+**1 · The difficulty picker's title touched the site header.** It centred itself
+in the game board's viewport-height box, and its content is taller than the box
+at 1280×900 and on any phone, so it started at the top: 0px under the header,
+where every other page leaves 40 or 64. At 1440×1000 it was 42px, so the gap
+moved with the window. The picker is an ordinary page and takes the ordinary
+shell now, `PAGE_CONTENT` and `PageHeader`, the same as `/games`, the page
+[D-117](#d-117) drew it to match. `Layout` makes `<main>` a flex column only
+while a board is up, which is what let the picker use a normal block page.
+
+**2 · The generation strip left its ninth chip alone.** At 390px on `/dex` and
+`/types` nine 36px chips do not fit, and the one that wrapped was the ninth: the
+selected one, by default. A strip whose current value sits on a line of its own
+reads as broken. `ChipGroup` gained `fit`: one column per chip, each up to 36px
+and shrinking only as far as the width demands, so all nine stay on one line.
+At 320px that is 24.7px, over WCAG 2.5.8's floor, which is why the strip keeps
+a 4px gap where every other group has 6: at 6 it would be 22.9.
+
+**3 · ATTACKING and DEFENDING sat 73px apart.** On the type game's hard tier the
+defender's artwork was the element that grew, and an image stops at its 475px
+cap, so on a tall board the column's slack went above and below the whole group
+and the label floated down with it: 130px against the attacker's 203. The panel
+now has `ContenderPanel`'s anatomy, the label at the top, a box that fills
+what the labels leave with the image inside it, and the name, ability and
+typing at the foot. The box is one element, so the clash still shakes it as one
+part ([D-114](#d-114)).
+
+**4 · A thumbnail's labels were its loudest text.** The type game's role label
+was `text-overline-lg` at every size, 16px uppercase in a games-index card whose
+Pokémon names are 12. It takes the plain overline in a thumbnail.
+
+**5 · The accent ring said two things.** The stat game rings its winner. The type
+game rang its defender on every reveal, which is not an answer, so on the games
+index the two cards marked different kinds of thing the same way. The ring
+means "this is the answer" and nothing else; the type game's answer is its
+button.
+
+**6 · Krookodile's sprite sat on a line by itself.** `DefenderHeading` flowed the
+sprite, the heading and the ability chips in one wrapping row, and at 390px the
+heading wrapped below the sprite instead of beside it. The sprite and the
+heading are one unit now, and the heading's own text wraps.
+
+---
+
+<a id="d-136"></a>
+
+### D-136 · Three accessibility failures that nothing measured — **Firm**
+
+**1 · The speed banner's text failed AA with a long name.** Its near-black text
+sits on the flame wherever the words land, and the flame's dark end is 3.61:1
+against it. "Volcarona moves first" starts 29% in at 320px and is fine;
+"Squawkabilly Green Plumage moves first" started 9% in, about 4.1:1, and ran
+into both edges of a banner with no padding. Nothing checked text on the flame.
+The text is held `--flame-text-inset` from each end now, where the worst point
+is 4.71, and a name that does not fit wraps to a second line. **18%, not a round
+20**: 20 wraps "Volcarona moves first" at 320px, and 18 does not. Group 13 of
+`npm run audit:contrast` reads the inset and checks it, and the BST numeral set
+in the flame against large text's 3.0 (3.51).
+
+**2 · The text fields failed WCAG 1.4.11.** A field's edge is the one thing that
+says "type here", and it was `border-subtle`, 1.33:1 against the panel. A chip
+is identified by its label; a field is identified by its edge. `--color-border-field`
+(`neutral-500`) is 3.74 against `surface`, 4.05 against `base` and 3.41
+against the field's own fill, and it is for fields only. Group 14 measures it,
+the focus ring and a selected chip against everything they sit on.
+
+**3 · The text fields had no focus ring.** The inputs carried `outline-none`,
+and the focus cue was the wrapper's border stepping from `border-subtle` to
+`border-strong`, 1.33 to 1.72 against the panel. 04_design described "a 2px
+accent focus ring" that was not there. The wrapper draws the site's ring now,
+`.focus-ring-within:has(:focus-visible)`, from the same two tokens as
+`:focus-visible`, so the two cannot drift apart.
+
+_Verified both ways: the audit fails with the inset at 5% (3.89) and with the
+field edge back on `neutral-700` (1.33), and a token it cannot read is a hard
+failure._
+
+---
+
+<a id="d-135"></a>
+
+### D-135 · One component per job — **Firm** _(applies [06_style_guide §12](06_style_guide.md) rule 8 all the way up)_
+
+**Reported as** "a couple of the pages use essentially the same components, and
+there are areas that don't match up exactly." Measured, there were a dozen, and
+none was wrong on the day it was written. Each is a near-copy that drifted:
+
+| Job                         | The copies                                                                                      | Now                                  |
+| --------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------ |
+| A stat bar                  | 8px on glass, 6px on solid, 8px on solid; the first two shared row lines                        | `StatBar`: 8px, glass only over art  |
+| A mirrored row's values     | set in `text-diff`, the difference's style                                                      | `text-stat-sm`, a stat value's       |
+| An icon-only button         | Remove 28px with a hover fill; Close 36px without; sort a bordered chip                         | `IconButton`: 36px, ghost or outline |
+| A quiet action              | "Clear all filters" bare 12px text, ~15px tall; "Clear record" a 36px pill                      | `Button` `ghost` `sm`                |
+| A text field                | two copies of the same class strings                                                            | `fieldStyles.jsx`                    |
+| A labelled chip group       | label 6px or 8px over the row, chips 4px or 6px apart                                           | `ChipGroup` everywhere: 8 and 6      |
+| A round's verdict           | Next 44px in one game, 36px in the other; headline 2px or 12px over its detail                  | `Verdict`                            |
+| "No round to play"          | sentence 4px or 8px under the heading                                                           | `NoRound`                            |
+| A game's card               | body 20px padding; title 8px or 4px over its line                                               | `GAME_CARD*`: 16, 4                  |
+| Home's comparison board     | every band `px-5`, stats `pt-3 pb-2`; phone cards not animated                                  | the tool's insets; animated          |
+| A Pokémon's name and badges | `text-h3` + `md` on `/compare`, `text-h4` + `sm` on Home's board; `sm` on the type game's board | `text-h3` + `md` at card scale       |
+| A STAB chip                 | a 10px dot where every marker dot is 6; four border strengths (28, 28, 30, 55)                  | 6px; two strengths, loud and quiet   |
+| A Pokémon in a row          | 14px in the dex, 16px in the search results                                                     | 14px                                 |
+| Static pills                | the type game's answers spelled out by hand                                                     | the chip vocabulary                  |
+| A choice's hover            | the type game's answers lit their border accent; every chip lights only its label               | the chip idiom                       |
+
+Spacing that was the same relationship at different sizes is one size now: a
+surface's padding is 16 (cards and verdicts were 20, a board 20), a tool's
+panel sits 24 above what it controls (it was 20, 16 and 24 on the three tools),
+sibling surfaces sit 16 apart (the comparison board was 20), a divider sits 16
+from what it divides (the setup dialog's was 20).
+
+**Guarded at the source**, since a second copy is the thing to stop: a test
+suite asserts every stat bar is `StatBar`, both games end a round on the shared
+cards, every text field is the shared field, the strip stays on one line, the
+banner keeps its inset, and the type game's panels never ring.
+
+---
+
+<a id="d-134"></a>
+
+### D-134 · The style guide becomes a rulebook that fails the build — **Firm**
+
+**Decision.** `06_style_guide` is rewritten as a specification: every colour,
+size, space, radius, layer, opacity, icon and component as a closed set, each
+naming the check that enforces it. And `npm run audit:styles` is the ninth
+check, failing on any utility in `src/` the guide does not allow.
+
+**Why.** The guide has opened on "if a value isn't in this document, it doesn't
+get used" since it was written, and only colour made that true: the cleared
+palette ([D-033](#d-033)) turns an off-palette class into no CSS at all. Every
+other dimension was a hope, and the near-copies of [D-135](#d-135) are what hope
+produced: 20px cards beside 16px ones, a `rounded-xl` token nothing used, a bare
+`z-1300`, a footer gap of 56px that existed nowhere else.
+
+**What the audit holds.** Semantic colours only; the 22 named styles and no
+stock size, line-height or tracking; padding, margin and gap from the spacing
+scale; the five role radii; sizes and positions on the 4px grid; four opacity
+steps; local `z-0` to `z-2` or a token from the ladder; no stock shadow, ring,
+blur or duration; and arbitrary values only from a list where each carries its
+derivation. A token it does not recognise fails too, so its coverage cannot
+shrink quietly. It was written after the fixes it would have caught, so it was
+proved against a canary instead: twenty planted violations, one or more per
+rule, all caught, and a typo inside a `className` caught on its own.
+
+**One reader for both style audits.** `scripts/classes.mjs` is the class-string
+reader `audit:classes` already had, extracted so the two cannot disagree about
+what a class string is. Two flaws surfaced on the way. Comments quote utilities
+in backticks, which is also how a template literal opens, so prose read as
+classes; harmless to a conflict check, fatal to an allowlist. They are blanked
+first. And a string with one real utility and one typo failed the "mostly
+utilities" test and was never read; anything written straight into a
+`className` is read now.
+
+**Component tokens, which the guide said did not exist.** They did, as numbers
+in component files: the STAB chip's 14%, the panels' 16%, the dex's 28%, the
+type chart's 55% and 12%, two text shadows with different blurs. A share the
+contrast audit measures belongs where the browser paints it from, so they are
+`--mix-*` tokens in `index.css`, the audit reads every one of them (two it used
+to restate, three it hardcoded), and a missing one is a hard failure.
+
+**Removed, by the rule that deletes what claims a role nothing plays:**
+`text-label`, a named style no page used, and `--radius-xl`, a radius for
+"large hero cards" no page had. The guide now has 22 styles and five radii.
+
+**And measured rather than carried forward.** The header with the wordmark
+needs 361px at its phone gaps, not the 373 [D-062](#d-062)'s arithmetic gave,
+so `xs` at 384 has 23px of room. The palette's harmony was measured in OKLCH:
+the neutrals, the accent and the flame are one violet family, and the accent's
+nearest neighbour is Flying, nearer than any two types are to each other, which
+04_design had claimed was not so. Moving the accent only traded Flying for
+Water, so the colour stays and the claim was corrected.
+
+---
+
 ## 2026-09-09 — Session 31 (the dual-type gradients, on the right axis)
 
 <a id="d-133"></a>

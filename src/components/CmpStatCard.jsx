@@ -1,6 +1,6 @@
 import { FaCaretUp, FaCaretDown } from "react-icons/fa6";
+import StatBar from "./StatBar";
 import { typeColorVar } from "../lib/types";
-import { statPct } from "../lib/stats";
 
 // Mobile (< md) per-stat card (D-010): replaces one mirrored CmpRow/Row with
 // a stacked P1-over-P2 layout, since side-by-side bars + a center diff column
@@ -60,32 +60,7 @@ function StatLine({ name, value, color, win, ready, animate }) {
       <span className="text-caption text-secondary truncate">
         {name ?? "–"}
       </span>
-      <div className="h-2 rounded-full bg-elevated overflow-hidden">
-        {/* Same two branches as `CmpRow`'s bar, for the same reason: `--target`
-            and `width` are different mechanisms and composing them into one
-            element would mean a style object whose meaning depends on a flag.
-            Below `md` this is the ONLY stats surface (D-057), so leaving it
-            static while the desktop board animated would have made the phone
-            the odd one out. */}
-        {ready &&
-          (animate ? (
-            <div
-              className="h-full rounded-full animate-grow-w"
-              style={{
-                "--target": statPct(value),
-                backgroundColor: typeColorVar(color),
-              }}
-            />
-          ) : (
-            <div
-              className="h-full rounded-full"
-              style={{
-                width: statPct(value),
-                backgroundColor: typeColorVar(color),
-              }}
-            />
-          ))}
-      </div>
+      <StatBar value={ready ? value : null} type={color} animate={animate} />
       <span
         className={`text-stat text-right ${win ? "text-primary" : "text-tertiary"}`}
       >

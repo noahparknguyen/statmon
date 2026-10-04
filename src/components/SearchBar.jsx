@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useId } from "react";
 import { LuSearch } from "react-icons/lu";
 import { searchPokemon, spriteFor } from "../lib/pokemon";
 import TypeBadge from "./TypeBadge";
+import { FIELD, FIELD_INPUT } from "./fieldStyles";
 
 // Search-as-you-type with a sprite dropdown. Calls onSelect(pokemon) on pick.
 export default function SearchBar({ label, onSelect }) {
@@ -49,7 +50,9 @@ export default function SearchBar({ label, onSelect }) {
 
   return (
     <div className="relative" ref={boxRef}>
-      <div className="flex items-center gap-2 h-11 px-3 bg-elevated border border-border-subtle rounded-sm focus-within:border-border-strong">
+      {/* The shared field (fieldStyles.jsx): a 3:1 edge, and the site's focus
+          ring on the wrapper rather than a border that changed shade. */}
+      <div className={FIELD}>
         <LuSearch aria-hidden className="shrink-0 text-tertiary" />
         <input
           type="text"
@@ -70,7 +73,7 @@ export default function SearchBar({ label, onSelect }) {
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
-          className="w-full bg-transparent outline-none text-body text-primary placeholder:text-tertiary"
+          className={FIELD_INPUT}
         />
       </div>
 
@@ -98,9 +101,7 @@ export default function SearchBar({ label, onSelect }) {
           }}
         >
           {results.length === 0 ? (
-            <li className="px-3 py-2.5 text-body-sm text-tertiary">
-              No matches
-            </li>
+            <li className="p-3 text-body-sm text-tertiary">No matches</li>
           ) : (
             results.map((p, i) => (
               // role="presentation" keeps the <li> out of the a11y tree so the
@@ -129,7 +130,9 @@ export default function SearchBar({ label, onSelect }) {
                     loading="lazy"
                     className="shrink-0 [image-rendering:pixelated]"
                   />
-                  <span className="text-body text-primary flex-1 truncate">
+                  {/* A Pokémon's name in a row is `text-body-sm`, as in the
+                      dex's rows: the same sprite, name and badges (§5.1). */}
+                  <span className="text-body-sm text-primary flex-1 truncate">
                     {p.name}
                   </span>
                   <span className="flex gap-1 shrink-0">

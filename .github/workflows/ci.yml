@@ -37,6 +37,13 @@ jobs:
       - name: Conflicting utilities
         run: npm run audit:classes
 
+      # The same static scan, asking a different question: is every utility one
+      # the style guide allows? 06_style_guide's "if a value isn't in this
+      # document, it doesn't get used" was enforced for colour alone until this
+      # (D-134).
+      - name: Style allowlist
+        run: npm run audit:styles
+
       - name: Unit tests
         run: npm run test:run
 

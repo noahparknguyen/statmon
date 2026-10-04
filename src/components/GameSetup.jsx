@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { LuX } from "react-icons/lu";
 import Button from "./Button";
+import IconButton from "./IconButton";
+import { RULE_ABOVE } from "./pageChrome";
 import { topicAccuracy } from "../lib/record";
 
 // The setup panel's shell: everything about a game that is not the round
@@ -62,19 +64,21 @@ const PANEL =
 // an effect — the thing `react-hooks` flags and is right to. Scoping the state
 // to something that unmounts is the same move the arena makes with its session
 // key: state belongs to the thing it is about, and then it cannot outlive it.
+//
+// A ghost Button, the site's quiet action (D-135), like "Clear all filters".
 function ClearRecordButton({ onClear }) {
   const [armed, setArmed] = useState(false);
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="sm"
       onClick={() => {
         if (armed) onClear();
         setArmed(!armed);
       }}
-      className="inline-flex min-h-9 items-center rounded-full px-3 text-caption text-tertiary transition-colors hover:text-primary"
     >
       {armed ? "Tap again to erase" : "Clear record"}
-    </button>
+    </Button>
   );
 }
 
@@ -125,21 +129,17 @@ export default function GameSetup({
         <h2 id="setup-title" className="text-h4">
           Setup
         </h2>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close setup"
-          className="inline-flex size-9 items-center justify-center rounded-full text-secondary transition-colors hover:text-primary"
-        >
+        <IconButton label="Close setup" onClick={onClose}>
           <LuX aria-hidden />
-        </button>
+        </IconButton>
       </div>
 
-      <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-4 py-4">
+      {/* 16px between groups in a panel (§6.3), as in the dex's filters. */}
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
         {children}
 
         {accuracy.length > 0 && (
-          <div className="border-t border-border-subtle pt-4">
+          <div className={RULE_ABOVE}>
             {/* Worst first, because the list exists to say what to practise —
                 and it sits directly under the chips that act on it, so seeing
                 "Sp. Defense 58%" and drilling it is one movement (D-098). */}

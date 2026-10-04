@@ -9,7 +9,9 @@ export default function NotFound() {
     <div className={`${PAGE_CONTENT} text-center`}>
       <p className="text-display-hero text-accent">404</p>
       <h1 className="mt-2 text-h1">This page fainted.</h1>
-      <p className="mx-auto mt-2 max-w-md text-body text-secondary">
+      {/* The line under a page's title: `text-body-sm`, 4px under it, as
+          `PageHeader` sets it everywhere else (06_style_guide §5.1). */}
+      <p className="mx-auto mt-1 max-w-md text-body-sm text-secondary">
         The link may be broken, or the page moved.
       </p>
       <div className="mt-8 flex justify-center">

@@ -2,9 +2,10 @@ import { LuX } from "react-icons/lu";
 import TypeBadge from "./TypeBadge";
 import FormChips from "./FormChips";
 import AbilityChips from "./AbilityChips";
+import IconButton from "./IconButton";
+import StatBar from "./StatBar";
 import { CHIP_CELL, CHIP_CELL_LABEL } from "./chipStyles";
-import { STAT_ORDER, STAT_LABEL, statPct } from "../lib/stats";
-import { typeColorVar } from "../lib/types";
+import { STAT_ORDER, STAT_LABEL } from "../lib/stats";
 import { artworkFor, formsOf } from "../lib/pokemon";
 import { dexNumberOf } from "../lib/dexTable";
 
@@ -63,13 +64,9 @@ import { dexNumberOf } from "../lib/dexTable";
 // (lib/eras.js) rather than straight off the entry, so the card renders
 // whichever generation is selected. `view` is always supplied; `eraView(p,
 // null)` is today's values untouched.
-const SCRIM =
-  "linear-gradient(180deg, transparent 0%, transparent 38%," +
-  " color-mix(in srgb, var(--color-surface) 35%, transparent) 52%," +
-  " color-mix(in srgb, var(--color-surface) 80%, transparent) 66%," +
-  " var(--color-surface) 90%)";
-const shadowText = { textShadow: "0 1px 8px rgba(0,0,0,0.75)" };
-const statsShadow = { textShadow: "0 1px 5px rgba(0,0,0,0.75)" };
+//
+// The scrim and the text shadow are utilities in index.css (`.bg-scrim-art`,
+// `.shadow-on-art`) rather than strings built here (D-134).
 
 export default function PokemonCard({
   pokemon,
@@ -110,22 +107,14 @@ export default function PokemonCard({
         decoding="async"
         className="pointer-events-none absolute inset-x-0 top-36 z-0 mx-auto w-full max-w-70 aspect-square object-contain drop-shadow-art"
       />
-      <div
-        className="pointer-events-none absolute inset-0 z-1"
-        style={{ background: SCRIM }}
-      />
+      <div className="pointer-events-none absolute inset-0 z-1 bg-scrim-art" />
 
       <div className="relative z-2 flex flex-col">
         {/* Head */}
         <div className="h-14 flex items-start justify-between gap-3 px-4 pt-4">
           <div className="min-w-0">
-            <h2 className="text-h3 truncate" style={shadowText}>
-              {pokemon.name}
-            </h2>
-            <div
-              className="text-caption text-secondary mt-0.5"
-              style={shadowText}
-            >
+            <h2 className="text-h3 truncate shadow-on-art">{pokemon.name}</h2>
+            <div className="text-caption text-secondary mt-0.5 shadow-on-art">
               #{String(dex).padStart(4, "0")}
             </div>
           </div>
@@ -147,21 +136,23 @@ export default function PokemonCard({
                 one, which is how the games index acquired an invisible button
                 that ate clicks (D-111).
 
-                28px, which clears WCAG 2.5.8's 24px floor outright rather than
-                through its spacing exception — the harder way to pass and the
-                one `npm run sweep:widths` does not have to argue about. Always
-                visible, never hover-only: a control that appears on hover is
-                undiscoverable and unreachable on touch. */}
+                The site's one icon button (D-135), 36px like every compact
+                control, which clears WCAG 2.5.8's 24px floor outright rather
+                than through its spacing exception. `-mr-2` sets the X itself
+                on the card's content edge rather than its hit box, and `-mt-2.5`
+                centres it on the FIRST badge (D-141). Top-aligned it sat
+                centred on the pair of badges, which looked right for a dual
+                type and left a single type's X 10px below its only badge.
+                Always visible, never hover-only: a control that appears on
+                hover is undiscoverable and unreachable on touch. */}
             {onClear && (
-              <button
-                type="button"
+              <IconButton
+                label={`Remove ${pokemon.name}`}
                 onClick={onClear}
-                aria-label={`Remove ${pokemon.name}`}
-                className="-mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-tertiary transition-colors hover:bg-elevated hover:text-primary"
-                style={shadowText}
+                className="-mr-2 -mt-2.5"
               >
                 <LuX aria-hidden />
-              </button>
+              </IconButton>
             )}
           </div>
         </div>
@@ -210,10 +201,7 @@ export default function PokemonCard({
             lands on that artwork's transparent margin, but unlike the band's
             own position that is a property of the crop rather than a
             guarantee. Four entries of 1,259. */}
-        <div
-          className="h-22 grid grid-cols-[auto_1fr] content-start items-start gap-x-3 gap-y-1.5 px-4 pt-1"
-          style={statsShadow}
-        >
+        <div className="h-22 grid grid-cols-[auto_1fr] content-start items-start gap-x-3 gap-y-1.5 px-4 pt-1 shadow-on-art">
           {/* The FORM row holds its space even for the 845 entries with one
               form, where `FormChips` renders nothing. A row that disappears
               would slide the ability row up and change the card's height for
@@ -275,8 +263,7 @@ export default function PokemonCard({
             both, because both are what it is comparing. */}
         <div
           key={view.keys.map((k) => view.stats[k]).join(",")}
-          className="hidden md:block px-4 pt-2 pb-4"
-          style={statsShadow}
+          className="hidden md:block px-4 pt-2 pb-4 shadow-on-art"
         >
           {view.keys.map((k) => (
             <div
@@ -286,17 +273,14 @@ export default function PokemonCard({
               <span className="text-overline text-secondary">
                 {STAT_LABEL[k]}
               </span>
-              <div className="h-2 rounded-full bg-track-glass overflow-hidden">
-                {/* `--target` with no `width`, the mechanism `CmpRow` and
-                    `DexRow` use: the keyframe animates width from 0 to it. */}
-                <div
-                  className="h-full rounded-full animate-grow-w"
-                  style={{
-                    "--target": statPct(view.stats[k]),
-                    backgroundColor: typeColorVar(primary),
-                  }}
-                />
-              </div>
+              {/* The glass track, because this is the one bar that sits over
+                  artwork: the art shows through it (04_design §5). */}
+              <StatBar
+                value={view.stats[k]}
+                type={primary}
+                track="glass"
+                animate
+              />
               <span className="text-stat text-primary text-right">
                 {view.stats[k]}
               </span>
@@ -334,7 +318,7 @@ function EmptyCard({ keys = STAT_ORDER }) {
             className="grid grid-cols-[2rem_1fr_2.5rem] items-center gap-3 h-9"
           >
             <span className="text-overline text-tertiary">{STAT_LABEL[k]}</span>
-            <div className="h-2 rounded-full bg-elevated" />
+            <StatBar />
             <span className="text-stat text-tertiary text-right">–</span>
           </div>
         ))}

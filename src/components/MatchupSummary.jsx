@@ -82,30 +82,35 @@ export function DefenderHeading({
 }) {
   return (
     <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-      <img
-        src={spriteFor(pokemon)}
-        alt=""
-        width="40"
-        height="40"
-        className="shrink-0 [image-rendering:pixelated]"
-      />
-      <Heading id={id} className="text-h4 text-secondary">
-        Attacking
-        <span aria-hidden className="text-tertiary">
-          {" — "}
-        </span>
-        <span className="text-primary">{pokemon.name}</span>
-        {/* Not aria-hidden, unlike the em dash above it: a comma is a pause a
+      {/* The sprite and the heading are one unit that never wraps apart: the
+          heading's own text wraps instead. At 390px the flat row put the sprite
+          on a line by itself above the words it belongs to (D-137). */}
+      <div className="flex min-w-0 items-center gap-3">
+        <img
+          src={spriteFor(pokemon)}
+          alt=""
+          width="40"
+          height="40"
+          className="shrink-0 [image-rendering:pixelated]"
+        />
+        <Heading id={id} className="min-w-0 text-h4 text-secondary">
+          Attacking
+          <span aria-hidden className="text-tertiary">
+            {" — "}
+          </span>
+          <span className="text-primary">{pokemon.name}</span>
+          {/* Not aria-hidden, unlike the em dash above it: a comma is a pause a
             screen reader should get, where a dash between a label and its value
             is punctuation it should not read out. */}
-        <span className="text-tertiary">{", "}</span>
-        {types.map((t, i) => (
-          <span key={t}>
-            {i > 0 && <span className="text-tertiary"> / </span>}
-            <span style={{ color: typeColorVar(t) }}>{capitalize(t)}</span>
-          </span>
-        ))}
-      </Heading>
+          <span className="text-tertiary">{", "}</span>
+          {types.map((t, i) => (
+            <span key={t}>
+              {i > 0 && <span className="text-tertiary"> / </span>}
+              <span style={{ color: typeColorVar(t) }}>{capitalize(t)}</span>
+            </span>
+          ))}
+        </Heading>
+      </div>
       {/* Directly after the typing, not pushed to the far edge. An `ml-auto`
           here read as a page action rather than as part of the subject — at
           1400px it stranded "Levitate" some 700px from the Pokémon it belongs
@@ -143,7 +148,8 @@ export default function MatchupSummary({ types, asof = null, ability = null }) {
       {tiers.map(({ mult, types: attackers }) => (
         <div
           key={mult}
-          className="grid grid-cols-[2.5rem_1fr] items-baseline gap-3 rounded-md border border-border-subtle bg-surface px-3 py-2.5"
+          // An inset row: `rounded-md`, 12px padding (§6.2, §7.1).
+          className="grid grid-cols-[2.5rem_1fr] items-baseline gap-3 rounded-md border border-border-subtle bg-surface p-3"
         >
           <dt className={`text-stat-sm text-right ${TIER_TONE(mult)}`}>
             {formatMult(mult)}

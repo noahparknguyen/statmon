@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Statmon — Pokémon comparison, dex, type chart and games",
   "short_name": "Statmon",
-  "description": "Compare two Pokémon head to head, rank the whole dex by any stat, and read the full type chart including dual types — each as of any generation — then drill it all in the games.",
+  "description": "Compare two Pokémon head to head, rank the whole dex by any stat, and read the full type chart including dual types, each as of any generation. Then drill it all in the games.",
   "lang": "en",
   "dir": "ltr",
   "categories": [

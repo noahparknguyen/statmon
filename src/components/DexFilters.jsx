@@ -17,8 +17,12 @@ import {
 } from "../lib/dexTable";
 import { capitalize } from "../lib/types";
 import { CHIP, CHIP_FILTER_GEOMETRY, CHIP_OFF, CHIP_ON } from "./chipStyles";
+import { FIELD, FIELD_INPUT, FIELD_LOOK } from "./fieldStyles";
+import { PANEL, RULE_BELOW } from "./pageChrome";
+import Button from "./Button";
 import FilterChip from "./FilterChip";
 import ChipGroup from "./ChipGroup";
+import IconButton from "./IconButton";
 
 // The dex's controls. Holds no view state of its own: it renders the view
 // parsed from the URL and reports the next one up, which the page writes back to
@@ -41,22 +45,16 @@ import ChipGroup from "./ChipGroup";
 // *which dex you are looking at*, this chooses *where a Pokémon came from*.
 // Naming the second for what it actually filters keeps them apart. (D-050)
 
-// Height is deliberately NOT part of this: the mobile sort row wants a compact
-// control, and appending "h-9" to a string already carrying "h-11" does not
-// override it — Tailwind resolves that conflict by stylesheet order, not by the
-// order the classes are written, so the select silently rendered 44px next to
-// its 36px neighbours. Each call site sets its own height instead.
-// `text-body` (16px), not `text-body-sm`. Two reasons, and the first is a real
-// bug: **iOS Safari force-zooms the page when a control smaller than 16px takes
-// focus**, and never zooms back — so tapping this filter or the sort select on
-// an iPhone left the site zoomed in. `SearchBar` was already 16px and safe,
-// which also made these the site's two search inputs at two different sizes.
-// A responsive variant is not an option here: the named text styles are
-// hand-written `@layer components` classes, so `md:text-body-sm` generates no
-// CSS (06_style_guide §13). (D-065)
-const FIELD_LOOK =
-  "rounded-sm border border-border-subtle bg-elevated px-3 text-body text-primary transition-colors focus-within:border-border-strong";
-const FIELD = `h-11 ${FIELD_LOOK}`;
+// The field look is shared with SearchBar (fieldStyles.jsx, D-135), and so is
+// the reasoning behind its two numbers:
+//
+//   · **16px type, not 14** (D-065). iOS Safari force-zooms the page when a
+//     control smaller than 16px takes focus, and never zooms back. A responsive
+//     variant is not an option, because the named text styles are hand-written
+//     `@layer components` classes and `md:text-body-sm` generates no CSS.
+//   · **Height at the call site.** Appending `h-9` to a string carrying `h-11`
+//     does not override it — Tailwind resolves that by stylesheet order — and
+//     the select once rendered 44px beside its 36px neighbours (D-042).
 
 export default function DexFilters({ view, onChange }) {
   const [open, setOpen] = useState(false);
@@ -73,8 +71,8 @@ export default function DexFilters({ view, onChange }) {
   const generations = generationsFor(view.asof);
 
   return (
-    <div className="rounded-lg border border-border-subtle bg-surface p-4">
-      <div className="mb-4 border-b border-border-subtle pb-4">
+    <div className={PANEL}>
+      <div className={RULE_BELOW}>
         <GenerationStrip
           label="Dex as of"
           options={allGenerations()}
@@ -83,7 +81,7 @@ export default function DexFilters({ view, onChange }) {
         />
       </div>
 
-      <div className={`flex items-center gap-2 ${FIELD}`}>
+      <div className={FIELD}>
         <LuSearch aria-hidden className="shrink-0 text-tertiary" />
         <input
           type="search"
@@ -91,14 +89,14 @@ export default function DexFilters({ view, onChange }) {
           placeholder="Filter by name"
           value={view.q}
           onChange={(e) => onChange({ ...view, q: e.target.value })}
-          className="w-full bg-transparent text-body text-primary outline-none placeholder:text-tertiary"
+          className={FIELD_INPUT}
         />
       </div>
 
       {/* Phone-only row. Sorting lives here because the six stat column headers
           are hidden below md, and it sits OUTSIDE the collapsible region — you
           should not have to open the filters to change the sort. */}
-      <div className="mt-3 flex items-center gap-2 md:hidden">
+      <div className="flex items-center gap-2 md:hidden">
         <label className="sr-only" htmlFor="dex-sort">
           Sort by
         </label>
@@ -118,20 +116,21 @@ export default function DexFilters({ view, onChange }) {
             </option>
           ))}
         </select>
-        <button
-          type="button"
+        {/* The outline icon button: it stands in a row of bordered controls,
+            where a borderless one would read as a gap (IconButton). */}
+        <IconButton
+          variant="outline"
+          label={`Sorted ${view.dir === "asc" ? "ascending" : "descending"}; reverse the order`}
           onClick={() =>
             onChange({ ...view, dir: view.dir === "asc" ? "desc" : "asc" })
           }
-          aria-label={`Sorted ${view.dir === "asc" ? "ascending" : "descending"}; reverse the order`}
-          className={`flex size-9 shrink-0 items-center justify-center rounded-full border transition-colors ${CHIP_OFF}`}
         >
           {view.dir === "asc" ? (
             <FaCaretUp aria-hidden />
           ) : (
             <FaCaretDown aria-hidden />
           )}
-        </button>
+        </IconButton>
         <button
           type="button"
           aria-expanded={open}
@@ -151,7 +150,7 @@ export default function DexFilters({ view, onChange }) {
           room and they stay open. */}
       <div
         id="dex-filter-groups"
-        className={`${open ? "" : "hidden"} mt-4 flex flex-col gap-4 md:mt-3 md:flex`}
+        className={`${open ? "" : "hidden"} flex flex-col gap-4 md:flex`}
       >
         <ChipGroup label="Types">
           {types.map((t) => (
@@ -194,16 +193,19 @@ export default function DexFilters({ view, onChange }) {
           </ChipGroup>
         </div>
 
+        {/* A ghost Button (D-135): the quiet action, at the compact control
+            height. It was bare caption text about 15px tall, where the other
+            quiet action on the site, "Clear record", was a 36px pill. */}
         {totalCount > 0 && (
           <div>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => onChange(clearFilters(view))}
-              className="flex items-center gap-1 text-caption text-tertiary transition-colors hover:text-primary"
             >
               <LuX aria-hidden />
               Clear all filters
-            </button>
+            </Button>
           </div>
         )}
       </div>

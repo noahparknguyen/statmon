@@ -22,10 +22,10 @@ re-vendor cannot quietly drop them again.
 Icons come through [`react-icons`](https://github.com/react-icons/react-icons)
 (MIT), which is a wrapper: each icon keeps its original project's licence.
 
-| Set                                         | Used for                      | Licence                                                                              |
-| ------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------ |
-| **Lucide** (`react-icons/lu`)               | Almost every icon on the site | [ISC](https://github.com/lucide-icons/lucide/blob/main/LICENSE)                      |
-| **Font Awesome 6 Free** (`react-icons/fa6`) | The dex table's sort carets   | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) — **attribution required** |
+| Set                                         | Used for                                          | Licence                                                                              |
+| ------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| **Lucide** (`react-icons/lu`)               | Almost every icon on the site                     | [ISC](https://github.com/lucide-icons/lucide/blob/main/LICENSE)                      |
+| **Font Awesome 6 Free** (`react-icons/fa6`) | The comparison board's and the dex table's carets | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) — **attribution required** |
 
 Font Awesome Free is CC BY 4.0, so it is credited in the site footer rather than
 only here. Lucide's ISC needs no on-site notice; it is listed for completeness.

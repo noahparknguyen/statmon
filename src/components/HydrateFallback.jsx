@@ -23,7 +23,7 @@
 // `router.jsx` exports a route table and a factory.
 export default function HydrateFallback() {
   return (
-    <div className="min-h-screen bg-base">
+    <div className="min-h-svh bg-base">
       <span role="status" className="sr-only">
         Loading Statmon…
       </span>

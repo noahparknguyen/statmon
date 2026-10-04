@@ -68,7 +68,10 @@ export default function Dex() {
 
       <DexFilters view={view} onChange={setView} />
 
-      <p aria-live="polite" className="mt-4 mb-1 text-caption text-tertiary">
+      {/* 24px under the controls panel, the gap every tool page leaves
+          between its panel and what the panel controls, and 8px over the table
+          it counts — a label over its group (§6.3). */}
+      <p aria-live="polite" className="mt-6 mb-2 text-caption text-tertiary">
         {rows.length === total
           ? `${total.toLocaleString()} Pokémon`
           : `${rows.length.toLocaleString()} of ${total.toLocaleString()} Pokémon`}

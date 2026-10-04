@@ -33,17 +33,19 @@ export const TYPES = [
 export const typeColorVar = (slug) => `var(--color-type-${slug})`;
 
 /**
- * A translucent fill for a whole TYPING rather than one type.
+ * A translucent fill in a Pokémon's PRIMARY type, for a surface that carries
+ * its typing: the dex's stat bars.
  *
- * A single type is a flat wash; a dual type is a gradient between the two, so a
- * Pokémon's representation carries both halves of what it is (04_design §3).
- * The arena already does this behind its panels ([D-107]); this is the same
- * idea at bar scale.
- *
- * **Returns a `background`, not a `background-color`.** A caller setting
- * `backgroundColor` from this renders nothing at all for a dual type, silently
- * — a gradient is a background *image*. The same trap `tintFor` documents in
- * `gameChrome.jsx`, and the reason both spell it out.
+ * **One colour per surface, never two (D-144).** A dual type used to be a
+ * gradient between both colours (D-115, retuned by D-130 and D-133), and three
+ * rounds of tuning could not make it look clean, because the stops were never
+ * the problem. At 28% over near-black every type colour loses most of its
+ * lightness, and a dark yellow is olive, a dark orange brown, a dark red
+ * maroon. One of those reads as its type, beside its badge. Two together read
+ * as camouflage, and the blend between them was greyer still. Even pure
+ * `#ffff00` at this share is dark olive, so brighter type colours would not
+ * have saved it. The typing in full is the badges' job: both sit beside every
+ * bar, at full strength, where the colours look right.
  *
  * **Translucent, where the arena's tint is opaque.** `tintFor` mixes with
  * `--color-base` because a game panel sits on the page and nothing shows
@@ -52,47 +54,12 @@ export const typeColorVar = (slug) => `var(--color-type-${slug})`;
  * rest. Reusing `tintFor` here would have pinned every bar to the page
  * background and killed the row hover.
  *
- * **The gradient runs ACROSS the bar (180deg), not along it.** It ran along the
- * length (90deg) and that was the bug, because this gradient is painted on the
- * fill element, whose width IS the stat. A seam at 50% of the fill is a seam at
- * a different absolute position in every bar, sliding rightwards as the number
- * grows — so one Pokemon's six stats split in six different places and the row
- * stopped reading as one typing. Type identity was being drawn on the axis that
- * already encodes the value, and the value won.
- *
- * Across the bar, the split is identical in every cell no matter how long the
- * fill is. It also serves the goal the old note claimed for 90deg better than
- * 90deg did: at a 5 HP sliver a horizontal gradient is a few pixels wide and
- * both stops land inside one of them, where a vertical one still shows a clean
- * top half and bottom half. Both colours ARE visible at every bar width now.
- *
- * @param {string[]} types one or two type slugs, primary first
+ * @param {string[]} types the typing, primary first
  * @param {string} alpha a CSS percentage, e.g. `"28%"`
  */
 export function typeFill(types, alpha) {
   if (!types?.length) return "transparent";
-  const stop = (t) =>
-    `color-mix(in srgb, ${typeColorVar(t)} ${alpha}, transparent)`;
-  if (types.length === 1) return stop(types[0]);
-  const [a, b] = types;
-  // **A 10% blend zone, not 50%.** The stops used to hold each colour to 25%
-  // and blend across the middle half, and that middle went muddy: two type
-  // colours are often near-complementary in HUE — bug against dragon is
-  // yellow-green against purple — and a straight line between opposite hues
-  // passes close to neutral. Measured across the 65 pairs whose midpoint loses
-  // more than a quarter of its chroma, **29.7% of the bar was visibly muddy**
-  // at 25/75 and is **5.9%** at 45/55. The seam is still soft; there is just
-  // far less of it.
-  //
-  // **Not an oklab gradient, and that was measured too.** The usual advice is
-  // to interpolate in a perceptual space, and here it does not help: oklab
-  // fixes gamma-induced darkening, which is not what is happening. Opposite
-  // hues pass near grey in any rectangular space, and oklab came out slightly
-  // WORSE across all 153 pairs (29.9% mean chroma loss against sRGB's 26.4%).
-  // `oklch` would arc around the hue circle and stay saturated, but it would
-  // sweep through hues belonging to neither type — a green midpoint on a
-  // Grass-less Pokémon says something false on a site about types.
-  return `linear-gradient(180deg, ${stop(a)} 0%, ${stop(a)} 45%, ${stop(b)} 55%, ${stop(b)} 100%)`;
+  return `color-mix(in srgb, ${typeColorVar(types[0])} ${alpha}, transparent)`;
 }
 
 // Badge label color. Every type color is light enough on the dark UI that

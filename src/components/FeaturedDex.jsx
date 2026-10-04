@@ -1,4 +1,4 @@
-import { FaCaretDown } from "react-icons/fa6";
+import DexHeadLabel from "./DexHeadLabel";
 import DexRow from "./DexRow";
 import {
   COL,
@@ -8,7 +8,7 @@ import {
   ROW_HEIGHT_CLASS,
 } from "./dexColumns";
 import { artworkFor, getBySlug } from "../lib/pokemon";
-import { SORT_LABEL, SORT_LONG_LABEL, sortRows } from "../lib/dexTable";
+import { SORT_LONG_LABEL, sortRows } from "../lib/dexTable";
 import { STAT_ORDER } from "../lib/stats";
 
 // Home's dex preview (D-043), rendered with the dex table's own DexRow so the
@@ -57,7 +57,7 @@ const ROWS = sortRows(
 // table's sort headers use, so the preview header and the tool's header are the
 // same row rather than two that merely resemble each other (D-043). A <span>
 // where the tool has a <button>: there is nothing to sort here.
-function Head({ colKey, className, align = "center" }) {
+function Head({ colKey, className, align = "right" }) {
   const sorted = colKey === PREVIEW_SORT;
   return (
     <th
@@ -70,8 +70,11 @@ function Head({ colKey, className, align = "center" }) {
       <span
         className={`${HEAD_INNER} ${HEAD_ALIGN[align]} ${sorted ? "text-accent" : "text-tertiary"}`}
       >
-        {SORT_LABEL[colKey]}
-        {sorted && <FaCaretDown aria-hidden />}
+        <DexHeadLabel
+          colKey={colKey}
+          dir={sorted ? "desc" : null}
+          align={align}
+        />
       </span>
     </th>
   );
@@ -145,7 +148,7 @@ export default function FeaturedDex() {
           className="hidden lg:block pointer-events-none absolute z-0 right-1/2 mr-40 -top-36 w-60 -rotate-6 -scale-x-100 drop-shadow-art"
         />
       )}
-      <div className="relative z-10 overflow-hidden rounded-lg border border-border-subtle bg-surface">
+      <div className="relative z-1 overflow-hidden rounded-lg border border-border-subtle bg-surface">
         <table
           aria-rowcount={ROWS.length}
           className="w-full table-fixed border-collapse"
@@ -156,7 +159,7 @@ export default function FeaturedDex() {
               a screen reader is the one audience that cannot see that it has. */}
           <caption className="sr-only">
             {ROWS.length} Pokémon sorted by base {SORT_LONG_LABEL[PREVIEW_SORT]}
-            , descending — a preview of the dex table.
+            , descending. A preview of the dex table.
           </caption>
           <thead>
             <tr>

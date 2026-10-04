@@ -16,16 +16,17 @@ import { typeFill } from "../lib/types";
 //   #  |  Pokemon  |  Types  |  HP Atk Def SpA SpD Spe  |  [sorted stat]  |  BST
 
 // The stat cell's proportional fill. Scaled to the same fixed 255 reference as
-// every other bar on the site (D-011), tinted with the Pokemon's TYPING, and
-// kept faint enough that the number on top stays the thing you read — verified
-// against text-primary by npm run audit:contrast, groups 5 and 12.
+// every other bar on the site (D-011), tinted with the Pokemon's PRIMARY type,
+// and kept faint enough that the number on top stays the thing you read —
+// verified against text-primary by npm run audit:contrast, group 5.
 //
-// **A dual type gets both colours.** It was the primary alone, so Volcarona's
-// bars were Bug and said nothing about Fire — the same omission the arena
-// corrected for its panels (D-107). The gradient is `typeFill`'s, shared with
-// nothing yet but written where the type helpers live rather than here, because
-// the type chart and the arena are the obvious next callers.
-const FILL_ALPHA = "28%";
+// **One colour, even for a dual type** (D-144). Both colours were drawn here
+// for a while (D-115), and two darkened type colours stacked in one bar read as
+// mud; the Types column beside the bars carries the whole typing.
+//
+// The share itself is `--mix-dex-fill` in index.css (D-134), where
+// `npm run audit:contrast` reads it for group 5.
+const FILL_ALPHA = "var(--mix-dex-fill)";
 
 // `animate` grows the fill in on mount, and only Home's preview passes it
 // (D-067). It is a prop rather than the default for the same reason CmpRow's is:
@@ -36,21 +37,21 @@ const FILL_ALPHA = "28%";
 // reduced motion is handled globally by the rule that collapses animation
 // duration (index.css).
 function StatCell({ value, types, className = "", animate = false }) {
-  // `background`, never `backgroundColor`: for a dual type this value is a
-  // gradient, and a background-color would drop it without a word (typeFill).
   const fill = typeFill(types, FILL_ALPHA);
   return (
     <td className={`px-1 ${className}`}>
-      <div className="relative flex h-7 items-center justify-end overflow-hidden rounded-xs px-1.5">
+      {/* The number sits 8px in from the cell's edge — the column header's
+          inset — so a right-aligned header lands on it (D-141). It was 10. */}
+      <div className="relative flex h-7 items-center justify-end overflow-hidden rounded-xs px-1">
         {animate ? (
           <div
             className="absolute inset-y-0 left-0 animate-grow-w"
-            style={{ "--target": statPct(value), background: fill }}
+            style={{ "--target": statPct(value), backgroundColor: fill }}
           />
         ) : (
           <div
             className="absolute inset-y-0 left-0"
-            style={{ width: statPct(value), background: fill }}
+            style={{ width: statPct(value), backgroundColor: fill }}
           />
         )}
         <span className="relative text-stat-sm text-primary">{value}</span>
@@ -85,8 +86,11 @@ function DexRow({
       aria-rowindex={rowIndex + 2}
       className={`${heightClass} border-b border-border-subtle transition-colors hover:bg-surface`}
     >
+      {/* Every cell centres its content in the same 28px box the stat cells
+          use, so a row's text shares one centre line. Set as bare inline text,
+          the dex number sat 2px below the stats and the total 1px (D-141). */}
       <td className="hidden px-2 sm:table-cell">
-        <span className="text-caption text-tertiary">
+        <span className="flex h-7 items-center text-caption text-tertiary">
           #{String(dex).padStart(4, "0")}
         </span>
       </td>
@@ -151,8 +155,10 @@ function DexRow({
         />
       )}
 
-      <td className="px-2 text-right">
-        <span className="text-stat-sm text-primary">{view.bst}</span>
+      <td className="px-2">
+        <span className="flex h-7 items-center justify-end text-stat-sm text-primary">
+          {view.bst}
+        </span>
       </td>
     </tr>
   );

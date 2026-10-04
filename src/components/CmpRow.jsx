@@ -1,5 +1,5 @@
 import { FaCaretLeft, FaCaretRight } from "react-icons/fa6";
-import { statPct } from "../lib/stats";
+import StatBar from "./StatBar";
 import { typeColorVar } from "../lib/types";
 
 // The desktop (≥ md) mirrored stat row: P1's value + bar growing leftward from
@@ -12,6 +12,12 @@ import { typeColorVar } from "../lib/types";
 //
 // Column track: [value | bar | diff | bar | value]. Both value columns are fixed
 // so the centre stays centred; the diff column is wide enough for "+150".
+//
+// **The values are `text-stat-sm`, not `text-diff`** (D-135). The two styles
+// share their numbers today, and that is exactly why the role matters: a value
+// set as a difference reads as one to the next person who touches it, and the
+// two are free to diverge (06_style_guide §5). These are stat values in a
+// dense row, which is `text-stat-sm`'s role, the one the dex table's cells use.
 const ROW_COLS = "grid-cols-[1.6rem_1fr_3.25rem_1fr_1.6rem]";
 
 export default function CmpRow({
@@ -29,14 +35,13 @@ export default function CmpRow({
   return (
     <div className={`grid ${ROW_COLS} items-center gap-1.5 h-9`}>
       <span
-        className={`text-diff text-right ${aWins ? "text-primary" : "text-tertiary"}`}
+        className={`text-stat-sm text-right ${aWins ? "text-primary" : "text-tertiary"}`}
       >
         {ready ? a : "–"}
       </span>
-      <Bar
-        value={a}
-        color={aColor}
-        ready={ready}
+      <StatBar
+        value={ready ? a : null}
+        type={aColor}
         animate={animate}
         side="end"
       />
@@ -46,50 +51,12 @@ export default function CmpRow({
         aColor={aColor}
         bColor={bColor}
       />
-      <Bar
-        value={b}
-        color={bColor}
-        ready={ready}
-        animate={animate}
-        side="start"
-      />
-      <span className={`text-diff ${bWins ? "text-primary" : "text-tertiary"}`}>
+      <StatBar value={ready ? b : null} type={bColor} animate={animate} />
+      <span
+        className={`text-stat-sm ${bWins ? "text-primary" : "text-tertiary"}`}
+      >
         {ready ? b : "–"}
       </span>
-    </div>
-  );
-}
-
-// `side` mirrors the fill: the left bar fills from the centre outward, so it is
-// justified to its end; the right bar to its start. The two classes are written
-// out in full — a template-built `justify-${side}` would be invisible to
-// Tailwind's class scanner and silently dropped from the build (cf. D-028).
-const JUSTIFY = {
-  end: "h-1.5 rounded-full bg-elevated overflow-hidden flex justify-end",
-  start: "h-1.5 rounded-full bg-elevated overflow-hidden flex justify-start",
-};
-
-function Bar({ value, color, ready, animate, side }) {
-  return (
-    <div className={JUSTIFY[side]}>
-      {ready &&
-        (animate ? (
-          <div
-            className="h-full rounded-full animate-grow-w"
-            style={{
-              "--target": statPct(value),
-              backgroundColor: typeColorVar(color),
-            }}
-          />
-        ) : (
-          <div
-            className="h-full rounded-full"
-            style={{
-              width: statPct(value),
-              backgroundColor: typeColorVar(color),
-            }}
-          />
-        ))}
     </div>
   );
 }

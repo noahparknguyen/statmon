@@ -19,6 +19,7 @@ import { WALL_TILES } from "./components/SpriteWall";
 import { sortRows } from "./lib/dexTable";
 import { compareUrl } from "./lib/compareUrl";
 import { HIGHER_PRESETS, higherUrl } from "./lib/games";
+import { TIER_DESC } from "./lib/effective";
 
 // Renders every route to a string and asserts it produced something. This is a
 // smoke test, not a snapshot: it catches the errors that only show up when a
@@ -592,31 +593,30 @@ describe("the comparison board's own bars, and Random", () => {
   });
 });
 
-describe("the dex bars carry both of a dual type's colours", () => {
-  it("paints a gradient for a dual type and names both colours", () => {
-    // Bulbasaur is Grass/Poison and leads the default National Dex order.
-    const page = render("/dex");
-    expect(page).toContain("--color-type-grass");
-    expect(page).toContain("--color-type-poison");
-    expect(page).toContain("linear-gradient");
-  });
-
-  it("emits it as `background`, which is the whole reason this test exists", () => {
-    // A gradient is a background IMAGE. Setting it through `backgroundColor`
-    // serialises to `background-color: linear-gradient(…)`, which every browser
-    // silently discards — the bar simply vanishes, with nothing failing. So the
-    // property name is asserted, not just the value.
-    const page = render("/dex");
-    expect(page).toMatch(/style="[^"]*background:\s*linear-gradient/);
-    expect(page).not.toMatch(/background-color:\s*linear-gradient/);
-  });
-
-  it("leaves a single type a flat wash rather than a gradient of one colour", () => {
-    // Charmander is mono-Fire. Scoped to its row so the assertion cannot be
-    // satisfied by some other row's fill.
-    const page = render("/dex?q=charmander");
-    expect(page).toContain("--color-type-fire");
+// One colour per surface (D-144). A dual type's fills were a gradient between
+// both colours, and two darkened type colours together read as mud however the
+// blend was tuned; the badges carry the whole typing instead.
+describe("a type fill is one colour, the primary type's", () => {
+  it("fills a dual type's dex bars with its primary type alone", () => {
+    // Bulbasaur is Grass/Poison. Scoped to its row so another row's fill
+    // cannot satisfy the assertion.
+    const page = render("/dex?q=bulbasaur");
+    expect(page).toMatch(
+      /background-color:color-mix\(in srgb, var\(--color-type-grass\) var\(--mix-dex-fill\)/,
+    );
+    expect(page).not.toContain("var(--color-type-poison) var(--mix-dex-fill)");
     expect(page).not.toContain("linear-gradient");
+  });
+
+  it("is never drawn as a gradient in the code that tints by type", () => {
+    for (const f of [
+      "src/lib/types.js",
+      "src/components/gameChrome.jsx",
+      "src/components/DexRow.jsx",
+      "src/components/ContenderPanel.jsx",
+      "src/components/MatchupPanel.jsx",
+    ])
+      expect(readFileSync(f, "utf8"), f).not.toMatch(/linear-gradient\(/);
   });
 });
 
@@ -708,9 +708,11 @@ describe("Home's feature previews (D-043)", () => {
     // The wall opens the page and the board follows it (D-070). Asserted by
     // order rather than by presence, because "the board is on Home somewhere"
     // was true of every layout this page has had.
-    expect(page.indexOf("A simple set of Pokémon tools")).toBeLessThan(
-      page.indexOf("Volcarona"),
-    );
+    // Found first, then ordered: an `indexOf` of -1 is less than anything,
+    // so a renamed tagline would otherwise pass this by not being there.
+    const tagline = page.indexOf("Pokémon stats, matchups and games");
+    expect(tagline).toBeGreaterThan(-1);
+    expect(tagline).toBeLessThan(page.indexOf("Volcarona"));
   });
 
   // The dex preview is the Black & White team (D-044) — the run the project came
@@ -908,7 +910,7 @@ describe("Home's feature previews (D-043)", () => {
   // guarantee — the audit proves the number, this proves the site still uses it.
   it("keeps the hero tagline on the colour the scrim was audited for", () => {
     const tagline = render("/").match(
-      /<p[^>]*>A simple set of Pokémon tools\.<\/p>/,
+      /<p[^>]*>Pokémon stats, matchups and games\.<\/p>/,
     )?.[0];
     expect(tagline).toBeDefined();
     expect(tagline).toContain("text-primary");
@@ -1328,6 +1330,13 @@ describe("the site's name and description agree everywhere", () => {
     s.match(new RegExp(`name="${name}"[^>]*content="([^"]+)"`, "s"))?.[1] ??
     s.match(new RegExp(`content="([^"]+)"[^>]*name="${name}"`, "s"))?.[1];
 
+  // What a search result and a link preview show, so it is copy like any
+  // other: no em dash in a sentence (06_style_guide §14, D-138).
+  it("writes the description without an em dash", () => {
+    expect(metaOf(html, "description")).not.toContain("—");
+    expect(manifest.description).not.toContain("—");
+  });
+
   it("uses one name in the tag, the manifest and the app shell", () => {
     const title = titleOf(html);
     expect(manifest.name).toBe(title);
@@ -1430,13 +1439,22 @@ describe("the copy is spelled one way and does not shout", () => {
       // The `>` of an ARROW is not the `>` of a tag. Without the lookbehind
       // this matched from `=>` through to the next `<` and reported a chunk of
       // `gameThumbs.jsx` as shouty copy — which is how the extractor's own bug
-      // was found. Text also may not span a line, since a JSX text node that
-      // wraps is still one line of prose per source line.
+      // was found.
+      //
+      // **A text node may wrap** (D-138). This pattern used to stop at the
+      // end of a line, on the reasoning that a wrapped node is still one line
+      // of prose per source line — but a node that wraps never reaches `<` on
+      // its first line, so it matched nothing at all. Every sentence long
+      // enough for Prettier to wrap was invisible to the tests below, which
+      // was found by putting an em dash back into the games index and
+      // watching the em-dash test pass. Whitespace is collapsed after. And a
+      // node may end at an expression rather than a tag — the footer's legal
+      // line runs into `{" "}` before its link — so `{` closes one too.
       ...[
         ...code.matchAll(
-          /(?<![=!<>-])>\s*([A-Za-z][^<>{}\n]*[A-Za-z.?!…])\s*</g,
+          /(?<![=!<>-])>\s*([A-Za-z][^<>{}]*[A-Za-z.?!…])\s*[<{]/g,
         ),
-      ].map((m) => m[1]),
+      ].map((m) => m[1].replace(/\s+/g, " ")),
       ...[
         ...code.matchAll(
           /\b(?:aria-label|alt|placeholder|title|label|subtitle|blurb|desc|cta)="([^"]{2,})"/g,
@@ -1480,6 +1498,24 @@ describe("the copy is spelled one way and does not shout", () => {
       const hasB = new RegExp(`\\b${b}`).test(text);
       expect(hasA && hasB, `both "${a}" and "${b}" are used`).toBe(false);
     }
+  });
+
+  // 06_style_guide §14 rule 9 (D-138): no em dash in a sentence. A colon, a
+  // comma or a full stop does the job, and an em dash in running copy is the
+  // habit most often read as machine-written. The dash survives only as a
+  // glyph that stands alone — a tie, an empty slot, a separator in a heading
+  // or a title — and none of those is prose, so none reaches this extractor.
+  it("keeps em dashes out of sentences", () => {
+    const dashed = all.filter(({ s }) => s.includes("—"));
+    expect(dashed.map(({ f, s }) => `${f}: ${s}`)).toEqual([]);
+  });
+
+  it("keeps em dashes out of the sentences that live in lib/", () => {
+    // The tier sentences are rendered from data, not written in JSX, so the
+    // extractor above cannot see them. The site's description is checked with
+    // the rest of the metadata, below.
+    for (const desc of Object.values(TIER_DESC))
+      expect(desc).not.toContain("—");
   });
 });
 
@@ -1579,17 +1615,37 @@ describe("the footer", () => {
 
   // The picker is not pinned to the viewport, so it must not carry the board's
   // exact-height shell — that is what would push the footer off screen.
+  // `h-svh` on its own, not inside the page floor's `min-h-svh`.
+  const PINNED = /(?<![\w-])h-svh(?![\w-])/;
   it.each(["/games/higher", "/games/effective"])(
     "sizes the picker as an ordinary page at %s",
     (path) => {
-      expect(render(path)).not.toContain("h-[100svh]");
+      expect(render(path)).not.toMatch(PINNED);
     },
   );
 
   it.each(["/games/higher?play", "/games/effective?play"])(
     "keeps the board pinned to the viewport at %s",
     (path) => {
-      expect(render(path)).toContain("h-[100svh]");
+      expect(render(path)).toMatch(PINNED);
+    },
+  );
+
+  // Every page but a board is at least one screen tall, so its footer is
+  // never on screen when it loads (D-142). The sweep measures the result; this
+  // holds the markup that decides it.
+  const FLOOR = /<main[^>]*[\s"]min-h-svh[\s"]/;
+  it.each(["/games", "/games/higher", "/about"])(
+    "holds %s to at least a screen's height",
+    (path) => {
+      expect(render(path)).toMatch(FLOOR);
+    },
+  );
+
+  it.each(["/games/higher?play", "/games/effective?play"])(
+    "leaves the board's height to the board at %s",
+    (path) => {
+      expect(render(path)).not.toMatch(FLOOR);
     },
   );
 
@@ -1690,5 +1746,160 @@ describe("the games index cards are clickable everywhere", () => {
     // The thumbnail is the real component against a real round, so a Pokémon
     // name proves it rendered rather than fell back to nothing (D-043).
     expect(render("/games")).toContain("Attacking");
+  });
+});
+
+// One component per job (06_style_guide §12.2, D-135). The site's near-copies
+// were never wrong on the day they were written — they drifted afterwards,
+// one careless edit at a time, which is the failure §12 rule 8 exists for. So
+// the merges are guarded at the source: a second copy has to fail something.
+describe("one component per job", () => {
+  const src = (f) => readFileSync(`src/${f}`, "utf8");
+  const components = readdirSync("src/components")
+    .filter((f) => f.endsWith(".jsx"))
+    .map((f) => `components/${f}`);
+
+  it("draws every stat bar with StatBar", () => {
+    // `statPct` is what turns a stat into a bar's length. Outside StatBar the
+    // only caller is the dex's cell fill, which is a different object by
+    // design: a number over a proportional wash, not a bar (D-039).
+    const callers = components.filter((f) => src(f).includes("statPct("));
+    expect(callers.sort()).toEqual([
+      "components/DexRow.jsx",
+      "components/StatBar.jsx",
+    ]);
+  });
+
+  it("ends both games' rounds on the shared cards", () => {
+    for (const page of ["pages/GameHigher.jsx", "pages/GameEffective.jsx"]) {
+      const code = src(page);
+      expect(code, page).toContain(
+        'import { NoRound, Verdict } from "../components/RoundCard"',
+      );
+      // A hand-rolled card would need its own button for Next.
+      expect(code, page).not.toContain("<Button");
+    }
+  });
+
+  it("builds every text field from the shared field", () => {
+    // Two searches on /compare, one on /types, the name filter on /dex.
+    for (const [path, n] of [
+      ["/compare", 2],
+      ["/types", 1],
+      ["/dex", 1],
+    ]) {
+      const html = render(path);
+      expect((html.match(/focus-ring-within/g) ?? []).length, path).toBe(n);
+      expect(html, path).toContain("border-border-field");
+      // The old focus cue: a border changing shade, which no one would call
+      // a focus indicator (D-136).
+      expect(html, path).not.toContain("focus-within:border-border-strong");
+    }
+  });
+
+  it("keeps the generation strip on one line", () => {
+    // Nine numerals share the width rather than wrapping the ninth onto a
+    // line of its own (D-137): one column per chip, each at most 36px.
+    expect(render("/dex")).toContain("repeat(9, minmax(0, 2.25rem))");
+    // Volcarona arrived in Gen 5, so its board offers five.
+    expect(render("/compare/volcarona/vs/chandelure")).toContain(
+      "repeat(5, minmax(0, 2.25rem))",
+    );
+  });
+
+  it("holds the speed banner's text off the flame's dark end", () => {
+    // `.flame-inset` is the rule; group 11 of `npm run audit:contrast` is the
+    // number behind it (D-136).
+    expect(render("/compare/volcarona/vs/chandelure")).toContain("flame-inset");
+    expect(render("/")).toContain("flame-inset");
+  });
+
+  it("lays out every tool's controls on the one panel", () => {
+    // The panel spaces its own blocks (pageChrome's PANEL, D-140). Spaced by
+    // margins on the children instead, the dex and the type chart put their
+    // type chips 4px apart — the same control, in the same place, on two pages.
+    for (const f of [
+      "pages/Compare.jsx",
+      "pages/TypeChart.jsx",
+      "components/DexFilters.jsx",
+    ]) {
+      expect(src(f), f).toMatch(/\bPANEL\b/);
+    }
+    const handRolled = [
+      ...components,
+      "pages/Compare.jsx",
+      "pages/TypeChart.jsx",
+    ]
+      .filter((f) => f !== "components/pageChrome.jsx")
+      .filter((f) => src(f).includes("bg-surface p-4"));
+    expect(handRolled).toEqual([]);
+  });
+
+  it("saves the accent ring for the answer", () => {
+    // The stat game rings its winner. The type game's panels used to ring the
+    // defender on every reveal, which is not an answer (D-137).
+    expect(src("components/MatchupPanel.jsx")).not.toMatch(/\bring\(/);
+  });
+});
+
+// Alignment that only a browser can measure, guarded where the markup decides
+// it (D-141). The measurements themselves are in the decision; these hold the
+// structure that produced them.
+describe("things that line up stay lined up", () => {
+  it("aligns a number column's header with its numbers", () => {
+    // A number column's header is right-aligned with the sort caret BEFORE the
+    // label, so the label's right edge lands on the numbers'. Centred, the
+    // headers sat 27px off their numbers; right-aligned with the caret after,
+    // 13px.
+    for (const html of [render("/dex"), render("/")]) {
+      const head = html.slice(html.indexOf("<thead"), html.indexOf("</thead>"));
+      expect(head).not.toContain("justify-center");
+      for (const label of ["HP", "Atk", "BST"]) {
+        const at = head.indexOf(`>${label}<`);
+        expect(at, label).toBeGreaterThan(-1);
+        // The nearest opening tag before the label: the caret's <svg>, ending
+        // just before it, for a right-aligned column.
+        expect(head.slice(at - 5, at + 1), label).toBe("</svg>");
+      }
+    }
+  });
+
+  it("frames a selected type chart column without moving the grid", () => {
+    // Borders are layout in a collapsed table, so selecting a type grew the
+    // grid by 2px and shifted every row. The frame is inset shadows now.
+    const html = render("/types/water");
+    const grid = html.slice(html.indexOf("<table"), html.indexOf("</table>"));
+    expect(grid).toContain("box-shadow:inset");
+    expect(grid).not.toMatch(/border-(left|right|top|bottom):/);
+  });
+});
+
+// Where a round's cards sit (D-143). A resolved round cannot be rendered on the
+// server, so these hold the markup that decides it; the browser measurements
+// are in the decision.
+describe("a round's cards sit where they are read", () => {
+  const src = (f) => readFileSync(`src/${f}`, "utf8");
+
+  it("puts the type game's verdict in the answer cluster, above the answers", () => {
+    expect(src("pages/GameEffective.jsx")).toMatch(
+      /<AnswerCluster[^>]*verdict=/,
+    );
+    const cluster = src("components/AnswerCluster.jsx");
+    // An absolutely positioned grid child with no end line spans to the far
+    // edge, which put the card at the bottom of the column.
+    expect(cluster).toContain("row-start-1 row-end-2");
+    // The floor that keeps the tallest verdict above the answers.
+    expect(cluster).toContain("minmax(15rem,1fr)");
+  });
+
+  it("keeps the stat game's question on screen once answered", () => {
+    const page = src("pages/GameHigher.jsx");
+    // The question card used to be `hidden` side by side once resolved.
+    expect(page).not.toMatch(/invisible (sm|lg):hidden/);
+    // And the verdict's line answers in the question's words, for the
+    // stacked board, where the verdict covers the question card.
+    expect(page).toMatch(
+      /\{question\(settings\.n, round\.stat\)\}: \{round\.winner\.name\}/,
+    );
   });
 });

@@ -5,6 +5,7 @@ import SpeedBanner from "./SpeedBanner";
 import StabChip, { StabLabel } from "./StabChip";
 import { STAT_ORDER, STAT_LABEL } from "../lib/stats";
 import { spriteFor } from "../lib/pokemon";
+import { dexNumberOf } from "../lib/dexTable";
 import { defaultAbility, abilityLabel } from "../lib/abilities";
 import { stabMatchup } from "../lib/typeChart";
 
@@ -23,6 +24,12 @@ import { stabMatchup } from "../lib/typeChart";
 // rather than the tool. Home now heads the section with /compare's own title
 // and one-liner, visible to everyone, so this would be a second heading over
 // the same content (D-067).
+//
+// **Its insets are the tool's** (D-135). Every band here was `px-5` against the
+// tool's `px-3` and `px-4`, the stats band ran `pt-3 pb-2` against the tool's
+// `pt-2 pb-4`, and the phone's per-stat cards did not grow in while the tool's
+// did. A preview may subtract interactivity and add a frame (D-067); it may not
+// be laid out by different numbers.
 
 export default function FeaturedComparison({ p1, p2 }) {
   const delta = p1.bst - p2.bst;
@@ -32,14 +39,14 @@ export default function FeaturedComparison({ p1, p2 }) {
     <div className="flex flex-col overflow-hidden bg-surface border border-border-subtle rounded-lg">
       {/* Heads — below 768px the sprite+name+badges+STAB grid crushes names to
         a few px, so it stacks (P1 head, STAB, P2 head); unchanged at ≥768px. */}
-      <div className="flex flex-col gap-3 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center px-5 py-4 border-b border-border-subtle">
+      <div className="flex flex-col gap-3 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center px-4 py-4 border-b border-border-subtle">
         <MonHead p={p1} />
         <StabCenter attacker={p1} defender={p2} />
         <MonHead p={p2} right />
       </div>
 
       {/* Mirrored stat rows (≥768px, D-010) */}
-      <div className="hidden md:block px-5 pt-3 pb-2">
+      <div className="hidden md:block px-4 pt-2 pb-4">
         {STAT_ORDER.map((k) => (
           <CmpRow
             key={k}
@@ -54,7 +61,7 @@ export default function FeaturedComparison({ p1, p2 }) {
       </div>
 
       {/* Per-stat cards (<768px, D-010) */}
-      <div className="md:hidden flex flex-col gap-2 px-5 pt-3 pb-2">
+      <div className="md:hidden flex flex-col gap-2 px-4 pt-2 pb-4">
         {STAT_ORDER.map((k) => (
           <CmpStatCard
             key={k}
@@ -65,12 +72,13 @@ export default function FeaturedComparison({ p1, p2 }) {
             bName={p2.name}
             aColor={p1.types[0]}
             bColor={p2.types[0]}
+            animate
           />
         ))}
       </div>
 
       {/* BST summary */}
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-5 py-4 border-t border-border-subtle">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-4 border-t border-border-subtle">
         <span
           className={`text-stat-lg ${p1Leads || tied ? "text-primary" : "text-tertiary"}`}
         >
@@ -118,13 +126,17 @@ function MonHead({ p, right = false }) {
         />
       </div>
       <div className="min-w-0">
-        <div className="text-h4 truncate">{p.name}</div>
+        {/* A Pokémon's name at card scale is `text-h3` with `md` badges, the
+            way PokemonCard sets it (§5). This head had `text-h4` and `sm`
+            badges, which made the same two Pokémon read smaller on Home than
+            on the tool it advertises. */}
+        <div className="text-h3 truncate">{p.name}</div>
         <div className="text-caption text-tertiary">
-          #{String(p.id).padStart(4, "0")}
+          #{String(dexNumberOf(p)).padStart(4, "0")}
         </div>
         <div className={`flex gap-1.5 mt-1.5 ${right ? "md:justify-end" : ""}`}>
           {p.types.map((t) => (
-            <TypeBadge key={t} type={t} size="sm" />
+            <TypeBadge key={t} type={t} />
           ))}
         </div>
         {/* Named, not chips: this board is not interactive, so a control would

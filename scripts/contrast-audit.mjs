@@ -12,8 +12,14 @@
  *   6. type-chart grid cells — the multiplier text on each cell fill
  *   7. STAB chip — the type name and multiplier on the chip's own type fill
  *   8. Home hero — text on the scrim over a worst-case sprite pixel
- *   9. Game contender — the winning card's accent-muted fill
+ *   9. The correct answer's accent-muted fill
  *  10. Game arena — panel text over the primary-type tint
+ *  11. The flame — the speed banner's text, and the BST numeral set in it
+ *  12. Non-text (1.4.11) — field edges, the focus ring, a selected chip
+ *
+ * Two groups audited the midpoint of every dual-type gradient until those
+ * gradients went (D-144): a panel and a dex bar are one colour now, the
+ * primary type's, which groups 5 and 10 already cover.
  *
  * Thresholds: AA normal text 4.5, AA large text 3.0, non-text (1.4.11) 3.0.
  * (Statmon's diff/badge/label text is small, so 4.5 applies.)
@@ -22,7 +28,6 @@
  */
 
 import { readFile } from "node:fs/promises";
-import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { TYPES } from "../src/lib/types.js";
@@ -33,36 +38,35 @@ const CSS = path.join(ROOT, "src", "index.css");
 /* ---- parse --color-* tokens and resolve var() chains to hex ---- */
 const raw = await readFile(CSS, "utf8");
 
-// Two fills this file audits are owned by components, not by tokens, and were
-// restated here as `0.28` and `PANEL_TINT = 10`. A restated constant is one
-// that can silently desync: change the app's value and this keeps validating a
-// colour the site no longer paints, and passes. So they are READ, the way
-// `--hero-scrim` below already is, and a missing one is a hard failure rather
-// than a default.
-const readConst = (file, re, what) => {
-  const m = readFileSync(path.join(ROOT, file), "utf8").match(re);
+// Every share this file blends with is READ from the stylesheet, never restated.
+// Two of them used to be copies here (\`0.28\` and \`PANEL_TINT = 10\`) of numbers
+// the components owned, and a copy is a number that can desync silently:
+// change the app's value and this keeps validating a colour the site no longer
+// paints, and passes (D-131). Since D-134 every one of them is a component
+// token in index.css — the place the browser paints it from — and a token this
+// file cannot find is a hard failure rather than a default.
+const readPct = (name) => {
+  const m = raw.match(new RegExp(`--${name}:\\s*([\\d.]+)%`));
   if (!m) {
-    console.error(`Could not read ${what} from ${file}. It is audited here and
-owned there; this file must not guess it.`);
+    console.error(`Could not read --${name} from index.css. It is audited here
+and owned there; this file must not guess it.`);
     process.exit(1);
   }
-  return Number(m[1]);
+  return Number(m[1]) / 100;
 };
 
-// The dex stat cell's proportional fill (DexRow), as a fraction.
-const DEX_FILL =
-  readConst(
-    "src/components/DexRow.jsx",
-    /FILL_ALPHA\s*=\s*"(\d+(?:\.\d+)?)%"/,
-    "FILL_ALPHA",
-  ) / 100;
+// The dex stat cell's proportional fill (DexRow).
+const DEX_FILL = readPct("mix-dex-fill");
+// How much of a type sits over the page background on a game panel.
+const PANEL_TINT = readPct("mix-panel-tint");
+// The type chart's 2× cell, and the wash over a selected column (TypeGrid).
+const GRID_STRONG = readPct("mix-grid-strong");
+const GRID_WASH = readPct("mix-grid-wash");
+// The STAB chip's type fill over elevated (StabChip).
+const STAB_FILL = readPct("mix-stab-fill");
+// How far into the flame the speed banner's text may reach (SpeedBanner).
+const FLAME_INSET = readPct("flame-text-inset");
 
-// How much of a type sits over the page background on a game panel (gameChrome).
-const PANEL_TINT = readConst(
-  "src/components/gameChrome.jsx",
-  /\bTINT\s*=\s*(\d+(?:\.\d+)?)\b/,
-  "TINT",
-);
 const decls = {};
 for (const m of raw.matchAll(/--color-([\w-]+):\s*([^;]+);/g)) {
   decls[m[1]] = m[2].trim();
@@ -139,7 +143,7 @@ for (const t of TYPES)
 // background (surface) is the lighter of the two and therefore the worse case
 // for light text, so that is what is audited.
 console.log(
-  "\n=== 5. Dex stat cell — primary text on a 28% type fill over the row (AA 4.5) ===",
+  `\n=== 5. Dex stat cell — primary text on a ${Math.round(DEX_FILL * 100)}% type fill over the row (AA 4.5) ===`,
 );
 const primary = hex("primary");
 // Alpha compositing: the fill is `color-mix(type 28%, transparent)` painted on
@@ -167,7 +171,7 @@ console.log(
 );
 // 2× is a 55% blend of accent into elevated, so it is composited the same way
 // the dex stat cell is above rather than read straight from a token.
-const strongFill = blend(hex("accent"), hex("elevated"), 0.55);
+const strongFill = blend(hex("accent"), hex("elevated"), GRID_STRONG);
 console.log(
   row("2× — primary on the accent blend", ratio(primary, strongFill), 4.5),
 );
@@ -182,7 +186,7 @@ for (const [label, fg, bg] of [
 // (D-053). 12% is not an aesthetic choice: it is the most that keeps the text on
 // top of it above AA, which is why the column's edges carry the highlight and
 // the wash only assists.
-const washed = (fill) => blend(hex("accent"), fill, 0.12);
+const washed = (fill) => blend(hex("accent"), fill, GRID_WASH);
 console.log("\n  -- selected column, text over the wash --");
 console.log(
   row(
@@ -231,11 +235,11 @@ console.log(
 // and therefore the only one worth testing. This group is why that tier is
 // `secondary` and not `tertiary` — tertiary failed on 17 of the 18.
 console.log(
-  "\n=== 7. STAB chip — text on a 14% type fill over elevated (AA 4.5) ===",
+  `\n=== 7. STAB chip — text on a ${Math.round(STAB_FILL * 100)}% type fill over elevated (AA 4.5) ===`,
 );
 const secondary = hex("secondary");
 for (const t of TYPES) {
-  const fill = blend(hex(`type-${t}`), elevated, 0.14);
+  const fill = blend(hex(`type-${t}`), elevated, STAB_FILL);
   console.log(row(`${t} — name (primary)`, ratio(primary, fill), 4.5));
   console.log(row(`${t} — resisted (secondary)`, ratio(secondary, fill), 4.5));
 }
@@ -269,20 +273,19 @@ if (!scrimPct) {
   );
 }
 
-// The stat game marks its winning card with `--color-accent-muted` (D-093) —
-// the "subtle accent fills" token 04_design §2 has always listed and nothing
-// had ever consumed. Being the first consumer is exactly when a fill needs
-// auditing: an unused token's pairings have never been anyone's problem.
+// The type game marks its correct answer with `--color-accent-muted` (D-093)
+// — the "subtle accent fills" token 04_design §2 had always listed and nothing
+// had consumed until the games. Being a token's first consumer is exactly when
+// a fill needs auditing: an unused token's pairings are nobody's problem. (The
+// stat game's winner carried it first; it marks its winner with a ring now.)
 //
-// Three things sit on it. The Pokémon's name and the revealed stat value are
-// `primary`; the check mark is `accent`, and it is an ICON rather than text, so
-// it is held to 1.4.11's 3.0 for non-text contrast rather than to 4.5 — the
-// same threshold the stat-bar fills are measured against in group 4.
-console.log(
-  "\n=== 9. Game contender — the winning card's accent fill (D-093) ===",
-);
+// Three things sit on it. The multiplier is `primary`; the check mark is
+// `accent`, and it is an ICON rather than text, so it is held to 1.4.11's 3.0
+// for non-text contrast rather than to 4.5 — the same threshold the stat-bar
+// fills are measured against in group 4.
+console.log("\n=== 9. The correct answer's accent fill (D-093) ===");
 const accentMuted = hex("accent-muted");
-console.log(row("name + value (primary)", ratio(primary, accentMuted), 4.5));
+console.log(row("multiplier (primary)", ratio(primary, accentMuted), 4.5));
 console.log(
   row("check icon (accent, non-text)", ratio(hex("accent"), accentMuted), 3),
 );
@@ -305,76 +308,84 @@ console.log(
   "\n=== 10. Game arena — panel text over the primary-type tint (AA 4.5) ===",
 );
 for (const t of TYPES) {
-  const panel = blend(hex(`type-${t}`), base, PANEL_TINT / 100);
+  const panel = blend(hex(`type-${t}`), base, PANEL_TINT);
   console.log(row(`${t} — name (primary)`, ratio(primary, panel), 4.5));
   console.log(
     row(`${t} — losing value (secondary)`, ratio(secondary, panel), 4.5),
   );
 }
 
-// A dual type's panel is a gradient between two of those tints (D-107), so the
-// colours actually behind the text include every point on that line — not just
-// the two endpoints group 10 just checked. Intermediate colours OUGHT to sit
-// between their endpoints, but "ought to" is not the standard this file exists
-// to hold things to, so all 153 pairs are computed at their midpoint, which is
-// where a blend is furthest from both ends.
-console.log(
-  "\n=== 11. Game arena — panel text over a DUAL type's gradient (AA 4.5) ===",
-);
-let worstPair = null;
-for (let i = 0; i < TYPES.length; i++) {
-  for (let j = i + 1; j < TYPES.length; j++) {
-    const a = blend(hex(`type-${TYPES[i]}`), base, PANEL_TINT / 100);
-    const b = blend(hex(`type-${TYPES[j]}`), base, PANEL_TINT / 100);
-    const mid = blend(a, b, 0.5);
-    for (const [label, colour] of [
-      ["primary", primary],
-      ["secondary", secondary],
-    ]) {
-      const r = ratio(colour, mid);
-      if (!worstPair || r < worstPair.r)
-        worstPair = { r, pair: `${TYPES[i]}/${TYPES[j]}`, label };
-      if (r < 4.5)
-        fails.push(
-          `gradient ${TYPES[i]}/${TYPES[j]} midpoint — ${label} ${r.toFixed(2)}`,
-        );
-    }
-  }
-}
-console.log(
-  `  153 pairs × 2 text colours at their midpoint — worst is ${worstPair.pair} (${worstPair.label})`,
-);
-console.log(row("worst dual-type midpoint", worstPair.r, 4.5));
-
-// The dex's stat fill is now a whole TYPING rather than a primary type, so a
-// dual type paints a gradient between two 28% fills and the number sits on top
-// of every colour along it — not just the two endpoints group 5 checks. Same
-// argument as group 11, at bar scale: intermediate colours ought to sit between
-// their endpoints, but "ought to" is not the standard this file holds things to.
+// The flame (04_design §2) carries text in two places, and each is held to its
+// own threshold. The speed banner's verdict is 14px, normal text, so 4.5; the
+// BST delta set IN the flame is 36–48px, large text, so 3.0.
 //
-// Audited over `surface` rather than `base` for the reason group 5 is: the row
-// background is `base` on /dex and `surface` on hover and in Home's preview,
-// and the lighter of the two is the harder case for near-white text.
+// **The banner was the one text pairing on the site nobody had measured, and
+// it failed** (D-136). Its near-black text sits on the gradient wherever the
+// words happen to land, and the gradient's dark end is 3.61:1 against it — so
+// a long name, which reaches further toward the ends, crossed under AA:
+// "Squawkabilly Green Plumage moves first" started 9% in at 320px. The text is
+// now held inside `--flame-text-inset` from each end, and this checks the
+// worst point it can reach, which is the inset itself. Interpolated in sRGB,
+// the space the browser draws the gradient in.
+console.log("\n=== 11. The flame — text on and in the gradient ===");
+const flameAt = (t) => {
+  const core = hex("accent-core"),
+    mid = hex("accent"),
+    end = hex("accent-blue");
+  return t <= 0.5 ? blend(mid, core, t * 2) : blend(end, mid, (t - 0.5) * 2);
+};
+const onFlame = hex("accent-contrast");
 console.log(
-  "\n=== 12. Dex stat cell — primary text over a DUAL type's 28% gradient (AA 4.5) ===",
+  row(
+    `banner text at the ${Math.round(FLAME_INSET * 100)}% inset (AA 4.5)`,
+    ratio(onFlame, flameAt(FLAME_INSET)),
+    4.5,
+  ),
 );
-let worstBar = null;
-for (let i = 0; i < TYPES.length; i++) {
-  for (let j = i + 1; j < TYPES.length; j++) {
-    const a = blend(hex(`type-${TYPES[i]}`), surface, DEX_FILL);
-    const b = blend(hex(`type-${TYPES[j]}`), surface, DEX_FILL);
-    const mid = blend(a, b, 0.5);
-    const r = ratio(primary, mid);
-    if (!worstBar || r < worstBar.r)
-      worstBar = { r, pair: `${TYPES[i]}/${TYPES[j]}` };
-    if (r < 4.5)
-      fails.push(
-        `dex bar ${TYPES[i]}/${TYPES[j]} midpoint — primary ${r.toFixed(2)}`,
-      );
-  }
+console.log(
+  `  (at the flame's very end it would be ${ratio(onFlame, flameAt(0)).toFixed(2)} — why the inset exists)`,
+);
+console.log(
+  row(
+    "BST numeral, darkest stop vs surface (large 3.0)",
+    ratio(flameAt(0), surface),
+    3.0,
+  ),
+);
+
+// WCAG 1.4.11 asks 3:1 of what identifies a control and its state, against
+// what is next to it. Never measured before D-136, and the text fields failed
+// it: their edge was border-subtle, 1.33:1 against the panel. A field's edge
+// is the one thing that says "type here", so it has a token of its own now.
+// The focus ring and the selected chip were always fine; they are here so a
+// palette change cannot make them not fine without saying so.
+console.log(
+  "\n=== 12. Non-text contrast — field edges, focus, selection (1.4.11, 3.0) ===",
+);
+const field = hex("border-field");
+for (const [bn, bg] of [
+  ["base", base],
+  ["surface", surface],
+  ["elevated (the field's own fill)", elevated],
+]) {
+  console.log(row(`field edge vs ${bn}`, ratio(field, bg), 3.0));
 }
-console.log(`  153 pairs at their midpoint — worst is ${worstBar.pair}`);
-console.log(row("worst dual-type bar midpoint", worstBar.r, 4.5));
+for (const [bn, bg] of [
+  ["base", base],
+  ["surface", surface],
+  ["elevated", elevated],
+]) {
+  console.log(
+    row(`focus ring (accent) vs ${bn}`, ratio(hex("accent"), bg), 3.0),
+  );
+}
+console.log(
+  row(
+    "selected chip (accent) vs unselected (elevated)",
+    ratio(hex("accent"), elevated),
+    3.0,
+  ),
+);
 
 console.log(`\n── ${fails.length} failure(s) ─────────────────────────────`);
 for (const f of fails) console.log(`  ✗ ${f}`);

@@ -35,9 +35,9 @@ export const TIER_LABEL = { easy: "Easy", medium: "Medium", hard: "Hard" };
 // Shown under the tier chips, for the selected one. A chip cannot carry this
 // and a difficulty name does not explain itself.
 export const TIER_DESC = {
-  easy: "One attacking type against one defending type — a single row of the chart.",
+  easy: "One attacking type against one defending type: a single row of the chart.",
   medium:
-    "A dual type. Two rows of the chart, multiplied — where 4× and ¼× live.",
+    "A dual type. Two rows of the chart, multiplied, which is where 4× and ¼× live.",
   hard: "A Pokémon. Its typing is yours to remember, and its ability is on the card.",
 };
 

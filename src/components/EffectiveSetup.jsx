@@ -1,7 +1,9 @@
 import ChipGroup from "./ChipGroup";
+import { CHIP, CHIP_FILTER_GEOMETRY, CHIP_STATIC } from "./chipStyles";
 import FilterChip from "./FilterChip";
 import GameSetup from "./GameSetup";
 import GenerationStrip from "./GenerationStrip";
+import { RULE_BELOW } from "./pageChrome";
 import { allGenerations } from "../lib/eras";
 import { generationsFor, typesFor } from "../lib/dexTable";
 import {
@@ -58,7 +60,9 @@ export default function EffectiveSetup({ draft, onChange, ...shell }) {
     >
       {draft && (
         <>
-          <div className="border-b border-border-subtle pb-5">
+          {/* A divider sits 16px from what it divides on both sides (§6.3):
+              this padding above it, the body's gap below. */}
+          <div className={RULE_BELOW}>
             {/* The lens matters more here than anywhere on the site: the chart
                 itself has changed six times, so a Gen 1 game is the 15×15 grid
                 where Ghost does nothing to Psychic (D-047). */}
@@ -70,7 +74,11 @@ export default function EffectiveSetup({ draft, onChange, ...shell }) {
             />
           </div>
 
-          <ChipGroup label="Difficulty">
+          {/* The selected tier explains itself, one at a time: a chip cannot
+              carry a sentence and "Medium" does not explain itself. The
+              sentence is the group's `note`, 8px under its chips, rather than
+              a paragraph pulled up against them with a negative margin. */}
+          <ChipGroup label="Difficulty" note={TIER_DESC[draft.tier]}>
             {TIERS.map((tier) => (
               <FilterChip
                 key={tier}
@@ -81,12 +89,6 @@ export default function EffectiveSetup({ draft, onChange, ...shell }) {
               />
             ))}
           </ChipGroup>
-
-          {/* One at a time, so the selected one can explain itself. A chip
-              cannot carry a sentence and "Medium" does not explain itself. */}
-          <p className="-mt-3 text-body-sm text-secondary">
-            {TIER_DESC[draft.tier]}
-          </p>
 
           <ChipGroup label="Defending types" hint="leave empty for all">
             {typesFor(draft.asof).map((type) => (
@@ -134,10 +136,13 @@ export default function EffectiveSetup({ draft, onChange, ...shell }) {
               Medium six — and it is the thing the filters can quietly destroy,
               so it is on screen while you set them. */}
           <ChipGroup label="Answers you will choose from">
+            {/* Read-only pills from the chip vocabulary (chipStyles.jsx): the
+                filter geometry, the static colours. They were spelled out
+                here by hand, a chip style outside the module that owns them. */}
             {answers.map((m) => (
               <span
                 key={m}
-                className="text-badge inline-flex min-h-9 items-center rounded-full border border-border-strong bg-elevated px-3 text-secondary"
+                className={`${CHIP} ${CHIP_FILTER_GEOMETRY} ${CHIP_STATIC}`}
               >
                 {formatMult(m)}
               </span>

@@ -58,29 +58,33 @@ import { formatMult } from "../lib/typeChart";
 // tier is still carried by two other cues that cost nothing: the icon, and the
 // border strength. That is the direction 04_design §9 pushes anyway — the
 // multiplier should never have been leaning on colour to say "resisted".
-function tier(mult) {
-  if (mult === 0) return { Icon: LuBan, color: "text-secondary", border: 28 };
-  if (mult >= 2)
-    return { Icon: LuChevronsUp, color: "text-primary", border: 55 };
-  if (mult < 1)
-    return { Icon: LuChevronsDown, color: "text-secondary", border: 28 };
-  return { Icon: LuMinus, color: "text-secondary", border: 30 };
-}
+//
+// **Two border strengths, not four** (D-135): 2× is the one loud tier and the
+// rest are quiet, the scale D-051 set. Neutral used to be 30% against the
+// resisted tiers' 28%, a difference nobody chose and nobody could see. Both
+// numbers are component tokens in index.css (`--mix-stab-border*`).
+const LOUD = "var(--mix-stab-border-strong)";
+const QUIET = "var(--mix-stab-border)";
 
-// The type fill, as a share of the chip's background. One number for both
-// variants — the two files had drifted to 14% and 16%, which is a difference
-// nobody chose and nobody could see. Audited as group 7 of `audit:contrast`.
-const FILL = 14;
+function tier(mult) {
+  if (mult === 0)
+    return { Icon: LuBan, color: "text-secondary", border: QUIET };
+  if (mult >= 2)
+    return { Icon: LuChevronsUp, color: "text-primary", border: LOUD };
+  if (mult < 1)
+    return { Icon: LuChevronsDown, color: "text-secondary", border: QUIET };
+  return { Icon: LuMinus, color: "text-secondary", border: QUIET };
+}
 
 // Written out in full rather than composed, so Tailwind's scanner sees every
 // utility (cf. D-028). Both are pills: `rounded-full` is the shape of every
 // control on this site (04_design §6), and the chip has no reason to be the
-// exception.
+// exception. The dot is 6px in both, like every marker dot on the site; the
+// board's chip had a 10px one of its own (D-135).
 const SHAPE = {
   md: "gap-2 px-3 py-1.5 rounded-full",
   sm: "gap-2 px-2 py-1 rounded-full",
 };
-const DOT = { md: "size-2.5", sm: "size-1.5" };
 
 export default function StabChip({
   type,
@@ -97,19 +101,24 @@ export default function StabChip({
   return (
     <div
       className={`inline-flex items-center ${SHAPE[size]}`}
+      // The type fill is one share for both sizes — the two copies had drifted
+      // to 14% and 16%. It is `--mix-stab-fill`, audited as group 7 of
+      // `npm run audit:contrast`, which reads it from the stylesheet.
       style={{
-        backgroundColor: `color-mix(in srgb, ${tc} ${FILL}%, var(--color-elevated))`,
-        border: `1px solid color-mix(in srgb, ${tc} ${border}%, transparent)`,
+        backgroundColor: `color-mix(in srgb, ${tc} var(--mix-stab-fill), var(--color-elevated))`,
+        border: `1px solid color-mix(in srgb, ${tc} ${border}, transparent)`,
       }}
     >
       <span className="flex items-center gap-1.5">
         <span
-          className={`${DOT[size]} shrink-0 rounded-full`}
+          className="size-1.5 shrink-0 rounded-full"
           style={{ backgroundColor: tc }}
         />
         <span className="text-meta">{capitalize(type)}</span>
       </span>
-      <span className={`flex items-center gap-1 ${color}`}>
+      {/* `text-diff` on the group rather than on each figure, so the tier icon
+          takes its size from the multiplier it sits beside (1em, §11). */}
+      <span className={`flex items-center gap-1 text-diff ${color}`}>
         {/* The correction is the interesting fact — "Ground is 0×" is worth
             less than "Ground WOULD be 2×, and is 0×" — so the chart's own
             answer stays on screen with a line through it. Both variants show
@@ -127,7 +136,7 @@ export default function StabChip({
             caption under this group on /compare, the defender's head on Home. */}
         {corrected && (
           <>
-            <span aria-hidden className="text-diff text-secondary line-through">
+            <span aria-hidden className="text-secondary line-through">
               {formatMult(baseMult)}
             </span>
             <span className="sr-only">
@@ -135,8 +144,8 @@ export default function StabChip({
             </span>
           </>
         )}
-        <span className="text-diff">{formatMult(mult)}</span>
-        <Icon aria-hidden size={14} />
+        <span>{formatMult(mult)}</span>
+        <Icon aria-hidden />
       </span>
     </div>
   );
@@ -152,8 +161,7 @@ export function StabLabel({ children }) {
     <span className="text-overline text-tertiary">
       {children}
       <span className="sr-only">
-        {" "}
-        — same type attack bonus, the damage from moves matching the attacker's
+        , same type attack bonus: the damage from moves matching the attacker's
         own type
       </span>
     </span>

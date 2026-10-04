@@ -1,8 +1,6 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
-import { LuArrowRight } from "react-icons/lu";
+import { useNavigate, useSearchParams } from "react-router";
 import AnswerCluster from "../components/AnswerCluster";
-import Button from "../components/Button";
 import GameBar from "../components/GameBar";
 import GameStart from "../components/GameStart";
 import { EffectiveThumb } from "../components/gameThumbs";
@@ -10,6 +8,7 @@ import EffectiveSetup from "../components/EffectiveSetup";
 import MatchupPanel from "../components/MatchupPanel";
 import StabChip, { StabCaption } from "../components/StabChip";
 import { BOARD, BOARD_SURFACE, clashVars } from "../components/gameChrome";
+import { NoRound, Verdict } from "../components/RoundCard";
 import {
   EFFECTIVE_PRESETS,
   DEFAULT_SETTINGS,
@@ -107,17 +106,9 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
     return (
       <>
         {bar}
-        <div className={`${BOARD} grid place-items-center px-4`}>
-          <div className="max-w-sm text-center">
-            <p className="text-h4">No question fits these settings.</p>
-            <p className="mt-2 text-body-sm text-secondary">
-              These filters leave fewer than two answers to choose between.
-            </p>
-            <Button className="mt-6" onClick={onSetup}>
-              Open setup
-            </Button>
-          </div>
-        </div>
+        <NoRound title="No question fits these settings." onSetup={onSetup}>
+          These filters leave fewer than two answers to choose between.
+        </NoRound>
       </>
     );
   }
@@ -159,76 +150,48 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
     <>
       {bar}
       <section className={`${BOARD_SURFACE} ${BOARD} ${GRID}`}>
-        {/* The verdict lands over the ATTACKING panel — the stat game's
-            treatment, and the one panel it can afford to cover: the StabChip
-            inside the card names the attacking type, so nothing is hidden that
-            the card does not already say. Over the defender it would hide the
-            typing that was just revealed, which is the answer covering the
-            answer (D-097).
-
-            **Inside the attacker's cell rather than placed in the grid.** The
-            obvious version put it at `col-start-1 row-start-1`, and that is
-            wrong in a way worth recording: an explicitly placed grid item
-            disturbs auto-placement for its siblings, so the answers slid into
-            column three and the defender dropped into a row of its own — the
-            board came apart. Positioned absolutely within the cell it needs no
-            placement at all, and it lands on the attacker in both layouts:
-            left column side by side, top row stacked. (D-109) */}
         <div
           key={`${dealt}-attack`}
-          className="animate-clash-charge relative min-h-0"
+          className="animate-clash-charge min-h-0"
           style={clashVars(0, 2, dealt)}
         >
           {panels[0]}
-          {resolved && (
-            <div
-              className="pointer-events-none absolute inset-0 grid place-items-center p-4"
-              style={{ zIndex: "var(--z-raised)" }}
-            >
-              <div
-                className="animate-reveal pointer-events-auto flex max-w-full flex-col items-center gap-3 rounded-lg border border-border-subtle bg-surface px-5 py-4 text-center"
-                style={{ boxShadow: "var(--shadow-overlay)" }}
-              >
-                <p className="text-h4">
-                  {wasRight ? "Correct." : "Not quite."}
-                </p>
-                {/* The site's own idiom for "the chart said one thing and the
-                  ability changed it": StabChip strikes the chart's answer
-                  beside the real one, StabCaption names what changed it
-                  (D-079). Reused rather than re-rendered, so the verdict cannot
-                  drift from the comparison board's version of the same fact. */}
-                <div className="flex flex-col items-center gap-1.5">
-                  <StabChip
-                    type={attack}
-                    mult={round.mult}
-                    baseMult={round.baseMult}
-                    via={round.via}
-                    size="sm"
-                  />
-                  <StabCaption types={defender.types} via={round.via} />
-                </div>
-                <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-                  <Button autoFocus size="sm" onClick={next}>
-                    Next
-                    <LuArrowRight aria-hidden />
-                  </Button>
-                  <Link
-                    to={followUp}
-                    className="text-body-sm text-accent transition-colors hover:text-accent-hover"
-                  >
-                    See it on the chart
-                  </Link>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
+        {/* The verdict sits directly above the answers, in the cluster's own
+            layer (D-143) — see AnswerCluster for where that lands at each
+            width. */}
         <AnswerCluster
           answers={answersFor(settings)}
           correct={round.mult}
           picked={picked}
           onPick={answer}
+          verdict={
+            resolved && (
+              // The site's own idiom for "the chart said one thing and the
+              // ability changed it": StabChip strikes the chart's answer
+              // beside the real one, StabCaption names what changed it
+              // (D-079). Reused rather than re-rendered, so the verdict cannot
+              // drift from the comparison board's version of the same fact.
+              <Verdict
+                correct={wasRight}
+                detail={
+                  <div className="flex flex-col items-center gap-1.5">
+                    <StabChip
+                      type={attack}
+                      mult={round.mult}
+                      baseMult={round.baseMult}
+                      via={round.via}
+                      size="sm"
+                    />
+                    <StabCaption types={defender.types} via={round.via} />
+                  </div>
+                }
+                onNext={next}
+                followUp={{ to: followUp, label: "See it on the chart" }}
+              />
+            )
+          }
         />
 
         <div

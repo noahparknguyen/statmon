@@ -7,8 +7,10 @@ import { CHIP, CHIP_OFF, CHIP_ON } from "./chipStyles";
 // The most compact geometry in the chip family (chipStyles.jsx), shared with
 // AbilityChips: both sit in the card's 88px controls band beside a `FORM` /
 // `ABILITY` label (D-080), and eight forms (Minior) already fill this row to
-// two — so the geometry stays tighter than the 36px used elsewhere, and is the
-// one known WCAG 2.5.8 spacing exception on the site (04_design §9, D-042).
+// two — so the geometry stays tighter than the 36px used elsewhere. At 21px
+// tall they pass WCAG 2.5.8 through its spacing exception rather than by size:
+// the tightest neighbouring centres measure 27.1px against the 24 it needs
+// (D-059), and `npm run sweep:widths` keeps measuring it.
 //
 // Renders nothing for a single-form Pokémon, which is 845 of the 1,259 entries.
 // The card supplies the em-dash placeholder rather than this component, because

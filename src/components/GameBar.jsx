@@ -87,7 +87,7 @@ export default function GameBar({ title, session, best, onSetup, onRestart }) {
               {title}
               <span className="text-accent">.</span>
             </span>
-            <span className="sr-only">{title} — choose a different game</span>
+            <span className="sr-only">{title}, choose a different game</span>
           </button>
         </h1>
 
@@ -96,7 +96,7 @@ export default function GameBar({ title, session, best, onSetup, onRestart }) {
             rule (06_style_guide §6), not a uniform row. */}
         <dl className="ml-auto flex shrink-0 items-center gap-3 sm:gap-6">
           {cells.map(({ label, value }) => (
-            <div key={label} className="flex flex-col items-end leading-none">
+            <div key={label} className="flex flex-col items-end">
               <dt className="text-overline text-tertiary">{label}</dt>
               <dd className="text-stat text-primary">{value}</dd>
             </div>

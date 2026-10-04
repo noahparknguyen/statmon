@@ -2,7 +2,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router";
 import { LuArrowLeftRight, LuShuffle } from "react-icons/lu";
 import Button from "../components/Button";
 import PageHeader from "../components/PageHeader";
-import { PAGE_TOOL } from "../components/pageChrome";
+import { PAGE_TOOL, PANEL, RULE_ABOVE } from "../components/pageChrome";
 import SearchBar from "../components/SearchBar";
 import PokemonCard from "../components/PokemonCard";
 import ComparisonCard from "../components/ComparisonCard";
@@ -117,7 +117,7 @@ export default function Compare() {
           on /dex and /types the generation decides what the controls below it
           can even offer, so it leads. Here it is the selection that decides
           which generations the strip may offer (D-045), so it follows. */}
-      <div className="mb-5 rounded-lg border border-border-subtle bg-surface p-4">
+      <div className={`${PANEL} mb-6`}>
         <div role="search" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <SearchBar label="Search Pokémon 1" onSelect={selectP1} />
           <SearchBar label="Search Pokémon 2" onSelect={selectP2} />
@@ -130,7 +130,9 @@ export default function Compare() {
             Swap is pinned right with its own `ml-auto` rather than the row using
             `justify-between`: with justify-between, Swap sat on the left of the
             row and jumped across the moment the strip grew. */}
-        <div className="mt-4 flex flex-col items-center gap-3 border-t border-border-subtle pt-4 sm:flex-row sm:items-end">
+        <div
+          className={`${RULE_ABOVE} flex flex-col items-center gap-3 sm:flex-row sm:items-end`}
+        >
           <GenerationStrip
             label="Stats as of"
             options={genOptions}
@@ -170,7 +172,9 @@ export default function Compare() {
           six stats a third time as per-stat cards, with the actual verdict last
           at ~2,400px. The cards now drop their bars below md (PokemonCard), so
           there is one stats surface, and it leads. */}
-      <div className="grid gap-5 items-start grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      {/* 16px between sibling surfaces, the gap every grid of cards on the site
+          uses (§6.3); it was 20 here and 16 on /games. */}
+      <div className="grid gap-4 items-start grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         <div className="order-2 md:order-1">
           <PokemonCard
             pokemon={p1}

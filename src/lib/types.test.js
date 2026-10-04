@@ -178,38 +178,22 @@ describe("token helpers", () => {
   });
 });
 
-// The dex bar carries a whole typing, so a dual type paints a gradient between
-// its two colours. Audited for contrast as group 12 of `npm run audit:contrast`
-// across all 153 pairs; these assert the VALUE, which the audit cannot see.
+// The dex bar takes its Pokémon's PRIMARY type, one colour even for a dual
+// type (D-144). Audited for contrast as group 5 of `npm run audit:contrast`;
+// these assert the VALUE, which the audit cannot see.
 describe("typeFill", () => {
-  it("is a flat wash for a single type, with no gradient", () => {
+  it("is a flat wash of the type at the given share", () => {
     const fill = typeFill(["fire"], "28%");
     expect(fill).toContain(typeColorVar("fire"));
     expect(fill).toContain("28%");
     expect(fill).not.toContain("gradient");
   });
 
-  it("carries BOTH colours for a dual type, primary first", () => {
+  it("takes the primary type alone for a dual type", () => {
     const fill = typeFill(["bug", "fire"], "28%");
-    expect(fill).toContain("linear-gradient");
-    expect(fill).toContain(typeColorVar("bug"));
-    expect(fill).toContain(typeColorVar("fire"));
-    // Primary leads: Bug/Fire and Fire/Bug are different bars.
-    expect(fill.indexOf(typeColorVar("bug"))).toBeLessThan(
-      fill.indexOf(typeColorVar("fire")),
-    );
-  });
-
-  it("runs ACROSS the bar, never along it", () => {
-    // This is the D-133 regression guard, and it is worth stating plainly: the
-    // gradient is painted on the fill element, whose width IS the stat. Along
-    // the bar (90deg) the seam sits at 50% of the fill, which is a different
-    // absolute position in every cell and slides right as the value grows — one
-    // Pokemon's six stats split in six places. Across the bar the split is the
-    // same in every cell at every width, so the row reads as one typing.
-    const fill = typeFill(["bug", "fire"], "28%");
-    expect(fill).toContain("180deg");
-    expect(fill).not.toContain("90deg");
+    expect(fill).toBe(typeFill(["bug"], "28%"));
+    expect(fill).not.toContain(typeColorVar("fire"));
+    expect(fill).not.toContain("gradient");
   });
 
   it("mixes with transparent, never with a background colour", () => {
@@ -226,11 +210,7 @@ describe("typeFill", () => {
     expect(typeFill(undefined, "28%")).toBe("transparent");
   });
 
-  it("produces a usable value for every type and every pair", () => {
+  it("produces a usable value for every type", () => {
     for (const t of TYPES) expect(typeFill([t], "28%")).toContain("color-mix");
-    for (const a of TYPES)
-      for (const b of TYPES)
-        if (a !== b)
-          expect(typeFill([a, b], "28%")).toContain("linear-gradient");
   });
 });

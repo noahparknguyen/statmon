@@ -49,9 +49,10 @@ import { chartAsOf, formatMult, typesIn } from "../lib/typeChart";
 // one step brighter (70%) would drop primary text to 3.78 and fail AA. Mixed
 // inline from two tokens rather than hardcoded, the same way DexRow tints its
 // stat fill (D-039), and audited as group 6 of `npm run audit:contrast`.
+// The share is `--mix-grid-strong` in index.css (D-134), which the audit reads.
 const STRONG_FILL = {
   backgroundColor:
-    "color-mix(in srgb, var(--color-accent) 55%, var(--color-elevated))",
+    "color-mix(in srgb, var(--color-accent) var(--mix-grid-strong), var(--color-elevated))",
 };
 
 // Marking the selected column.
@@ -63,21 +64,31 @@ const STRONG_FILL = {
 // costs the text nothing and draws two continuous lines the full height of the
 // grid, with the last legal amount of wash on top of that. (D-053)
 const SELECTED_WASH = {
-  backgroundColor: "color-mix(in srgb, var(--color-accent) 12%, transparent)",
+  backgroundColor:
+    "color-mix(in srgb, var(--color-accent) var(--mix-grid-wash), transparent)",
 };
-
-const ACCENT_LINE = "1px solid var(--color-accent)";
 
 // The column is framed on all four sides, so the top and bottom cells close it
 // off rather than leaving two rules running into nothing. The header carries the
 // top edge and the last row the bottom, since those are the column's ends.
+//
+// **Drawn as inset shadows, not borders** (D-141). In a collapsed table a
+// border is part of the layout, so selecting a type grew the grid by 2px and
+// moved every row below the header down by one: the chart jumped each time
+// you picked or dropped a type. An inset shadow takes no space. It is drawn in
+// the cell's 1px padding, the gutter, which the cell's fill does not cover, so
+// the lines still run unbroken down the column. (D-055 found an OUTSET shadow
+// painted over by the cells beside it; an inset one stays inside its own cell.)
+const ACCENT = "var(--color-accent)";
 const selectedEdge = (selected, { top = false, bottom = false } = {}) =>
   selected
     ? {
-        borderLeft: ACCENT_LINE,
-        borderRight: ACCENT_LINE,
-        ...(top && { borderTop: ACCENT_LINE }),
-        ...(bottom && { borderBottom: ACCENT_LINE }),
+        boxShadow: [
+          `inset 1px 0 0 ${ACCENT}`,
+          `inset -1px 0 0 ${ACCENT}`,
+          ...(top ? [`inset 0 1px 0 ${ACCENT}`] : []),
+          ...(bottom ? [`inset 0 -1px 0 ${ACCENT}`] : []),
+        ].join(", "),
       }
     : undefined;
 

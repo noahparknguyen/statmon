@@ -105,7 +105,9 @@ const TOOL_LINKS = [
 //
 // **Two of these five are obligations rather than courtesies** (D-120). Font
 // Awesome Free is **CC BY 4.0**, which requires attribution — it supplies the
-// dex table's four sort carets and nothing else, and was credited nowhere. The
+// carets on the comparison board and the dex, and nothing else, and was
+// credited nowhere. (D-120 said "the dex table's four sort carets"; the
+// comparison's difference carets have been Font Awesome since D-015.) The
 // two fonts are **SIL OFL 1.1**, which requires the licence text to travel with
 // the redistributed files; ten `.woff2` shipped in this repo with no OFL in it
 // at all. The texts live in `licenses/` and `vendor:fonts` now fetches them
@@ -159,8 +161,9 @@ function FooterGroup({ title, links }) {
                 {label}
                 {/* External, and said rather than only shown: the icon is
                     decorative and a link that leaves the site should announce
-                    that to a screen reader too. */}
-                <LuExternalLink aria-hidden className="text-border-strong" />
+                    that to a screen reader too. It takes the link's colour, as
+                    every icon does (§11); it was painted with a border token. */}
+                <LuExternalLink aria-hidden />
                 <span className="sr-only">(opens in a new tab)</span>
               </a>
             )}
@@ -177,8 +180,8 @@ export default function Layout() {
   useFocusOnNavigate(mainRef);
 
   // The two game boards ask for no footer (D-109). They are sized to fill the
-  // viewport exactly — `calc(100svh - 7rem)` — so a footer beneath one makes
-  // the page scroll by the footer's height on every game, every round.
+  // viewport exactly (D-110), so a footer beneath one makes the page scroll by
+  // the footer's height on every game, every round.
   //
   // Read from the route's `handle`, the same channel `title` uses, rather than
   // from the pathname: a route already declares what it is, and a second list
@@ -217,10 +220,11 @@ export default function Layout() {
     //
     // `svh` rather than `vh`, the unit Home's wall already uses: on a phone a
     // collapsing toolbar makes `vh` taller than what you can actually see.
+    //
+    // Every other route is as tall as its content, and at least as tall as
+    // `<main>`'s floor below.
     <div
-      className={`flex flex-col bg-base text-primary ${
-        playing ? "h-[100svh]" : "min-h-screen"
-      }`}
+      className={`flex flex-col bg-base text-primary ${playing ? "h-svh" : ""}`}
     >
       {/* Data mode does not reset scroll on navigation on its own; without
           this a deep link out of a long page lands part-way down the next one.
@@ -251,9 +255,13 @@ export default function Layout() {
           `toolOf` is still used, by the focus announcement below: a state change
           is not a page change, whatever the pathname does. */}
       <ScrollRestoration />
+      {/* When it surfaces it is a secondary Button in all but name: the same
+          36px pill, border and label. It was a 10px-cornered box of its own,
+          and its layer was a bare `z-1300` where every other layer reads the
+          ladder's token (D-134). */}
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-1300 focus:rounded-md focus:border focus:border-border-strong focus:bg-elevated focus:px-3 focus:py-2 focus:text-button focus:text-primary"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-(--z-toast) focus:inline-flex focus:h-9 focus:items-center focus:rounded-full focus:border focus:border-border-subtle focus:bg-elevated focus:px-4 focus:text-button focus:text-primary"
       >
         Skip to content
       </a>
@@ -283,10 +291,10 @@ export default function Layout() {
               height="24"
               className="shrink-0"
             />
-            {/* Below 360px the flame mark carries the brand alone — the four
-                nav items and the wordmark cannot both fit, and a header that
-                overflows scrolls the whole page sideways (D-054). The mark is
-                still the link home, and still the logo (D-026). */}
+            {/* Below `xs` (384px) the flame mark carries the brand alone — the
+                four nav items and the wordmark cannot both fit, and a header
+                that overflows scrolls the whole page sideways (D-054, D-062).
+                The mark is still the link home, and still the logo (D-026). */}
             <span className="hidden xs:inline">
               Statmon<span className="text-accent">.</span>
             </span>
@@ -298,7 +306,8 @@ export default function Layout() {
               the dog. Taking 4px off each of the three nav gaps brings the
               requirement to 373 and lets `xs` sit at 384 with room to spare.
               This is the same lever D-054 pulled the first time: the labels all
-              stay visible, the space between them gives. (D-062) */}
+              stay visible, the space between them gives. (D-062) Measured
+              again 2026-10-04: 361px, against D-062's arithmetic of 373. */}
           <nav
             aria-label="Primary"
             className="flex items-center gap-2 sm:gap-5"
@@ -335,8 +344,23 @@ export default function Layout() {
         tabIndex={-1}
         // `min-h-0` is what lets the board actually shrink to the space left:
         // a flex child will not go below its content's height without it.
-        className={`flex-1 focus:outline-none ${
-          bare ? "flex min-h-0 flex-col" : ""
+        // Only while a board is up: the difficulty picker shares the route but
+        // is an ordinary page in the ordinary page shell (D-137), and a flex
+        // column `main` would shrink its wrapper to fit its content.
+        //
+        // **Otherwise it is at least one screen tall, so the footer is never
+        // on screen when a page loads** (D-142). The shell used to pin a short
+        // page's footer to the bottom of the window instead, and the footer is
+        // 368px on a desktop: on `/games` it was taller than the game cards
+        // and the largest thing in view, and the 404 showed all of it at
+        // every desktop size. A page taller than the screen is unchanged.
+        //
+        // A full screen rather than a screen less the header, so the footer
+        // starts 57px below the fold rather than on it. Subtracting the header
+        // is the arithmetic D-110 took out of the boards, where a 1px border
+        // it did not know about made every game scroll.
+        className={`focus:outline-none ${
+          playing ? "flex min-h-0 flex-1 flex-col" : "min-h-svh"
         }`}
       >
         <Outlet />
@@ -344,10 +368,16 @@ export default function Layout() {
 
       {/* The bottom inset is the footer's alone: it is the only thing that ends
           up under a home indicator, and putting it on the body would add dead
-          space to every page on devices that have one. */}
+          space to every page on devices that have one.
+
+          **No margin of its own** (D-139). The space before the footer is the
+          page's bottom padding and nothing else, which is what D-083 said it
+          was. This `mt-16` was adding 64px on top, so a tool page ended 144px
+          above the footer's rule and a content page 160px. A page shorter
+          than the screen also gets `<main>`'s floor (D-142). */}
       {!playing && (
         <footer
-          className="mt-16 border-t border-border-subtle"
+          className="border-t border-border-subtle"
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
           <h2 className="sr-only">Site information</h2>
@@ -362,8 +392,12 @@ export default function Layout() {
                 left one and a ragged middle. It is also the shape most footers
                 converge on, for the same reason.
 
-                Stacked below `sm`, where there is no width to spread into. */}
-            <div className="flex flex-col gap-10 sm:flex-row sm:justify-between sm:gap-8">
+                **Side by side only from `lg`** (D-141). Below it the three
+                link columns do not fit beside the brand: from `sm` to `lg`
+                "Fonts & icons" dropped under "Tools" and left a hole beside
+                it. Stacked, the brand sits over the three columns, which fit
+                one row from 480px. Narrower than that they wrap. */}
+            <div className="flex flex-col gap-10 lg:flex-row lg:justify-between lg:gap-8">
               <div className="max-w-sm">
                 <p className="text-h3 text-primary">
                   Statmon<span className="text-accent">.</span>
@@ -392,7 +426,7 @@ export default function Layout() {
                   puts the brand on the left edge and this block on the right;
                   inside it the three sit on a fixed gap, so they read as a set
                   rather than as three things that happened to land apart. */}
-              <div className="flex flex-wrap gap-x-12 gap-y-8 sm:gap-x-14 lg:gap-x-20">
+              <div className="flex flex-wrap gap-x-12 gap-y-8 lg:gap-x-20">
                 <FooterGroup title="Tools" links={TOOL_LINKS} />
                 <FooterGroup title="Data" links={DATA_LINKS} />
                 <FooterGroup title="Fonts & icons" links={CRAFT_LINKS} />
@@ -414,8 +448,8 @@ export default function Layout() {
             <div className="mt-10 flex flex-col gap-3 border-t border-border-subtle pt-6 sm:flex-row sm:justify-between sm:gap-8">
               <p className="max-w-xl text-caption text-tertiary">
                 Data and images from PokéAPI; sprites are CC0. Fonts are SIL
-                OFL, and the dex&rsquo;s sort carets are Font Awesome Free (CC
-                BY 4.0) — full notices in the{" "}
+                OFL, and the carets on the comparison board and the dex are Font
+                Awesome Free (CC BY 4.0). Full notices are in the{" "}
                 <a
                   href={NOTICE_URL}
                   target="_blank"

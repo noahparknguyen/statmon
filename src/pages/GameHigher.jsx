@@ -1,9 +1,14 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
-import { LuArrowRight } from "react-icons/lu";
-import Button from "../components/Button";
+import { useNavigate, useSearchParams } from "react-router";
 import ContenderPanel from "../components/ContenderPanel";
-import { BOARD, BOARD_SURFACE, clashVars } from "../components/gameChrome";
+import {
+  BOARD,
+  BOARD_SURFACE,
+  OVERLAY_SHADOW,
+  ROUND_CARD,
+  clashVars,
+} from "../components/gameChrome";
+import { NoRound, Verdict } from "../components/RoundCard";
 import GameBar from "../components/GameBar";
 import GameStart from "../components/GameStart";
 import { HigherThumb } from "../components/gameThumbs";
@@ -57,8 +62,13 @@ const GAME = "higher";
 
 // "Higher" for two, "highest" for four. A superlative over two contenders is the
 // kind of small wrongness that makes a page feel machine-written.
-const prompt = (n, stat) =>
-  `${n === 2 ? "Higher" : "Highest"} ${statName(stat)}?`;
+//
+// The verdict's line answers in the question's own words, "Higher Speed:
+// Teddiursa, by 5." (D-143). While the board stacks the verdict covers the
+// question card, and it was the one card on the board that never said which
+// stat the round was about: "Teddiursa leads by 5." left you to remember.
+const question = (n, stat) =>
+  `${n === 2 ? "Higher" : "Highest"} ${statName(stat)}`;
 
 // Two panels split down the middle; four split again. Below `sm` a pair stacks
 // rather than shrinking to 160px each — a versus screen on a phone is top
@@ -85,24 +95,25 @@ const OVERLAY = {
   4: "col-span-full flex justify-center bg-base px-4 py-3 lg:pointer-events-none lg:absolute lg:inset-0 lg:grid lg:justify-items-center lg:bg-transparent lg:p-4",
 };
 
-// Where the card sits once the panels are side by side — and it is not the same
-// place for the two things it holds (D-101).
+// Where the two cards sit once the panels are side by side (D-101). They share
+// the layer's one cell, so neither moves the other.
 //
-// **The question goes to the top.** Dead centre is where the artwork is: at
-// four panels on a wide screen each one is `object-contain`-ed into a tall box,
-// so there is real empty space above and below the Pokémon and none at all in
-// the middle. A question you read once and then keep glancing back at is
-// chrome, and chrome does not belong on top of the subject.
+// **The question at the top, for the whole round** (D-143). Dead centre is
+// where the artwork is: at four panels on a wide screen each one is
+// `object-contain`-ed into a tall box, so there is real empty space above and
+// below the Pokémon and none at all in the middle. A question you read once
+// and then keep glancing back at is chrome, and chrome does not belong on top
+// of the subject. It used to vanish when you answered, which nobody chose: the
+// two cards took turns in one slot, so the verdict replaced it.
 //
-// **The answer stays centred**, deliberately. It is not chrome, it is an event:
+// **The answer in the centre**, deliberately. It is not chrome, it is an event:
 // it interrupts, it carries the button you are about to press, and it wants to
 // be exactly where your eye already is. The two positions are the two roles.
 //
-// Only at the side-by-side widths. Stacked, the card is a real grid row BETWEEN
-// the panels, where it covers nothing and there is nothing to move it away from.
-const OVERLAY_ALIGN = {
-  2: { prompt: "sm:items-start", verdict: "sm:items-center" },
-  4: { prompt: "lg:items-start", verdict: "lg:items-center" },
+// Stacked, the cards are a real grid row BETWEEN the panels; see VERDICT_WRAP.
+const PROMPT_PLACE = {
+  2: "sm:col-start-1 sm:row-start-1 sm:self-start",
+  4: "lg:col-start-1 lg:row-start-1 lg:self-start",
 };
 
 // Stacked, the verdict card is **80px taller than the question card** — 134.6
@@ -123,20 +134,23 @@ const OVERLAY_ALIGN = {
 // the second Pokémon's artwork, whose name and value sit lower still and stay
 // visible.
 //
-// `contents` at the wide breakpoints makes the positioning wrapper vanish, so
-// side by side the verdict goes back to being a plain centred child of the
-// layer and none of this applies.
+// **The question card stays under it, and the verdict's line says the
+// question instead** (D-143). Opening the verdict BELOW the question was the
+// first idea and the measurement killed it: in the 664px Safari leaves an
+// iPhone, a verdict starting under the question covered the second Pokémon's
+// name, and on a smaller phone its value, which is the answer.
+//
+// Side by side the wrapper is an ordinary item in the layer's one cell,
+// centred, with the question above it at the top.
 const VERDICT_WRAP = {
-  2: "absolute inset-x-4 top-3 flex justify-center sm:contents",
-  4: "absolute inset-x-4 top-3 flex justify-center lg:contents",
+  2: "absolute inset-x-4 top-3 flex justify-center sm:static sm:col-start-1 sm:row-start-1 sm:self-center",
+  4: "absolute inset-x-4 top-3 flex justify-center lg:static lg:col-start-1 lg:row-start-1 lg:self-center",
 };
 
-// Once resolved, the question card is holding space rather than saying
-// anything — and only while the board stacks. Side by side it is simply gone.
-const PROMPT_SPACER = { 2: "invisible sm:hidden", 4: "invisible lg:hidden" };
-
-const CARD =
-  "pointer-events-auto max-w-full rounded-lg border border-border-subtle bg-surface px-5 text-center";
+// Once resolved and while the board stacks, the question card holds the row's
+// height under the verdict, and only that: invisible, so it does not show
+// through the verdict's fade-in. Side by side it stays on screen.
+const PROMPT_SPACER = { 2: "invisible sm:visible", 4: "invisible lg:visible" };
 
 function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
   const [session, setSession] = useState(NEW_SESSION);
@@ -192,17 +206,9 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
     return (
       <>
         {bar}
-        <div className={`${BOARD} grid place-items-center px-4 text-center`}>
-          <div>
-            <p className="text-h4">No round to play.</p>
-            <p className="mt-1 text-body-sm text-secondary">
-              These filters leave too few Pokémon to ask about.
-            </p>
-            <Button className="mt-6" onClick={onSetup}>
-              Open setup
-            </Button>
-          </div>
-        </div>
+        <NoRound title="No round to play." onSetup={onSetup}>
+          These filters leave too few Pokémon to ask about.
+        </NoRound>
       </>
     );
   }
@@ -281,7 +287,7 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
           resting 1px divider is near-black now, which the type tints already
           separate well enough.
 
-          **`overflow-hidden` is not decoration.** The panels travel 4rem, and
+          **`overflow-hidden` is not decoration.** The panels travel 5rem, and
           without clipping that reaches the document and scrolls every width
           sideways — caught by `npm run sweep:widths` at 900, 1024, 1280 and
           1440 the first time it ran, at half this distance. Same fault as the
@@ -290,10 +296,10 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
       <section className={`${BOARD_SURFACE} ${BOARD} ${GRID[settings.n]}`}>
         {panels.slice(0, half)}
 
-        {/* The prompt, and then the verdict. Everything a round needs is in
-            this one card, so nothing about the game ever sits below the fold.
-            A real row between the halves while the board stacks, an absolute
-            layer once the panels are side by side — see GRID. */}
+        {/* The question, and then the verdict. Everything a round needs is
+            in this one layer, so nothing about the game ever sits below the
+            fold. A real row between the halves while the board stacks, an
+            absolute layer once the panels are side by side — see GRID. */}
         {/* `--z-raised` is load-bearing, not tidiness. The panels after this
             one in DOM order carry a transform for the length of the entrance
             animation, and a transformed element paints as though positioned —
@@ -302,61 +308,36 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
             Exactly the fault D-088 found in the type grid's cross-hair, and
             caught here by `npm run shoot:docs` rather than by any check. */}
         <div
-          className={`relative ${OVERLAY[settings.n]} ${
-            OVERLAY_ALIGN[settings.n][resolved ? "verdict" : "prompt"]
-          }`}
+          className={`relative ${OVERLAY[settings.n]}`}
           style={{ zIndex: "var(--z-raised)" }}
         >
-          {/* The question. Stays in flow once resolved, invisibly, because
-              while the board stacks THIS is what gives the gutter its height —
-              see VERDICT_WRAP. Side by side it is `hidden` and takes none. */}
+          {/* The question. Stays in flow once resolved, because while the board
+              stacks THIS is what gives the gutter its height — see
+              VERDICT_WRAP. Side by side it stays at the top. */}
+          {/* A one-line card, so 12px top and bottom where a surface takes
+              16 (§6.2, the bar rule). */}
           <div
-            aria-hidden={resolved || undefined}
-            className={`${CARD} py-3 ${resolved ? PROMPT_SPACER[settings.n] : ""}`}
-            style={{ boxShadow: "var(--shadow-overlay)" }}
+            className={`${ROUND_CARD} px-4 py-3 ${PROMPT_PLACE[settings.n]} ${
+              resolved ? PROMPT_SPACER[settings.n] : ""
+            }`}
+            style={OVERLAY_SHADOW}
           >
-            <p className="text-h2">{prompt(settings.n, round.stat)}</p>
+            <p className="text-h2">{question(settings.n, round.stat)}?</p>
           </div>
 
           {resolved && (
             <div className={VERDICT_WRAP[settings.n]}>
-              <div
-                className={`${CARD} py-4`}
-                style={{ boxShadow: "var(--shadow-overlay)" }}
-              >
-                {/* The verdict and its detail are on their own lines, not side
-                    by side. They are two named styles at two sizes, and D-053
-                    already settled what that looks like on one line — "two type
-                    sizes on one line, and no amount of aligning makes them sit
-                    together". Stacked they read as a headline and its
-                    supporting line. */}
-                <div className="animate-reveal flex flex-col items-center gap-3">
-                  <div className="flex flex-col items-center gap-0.5">
-                    <p className="text-h4">
-                      {wasRight ? "Correct." : "Not quite."}
-                    </p>
-                    <p className="text-body-sm text-secondary">
-                      {round.winner.name} leads by {round.margin}.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-                    {/* autoFocus rather than a key listener: the button only
-                        exists once a round resolves, so focusing it on mount
-                        both moves a keyboard user to the next action and makes
-                        Enter advance the game with no custom key handling. */}
-                    <Button autoFocus onClick={next}>
-                      Next
-                      <LuArrowRight aria-hidden />
-                    </Button>
-                    <Link
-                      to={followUp.to}
-                      className="text-body-sm text-accent transition-colors hover:text-accent-hover"
-                    >
-                      {followUp.label}
-                    </Link>
-                  </div>
-                </div>
-              </div>
+              <Verdict
+                correct={wasRight}
+                detail={
+                  <p className="text-body-sm text-secondary">
+                    {question(settings.n, round.stat)}: {round.winner.name}, by{" "}
+                    {round.margin}.
+                  </p>
+                }
+                onNext={next}
+                followUp={followUp}
+              />
             </div>
           )}
         </div>

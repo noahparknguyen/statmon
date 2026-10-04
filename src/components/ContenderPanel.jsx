@@ -19,20 +19,18 @@ import { PANEL_BOX, ring, tintFor } from "./gameChrome";
 // already holds the site's other stated exception (D-070); this is the second,
 // and like that one it is an entry rather than a drift.
 //
-// **Tinted by primary type**, which is the site's oldest visual idea rather
-// than a new one (04_design §3: a Pokémon's primary type colours its
-// representation). It also does the arena's structural work — two panels of
-// different colours read as two sides without needing a heavier divider — and
-// it costs no new colour system. Audited as group 10 of `npm run audit:contrast`.
+// **Tinted by its primary type**, which is the site's oldest visual idea rather
+// than a new one (04_design §3: a Pokémon's type colours its representation).
+// One colour even for a dual type (D-144); the badges carry the whole typing.
+// It also does the arena's structural work — two panels of different colours
+// read as two sides without needing a heavier divider — and it costs no new
+// colour system. Audited as group 10 of `npm run audit:contrast`.
 //
 // **Right and wrong without a red/green pair** (D-093): the palette has none, on
 // purpose, so the winner takes the accent and everything else recedes by a step,
 // on D-051's one-loud-state-and-three-quiet-ones scale. Every marked panel
 // carries an icon and screen-reader text, never colour alone.
 
-// How much of the primary type sits over the page background. Low, because it
-// is a whole panel rather than a chip: at 14% (the STAB chip's number) four
-// panels of saturated type colour fought the artwork they exist to show.
 // Three densities, and they are densities rather than styles: the same panel
 // with more or less room around it. `lg` is a two-up round, where each panel
 // owns half the screen; `md` is a four-up, where it owns a quarter and the name
@@ -100,9 +98,7 @@ export default function ContenderPanel({
   lazy = false,
 }) {
   const S = SIZES[size];
-  // The whole typing, not just the primary: a dual type gets both colours
-  // (D-107). `background` rather than `backgroundColor` because that value is a
-  // gradient for two types, and a background-color would silently drop it.
+  // The primary type's tint, one colour for a dual type too (D-144).
   const tint = tintFor(pokemon.types);
 
   // Four states on one scale: the winner is loud, your wrong pick is present,
@@ -149,7 +145,7 @@ export default function ContenderPanel({
       className={`${PANEL_BOX} ${S.box} ${
         resolved && !won && !picked ? "opacity-50" : ""
       } ${className}`}
-      style={{ background: tint, ...mark }}
+      style={{ backgroundColor: tint, ...mark }}
     >
       {/* The panel is static and its CONTENT is what moves (D-102). The clash
           shakes what is inside each panel rather than the panel itself, because

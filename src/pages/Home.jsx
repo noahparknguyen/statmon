@@ -1,4 +1,3 @@
-import { Link } from "react-router";
 import { LuArrowRight } from "react-icons/lu";
 import Button from "../components/Button";
 import FeaturedComparison from "../components/FeaturedComparison";
@@ -12,7 +11,7 @@ import { getBySlug, artworkFor } from "../lib/pokemon";
 import { compareUrl } from "../lib/compareUrl";
 
 // Home. The page opens on a full-bleed wall of sprites (D-070) with the wordmark
-// on it, then runs hero -> one labelled section per shipped tool -> tools row.
+// on it, then runs hero -> one labelled section per shipped tool.
 //
 // It began as product-as-hero (D-023): the live Volcarona vs Chandelure board
 // was the first thing on the page, on the argument that the comparison tool's
@@ -27,28 +26,12 @@ import { compareUrl } from "../lib/compareUrl";
 const V = getBySlug("volcarona");
 const C = getBySlug("chandelure");
 
-// Every chip links to itself — a row advertising tools that cannot be clicked
-// is a dead end. "Compare" rather than "Comparison": the nav, the section
-// heading and the route all say Compare, and one tool with three names was
-// three chances to look like three tools (D-067).
-//
-// The greyed "soon" variant this row used to carry for Games is gone with the
-// last unlinked entry (D-091). Keeping a branch for a tool that does not exist
-// yet is the `StatBar.jsx` mistake — code held for a future caller — and the
-// games index is the honest home for "not built yet", where it can say what the
-// thing will be rather than just that it is coming.
-const TOOLS = [
-  { label: "Compare", to: "/compare" },
-  { label: "Dex table", to: "/dex" },
-  { label: "Type chart", to: "/types" },
-  { label: "Games", to: "/games" },
-];
-
-const TOOL_CHIP =
-  "text-caption inline-block rounded-full border px-3 py-1 text-accent transition-colors hover:text-accent-hover";
-const TOOL_BORDER = {
-  borderColor: "color-mix(in srgb, var(--color-accent) 45%, transparent)",
-};
+// **No tools row** (D-139). A row of four outlined pills used to close the
+// page: a chip style of its own, the fourth way to reach the tools on a page
+// that already has the nav, a section with a button per tool, and the footer's
+// Tools column, and it named two of them "Dex table" and "Type chart" where
+// every other surface says Dex and Types — the three-names fault D-067 fixed
+// once already. Each section's button is the way in.
 
 export default function Home() {
   return (
@@ -65,8 +48,11 @@ export default function Home() {
             the tagline darker was the alternative and it costs the wall most of
             its visibility. The hero is the one place the tagline is the
             wordmark's partner rather than supporting text (D-070). */}
+        {/* "A simple set of Pokémon tools." until D-138: the one line on the
+            site that called the site something, which §14 rules out. This one
+            says what is here. */}
         <p className="mx-auto mt-3 max-w-xl text-body-lg text-primary">
-          A simple set of Pokémon tools.
+          Pokémon stats, matchups and games.
         </p>
       </SpriteWall>
 
@@ -88,16 +74,16 @@ export default function Home() {
                 alt=""
                 aria-hidden
                 decoding="async"
-                className="hidden lg:block pointer-events-none absolute z-0 left-0 top-1/2 w-100 -translate-y-1/2 -translate-x-1/2 rotate-[-10deg] drop-shadow-art"
+                className="hidden lg:block pointer-events-none absolute z-0 left-0 top-1/2 w-100 -translate-y-1/2 -translate-x-1/2 -rotate-10 drop-shadow-art"
               />
               <img
                 src={artworkFor(C)}
                 alt=""
                 aria-hidden
                 decoding="async"
-                className="hidden lg:block pointer-events-none absolute z-0 right-0 top-1/2 w-90 -translate-y-1/2 translate-x-[60%] -scale-x-100 rotate-10 drop-shadow-art"
+                className="hidden lg:block pointer-events-none absolute z-0 right-0 top-1/2 w-90 -translate-y-1/2 translate-x-3/5 -scale-x-100 rotate-10 drop-shadow-art"
               />
-              <div className="relative z-10">
+              <div className="relative z-1">
                 <FeaturedComparison p1={V} p2={C} />
               </div>
             </div>
@@ -171,21 +157,6 @@ export default function Home() {
         >
           <FeaturedGames />
         </FeaturePreview>
-
-        {/* Labelled so a screen reader announces what the list is; without it
-          this is four bare items with no context. */}
-        <ul
-          aria-label="Statmon tools"
-          className="mt-36 flex flex-wrap justify-center gap-2"
-        >
-          {TOOLS.map((t) => (
-            <li key={t.label}>
-              <Link to={t.to} className={TOOL_CHIP} style={TOOL_BORDER}>
-                {t.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
       </div>
     </>
   );
