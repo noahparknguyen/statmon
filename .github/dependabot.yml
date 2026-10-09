@@ -1,0 +1,26 @@
+# Dependabot proposes updates as pull requests, once a month: the npm packages, and the
+# actions the CI workflow runs. Minor and patch updates arrive together as one pull request,
+# so a month's routine updates are reviewed once; a major version gets a pull request of its
+# own, since it can break things. A new version waits a week before it is proposed, so a bad
+# release has time to be caught and pulled first. Security updates are separate and keep no
+# schedule: an alert on a version in use opens a pull request straight away.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7

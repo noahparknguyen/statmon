@@ -47,7 +47,7 @@ It's built with React, Vite, Tailwind, React Router, and plain JavaScript, and s
 
 ## Run it
 
-Node 22 or later. From the root of the repo:
+Node 24 or later. From the root of the repo:
 
 ```
 npm install
