@@ -86,6 +86,9 @@ const SIZES = {
 
 export default function ContenderPanel({
   pokemon,
+  // The typing to show. A game set to an earlier generation passes that
+  // generation's; everywhere else shows today's.
+  types = pokemon.types,
   stat,
   value,
   resolved = false,
@@ -99,7 +102,7 @@ export default function ContenderPanel({
 }) {
   const S = SIZES[size];
   // The primary type's tint, one colour for a dual type too (D-144).
-  const tint = tintFor(pokemon.types);
+  const tint = tintFor(types);
 
   // Four states on one scale: the winner is loud, your wrong pick is present,
   // the rest recede. Opacity rather than a fourth colour.
@@ -209,7 +212,7 @@ export default function ContenderPanel({
           with no room for them. */}
         {size !== "sm" && (
           <span className="flex flex-wrap justify-center gap-1">
-            {pokemon.types.map((t) => (
+            {types.map((t) => (
               <TypeBadge key={t} type={t} size={S.badge} />
             ))}
           </span>

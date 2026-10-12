@@ -260,6 +260,7 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
         // scrolls into view is advertising a twitch, not a game.
         shake
         pokemon={p}
+        types={round.types[i]}
         stat={round.stat}
         value={round.values[i]}
         resolved={resolved}

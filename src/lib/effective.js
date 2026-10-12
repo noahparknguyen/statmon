@@ -11,7 +11,13 @@
 // injected, for the same two reasons: a test can pin a round, and a daily seeded
 // puzzle would be a caller rather than a rewrite.
 import { abilitiesAsOf } from "./abilities";
-import { filterRows, generationsFor, parseList, typesFor } from "./dexTable";
+import {
+  filterRows,
+  generationsFor,
+  parseList,
+  toggleIn,
+  typesFor,
+} from "./dexTable";
 import { CURRENT_GEN, eraView } from "./eras";
 import { ALL_POKEMON } from "./pokemon";
 import { affectsTypes } from "./abilities";
@@ -381,17 +387,16 @@ export const setTier = (settings, tier) => normalise({ ...settings, tier });
 
 export const setAsOf = (settings, asof) => normalise({ ...settings, asof });
 
-const toggled = (list, value) => {
-  const next = new Set(list);
-  if (next.has(value)) next.delete(value);
-  else next.add(value);
-  return [...next];
-};
-
-// The canonical ordering is `normalise`'s job, so these only have to say what
-// changed — the reason that rule lives in one place.
+// The dex's toggleIn, then `normalise`, which also drops generations from a
+// tier that has no pool.
 export const toggleType = (settings, type) =>
-  normalise({ ...settings, types: toggled(settings.types, type) });
+  normalise({
+    ...settings,
+    types: toggleIn(typesFor(settings.asof), settings.types, type),
+  });
 
 export const toggleGen = (settings, gen) =>
-  normalise({ ...settings, gens: toggled(settings.gens, gen) });
+  normalise({
+    ...settings,
+    gens: toggleIn(generationsFor(settings.asof), settings.gens, gen),
+  });

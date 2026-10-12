@@ -290,7 +290,8 @@ export const toggleSort = (view, key) =>
 
 // Adds or removes one value, re-deriving the list from the canonical order so
 // the resulting URL is identical whichever order the chips were clicked in.
-const toggleIn = (canonical, list, value) => {
+// The games' settings use it too.
+export const toggleIn = (canonical, list, value) => {
   const next = new Set(list);
   if (next.has(value)) next.delete(value);
   else next.add(value);

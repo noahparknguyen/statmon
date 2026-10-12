@@ -498,6 +498,13 @@ describe("a chosen game always names itself in the URL", () => {
     expect(hasChosenGame(new URLSearchParams())).toBe(false);
   });
 
+  it("ignores parameters no game reads, like a shared link's tracking", () => {
+    expect(hasChosenGame("?utm_source=linkedin")).toBe(false);
+    expect(hasChosenGame("?fbclid=abc123")).toBe(false);
+    expect(hasChosenGame("?fbclid=abc123&stats=speed")).toBe(true);
+    expect(hasChosenGame("?tier=hard")).toBe(true);
+  });
+
   it("keeps the marker out of the record key", () => {
     // If `play` reached settingsKey, every existing saved streak would be
     // orphaned and "did you press play" would become part of a game's identity.

@@ -22,6 +22,7 @@ import {
   generationsFor,
   parseList,
   statKeysFor,
+  toggleIn,
   typesFor,
 } from "./dexTable";
 import { CURRENT_GEN, eraView } from "./eras";
@@ -176,15 +177,7 @@ export const toggleStat = (settings, stat) => {
   };
 };
 
-// Types and generations follow the dex exactly: re-derived from the canonical
-// order so the URL is identical however the chips were clicked.
-const toggleIn = (canonical, list, value) => {
-  const next = new Set(list);
-  if (next.has(value)) next.delete(value);
-  else next.add(value);
-  return canonical.filter((v) => next.has(v));
-};
-
+// Types and generations follow the dex exactly, with its own toggleIn.
 export const toggleGen = (settings, gen) => ({
   ...settings,
   gens: toggleIn(generationsFor(settings.asof), settings.gens, gen),
@@ -292,16 +285,19 @@ const MAX_DRAWS = 200;
  *
  * `winner` is the entry itself rather than an index, and `margin` is the gap
  * between first and second, which is what decides whether the round is worth
- * asking at all.
+ * asking at all. `types` is each contender's typing in the same generation as
+ * its stats, so a Gen 1 round shows Clefairy as Normal, not Fairy.
  */
 export function roundFor(contenders, stat, asof = null) {
-  const values = contenders.map((p) => statValue(eraView(p, asof), stat));
+  const views = contenders.map((p) => eraView(p, asof));
+  const values = views.map((view) => statValue(view, stat));
   const ranked = [...values].sort((a, b) => b - a);
   return {
     stat,
     asof,
     contenders,
     values,
+    types: views.map((view) => view.types),
     winner: contenders[values.indexOf(ranked[0])],
     margin: ranked[0] - ranked[1],
   };
@@ -449,13 +445,27 @@ export function parseHigher(searchParams) {
  */
 export const PLAY_PARAM = "play";
 
+// Every parameter either game reads. Only these count as choosing a game, so a
+// shared link carrying something else, like `?utm_source=linkedin`, still
+// opens on the start screen.
+const GAME_PARAMS = new Set([
+  PLAY_PARAM,
+  "n",
+  "stats",
+  "gen",
+  "type",
+  "forms",
+  "asof",
+  "tier",
+]);
+
 /**
  * Whether a URL names a game rather than asking for one. Accepts a search
  * string or a `URLSearchParams`, because the pages hold one and `Layout` holds
  * the other.
  */
 export const hasChosenGame = (search) =>
-  [...new URLSearchParams(search).keys()].length > 0;
+  [...new URLSearchParams(search).keys()].some((k) => GAME_PARAMS.has(k));
 
 export function higherUrl(settings = DEFAULT_SETTINGS) {
   const qs = settingsKey(settings);

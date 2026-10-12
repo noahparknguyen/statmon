@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync } from "node:fs";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { renderToString } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import Layout from "./components/Layout";
@@ -18,7 +18,7 @@ import { CURRENT_GEN } from "./lib/eras";
 import { WALL_TILES } from "./components/SpriteWall";
 import { sortRows } from "./lib/dexTable";
 import { compareUrl } from "./lib/compareUrl";
-import { HIGHER_PRESETS, higherUrl } from "./lib/games";
+import { HIGHER_PRESETS, higherUrl, poolFor } from "./lib/games";
 import { TIER_DESC } from "./lib/effective";
 
 // Renders every route to a string and asserts it produced something. This is a
@@ -1172,6 +1172,40 @@ describe("the stat game's arena", () => {
     // rather than dealing a round (D-108).
     expect(text("/games/higher?stats=speed")).toContain("Best");
   });
+
+  it("shows each contender's typing as of the game's generation", () => {
+    // Clefairy was Normal until Gen 6 brought the Fairy type. Math.random is
+    // fixed so that a Gen 1 HP round deals Clefairy and Snorlax.
+    const pool = poolFor({ types: ["normal"], asof: 1 });
+    const at = (slug) =>
+      (pool.findIndex((p) => p.slug === slug) + 0.5) / pool.length;
+    const random = vi
+      .spyOn(Math, "random")
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(at("clefairy"))
+      .mockReturnValueOnce(at("snorlax"));
+    try {
+      const page = text("/games/higher?asof=1&type=normal&stats=hp");
+      expect(page).toContain("Clefairy");
+      expect(page).toContain("Snorlax");
+      expect(page).not.toContain("Fairy");
+    } finally {
+      random.mockRestore();
+    }
+  });
+});
+
+describe("a game link carrying parameters the games don't read", () => {
+  // The start screen's previews deal random rounds, so the check is its
+  // heading and the missing score bar rather than the whole page.
+  it.each(["/games/higher", "/games/effective"])(
+    "%s shows the start screen, as a bare link does",
+    (path) => {
+      const page = text(`${path}?utm_source=linkedin&fbclid=abc123`);
+      expect(page).toContain("How do you want to play?");
+      expect(page).not.toContain("Score");
+    },
+  );
 });
 
 // The type game's hard tier hides three things until you answer, and each is a
