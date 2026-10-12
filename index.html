@@ -24,10 +24,10 @@
       content="Compare two Pokémon head to head, rank the whole dex by any stat, and read the full type chart including dual types, each as of any generation. Then drill it all in the games."
     />
 
-    <!-- Open Graph / Twitter. og:url + og:image are absolute (scrapers require
-         it), pointing at the production origin. Per-route og:url/title await
-         SSR (D-005), so this copy has to describe the whole site rather than
-         any one tool — which is why it names all four (D-063, D-091).
+    <!-- Open Graph and Twitter. og:url and og:image are absolute (scrapers
+         require it), pointing at the production origin. Per-route titles
+         would need server rendering, so this copy describes the whole site
+         rather than one tool, which is why it names all four.
          og-image.png is exported from docs/og-image.html. -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Statmon" />
@@ -65,10 +65,10 @@
       content="https://statmon.noahpn.dev/og-image.png"
     />
 
-    <!-- Fonts are self-hosted (D-061); the @font-face rules ship inside the
-         app's own stylesheet, so there is no third-party request and nothing
+    <!-- Fonts are self-hosted: the @font-face rules ship inside the app's own
+         stylesheet, so there's no third-party request and nothing
          render-blocking here. These two preloads are the faces that paint
-         first — body copy and headings — started before the CSS is parsed
+         first, body copy and headings, started before the CSS is parsed
          rather than after. The other eight faces (other weights, latin-ext)
          load on demand. -->
     <link

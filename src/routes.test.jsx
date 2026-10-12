@@ -27,8 +27,9 @@ import { TIER_DESC } from "./lib/effective";
 // selection, a hook used wrongly), which unit tests over lib/ can't see.
 //
 // react-dom/server needs no DOM, so this stays inside the "pure logic only" test
-// setup: no jsdom, no component-testing library. Anything about layout, scroll,
-// or interaction is still checked by hand against the running app.
+// setup: no jsdom, no component-testing library. Layout and overflow are
+// measured by `npm run sweep:widths` in headless Chrome, and interaction is
+// checked by hand against the running app.
 //
 // The route table is copied from router.jsx with plain elements, because the
 // real one loads its pages with `lazy`, and a one-pass render to a string

@@ -6,7 +6,7 @@ import { defineConfig, globalIgnores } from "eslint/config";
 
 export default defineConfig([
   globalIgnores(["dist", ".wrangler", "src/data"]),
-  // Browser code — the app itself.
+  // Browser code: the app itself.
   {
     files: ["**/*.{js,jsx}"],
     extends: [
@@ -19,9 +19,9 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
-  // Node build scripts. Previously unlinted entirely: the pattern above matches
-  // only .js/.jsx, so scripts/*.mjs were invisible to ESLint — an undefined
-  // identifier in the PokéAPI pipeline would not have been caught.
+  // Node build scripts. The pattern above matches only .js and .jsx, so
+  // scripts/*.mjs need their own block, or an undefined identifier in the
+  // PokéAPI pipeline would go uncaught.
   {
     files: ["scripts/**/*.mjs"],
     extends: [js.configs.recommended],
