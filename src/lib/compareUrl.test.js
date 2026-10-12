@@ -1,12 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { compareUrl } from "./compareUrl";
 
-// This module had no test of its own until the ability parameters arrived
-// (D-073). It was covered incidentally through routes.test.jsx, which renders
-// pages rather than reading URLs — so a wrong query string showed up as a page
-// that looked fine and linked somewhere slightly wrong. The URL is the single
-// source of truth for the whole comparison (D-022); it is worth asserting
-// directly.
+// routes.test.jsx covers this only in passing, since it renders pages rather
+// than reading URLs, and a wrong query string there shows up as a page that
+// looks fine but links somewhere slightly wrong. The URL is the single source
+// of truth for the whole comparison, so it's worth asserting directly.
 
 describe("compareUrl", () => {
   it("uses the path deep link when both slots are filled", () => {
@@ -16,7 +14,7 @@ describe("compareUrl", () => {
   });
 
   it("falls back to a query param for a partial selection", () => {
-    // The path route needs both segments, so a one-slot state cannot use it.
+    // The path route needs both segments, so a one-slot state can't use it.
     expect(compareUrl("volcarona", null)).toBe("/compare?p1=volcarona");
     expect(compareUrl(null, "chandelure")).toBe("/compare?p2=chandelure");
     expect(compareUrl(null, null)).toBe("/compare");
@@ -42,8 +40,8 @@ describe("compareUrl", () => {
   });
 
   it("omits every parameter at its default, so the common case is a path", () => {
-    // The site-wide rule: a default is spelled as no parameter at all, so
-    // there is one state rather than two that can disagree, and a shared link
+    // The site-wide rule: a default is written as no parameter at all, so
+    // there's one state rather than two that can disagree, and a shared link
     // stays clean.
     expect(
       compareUrl("volcarona", "chandelure", { asof: null, a1: null, a2: null }),

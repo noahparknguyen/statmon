@@ -11,9 +11,9 @@ import {
 } from "./record";
 import { DEFAULT_SETTINGS, settingsKey, toggleStat } from "./games";
 
-// A localStorage stand-in. Storage is injected everywhere in this module
-// precisely so the tests need no DOM — the same reason lib/games.js takes its
-// rng as an argument.
+// A localStorage stand-in. Storage is passed in everywhere in this module so
+// the tests need no DOM, the same reason lib/games.js takes its random number
+// generator as an argument.
 const stub = (initial = {}) => {
   const data = { ...initial };
   return {
@@ -28,8 +28,8 @@ const stub = (initial = {}) => {
   };
 };
 
-// The browsers that refuse site data do not return null — they throw, which is
-// why every access in the module is wrapped.
+// Browsers that refuse site data don't return null, they throw, which is why
+// every access in the module is wrapped.
 const hostile = () => ({
   getItem: () => {
     throw new Error("SecurityError");
@@ -61,8 +61,8 @@ describe("reading a record", () => {
     expect(readRecord(s)).toEqual(record);
   });
 
-  // Stored state is untrusted input, exactly like a hand-edited URL — the same
-  // forgiving-parse rule parseView and parseHigher follow.
+  // Stored state is untrusted input, exactly like a hand-edited URL, so it
+  // gets the same forgiving parse that parseView and parseHigher give a URL.
   it.each([
     ["not json at all", "{{{"],
     ["a bare string", '"hello"'],
@@ -80,9 +80,9 @@ describe("reading a record", () => {
   });
 
   it("returns something usable for a storage-less runtime", () => {
-    // In the node test environment there is no localStorage, which is also the
-    // server-render case — so this is the SSR path as much as the private-mode
-    // one.
+    // In the node test environment there's no localStorage, which is also the
+    // server-render case, so this is the server-render path as much as the
+    // private-mode one.
     expect(readRecord(browserStorage())).toEqual(EMPTY_RECORD);
   });
 });
@@ -113,9 +113,9 @@ describe("the best streak, keyed by the settings", () => {
     expect(bestFor(record, "higher", "never-played")).toBe(0);
   });
 
-  // Both games spell their default settings as the empty string, so without a
-  // game namespace the first round of either would overwrite the other's best
-  // (D-104).
+  // Both games write their default settings as the empty string, so without a
+  // game namespace, the first round of either would overwrite the other's
+  // best.
   it("keeps the two games' records apart at the same settings key", () => {
     let record = EMPTY_RECORD;
     record = recordAnswer(record, {
@@ -152,8 +152,8 @@ describe("the best streak, keyed by the settings", () => {
       wasCorrect: true,
       streak: 6,
     });
-    // A wrong answer passes the post-answer streak, which is 0 — the saved best
-    // must survive the run that ended.
+    // A wrong answer passes the post-answer streak, which is 0, and the saved
+    // best must survive the run that ended.
     record = recordAnswer(record, {
       game: "higher",
       key,
@@ -165,7 +165,7 @@ describe("the best streak, keyed by the settings", () => {
   });
 
   // The point of keying by the canonical settings string: the same game always
-  // finds its own record, however its chips were clicked (D-098).
+  // finds its own record, however its chips were clicked.
   it("finds the same record for the same game built two ways", () => {
     const a = toggleStat(toggleStat(DEFAULT_SETTINGS, "hp"), "attack");
     const b = toggleStat(toggleStat(DEFAULT_SETTINGS, "attack"), "hp");
@@ -212,8 +212,8 @@ describe("the accuracy log", () => {
     });
   });
 
-  // Worst first, because the list exists to say what to practise — a ranking
-  // of your best stat is not something anyone acts on.
+  // Worst first, because the list exists to say what to practise, and nobody
+  // acts on a ranking of their best stat.
   it("sorts worst first, and breaks ties on sample size", () => {
     const record = play([
       ["bst", true],

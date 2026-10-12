@@ -77,7 +77,7 @@ describe("decodeEntry", () => {
   });
 });
 
-describe("era fields (D-045)", () => {
+describe("era fields", () => {
   it("decodes stat eras oldest-first, with Gen 1's Special as its own key", () => {
     const butterfree = decodeEntry(ROWS.find((r) => r.s === "butterfree"));
     expect(butterfree.statEras).toEqual([
@@ -98,8 +98,8 @@ describe("era fields (D-045)", () => {
   });
 
   it("dates an alternate form to its own debut, not its species'", () => {
-    // A Gen 1 species introduced in Gen 7 — the case that would otherwise let
-    // an era selector offer Gen 1 for a form that did not exist yet.
+    // A Gen 1 species introduced in Gen 7: the case that would otherwise let
+    // the generation selector offer Gen 1 for a form that didn't exist yet.
     const alolan = decodeEntry(ROWS.find((r) => r.s === "raichu-alola"));
     expect(alolan.generation).toBe(1);
     expect(alolan.introducedIn).toBe(7);
@@ -111,13 +111,13 @@ describe("era fields (D-045)", () => {
   });
 });
 
-describe("ability fields (D-073)", () => {
+describe("ability fields", () => {
   const decode = (slug) => decodeEntry(ROWS.find((r) => r.s === slug));
 
   it("splits the roster into normal slots and the hidden one", () => {
-    // The two-field encoding rests on an invariant that holds across all 1,259
-    // entries: the hidden ability is always slot 3 and there is never more
-    // than one (asserted over the whole dex in abilities.test.js).
+    // The two-field encoding rests on a rule that holds across all 1,259
+    // entries: the hidden ability is always slot 3, and there's never more
+    // than one (checked over the whole dex in abilities.test.js).
     expect(decode("pikachu").abilities).toEqual([
       { slug: "static", hidden: false },
       { slug: "lightning-rod", hidden: true },
@@ -128,7 +128,7 @@ describe("ability fields (D-073)", () => {
   });
 
   it("decodes an empty slot as null, which is how a slot arriving is spelled", () => {
-    // Pikachu had no hidden ability through Gen 4 — the shape 540 of the 566
+    // Pikachu had no hidden ability through Gen 4: the shape 540 of the 566
     // stored era records take, and the reason `0` is stored rather than `null`.
     expect(decode("pikachu").abilityEras).toEqual([
       { until: 4, slots: { 3: null } },
@@ -136,16 +136,17 @@ describe("ability fields (D-073)", () => {
   });
 
   it("decodes a genuine substitution", () => {
-    // Only 26 of the stored records are one ability replacing another. This is
-    // the one that changes a matchup: Gengar was Ground-immune through Gen 6.
+    // Only 26 of the stored records are one ability replacing another.
+    // Gengar's changes a matchup: it was Ground-immune through Gen 6.
     expect(decode("gengar").abilityEras).toEqual([
       { until: 6, slots: { 1: "levitate" } },
     ]);
   });
 
   it("gives an entry with no abilities empty arrays, not undefined", () => {
-    // Fourteen entries carry none at all, so every consumer can map over them
-    // without a guard — the same reason `forms` always includes self.
+    // Fourteen entries have none at all, so every consumer can map over them
+    // without a guard, the same reason `forms` always includes the entry
+    // itself.
     const bare = decode("zygarde-mega");
     expect(bare.abilities).toEqual([]);
     expect(bare.abilityEras).toEqual([]);
@@ -153,8 +154,8 @@ describe("ability fields (D-073)", () => {
 });
 
 describe("round trip", () => {
-  // The invariant D-036 verified by hand before shipping the compact dataset.
-  // Asserting it here means a future field change cannot quietly break it.
+  // The compact dataset has to decode and re-encode to exactly itself.
+  // Asserting it here means a future field change can't quietly break it.
   it("re-encodes the whole shipped dataset to exactly what is stored", () => {
     expect(encodeAll(decodeAll(ROWS))).toEqual(ROWS);
   });

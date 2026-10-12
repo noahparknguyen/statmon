@@ -26,8 +26,9 @@ import { MULT_ORDER } from "./typeView";
 const params = (qs) => new URLSearchParams(qs);
 const at = (tier, extra = {}) => ({ ...DEFAULT_SETTINGS, tier, ...extra });
 
-// Reproducible without being uniform — a failure here is a bug, not an unlucky
-// day in CI. Every generator in this module takes its rng for that reason.
+// Reproducible without being uniform, so a failure here is a bug, not an
+// unlucky day in CI. Every generator in this module takes its random number
+// generator as an argument for that reason.
 const lcg = (seed = 1) => {
   let s = seed >>> 0;
   return () => {
@@ -62,7 +63,7 @@ describe("the tiers", () => {
   it("offers every current type in Easy, and every unordered pair in Medium", () => {
     expect(defendersFor(at("easy"))).toHaveLength(18);
     // 18 choose 2. Unordered, because Water/Flying and Flying/Water are one
-    // defender — the canonicalisation /types already applies.
+    // defender, the same ordering /types already applies.
     expect(defendersFor(at("medium"))).toHaveLength(153);
   });
 
@@ -74,7 +75,7 @@ describe("the tiers", () => {
 });
 
 // The defending-type filter means one thing in all three tiers: the typing
-// contains at least one selected type (D-040's OR-within-a-group rule).
+// contains at least one selected type, the dex's rule for chips in one group.
 describe("the defending-type filter", () => {
   it("picks the type itself in Easy", () => {
     const d = defendersFor(at("easy", { types: ["fire", "water"] }));
@@ -110,7 +111,7 @@ describe("Hard draws the ability with the Pokémon", () => {
   });
 
   // The whole reason the ability is drawn rather than fixed: the same Pokémon
-  // is a different question depending on which one it is holding (D-104).
+  // is a different question depending on which one it has.
   it("gives the same Pokémon different answers for different abilities", () => {
     const byAbility = Object.fromEntries(
       defendersFor(at("hard", { types: ["ghost"] }))
@@ -145,8 +146,8 @@ describe("the answers a tier offers", () => {
   });
 
   // ⅛× is reachable from four Pokémon in the whole dex (Water/Ice with Thick
-  // Fat, D-084). Offering it would make those four a seventh of every Hard
-  // session; the floor drops it and nothing else.
+  // Fat). Offering it would make those four a seventh of every Hard session,
+  // so the floor drops it, and nothing else.
   it("never offers ⅛×, and clears the floor by a wide margin on everything it keeps", () => {
     for (const tier of TIERS) {
       const { answers, counts, total } = questionSpace(at(tier));
@@ -157,7 +158,8 @@ describe("the answers a tier offers", () => {
         );
       }
     }
-    // And it really is producible — this is a floor, not a claim it cannot happen.
+    // And it really can be produced: this is a floor, not a claim it can't
+    // happen.
     const { counts } = questionSpace(at("hard"));
     expect(counts.get(0.125)).toBeGreaterThan(0);
   });
@@ -217,8 +219,8 @@ describe("a round", () => {
     }
   });
 
-  // `via` is the whole of what the verdict needs to render the correction —
-  // the same contract stabMatchup keeps, so nothing recomputes it downstream.
+  // `via` is all the verdict needs to render the correction, the same contract
+  // stabMatchup keeps, so nothing recomputes it downstream.
   it("names the ability only when it changed the answer", () => {
     let corrected = 0;
     for (const q of rounds(at("hard"), 600, 11)) {
@@ -230,8 +232,8 @@ describe("a round", () => {
         corrected++;
       }
     }
-    // Measured at ~16% with answers sampled evenly; asserted loosely because
-    // this is a property of the dex, not a target (D-104).
+    // About 2% of Hard rounds (12 of these 600). Asserted loosely, because
+    // it's a property of the dex, not a target.
     expect(corrected).toBeGreaterThan(0);
   });
 
@@ -244,9 +246,9 @@ describe("a round", () => {
   });
 });
 
-// The property that makes the game worth playing, and the one no hand-check
-// would ever catch: uniform sampling would make "always guess 1×" a 63%
-// strategy in Easy and 47% in Medium (measured before this was written).
+// The property that makes the game worth playing, and one no check by hand
+// would catch: sampling questions uniformly would make "always guess 1×" right
+// 63% of the time in Easy and 47% in Medium.
 describe("no answer is ever the best guess", () => {
   it.each(TIERS)("keeps every answer under a third of rounds in %s", (tier) => {
     const settings = at(tier);
@@ -259,7 +261,7 @@ describe("no answer is ever the best guess", () => {
     for (const [m, count] of seen) {
       const share = count / n;
       // Uniform over `answers.length` buckets, with generous slack for the
-      // sampler's own variance — the assertion is "no answer dominates", not
+      // sampler's own variance: the assertion is "no answer dominates", not
       // an exact distribution.
       expect(
         share,
@@ -273,8 +275,8 @@ describe("no answer is ever the best guess", () => {
 describe("settings in the URL", () => {
   it("defaults to Easy with no filters", () => {
     expect(parseEffective(params(""))).toEqual(DEFAULT_SETTINGS);
-    // `?play` marks a chosen game whose settings write nothing (D-116); the
-    // defaults themselves are still omitted.
+    // `?play` marks a chosen game whose settings write nothing. The defaults
+    // themselves are still omitted.
     expect(effectiveUrl(DEFAULT_SETTINGS)).toBe("/games/effective?play");
   });
 

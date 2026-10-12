@@ -31,14 +31,15 @@ const params = (qs) => new URLSearchParams(qs);
 
 // A deterministic stand-in for Math.random: cycles a fixed list, so a test can
 // assert an exact round rather than a property of one. Every generator here
-// takes its rng as an argument precisely so this is possible.
+// takes its random number generator as an argument so this is possible.
 const seeded = (values) => {
   let i = 0;
   return () => values[i++ % values.length];
 };
 
-// A statistically fine but reproducible rng for the sweeps below — a plain LCG,
-// so a failure is a bug rather than an unlucky day in CI.
+// A statistically fine but reproducible generator for the sweeps below, a
+// plain linear congruential one, so a failure is a bug rather than an unlucky
+// day in CI.
 const lcg = (seed = 1) => {
   let s = seed >>> 0;
   return () => {
@@ -71,10 +72,10 @@ describe("the stat set a game can ask about", () => {
   });
 });
 
-// The one place the games diverge from the dex's "an empty group is not a
-// constraint" rule (D-040), and the divergence is the feature: the stats are
-// the question space, not a filter, so "ask me about nothing" resolves to "ask
-// me about everything" (D-096).
+// The one place the games differ from the dex's rule that an empty group is no
+// constraint, and the difference is the feature: the stats are the questions,
+// not a filter, so "ask me about nothing" resolves to "ask me about
+// everything".
 describe("resolveStats — empty means all", () => {
   it("resolves an empty selection to every stat the lens has", () => {
     expect(resolveStats([], null)).toEqual(statsFor(null));
@@ -213,9 +214,10 @@ describe("higherQuestion", () => {
     }
   });
 
-  // The one hard guarantee: a tie has two right answers and the game can only
-  // accept one. 1.2%–2.5% of random pairs tie, often enough that an unguarded
-  // generator would ship a broken round in a player's first session.
+  // The one hard guarantee: a tie has two right answers, and the game can only
+  // accept one. 2.6% to 3.5% of random pairs from the default pool tie,
+  // depending on the stat, often enough that an unguarded generator would ship
+  // a broken round in a player's first session.
   it("never returns a tie for first, across every stat and both counts", () => {
     const rng = lcg(99);
     for (const n of CONTENDER_COUNTS) {
@@ -275,8 +277,8 @@ describe("higherQuestion", () => {
     );
   });
 
-  // Reachable through the setup panel now that the filters exist (D-096), so
-  // the arena has to render it rather than assume it away.
+  // Reachable through the setup panel's filters, so the arena has to render it
+  // rather than assume it away.
   it("returns null when the settings cannot produce a question", () => {
     // A typing that did not exist yet: an empty pool.
     expect(
@@ -320,9 +322,9 @@ describe("settings in the URL", () => {
   });
 
   it("reads a full set of settings", () => {
-    // `gen=1,3` rather than `1,5`: under an `asof=3` lens nothing originates
-    // later, so a Gen 5 origin filter is clamped away — asserted on its own
-    // below. Using it here would have tested the clamp by accident.
+    // `gen=1,3` rather than `1,5`: at `asof=3` nothing originates later, so a
+    // Gen 5 origin filter is clamped away, which is asserted on its own below.
+    // Using it here would test the clamp by accident.
     expect(
       parseHigher(
         params("n=4&stats=speed,bst&gen=1,3&type=fire&forms=1&asof=3"),
@@ -348,8 +350,8 @@ describe("settings in the URL", () => {
   });
 
   it("clamps a filter the lens cannot hold, so a stale link self-heals", () => {
-    // The dex's own rule (D-049): nothing originates after the lens, and Fairy
-    // does not exist in Gen 5.
+    // The dex's own rule: nothing originates after the chosen generation, and
+    // Fairy doesn't exist in Gen 5.
     expect(parseHigher(params("asof=3&gen=7")).gens).toEqual([]);
     expect(parseHigher(params("asof=5&type=fairy")).types).toEqual([]);
     expect(parseHigher(params("asof=1&stats=spAtk")).stats).toEqual([
@@ -358,10 +360,10 @@ describe("settings in the URL", () => {
   });
 
   it("omits every default from the URL, and marks the game as chosen", () => {
-    // `?play` is the marker that a game was CHOSEN, for the one settings object
-    // that writes nothing of its own (D-116). The defaults are still omitted —
-    // that is `settingsKey`, and it is unchanged, which is what keeps the saved
-    // streak filed under the same key (D-098).
+    // `?play` marks that a game was chosen, for the one settings object that
+    // writes nothing of its own. The defaults are still omitted: that's
+    // `settingsKey`, and it doesn't include `play`, which keeps the saved
+    // streak filed under the same key.
     expect(settingsKey(DEFAULT_SETTINGS)).toBe("");
     expect(higherUrl(DEFAULT_SETTINGS)).toBe("/games/higher?play");
     expect(higherUrl({ ...DEFAULT_SETTINGS, stats: ["speed"] })).toBe(
@@ -391,8 +393,8 @@ describe("settings in the URL", () => {
     }
   });
 
-  // A control must never emit a setting its own page would discard on arrival —
-  // the D-078 lesson, asserted rather than trusted.
+  // A control must never emit a setting its own page would discard on arrival,
+  // and that's asserted rather than trusted.
   it("never writes a setting the parse would throw away", () => {
     const wide = {
       ...DEFAULT_SETTINGS,
@@ -424,14 +426,13 @@ describe("settings in the URL", () => {
   });
 });
 
-// Home's games preview names its two contenders rather than drawing them
-// (D-043, D-044): Mienshao was reserved for that section by D-068 and Samurott
-// joined it when Beartic took the dex preview's slow end.
+// Home's games preview names its two contenders, Mienshao and Samurott, rather
+// than drawing them.
 //
-// Pinning a pair gives up the guarantee a generated round carries for free —
-// that the board cannot show a matchup the game would never deal — so these
-// assertions are what buys it back. They hold the hand-picked lineup to
-// `higherQuestion`'s own bar rather than to a number written down here.
+// Pinning a pair gives up the guarantee a generated round has for free, that
+// the board can't show a matchup the game would never deal, so these
+// assertions buy it back. They hold the hand-picked pair to `higherQuestion`'s
+// own bar rather than to a number written down here.
 describe("Home's pinned games preview is a round the game could deal", () => {
   const CAMEO = ["mienshao", "samurott"];
   const STAT = "speed";
@@ -469,9 +470,9 @@ describe("Home's pinned games preview is a round the game could deal", () => {
   });
 });
 
-// A bare URL asks how you want to play; a parameterised one plays (D-108). That
-// only holds if a chosen game always writes SOMETHING, which the Medium preset
-// did not — it is the defaults (D-116).
+// A bare URL asks how you want to play, and a URL with settings plays. That
+// only holds if a chosen game always writes something, including a preset
+// whose settings are the defaults.
 describe("a chosen game always names itself in the URL", () => {
   it("never lets a preset produce the bare URL", () => {
     expect(HIGHER_PRESETS.length).toBeGreaterThan(0);

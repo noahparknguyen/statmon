@@ -13,9 +13,9 @@ import { ALL_POKEMON, getBySlug } from "./pokemon";
 import { TYPES } from "./types";
 
 // Tier expectations are checked against a direct `effectiveness` computation as
-// well as being written out, so a broken grouping cannot pass by agreeing with
-// itself. The written-out values are the ones a player would recognise —
-// Volcarona's 4× Rock, Ground doing nothing to a Flying type.
+// well as being written out, so a broken grouping can't pass by agreeing with
+// itself. The written-out values are ones a player would recognize: Volcarona's
+// 4× Rock, and Ground doing nothing to a Flying type.
 const tier = (types, mult, gen = null) =>
   matchupTiers(types, gen).find((t) => t.mult === mult)?.types ?? [];
 
@@ -42,7 +42,7 @@ describe("matchupTiers", () => {
     expect(tier(["water", "flying"], 4)).toEqual(["electric"]);
     expect(tier(["water", "flying"], 2)).toEqual(["rock"]);
     expect(tier(["water", "flying"], 0)).toEqual(["ground"]);
-    // Bug/Fire — Volcarona, and the 4× Rock every player knows.
+    // Bug/Fire: Volcarona, and the 4× Rock every player knows.
     expect(tier(["bug", "fire"], 4)).toEqual(["rock"]);
   });
 
@@ -71,7 +71,7 @@ describe("matchupTiers", () => {
   });
 
   it("scores on the era's chart, not today's", () => {
-    // Ghost did nothing to Psychic in Gen 1 (D-047).
+    // Ghost did nothing to Psychic in Gen 1.
     expect(tier(["psychic"], 0, 1)).toContain("ghost");
     expect(tier(["psychic"], 2)).toContain("ghost");
     // Bug was super effective on Poison in Gen 1.
@@ -80,8 +80,8 @@ describe("matchupTiers", () => {
   });
 
   it("moves an attacker between tiers when the defender's ability says so", () => {
-    // Eelektross is a plain Electric type, so Ground is its one weakness — and
-    // Levitate is the whole reason that is not true (D-073).
+    // Eelektross is a plain Electric type, so Ground is its one weakness, and
+    // Levitate is the whole reason that isn't true.
     expect(tier(["electric"], 2)).toEqual(["ground"]);
     const withLevitate = (mult) =>
       matchupTiers(["electric"], null, "levitate").find((t) => t.mult === mult)
@@ -91,17 +91,16 @@ describe("matchupTiers", () => {
   });
 
   it("has a tier for every multiplier the dex can actually produce", () => {
-    // The guard that would have caught D-084. An ability MULTIPLIES the chart's
-    // own answer, so a defender that already resists twice and then halves again
-    // lands on ⅛× — a value typing alone can never reach. Because this function
-    // filters by exact equality against MULT_ORDER, a multiplier missing from it
-    // does not render wrong, it renders *not at all*: the attacking type
-    // silently vanishes from every tier.
+    // An ability multiplies the chart's own answer, so a defender that already
+    // resists twice and then halves again lands on ⅛×, a value typing alone
+    // can never reach. Because this function filters by exact equality against
+    // MULT_ORDER, a multiplier missing from it doesn't render wrong, it doesn't
+    // render at all: the attacking type silently vanishes from every tier.
     //
     // Swept across the whole dex rather than sampled, because the four entries
-    // that reach it (Dewgong, Spheal, Sealeo and Walrein — Water/Ice with Thick
-    // Fat in slot 1, so it is their DEFAULT reading) are not ones anybody would
-    // have thought to write down.
+    // that reach it (Dewgong, Spheal, Sealeo, and Walrein: Water/Ice with Thick
+    // Fat in slot 1, so it's their default reading) aren't ones anybody would
+    // think to write down.
     const missing = new Set();
     for (const mon of ALL_POKEMON) {
       for (const gen of [null, 3, 5, 9]) {
@@ -119,8 +118,8 @@ describe("matchupTiers", () => {
   });
 
   it("has a printable label for every tier it can render", () => {
-    // The other half of the same bug: a value in MULT_ORDER with no entry in
-    // MULT_LABEL falls through to `${m}×` — a bare "0.125×" where the scale
+    // The other half of the same trap: a value in MULT_ORDER with no entry in
+    // MULT_LABEL falls through to `${m}×`, a bare "0.125×" where the scale
     // everywhere else reads "⅛×". Every real label is a whole numeral or a
     // vulgar fraction, so a decimal point is the tell.
     for (const mult of MULT_ORDER) {
@@ -174,11 +173,11 @@ describe("parseTypes", () => {
   });
 
   it("keeps at most two, even from a hand-written path", () => {
-    // Not reachable through the picker, which caps at two — but /types/a/b/c
-    // is a URL somebody can type, and it should land somewhere sensible.
-    // Built from TYPES rather than written out: three type names in a row is
-    // what the "only one list of the 18" guard in types.test.js looks for, and
-    // deriving them is what that guard is asking for anyway.
+    // Not reachable through the picker, which caps at two, but /types/a/b/c is
+    // a URL somebody can type, and it should land somewhere sensible. Built
+    // from TYPES rather than written out: three type names in a row is what
+    // the "only one list of the 18" guard in types.test.js looks for, and
+    // deriving them is what that guard asks for anyway.
     const three = TYPES.slice(0, 3);
     expect(parseTypes(three)).toEqual(TYPES.slice(0, 2));
   });

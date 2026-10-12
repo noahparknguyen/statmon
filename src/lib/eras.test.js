@@ -10,9 +10,9 @@ import { ALL_POKEMON, getBySlug } from "./pokemon";
 import { GEN1_STAT_ORDER, STAT_ORDER } from "./stats";
 
 // Expected values are Bulbapedia's, not this codebase's: Gen 1 Alakazam really
-// is a 405 BST because Gen 1 had five stats to add up, and Butterfree really
-// did gain 10 Sp. Atk in Gen 6. Asserting known-outside facts is the point —
-// a test that only restates what the resolver computed would pass on a broken
+// has a 405 BST, because Gen 1 had five stats to add up, and Butterfree really
+// did gain 10 Sp. Atk in Gen 6. Asserting facts from outside is the point: a
+// test that only restates what the resolver computed would pass on a broken
 // resolver.
 const p = (slug) => getBySlug(slug);
 const params = (qs) => new URLSearchParams(qs);
@@ -37,13 +37,14 @@ describe("eraView", () => {
       special: 80,
       speed: 70,
     });
-    // Five stats, so a lower total than the modern 395 — correct, not a bug.
+    // Five stats, so a lower total than the modern 395: correct, not a bug.
     expect(view.bst).toBe(305);
   });
 
   it("takes Gen 1 Special from the dataset, not from today's Sp. Atk", () => {
-    // 43 of the 151 Gen 1 species disagree with the "Special became Sp. Atk"
-    // shortcut. Chansey is the widest gap in the dex.
+    // 43 of the 151 Gen 1 species had a Gen 1 Special that differs from their
+    // Gen 2 Sp. Atk, so "Special became Sp. Atk" is wrong for them. Chansey is
+    // the widest gap in the dex.
     expect(eraView(p("chansey"), 1).stats.special).toBe(105);
     expect(p("chansey").stats.spAtk).toBe(35);
     expect(eraView(p("gyarados"), 1).stats.special).toBe(100);
@@ -115,35 +116,35 @@ describe("generationOptions", () => {
   });
 
   it("offers a control even when nothing ever changed", () => {
-    // The old change-boundary model rendered nothing here, which is what made
-    // the control feel like it came and went for no visible reason (D-046).
+    // A control that only appeared when something had changed would seem to
+    // come and go for no visible reason.
     expect(gens([p("volcarona"), p("chandelure")])).toEqual([5, 6, 7, 8, 9]);
-    // Volcarona and Samurott have no history of any kind — no stat era, no
-    // type era, no ability era — so the strip is nine unmarked chips and the
-    // control is still there. (The mascot pair above no longer qualifies:
-    // Chandelure's hidden ability changed, which is the next test.)
+    // Volcarona and Samurott have no history of any kind (no stat era, type
+    // era, or ability era), so the strip is five unmarked chips, and the
+    // control is still there. The mascot pair above doesn't qualify:
+    // Chandelure's hidden ability changed, which is the next test.
     expect(marked([p("volcarona"), p("samurott")])).toEqual([]);
   });
 
   it("marks a generation whose ability roster differs, not just its stats", () => {
     // Chandelure's hidden ability was Shadow Tag through Gen 5 and is
-    // Infiltrator now, so a Gen 5 board is genuinely a different board — and
-    // the dot has to say so, or the one era interaction this feature turns on
-    // would be invisible on the control that selects it (D-073).
+    // Infiltrator now, so a Gen 5 board really is a different board, and the
+    // dot has to say so, or the change would be invisible on the control that
+    // selects it.
     expect(marked([p("chandelure")])).toEqual([5]);
     expect(p("chandelure").abilityEras).toEqual([
       { until: 5, slots: { 3: "shadow-tag" } },
     ]);
-    // Gengar carried Levitate through Gen 6 — the clearest era interaction on
-    // the site — so 3 through 6 are marked. Gen 1 is marked too, for the older
+    // Gengar had Levitate through Gen 6, the clearest generation change on the
+    // site, so 3 through 6 are marked. Gen 1 is marked too, for the older
     // reason: the five-stat Special shape.
     //
-    // **Gen 2 is the interesting one, because it is NOT marked.** Gengar had no
-    // ability then and has one now, which is a difference — but it is a fact
+    // Gen 2 is the interesting one, because it isn't marked. Gengar had no
+    // ability then and has one now, which is a difference, but it's a fact
     // about the games rather than about Gengar, true of every entry in the dex.
     // Counting it would put a dot on Gen 2 for all 1,259 of them and say
-    // nothing, which is the D-049 reason the dex has no dots at all. The floor
-    // in differsFromToday is what this gap measures.
+    // nothing, the same reason the dex has no dots at all. The floor in
+    // differsFromToday is what this gap measures.
     expect(marked([p("gengar")])).toEqual([1, 3, 4, 5, 6]);
   });
 
@@ -153,14 +154,14 @@ describe("generationOptions", () => {
     expect(gens([p("charizard"), p("volcarona")])).toEqual([5, 6, 7, 8, 9]);
     // Mega Alakazam is a Gen 1 species that debuted in Gen 6.
     expect(gens([p("alakazam-mega"), p("butterfree")])).toEqual([6, 7, 8, 9]);
-    // An Alolan form of a Gen 1 species — a Gen 1 board would be nonsense.
+    // An Alolan form of a Gen 1 species, where a Gen 1 board would be nonsense.
     expect(gens([p("raichu-alola"), p("pikachu")])).toEqual([7, 8, 9]);
   });
 
   it("marks the generations whose board differs from today", () => {
     // Butterfree: Gen 1's Special split, then Sp. Atk 80 through Gen 5.
     expect(marked([p("butterfree"), null])).toEqual([1, 2, 3, 4, 5]);
-    // Clefairy was Normal until Gen 6 — a typing change counts too.
+    // Clefairy was Normal until Gen 6: a typing change counts too.
     expect(marked([p("clefairy"), null])).toEqual([1, 2, 3, 4, 5]);
     // Aegislash's Gen 8 nerf, on a Pokémon with no Gen 1 history at all.
     expect(marked([p("aegislash-blade"), null])).toEqual([6, 7]);
@@ -187,7 +188,7 @@ describe("generationOptions", () => {
 
   it("offers the whole timeline when nothing is selected yet", () => {
     // Not an empty list: the strip has to be on screen before the first pick,
-    // or it appears later and shoves the board down the page (D-050).
+    // or it appears later and shoves the board down the page.
     expect(gens([null, null])).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     expect(marked([null, null])).toEqual([]);
   });
@@ -230,7 +231,7 @@ describe("parseAsOf", () => {
     expect(parseAsOf(params("asof=banana"), pair)).toBeNull();
     expect(parseAsOf(params("asof=1.5"), pair)).toBeNull();
     expect(parseAsOf(params("asof=0"), pair)).toBeNull();
-    // Gen 1 is not shared by a pair that includes a Gen 6 form — this is what
+    // Gen 1 isn't shared by a pair that includes a Gen 6 form: this is what
     // happens when you switch to a Mega while reading a Gen 1 board.
     expect(
       parseAsOf(params("asof=1"), [p("butterfree"), p("alakazam-mega")]),
@@ -260,9 +261,9 @@ describe("the dataset's era records", () => {
   });
 
   it("never records a past value equal to the one it replaces", () => {
-    // PokéAPI also emits a record when only the EV yield changed; seven
-    // Pokémon carry one with an identical base stat. Kept, they would offer an
-    // era toggle that changes nothing.
+    // PokéAPI also emits a record when only the EV yield changed, and seven
+    // Pokémon carry one with an identical base stat. Kept, they would offer a
+    // generation that changes nothing.
     for (const entry of ALL_POKEMON) {
       for (const era of entry.statEras) {
         for (const [key, value] of Object.entries(era.stats)) {

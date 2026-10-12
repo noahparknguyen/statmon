@@ -25,8 +25,8 @@ describe("TYPES", () => {
     expect(new Set(TYPES).size).toBe(18);
   });
 
-  // These three used to be three hand-maintained copies of the same list.
-  // Now there is one, and these assertions are what keep it honest.
+  // The chart, the dataset, and the colour tokens all have to agree with the
+  // one type list, and these assertions are what keep them honest.
   it("matches the attacking types in the effectiveness chart", () => {
     expect(Object.keys(CHART).sort()).toEqual([...TYPES].sort());
   });
@@ -51,10 +51,8 @@ describe("TYPES", () => {
   });
 
   it("is the only list of the 18 in the codebase", () => {
-    // D-038 consolidated three hand-maintained copies into this module — and
-    // missed a fourth, in the /style playground, of all places: the page whose
-    // stated job is that it cannot drift from the app. Every consumer now
-    // imports TYPES, so a new literal list is the thing to catch.
+    // Every consumer imports TYPES, so a new literal list of types is the thing
+    // to catch: it's a copy that can drift from the real one.
     const sources = globSync("**/*.{js,jsx}", {
       cwd: new URL("..", import.meta.url),
       exclude: (name) => name === "types.js",
@@ -77,7 +75,7 @@ describe("TYPES", () => {
   });
 });
 
-describe("the chart as it was (D-045)", () => {
+describe("the chart as it was", () => {
   it("knows when each type arrived", () => {
     expect(typeExistsIn("dark", 1)).toBe(false);
     expect(typeExistsIn("dark", 2)).toBe(true);
@@ -125,8 +123,8 @@ describe("the chart as it was (D-045)", () => {
   });
 
   it("keeps dual-type multipliers stacking within an era", () => {
-    // Bulbasaur, Grass/Poison. In Gen 1 Bug was super effective on both halves
-    // — 2× × 2× = 4× — where today it is 2× × ½× = 1×.
+    // Bulbasaur, Grass/Poison. In Gen 1, Bug was super effective on both
+    // halves (2× × 2× = 4×), where today it's 2× × ½× = 1×.
     expect(effectiveness("bug", ["grass", "poison"], 1)).toBe(4);
     expect(effectiveness("bug", ["grass", "poison"])).toBe(1);
   });
@@ -170,7 +168,7 @@ describe("token helpers", () => {
     expect(typeColorVar("fire")).toBe("var(--color-type-fire)");
   });
 
-  it("uses one dark badge label color for every type (D-027)", () => {
+  it("uses one dark badge label colour for every type", () => {
     expect(typeTextVar()).toBe("var(--color-base)");
   });
 
@@ -188,9 +186,9 @@ describe("token helpers", () => {
   });
 });
 
-// The dex bar takes its Pokémon's PRIMARY type, one colour even for a dual
-// type (D-144). Audited for contrast as group 5 of `npm run audit:contrast`;
-// these assert the VALUE, which the audit cannot see.
+// The dex bar takes its Pokémon's primary type, one colour even for a dual
+// type. Its contrast is group 5 of `npm run audit:contrast`, and these assert
+// the value, which the audit can't see.
 describe("typeFill", () => {
   it("is a flat wash of the type at the given share", () => {
     const fill = typeFill(["fire"], "28%");

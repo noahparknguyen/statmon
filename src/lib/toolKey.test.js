@@ -2,16 +2,15 @@ import { describe, it, expect } from "vitest";
 import { toolOf } from "./toolKey";
 import { routes } from "../router";
 
-// This function decides two user-visible behaviours at once — whether the page
-// scrolls back to the top, and whether focus jumps to <main> — so the thing
-// worth asserting is not the string it returns but the EQUIVALENCE CLASSES it
-// draws: which URLs count as the same page, and which do not.
+// This function decides two behaviours a visitor sees at once: whether the
+// page scrolls back to the top, and whether focus jumps to <main>. So what's
+// worth asserting isn't the string it returns, but the groups it draws: which
+// URLs count as the same page, and which don't.
 
 describe("toolOf", () => {
   it("keeps a tool's state URLs on one key", () => {
-    // The bug this exists to prevent (D-087): each of these was a separate
-    // scroll key, so picking a Pokémon, swapping or toggling a type scrolled
-    // the board away from under you.
+    // If each of these were a separate scroll key, picking a Pokémon,
+    // swapping, or toggling a type would scroll the board away from under you.
     const compare = [
       "/compare",
       "/compare/krookodile/vs/gengar",
@@ -30,8 +29,8 @@ describe("toolOf", () => {
   });
 
   it("gives every route in the table a key, from its own first segment", () => {
-    // Walks the real route table, so a route added later cannot quietly land
-    // outside this rule — which is the way it would regress.
+    // Walks the real route table, so a route added later can't quietly land
+    // outside this rule, which is how it would break.
     const paths = routes[0].children
       .map((r) => r.path)
       .filter((p) => p && p !== "*");

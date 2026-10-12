@@ -157,7 +157,7 @@ describe("filterRows", () => {
   it("filters by one type, matching either slot", () => {
     const rows = filterRows(ALL_POKEMON, { types: ["fire"] });
     expect(rows.every((p) => p.types.includes("fire"))).toBe(true);
-    expect(slugs(rows)).toContain("volcarona"); // bug/fire — secondary slot
+    expect(slugs(rows)).toContain("volcarona"); // bug/fire: the secondary slot
   });
 
   it("filters by one generation", () => {
@@ -373,7 +373,7 @@ describe("filter mutations", () => {
         q: "char",
         types: ["fire", "fighting"],
         gens: [1, 3, 5],
-        // A deviation from the default, which is now "hidden" (D-056).
+        // A change from the default, which hides forms.
         includeForms: true,
       }),
     ).toBe(7);
@@ -408,9 +408,9 @@ describe("toggleSort", () => {
   });
 });
 
-describe("the generation lens (D-049)", () => {
-  // Forms on, explicitly: these test the era ceiling, and the default now
-  // hides forms (D-056), which would silently narrow what they measure.
+describe("the generation lens", () => {
+  // Forms on, explicitly: these test the generation ceiling, and the default
+  // hides forms, which would silently narrow what they measure.
   const at = (asof, view = {}) =>
     filterRows(ALL_POKEMON, {
       ...DEFAULT_VIEW,
@@ -420,8 +420,8 @@ describe("the generation lens (D-049)", () => {
     });
 
   it("caps the table at what existed by that generation", () => {
-    // Counted from the dataset rather than from memory — the D-039 lesson,
-    // where the wrong half of a failing assertion was my expectation.
+    // Counted from the dataset rather than from memory, so a failure means the
+    // filter is wrong, not the expectation.
     for (const asof of [1, 3, 5, 8]) {
       const expected = ALL_POKEMON.filter((p) => p.introducedIn <= asof).length;
       expect(at(asof)).toHaveLength(expected);
@@ -431,7 +431,7 @@ describe("the generation lens (D-049)", () => {
   });
 
   it("excludes a later form of an earlier species", () => {
-    // Alolan Raichu is a Gen 1 species that arrived in Gen 7 — the case a
+    // Alolan Raichu is a Gen 1 species that arrived in Gen 7: the case a
     // `generation <= asof` ceiling would get wrong.
     expect(slugs(at(3))).not.toContain("raichu-alola");
     expect(slugs(at(3))).not.toContain("volcarona");
@@ -451,8 +451,8 @@ describe("the generation lens (D-049)", () => {
   });
 
   it("ranks by a stat that changed, differently in each generation", () => {
-    // Pidgeot's Speed went 91 → 101 in Gen 6. Sorting the SAME rows on the two
-    // generations isolates the stat change from the changing size of the dex.
+    // Pidgeot's Speed went from 91 to 101 in Gen 6. Sorting the same rows on
+    // the two generations isolates the stat change from the dex's size.
     const rows = at(5);
     const rank = (asof) =>
       slugs(sortRows(rows, "speed", "desc", asof)).indexOf("pidgeot");
@@ -464,7 +464,7 @@ describe("the generation lens (D-049)", () => {
       (p) => p.slug === "alakazam",
     );
     expect(alakazam).toBeTruthy();
-    // 55 + 50 + 45 + 135 + 120 — one fewer stat to add up than today's 500.
+    // 55 + 50 + 45 + 135 + 120: one fewer stat to add up than today's 500.
     expect(eraView(alakazam, 1).bst).toBe(405);
   });
 
