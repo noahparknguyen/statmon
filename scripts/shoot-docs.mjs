@@ -87,7 +87,7 @@ const SHOTS = [
   // re-running `shoot:docs` gives a different four Pokémon every time. That's a
   // true picture of the page, since there's no canonical round, and pinning a
   // seed here would mean shipping a capture mode the game itself doesn't have.
-  ["/games/higher?stat=speed&n=4", 1600, 900, "docs/games.png"],
+  ["/games/higher?stats=speed&n=4", 1600, 900, "docs/games.png"],
   // The hard tier, because it's the one with something to show: a Pokémon whose
   // typing is hidden and whose ability is the question. Random like the shot
   // above, for the same reason.
