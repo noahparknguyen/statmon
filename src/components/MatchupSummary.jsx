@@ -5,41 +5,35 @@ import { matchupTiers } from "../lib/typeView";
 import { capitalize, typeColorVar } from "../lib/types";
 
 // What every attacking type does to one defending typing, grouped into
-// effectiveness tiers (D-051).
+// effectiveness tiers.
 //
-// This is the page's answer to the dual-type problem: the question people bring
-// to a type chart is "what beats this?", and a tier list answers it in one look
-// where eighteen rows in canonical order would make you scan and compare them
-// yourself. **Empty tiers are dropped**, so the shape of the answer is itself
-// information — a typing with no 4× row simply has no double weakness, and that
-// reads faster as an absent row than as an empty one.
+// The question people bring to a type chart is "what beats this?", and a tier
+// list answers it at a glance, where 18 rows in canonical order would leave you
+// to scan and compare. Empty tiers are dropped, so the shape of the answer says
+// something: a typing with no 4× row has no double weakness, and an absent row
+// reads faster than an empty one.
 //
-// The attackers are set as coloured text rather than as badges, for the reason
-// the heading above them was changed (D-053): a 14px multiplier beside 11px
-// pills is two type sizes on one line, and the pills won nothing here — a tier
-// is already a group, so each name does not need its own container. Colour
-// still carries the type, on the same audited pairing.
+// The attacking types are coloured text rather than badges: a 14px multiplier
+// beside 11px pills would be two type sizes on one line, and a tier is already
+// a group, so each name doesn't need its own container. The colour still
+// carries the type, on the audited pairing.
 //
-// The whole thing is `matchupTiers` plus that; the grouping, the ordering and
-// the era's chart all live in lib/typeView.js.
+// The grouping, ordering, and the generation's chart are all in
+// lib/typeView.js's `matchupTiers`.
 //
-// `MatchupHeading` ships beside it because the tier list is unreadable without
-// a statement of what is being attacked, and Home needs the same statement the
-// tool makes (D-067). It was written inline on /types; a second caller is
-// exactly when a block stops being page markup and becomes a component, which
-// is the D-058 rule. Two component exports from one file is the StabChip /
-// StabLabel shape already in use, so react-refresh stays happy.
+// The headings are exported from here too, because the tier list is unreadable
+// without saying what's being attacked, and Home's preview says it the same way
+// /types does. Several component exports from one file, like StabChip's, keep
+// react-refresh happy.
 
-// The typing under attack, set as coloured text rather than as badges — an
-// 11px pill beside 18px display text is two type sizes on one line, and no
-// amount of aligning makes them sit together (D-053). The colour pairing is the
-// one group 2 of `npm run audit:contrast` covers.
+// The typing under attack, as coloured text rather than badges: an 11px pill
+// beside 18px text would be two type sizes on one line, and no aligning makes
+// them sit together. `npm run audit:contrast` checks the colour pairing.
 //
-// `as` is the heading level, not a style, for the same reason PageHeader takes
-// it: /types is the page, so its readout is an <h2>, while Home's sits inside a
-// feature section and is an <h3> one rung down. `id` is a prop because only
-// /types labels a section with it (aria-labelledby); Home's heading precedes
-// its list directly and needs no handle.
+// `as` sets the heading level, not the style, as in PageHeader: /types is the
+// page, so its readout is an <h2>, while Home's sits inside a section and is an
+// <h3>. `id` is a prop because only /types labels a section with it
+// (aria-labelledby). Home's heading comes right before its list and needs none.
 export function MatchupHeading({ types, id, as: Heading = "h2" }) {
   return (
     <Heading id={id} className="mb-3 text-h4 text-secondary">
@@ -57,19 +51,16 @@ export function MatchupHeading({ types, id, as: Heading = "h2" }) {
   );
 }
 
-// The same statement when a **Pokémon** named the typing rather than the chips
-// (D-075): its sprite and name, then the typing in exactly the treatment above,
-// then its abilities.
+// The same heading when a Pokémon named the typing rather than the type chips:
+// its sprite and name, then the typing set as above, then its abilities.
 //
-// A sibling export rather than a branch inside `MatchupHeading`, because Home
-// calls that one and has no Pokémon to show — and because this is a different
-// shape (an image and a control alongside the heading) rather than a different
-// wording. Two component exports from one file is the StabChip / StabLabel
-// arrangement already in use, so react-refresh stays happy.
+// A separate export rather than a branch in `MatchupHeading`, because Home uses
+// that one and has no Pokémon to show, and because this is a different shape,
+// with an image and a control beside the heading, not just different words.
 //
-// The heading is the Pokémon's name and the typing is inside it, so a screen
-// reader gets "Attacking — Eelektross, Electric" as one statement. The sprite
-// is decorative: the name is right beside it.
+// The Pokémon's name and the typing are both inside the heading, so a screen
+// reader hears "Attacking Eelektross, Electric" as one statement. The sprite is
+// decorative, since the name is right beside it.
 export function DefenderHeading({
   pokemon,
   types,
@@ -83,8 +74,8 @@ export function DefenderHeading({
   return (
     <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
       {/* The sprite and the heading are one unit that never wraps apart: the
-          heading's own text wraps instead. At 390px the flat row put the sprite
-          on a line by itself above the words it belongs to (D-137). */}
+          heading's own text wraps instead. Otherwise, at 390px, the sprite
+          could end up on a line by itself above the words it belongs to. */}
       <div className="flex min-w-0 items-center gap-3">
         <img
           src={spriteFor(pokemon)}
@@ -99,9 +90,9 @@ export function DefenderHeading({
             {" — "}
           </span>
           <span className="text-primary">{pokemon.name}</span>
-          {/* Not aria-hidden, unlike the em dash above it: a comma is a pause a
-            screen reader should get, where a dash between a label and its value
-            is punctuation it should not read out. */}
+          {/* Not aria-hidden, unlike the dash above: a comma is a pause a
+            screen reader should get, where a dash between a label and its
+            value is punctuation it shouldn't read out. */}
           <span className="text-tertiary">{", "}</span>
           {types.map((t, i) => (
             <span key={t}>
@@ -111,12 +102,10 @@ export function DefenderHeading({
           ))}
         </Heading>
       </div>
-      {/* Directly after the typing, not pushed to the far edge. An `ml-auto`
-          here read as a page action rather than as part of the subject — at
-          1400px it stranded "Levitate" some 700px from the Pokémon it belongs
-          to, which is the proximity rule working against the meaning rather
-          than for it. The whole line is one statement: Eelektross, Electric,
-          Levitate. */}
+      {/* Right after the typing, not pushed to the far edge, where on a wide
+          screen it would look like a page action, hundreds of pixels from the
+          Pokémon it belongs to. The whole line is one statement: Eelektross,
+          Electric, Levitate. */}
       <div>
         <AbilityChips
           abilities={abilities}
@@ -129,17 +118,17 @@ export function DefenderHeading({
   );
 }
 
-// The tier's own label does the work a colour would elsewhere: 4× and 0× are the
-// two rows people are looking for, so they get the brightest treatment, and the
-// middle of the list recedes. Never colour alone — the multiplier is text.
+// The tier's label does the work colour would elsewhere: 4× and 0× are the two
+// rows people look for, so they're brightest, and the middle of the list
+// recedes. Never colour alone: the multiplier is text.
 const TIER_TONE = (mult) =>
   mult > 1 || mult === 0 ? "text-primary" : "text-tertiary";
 
 export default function MatchupSummary({ types, asof = null, ability = null }) {
-  // `ability` is the defending Pokémon's, when one named this typing (D-075).
-  // It moves attackers between tiers rather than annotating them — Ground
-  // leaves the 2× row and joins the 0× one for a Levitate holder, which is what
-  // "what beats this" actually means for that Pokémon.
+  // `ability` is the defending Pokémon's, when one named this typing. It moves
+  // attacking types between tiers rather than annotating them: for a Levitate
+  // holder, Ground leaves the 2× row and joins the 0× row, which is what "what
+  // beats this" means for that Pokémon.
   const tiers = matchupTiers(types, asof, ability);
   if (tiers.length === 0) return null;
 
@@ -148,14 +137,14 @@ export default function MatchupSummary({ types, asof = null, ability = null }) {
       {tiers.map(({ mult, types: attackers }) => (
         <div
           key={mult}
-          // An inset row: `rounded-md`, 12px padding (§6.2, §7.1).
+          // An inset row: `rounded-md` and 12px of padding.
           className="grid grid-cols-[2.5rem_1fr] items-baseline gap-3 rounded-md border border-border-subtle bg-surface p-3"
         >
           <dt className={`text-stat-sm text-right ${TIER_TONE(mult)}`}>
             {formatMult(mult)}
           </dt>
           {/* Flowed as text rather than laid out as a grid of chips, so a
-              ten-type tier wraps like a sentence instead of a hedge. */}
+              ten-type tier wraps like a sentence. */}
           <dd className="text-body-sm">
             {attackers.map((t, i) => (
               <span key={t}>

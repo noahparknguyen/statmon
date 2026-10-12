@@ -11,26 +11,25 @@ import {
   ROW_HEIGHT_CLASS,
 } from "./dexColumns";
 
-// The full-dex table. A real <table> rather than a grid of divs, so the browser
-// gives every cell its column header for free; windowing is done with a spacer
-// row above and below the rendered slice, which keeps that structure intact.
+// The full dex table. A real <table> rather than a grid of divs, so the browser
+// gives every cell its column header for free. Only the rows near the screen
+// are rendered, with a spacer row above and below, which keeps that table
+// structure intact.
 //
-// The header has to out-paint the rows scrolling under it, and a background
-// alone does not achieve that: the stat cells position their fill and number
-// (relative/absolute) so the number sits over the bar, and a positioned element
-// paints above a non-positioned one — with the later element in the DOM winning
-// between two at `auto`. The rows come after <thead>, so their bars and numbers
-// were drawing straight over the sticky header while the un-positioned name and
-// type cells slid under it correctly.
+// The header has to paint over the rows scrolling under it, and a background
+// alone doesn't do it. The stat cells position their fill and number so the
+// number sits over the bar, and a positioned element paints above a
+// non-positioned one, with the later one in the DOM winning between two at
+// `auto`. The rows come after <thead>, so their bars and numbers would draw over
+// the sticky header, while the unpositioned name and type cells slid under it.
 //
-// So the header takes an explicit rung on the z-ladder: above row content, far
-// below the site header's --z-sticky. Set inline because the z tokens are plain
-// :root custom properties, not theme tokens (06_style_guide §13) — the same way
-// Layout sets the site header. (D-041)
+// So the header takes an explicit layer: above the row content, and well below
+// the site header's --z-sticky. Set inline, because the z-index tokens are
+// plain :root properties rather than theme tokens, as in Layout's header.
 const STICKY_HEAD = { zIndex: "var(--z-raised)" };
 
 // `align` defaults to right, because every sortable column but two holds a
-// number (DexHeadLabel); `#` and Name pass `left`.
+// number (DexHeadLabel). `#` and Name pass `left`.
 function SortHeader({ colKey, view, onSort, className, align = "right" }) {
   const active = view.sort === colKey;
   const dir = active ? view.dir : null;
@@ -39,8 +38,8 @@ function SortHeader({ colKey, view, onSort, className, align = "right" }) {
     <th
       scope="col"
       aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}
-      // top-14 is the site header's h-14; the two have to agree or the sticky
-      // header either overlaps it or leaves a gap.
+      // top-14 is the site header's h-14. The two have to agree, or the sticky
+      // header overlaps it or leaves a gap.
       className={`sticky top-14 ${HEAD_CELL} ${className}`}
       style={STICKY_HEAD}
     >
@@ -50,18 +49,16 @@ function SortHeader({ colKey, view, onSort, className, align = "right" }) {
         className={`${HEAD_INNER} transition-colors hover:text-primary ${HEAD_ALIGN[align]} ${active ? "text-accent" : "text-tertiary"}`}
       >
         <DexHeadLabel colKey={colKey} dir={dir} align={align}>
-          {/* The on-screen label is an abbreviation ("SpA", "#"), so the full name
-            is appended for screen readers. It is appended rather than replacing
-            the name with aria-label because WCAG 2.5.3 (Label in Name) requires
-            the accessible name to contain the visible text — "Sort by Attack"
-            does not contain "Atk", so speech control could not act on it.
+          {/* The visible label is often an abbreviation ("SpA", "#"), so the
+            full name is added for screen readers. Added rather than replacing
+            the label with aria-label, because WCAG 2.5.3 (Label in Name) needs
+            the accessible name to contain the visible text: "Sort by Attack"
+            doesn't contain "Atk", so speech control couldn't act on it.
 
-            **Two of the nine are not abbreviations**, and appending the long
-            name to those produced "Name sort by Name" and "HP sort by HP".
-            Nothing failed — it is only heard, never seen, which is how it
-            survived. The name is added only when it says something the visible
-            label did not, and the comma is what stops "Atk sort by Attack"
-            running together as one word. */}
+            Two of the labels aren't abbreviations, and adding the long name to
+            those would say "Name, sort by Name". So the name is added only when
+            it says something the visible label doesn't, and the comma keeps
+            "Atk, sort by Attack" from running together. */}
           <span className="sr-only">
             {SORT_LONG_LABEL[colKey] === SORT_LABEL[colKey]
               ? ", sort"
@@ -76,11 +73,10 @@ function SortHeader({ colKey, view, onSort, className, align = "right" }) {
 // Stands in for the rows above and below the rendered slice, so the scrollbar
 // and the scroll position match the full list.
 //
-// Deliberately one cell with NO colSpan. A colSpan spanning every column *makes*
-// the table that wide: column count is the maximum across rows, so a colSpan of
-// 10 created ten columns even at phone widths where seven of the headers are
-// display:none — the seven phantom columns took the space and crushed the name
-// column to the width of a sprite.
+// One cell with no colSpan, on purpose. A colSpan across every column would
+// make the table that many columns wide, since the column count is the most of
+// any row, even on a phone where most of the headers are hidden. The phantom
+// columns would take the space and crush the name column.
 function Spacer({ height }) {
   return (
     <tr aria-hidden="true">
@@ -89,9 +85,9 @@ function Spacer({ height }) {
   );
 }
 
-// `keys` is the lens's stat columns — the modern six, or Gen 1's five with a
-// single Special (D-049) — passed in rather than read from STAT_ORDER, so the
-// header, the rows and the sort controls cannot disagree about what is shown.
+// `keys` is the lens's stat columns (today's six, or Gen 1's five with a single
+// Special), passed in rather than read from STAT_ORDER, so the header, the
+// rows, and the sort controls can't disagree about what's shown.
 export default function DexTable({ rows, view, keys, onSort, mobileStat }) {
   const { ref, start, end, padTop, padBottom } = useWindowedRows({
     count: rows.length,
@@ -100,9 +96,8 @@ export default function DexTable({ rows, view, keys, onSort, mobileStat }) {
 
   if (rows.length === 0) {
     return (
-      // An inline empty state (§12.3): one sentence in `text-body-sm`
-      // tertiary, where the content would have been. It was `text-body`, the
-      // one empty state on the site set a size up from the rest.
+      // An inline empty state: one sentence in `text-body-sm`, tertiary, where
+      // the content would have been, like every empty state on the site.
       <p className="border-t border-border-subtle py-16 text-center text-body-sm text-tertiary">
         No Pokémon match these filters.
       </p>
@@ -113,7 +108,7 @@ export default function DexTable({ rows, view, keys, onSort, mobileStat }) {
     <div ref={ref}>
       <table
         // The DOM only ever holds a slice of the rows, so the table states the
-        // real total and each row states its real position (DexRow).
+        // real total, and each row its real position (DexRow).
         aria-rowcount={rows.length}
         className="w-full table-fixed border-collapse"
       >
@@ -144,8 +139,8 @@ export default function DexTable({ rows, view, keys, onSort, mobileStat }) {
               className={`sticky top-14 ${HEAD_CELL} ${COL.types}`}
               style={STICKY_HEAD}
             >
-              {/* Not sortable, but the same cell geometry as its neighbours —
-                  it used its own px-2/py-0 before and sat a few px off them. */}
+              {/* Not sortable, but with the same cell layout as its
+                  neighbours, so it lines up with them. */}
               <span
                 className={`${HEAD_INNER} ${HEAD_ALIGN.left} text-tertiary`}
               >

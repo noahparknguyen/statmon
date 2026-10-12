@@ -11,24 +11,22 @@ import { artworkFor, getBySlug } from "../lib/pokemon";
 import { SORT_LONG_LABEL, sortRows } from "../lib/dexTable";
 import { STAT_ORDER } from "../lib/stats";
 
-// Home's dex preview (D-043), rendered with the dex table's own DexRow so the
-// preview cannot drift from the tool it advertises — the same rule that keeps
-// FeaturedComparison on CmpRow (D-032).
+// Home's dex preview, built from the dex table's own DexRow, so the preview
+// can't drift from the tool it advertises, as FeaturedComparison uses CmpRow.
 //
 // Only the wrapper differs from the real table: a static header instead of sort
-// buttons, no sticky positioning, and no windowing — the preview is one screen
-// of rows, where the tool is 1,259 of them.
+// buttons, no sticky header, and no windowing, since the preview is one screen
+// of rows where the tool has 1,259.
 
-// The easter egg (D-044): these seven are the author's team from the Black &
-// White playthrough the project came out of (00_brainstorm §1). All seven are
-// Gen 5, and two of them are the site's mascots — so Volcarona and Chandelure
-// appear here and in the flagship board above. Nothing marks it on screen.
+// An easter egg: these seven are a team from the Black and White replay the
+// site came out of. All seven are Gen 5, and two of them are the site's mascots,
+// so Volcarona and Chandelure appear here and on the comparison board above.
+// Nothing on screen points it out.
 //
-// **Beartic is the HM mule**, and it earns its place here for a reason beyond
-// sentiment: at 50 Speed it is the slowest of the seven, which makes it the
-// other end of this preview's sort. The two flanking figures below are that
-// sort's ends, so adding it is what gives the pair a real spread — Archeops at
-// 110 against Beartic at 50 — instead of 110 against Samurott's 70.
+// Beartic carried the HMs, and it's here for a reason beyond sentiment: at 50
+// Speed it's the slowest of the seven, the other end of this preview's sort.
+// The two figures beside the table are the sort's two ends, so it gives the pair
+// a real spread: Archeops at 110 against Beartic at 50.
 const TEAM = [
   "samurott",
   "krookodile",
@@ -41,29 +39,28 @@ const TEAM = [
 
 const PREVIEW_SORT = "speed";
 
-// Ordered by the tool's own comparator rather than written out in a fixed
-// order: the rows genuinely are sorted by Speed, so the Speed column's
-// highlight and its aria-sort stay truthful, and the preview keeps proving the
-// thing the section promises ("sorted by any stat"). getBySlug is filtered
-// rather than trusted, so a dataset rebuild that renamed a slug drops a row
-// instead of rendering a hole.
+// Ordered by the tool's own sort rather than written in a fixed order: the rows
+// really are sorted by Speed, so the Speed column's highlight and its aria-sort
+// stay true, and the preview shows what the section promises, "sorted by any
+// stat". getBySlug is filtered rather than trusted, so a rebuilt dataset that
+// renamed a slug drops a row instead of leaving a hole.
 const ROWS = sortRows(
   TEAM.map(getBySlug).filter(Boolean),
   PREVIEW_SORT,
   "desc",
 );
 
-// The header cell's geometry comes from dexColumns, the same constants the real
-// table's sort headers use, so the preview header and the tool's header are the
-// same row rather than two that merely resemble each other (D-043). A <span>
-// where the tool has a <button>: there is nothing to sort here.
+// The header cell's layout comes from dexColumns, the same constants the real
+// table's sort headers use, so the two headers are one design rather than two
+// that look alike. A <span> where the tool has a <button>, since there's
+// nothing to sort here.
 function Head({ colKey, className, align = "right" }) {
   const sorted = colKey === PREVIEW_SORT;
   return (
     <th
       scope="col"
       // Accurate rather than decorative: these rows really are sorted by Speed,
-      // descending. There are no sort controls here — that is what /dex is for.
+      // highest first. The sort controls are on /dex.
       aria-sort={sorted ? "descending" : undefined}
       className={`${HEAD_CELL} ${className}`}
     >
@@ -80,54 +77,44 @@ function Head({ colKey, className, align = "right" }) {
   );
 }
 
-// The two illustrations this section gets (D-067, balanced in D-068, placed in
-// D-069), and neither is a decorative pick: they are the **ends of the sort** —
-// whoever the comparator put in the top row and whoever it put in the last —
-// read off ROWS rather than named here, so they stay correct if the dataset or
-// the team changes. Today that is Archeops at 110 Speed and Beartic at 50 —
-// and that pair changed by itself when Beartic joined the team, which is the
-// derivation doing its job rather than a decision needing to be re-made.
+// This section's two illustrations aren't decorative picks: they're the ends of
+// the sort, whoever the sort put in the first row and whoever in the last. Read
+// from ROWS rather than named here, so they stay right if the dataset or the
+// team changes. Today that's Archeops at 110 Speed and Beartic at 50.
 //
-// They flank the table's top edge **symmetrically**: same size, mirrored
-// rotation, clipped by the same edge. They were first placed diagonally, each at
-// the corner nearest its own row, which is a better idea than it is a picture —
-// nothing on screen reveals the mapping, so two differently-sized Pokémon at
-// opposite corners just read as stickers. Symmetry is legible without being
-// explained, and the derivation still decides *who* rather than *where*.
+// They flank the table's top edge symmetrically: the same size, mirrored
+// rotation, clipped by the same edge. Symmetry reads without explanation, and
+// the sort still decides who, not where.
 //
-// Three things make the pair frame the heading instead of decorating the corners
-// (D-072), and they are all the same idea — everything about a flanking figure
-// should point at what it flanks:
+// Everything about a flanking figure points at what it flanks:
 //
-//   · **Facing.** Both artworks face left, so on the left-hand side Samurott was
-//     looking off the page. `-scale-x-100` turns it around; the two now face each
-//     other, and the eye is returned to the heading instead of led away. The
-//     flagship board already does this to Chandelure for the same reason.
-//   · **Lean.** Both leaned outward too. They now tilt inward — and note that the
-//     flip mirrors the rotation, so the left figure's `-rotate-6` renders as a
-//     clockwise, inward lean.
-//   · **Anchoring.** They hang off the CENTRE (`right-1/2 mr-40` / `left-1/2
-//     ml-40`), not the container's edges. Pinned to the edges their distance from
-//     the heading grew with the viewport, so a composition that read well at
-//     1024px drifted apart into two corner ornaments at 1600px. Anchored to the
-//     middle, the gap is the same at every width.
+//   · Facing. The artworks face left, so the figure on the left would look off
+//     the page. `-scale-x-100` turns it round, so the two face each other, and
+//     the eye goes back to the heading. The comparison board turns Chandelure
+//     for the same reason.
+//   · Lean. Both tilt inward. The flip mirrors the rotation too, so the left
+//     figure's `-rotate-6` renders as a clockwise, inward lean.
+//   · Anchoring. They hang off the centre (`right-1/2 mr-40` and `left-1/2
+//     ml-40`), not the container's edges. Pinned to the edges, they'd drift
+//     apart as the screen widened. From the centre, the gap is the same at
+//     every width.
 //
-// A table cannot take flanking art the way the flagship board can — it fills the
-// content width, so there is no margin to sit in — hence figures rising from
-// behind the top edge, clipped by the table's own opaque body. The clip lands
-// below the body mass rather than across it: a figure cut at the waist reads as
-// pasted on, one whose legs disappear reads as standing behind.
+// A table can't take side art the way the comparison board can, since it fills
+// the content width and leaves no margin, so the figures rise from behind the
+// top edge, clipped by the table's opaque body. The clip falls below each
+// figure's middle: a figure cut at the waist looks pasted on, while one whose
+// legs disappear looks like it's standing behind.
 const LEADER = ROWS[0];
 const TAIL = ROWS[ROWS.length - 1];
 
 export default function FeaturedDex() {
   return (
     <div className="relative">
-      {/* Decorative, and desktop-only for the reason the flagship's mascots are:
-          below lg there is no room beside the content, and art that overflows
-          scrolls the whole page sideways (caught by npm run sweep:widths).
-          Lazy where the flagship's art is not — this one is below the fold, and
-          Home is the only route that is not code-split (D-060). */}
+      {/* Decorative, and desktop-only, like the comparison board's figures:
+          below lg there's no room beside the content, and art that overflows
+          scrolls the whole page sideways. Lazy, unlike the board's art,
+          because this is below the fold, and Home is the only page that isn't
+          loaded on demand. */}
       {LEADER && (
         <img
           src={artworkFor(LEADER)}
@@ -153,10 +140,9 @@ export default function FeaturedDex() {
           aria-rowcount={ROWS.length}
           className="w-full table-fixed border-collapse"
         >
-          {/* The count is READ off the rows rather than written out. It said
-              "Six" for as long as there were six, which is the kind of literal
-              that goes quietly wrong the moment the team gains a member — and
-              a screen reader is the one audience that cannot see that it has. */}
+          {/* The count comes from the rows rather than being written out, so it
+              stays right if the team changes, and a screen reader is the one
+              audience that couldn't see it had gone wrong. */}
           <caption className="sr-only">
             {ROWS.length} Pokémon sorted by base {SORT_LONG_LABEL[PREVIEW_SORT]}
             , descending. A preview of the dex table.

@@ -2,37 +2,36 @@ import { CURRENT_GEN } from "../lib/eras";
 import ChipGroup from "./ChipGroup";
 import { CHIP, CHIP_OFF, CHIP_ON } from "./chipStyles";
 
-// The generation selector, shared by both tools: one numbered chip per
-// generation the caller offers, with the newest standing for today.
+// The generation selector, used by every tool and both games' setup: one
+// numbered chip per generation the caller offers, with the newest standing for
+// today.
 //
 // Three things about it are decisions rather than defaults:
 //
-//   · **It is always rendered** (D-050). A control that arrives with the first
-//     selection also pushes the page around as it lands, and its absence taught
-//     nobody why it was absent.
-//   · **`label` states its scope** and is not decoration: "Stats as of" on
-//     /compare, where only the numbers change, and "Dex as of" on /dex, where
-//     the generation also decides which Pokémon are in the table at all. It
-//     drives the group's accessible name too.
-//   · **Numerals, not ranges.** Nine chips reading "Gen 2–5" do not fit beside
-//     the Swap button at any width, and a generation is a number people already
+//   · It's always rendered. A control that arrives with the first selection
+//     pushes the page around as it lands, and its absence explains nothing.
+//   · `label` states its scope: "Stats as of" where only the numbers change,
+//     "Chart as of" for the type chart, and "Dex as of" on /dex, where the
+//     generation also decides which Pokémon are in the table at all. It's the
+//     group's accessible name too.
+//   · Numerals, not ranges. Nine chips reading "Gen 2–5" don't fit beside the
+//     Swap button at any width, and a generation is a number people already
 //     think in.
 //
-// Which generations are on offer is the caller's to decide — that range is
-// where "you cannot read a Gen 1 board against a Pokémon that did not exist
-// yet" is enforced (D-045), and the caller is what knows it.
+// The caller decides which generations are on offer, because that range is
+// what stops you reading a Gen 1 board for a Pokémon that didn't exist yet, and
+// only the caller knows it.
 //
-// `differs` marks a generation whose board is not today's. The comparison tool
-// sets it; the dex leaves it off, because across 1,259 rows almost every
-// generation contains something that changed and every chip would be marked
-// (D-049).
+// `differs` marks a generation whose board isn't today's. Only the comparison
+// sets it. The dex leaves it off: across 1,259 rows, almost every generation
+// has something that changed, so every chip would be marked.
 
-// Colour and pill shape come from the shared chip vocabulary (chipStyles.jsx);
-// only the geometry is local — 36px tall around a single numeral, and as wide
-// as the fitted group gives it: 36px where there is room, down to about 25px
-// on a 320px phone, so all nine stay on one line (ChipGroup's `fit`, D-137).
-// It was `min-w-9` in a wrapping row, which at 390px left the ninth chip, the
-// one that is selected by default, alone on a second line.
+// Colour and pill shape come from the shared chip styles (chipStyles.jsx). Only
+// the size is set here: 36px tall around a single numeral, and as wide as the
+// fitted group allows, from 36px where there's room down to about 25px on a
+// 320px phone, so all nine stay on one line (ChipGroup's `fit`). In a wrapping
+// row, the ninth chip, the one selected by default, would sit alone on a second
+// line at 390px.
 const GEN_CHIP = `${CHIP} relative h-9 w-full min-w-0 justify-center transition-colors`;
 
 export default function GenerationStrip({ label, options, asof, onSelect }) {
@@ -47,16 +46,16 @@ export default function GenerationStrip({ label, options, asof, onSelect }) {
             key={option}
             type="button"
             aria-pressed={isActive}
-            // The newest generation is the current view, which the URL spells
-            // as no parameter at all — so it reports null rather than its own
-            // number and a shared link stays clean.
+            // The newest generation is the current view, which the URL writes
+            // as no parameter at all, so it reports null rather than its own
+            // number, and a shared link stays clean.
             onClick={() => onSelect(option === CURRENT_GEN ? null : option)}
             className={`${GEN_CHIP} ${isActive ? CHIP_ON : CHIP_OFF}`}
           >
             {/* The visible label is a bare numeral, so the accessible name is
-                  built around it rather than replacing it — WCAG 2.5.3 needs
+                  built around it rather than replacing it: WCAG 2.5.3 needs
                   the visible text inside the accessible name, and "5" alone
-                  tells a screen reader nothing (D-042). */}
+                  tells a screen reader nothing. */}
             <span className="sr-only">Generation </span>
             {option}
             {differs && (
@@ -67,14 +66,10 @@ export default function GenerationStrip({ label, options, asof, onSelect }) {
                     isActive ? "bg-accent-contrast" : "bg-accent"
                   }`}
                 />
-                {/* The dot is a second cue, not the only one: the fact it
-                      carries is also said out loud here (04_design §1 rule 4).
-                      It used to say "stats differ from today", which stopped
-                      being true when a changed ability roster started marking
-                      a generation too (D-073) — Gengar's Gen 6 board differs
-                      by its ability alone. A screen reader user was being told
-                      something specific and wrong; the visible dot never made
-                      that claim. */}
+                {/* The dot isn't the only cue: what it means is also said
+                      here. Not "stats differ", because a changed ability marks
+                      a generation too: Chandelure's Gen 5 board differs only
+                      by its hidden ability. */}
                 <span className="sr-only">, differs from today</span>
               </>
             )}

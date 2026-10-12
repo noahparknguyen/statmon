@@ -2,10 +2,10 @@ import { FaCaretUp, FaCaretDown } from "react-icons/fa6";
 import StatBar from "./StatBar";
 import { typeColorVar } from "../lib/types";
 
-// Mobile (< md) per-stat card (D-010): replaces one mirrored CmpRow/Row with
-// a stacked P1-over-P2 layout, since side-by-side bars + a center diff column
-// get crushed below 768px. Shared by ComparisonCard (tool) and Home's
-// FeaturedComparison board so both surfaces collapse identically.
+// The per-stat card below md: it replaces one mirrored CmpRow with P1 stacked
+// over P2, since side-by-side bars and a centre difference column get crushed
+// below 768px. Shared by ComparisonCard (the tool) and Home's
+// FeaturedComparison, so both collapse the same way.
 export default function CmpStatCard({
   label,
   a,
@@ -52,11 +52,10 @@ export default function CmpStatCard({
 function StatLine({ name, value, color, win, ready, animate }) {
   return (
     <div className="grid grid-cols-[5rem_1fr_2.25rem] items-center gap-2">
-      {/* No `title` tooltip on the truncation. It was the third `title=` on the
-          site and the same anti-pattern as the other two — unreachable by
-          keyboard, invisible on touch — and it was buying nothing here: this
-          card only ever renders below md (D-065), where the full name is already on
-          screen in the Pokémon card's own heading a short scroll away. */}
+      {/* No `title` tooltip on the truncated name: a keyboard can't reach one,
+          and touch never shows it. It wouldn't add anything either: this card
+          only renders below md, where the full name is already on screen in
+          the Pokémon card's heading, a short scroll away. */}
       <span className="text-caption text-secondary truncate">
         {name ?? "–"}
       </span>
@@ -70,8 +69,8 @@ function StatLine({ name, value, color, win, ready, animate }) {
   );
 }
 
-// Bars are stacked (not left/right) on mobile, so the diff uses a vertical
-// caret instead of CmpRow's left/right pair.
+// The bars are stacked here rather than mirrored, so the difference uses a
+// vertical caret instead of CmpRow's left and right pair.
 function MobileDiff({ d, aColor, bColor }) {
   if (d === null) return <span className="text-diff text-tertiary">–</span>;
   if (d === 0) return <span className="text-diff text-diff-tie">—</span>;

@@ -23,17 +23,17 @@ import {
 import { formatMult } from "../lib/typeChart";
 import { capitalize } from "../lib/types";
 
-// The type game's half of the setup panel (D-104).
+// The type game's half of the setup panel.
 //
-// **The pool groups exist only in Hard**, because only Hard draws from the dex.
-// In Easy and Medium the defender is a typing, so a generation filter and a
-// forms toggle would be controls that do nothing — and the URL does not carry
-// them there either, which is what keeps one canonical link per game.
+// The pool groups exist only in Hard, because only Hard draws from the dex. In
+// Easy and Medium the defender is a typing, so a generation filter and a forms
+// toggle would be controls that do nothing. The URL doesn't carry them there
+// either, which keeps one link per game.
 //
-// **Types is the one filter that means something in all three**, and it means
-// the same thing in each: the defending typing contains at least one of these.
-// In Easy that picks the defender outright, in Medium it requires a pairing to
-// include it, and in Hard it is `filterRows`' own type filter.
+// Types is the one filter that means something in all three, and it means the
+// same thing in each: the defending typing contains at least one of these. In
+// Easy that picks the defender outright, in Medium it requires a pairing to
+// include it, and in Hard it's `filterRows`' own type filter.
 export default function EffectiveSetup({ draft, onChange, ...shell }) {
   const playable = draft ? canPlay(draft) : false;
   const answers = draft ? answersFor(draft) : [];
@@ -60,12 +60,12 @@ export default function EffectiveSetup({ draft, onChange, ...shell }) {
     >
       {draft && (
         <>
-          {/* A divider sits 16px from what it divides on both sides (§6.3):
-              this padding above it, the body's gap below. */}
+          {/* A divider sits 16px from what it divides on both sides: this
+              padding above it, the body's gap below. */}
           <div className={RULE_BELOW}>
-            {/* The lens matters more here than anywhere on the site: the chart
-                itself has changed six times, so a Gen 1 game is the 15×15 grid
-                where Ghost does nothing to Psychic (D-047). */}
+            {/* The generation matters more here than anywhere on the site: the
+                chart itself changed in Gen 2 and Gen 6, so a Gen 1 game is the
+                15×15 grid where Ghost does nothing to Psychic. */}
             <GenerationStrip
               label="Chart as of"
               options={allGenerations()}
@@ -74,10 +74,9 @@ export default function EffectiveSetup({ draft, onChange, ...shell }) {
             />
           </div>
 
-          {/* The selected tier explains itself, one at a time: a chip cannot
-              carry a sentence and "Medium" does not explain itself. The
-              sentence is the group's `note`, 8px under its chips, rather than
-              a paragraph pulled up against them with a negative margin. */}
+          {/* The selected tier is explained in a sentence, since a chip can't
+              carry one and "Medium" doesn't explain itself. The sentence is the
+              group's `note`, 8px under its chips. */}
           <ChipGroup label="Difficulty" note={TIER_DESC[draft.tier]}>
             {TIERS.map((tier) => (
               <FilterChip
@@ -116,10 +115,9 @@ export default function EffectiveSetup({ draft, onChange, ...shell }) {
               </ChipGroup>
 
               <ChipGroup label="Options">
-                {/* The dex's wording and polarity, like the stat game's
-                    (D-126): lit means the forms are hidden, because every
-                    other FilterChip on the site is lit when a narrowing is
-                    applied. */}
+                {/* The dex's wording and polarity, like the stat game's: lit
+                    means the forms are hidden, because every other FilterChip
+                    on the site is lit when it narrows something. */}
                 <FilterChip
                   active={!draft.includeForms}
                   label="Hide alternate forms"
@@ -131,14 +129,13 @@ export default function EffectiveSetup({ draft, onChange, ...shell }) {
             </>
           )}
 
-          {/* What you will be asked to choose between. It is the clearest
-              statement of what a tier actually IS — Easy has four answers and
-              Medium six — and it is the thing the filters can quietly destroy,
-              so it is on screen while you set them. */}
+          {/* What you'll be asked to choose between. It's the clearest
+              statement of what a tier is (Easy has four answers, and Medium
+              six), and it's what the filters can quietly break, so it's on
+              screen while you set them. */}
           <ChipGroup label="Answers you will choose from">
-            {/* Read-only pills from the chip vocabulary (chipStyles.jsx): the
-                filter geometry, the static colours. They were spelled out
-                here by hand, a chip style outside the module that owns them. */}
+            {/* Read-only pills from the shared chip styles: the filter
+                geometry, with the static colours. */}
             {answers.map((m) => (
               <span
                 key={m}

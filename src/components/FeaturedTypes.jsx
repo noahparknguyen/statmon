@@ -4,33 +4,32 @@ import { eraView } from "../lib/eras";
 import { defaultAbility } from "../lib/abilities";
 import { parseTypes } from "../lib/typeView";
 
-// Home's type-chart preview (D-043, framed by D-067 and D-068), built from the
-// tool's own MatchupSummary against the real chart — not a mockup, the same rule
-// that keeps FeaturedDex on DexRow and FeaturedComparison on CmpRow (D-032).
+// Home's type-chart preview, built from the tool's own MatchupSummary against
+// the real chart rather than a mock-up, as FeaturedDex uses DexRow and
+// FeaturedComparison uses CmpRow.
 //
-// It tells the **defensive** story: MatchupSummary answers "what does every
-// attacking type do to this typing", so what is on screen is what beats
-// Krookodile. That is the question people bring to a type chart.
+// It tells the defensive story: MatchupSummary answers "what does every
+// attacking type do to this typing", so what's on screen is what beats
+// Krookodile. That's the question people bring to a type chart.
 //
-// **Krookodile, and it has to be a dual type.** The section's own promise is
-// "every matchup, including dual types" — the thing no other chart does without
-// a page per pairing (D-051) — so previewing it with a single type would
-// advertise the one capability the tool does not need to exist for. Ground/Dark
-// also reads well as a shape: six attacking types at 2×, and two that do
-// nothing at all, so the dropped-empty-tiers behaviour is visible rather than
-// described. It is on the Black & White team too (D-044).
+// It has to be a dual type. The section promises every matchup, including dual
+// types, which other charts only manage with a page per pairing, so a single
+// type would advertise the one thing the tool isn't needed for. Ground/Dark
+// also has a good shape: six attacking types at 2×, and two that do nothing at
+// all, so the dropped empty tiers are visible rather than described.
+// Krookodile is on the Black and White team too (see FeaturedDex).
 //
-// **It is now previewed as a Pokémon rather than as a bare typing** (D-075).
-// The tool grew a Pokémon search, and a preview that still asked the page's old
-// question would advertise the version before it: "what beats Krookodile" is
-// the thing you can now type, where "what beats Ground / Dark" is the thing you
-// had to already know how to ask. Krookodile's abilities do not touch type
-// effectiveness, so the tiers below are unchanged — this preview sells the
-// search, and the flagship board above sells the ability (D-074).
+// It's previewed as a Pokémon rather than a bare typing, because the tool
+// searches by Pokémon: "what beats Krookodile" is something you can type, where
+// "what beats Ground/Dark" needs you to know the typing first. Krookodile's
+// abilities don't touch type effectiveness, so the tiers are the same either
+// way. This preview shows off the search, and the comparison board above shows
+// off abilities.
 //
-// Side by side rather than the mascot peeking from behind, because unlike the
-// flagship board and the dex table this content is a short list of thin rows: art
-// behind it gets sliced by five row edges instead of framed by one card.
+// The art sits beside the tiers rather than peeking from behind them, unlike
+// the comparison board and the dex table: this content is a short list of thin
+// rows, and art behind it would be sliced by every row edge instead of framed
+// by one card.
 const MON = getBySlug("krookodile");
 const TYPES = MON ? parseTypes(MON.types) : [];
 const ABILITY = MON ? defaultAbility(MON) : null;
@@ -42,10 +41,10 @@ export default function FeaturedTypes() {
   return (
     <div className="mx-auto flex max-w-4xl flex-col items-center lg:flex-row lg:justify-center lg:gap-10">
       <div className="w-full max-w-xl">
-        {/* One rung under the section's own <h2>. The tier list is unreadable
-            without it: "2× Water" means nothing until you know what is being
-            attacked. Non-interactive here — Home previews the tool, it is not a
-            second copy of it — so the chips report rather than select. */}
+        {/* One level under the section's <h2>. The tier list is unreadable
+            without it: "2× Water" means nothing until you know what's being
+            attacked. Home previews the tool rather than copying it, so the
+            chips report the ability rather than select it. */}
         <DefenderHeading
           as="h3"
           pokemon={MON}
@@ -53,19 +52,19 @@ export default function FeaturedTypes() {
           abilities={view.abilities}
           ability={ABILITY}
         />
-        {/* The ability goes through, even though Krookodile's do not touch
-            effectiveness and the tiers are identical either way. A preview that
-            shows an ability beside tiers computed without it is the "preview
-            disagrees with the tool" failure D-032/D-043 exist to prevent — it
-            would just be silent until the featured Pokémon changed. */}
+        {/* The ability is passed through, even though Krookodile's don't touch
+            effectiveness and the tiers are the same either way. Tiers computed
+            without the ability shown beside them would be a preview that
+            disagrees with the tool, silently, until the featured Pokémon
+            changed. */}
         <MatchupSummary types={TYPES} ability={ABILITY} />
       </div>
 
-      {/* Decorative, and desktop-only for the reason the flagship's mascots are:
+      {/* Decorative, and desktop-only, like the comparison board's mascots:
           below lg the tiers need the whole column, and art that overflows
-          scrolls the whole page sideways (caught by npm run sweep:widths).
-          Lazy where the flagship's art is not — this one is below the fold, and
-          Home is the only route that is not code-split (D-060). */}
+          scrolls the whole page sideways (`npm run sweep:widths` catches it).
+          Lazy, unlike the board's art: this one is below the fold, and Home is
+          the only route that isn't code-split. */}
       <img
         src={artworkFor(MON)}
         alt=""

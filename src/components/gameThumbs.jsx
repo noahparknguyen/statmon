@@ -11,32 +11,23 @@ import {
   settingsKey as effectiveKey,
 } from "../lib/effective";
 
-// A thumbnail of a game, drawn from a real round with that game's own panels.
+// A thumbnail of a game, drawn from a real round with the game's own panels.
+// A picture of a board could drift from the board, and this can't. The games
+// index and the start screen both use these, the start screen once per preset.
 //
-// **D-043's rule, one rung down** (D-117). The games index already advertised
-// each game with a real generated round rather than a drawing of one, on the
-// argument that a picture of a board can drift from the board and this cannot.
-// The difficulty picker needs the same thing per PRESET — and it needed it
-// enough that the alternative was a second set of thumbnails describing the
-// same three games, which is the drift this rule exists to prevent. So the
-// index's two local components moved here and gained a `settings` prop.
-//
-// **What a thumbnail has to say is the SHAPE of the round, not its detail.**
-// Nobody reads a picker; they glance at it. Two panels against four is the
-// whole difference between Medium and Hard and it survives being 60px wide,
-// where a legible stat value does not. So these stay small and lean on count,
-// type colour and layout rather than on anything you would have to focus on.
+// A thumbnail has to show the round's shape, not its detail. Nobody reads a
+// start screen; they glance at it. Two panels against four is the whole
+// difference between Medium and Hard, and that survives being 60px wide, where
+// a readable stat value doesn't. So these stay small, and lean on count, type
+// colour, and layout rather than anything you'd have to focus on.
 
-// Drawn once per settings object and remembered, rather than per render.
+// Drawn once per settings and remembered, rather than on every render, so a
+// preview doesn't reshuffle as you scroll past it. Keyed by the settings, since
+// the start screen needs one per preset.
 //
-// The index drew its round at module scope for this reason (a preview that
-// reshuffles as you scroll past is a different page every time), but the picker
-// needs one per preset and presets are data — so the cache is keyed by the
-// settings themselves. Same guarantee, three of them.
-//
-// A Map rather than `useMemo`: this survives the component unmounting, so
-// leaving the picker and coming back shows the same three boards instead of
-// quietly redealing them.
+// A Map rather than `useMemo`: it survives the component unmounting, so leaving
+// the start screen and coming back shows the same boards instead of dealing new
+// ones.
 const rounds = new Map();
 const drawOnce = (key, draw) => {
   if (!rounds.has(key)) rounds.set(key, draw());
@@ -44,34 +35,33 @@ const drawOnce = (key, draw) => {
 };
 
 // A fixed band, so a card whose round failed to generate is the same shape as
-// one that worked and the grid does not go ragged.
+// one that worked, and the grid doesn't go ragged.
 //
-// 192px (`h-48`): a two-up round has room to spare at any of the sizes tried,
-// but a four-up splits the band in half, and at 128 that left 64px, which is
-// not a Pokémon. The panels take their height from here (`h-full`) instead of
-// carrying their own, so one number decides it for both layouts.
+// 192px (`h-48`): a two-up round has room to spare, but a four-up splits the
+// band in half, and 64px of each half, at 128, would be too small to show a
+// Pokémon. The panels take their height from here (`h-full`) rather than
+// setting their own, so one number decides it for both layouts.
 const THUMB = "h-48 shrink-0 border-b border-border-subtle";
 
-// `bg-base` is the divider, matching the real board (D-100).
+// `bg-base` is the divider, as on the real board.
 const GRID = `${THUMB} grid gap-px bg-base`;
 
-// **A thumbnail is a picture of a game, so it is hidden from assistive tech**
-// (D-146). It sits inside the control it advertises, a link on the games index
-// and a button on the difficulty picker, and a control's name is the text
-// inside it: a screen reader announced "Probopass 40 Glalie Highest Speed. 80
-// Higher. Two or four Pokémon…", a random round before the game's own name.
-// The card's title and sentence say what it is; the round only shows it.
+// A thumbnail is a picture of a game, so it's hidden from assistive tech. It
+// sits inside the control it advertises (a link on the games index, a button on
+// the start screen), and a control's name is the text inside it, so a screen
+// reader would read out a random round before the game's name. The card's
+// title and sentence say what it is, and the round only shows it.
 //
-// Hidden, it is decoration for contrast too, which is what WCAG 1.4.3 exempts:
-// its receded panels and an 18px type name on its own tint fell under 4.5:1.
+// Hidden, it's decoration for contrast purposes too, which WCAG 1.4.3 exempts:
+// its dimmed panels and a type name on its own tint would fall under 4.5:1.
 // Every root below carries `aria-hidden`, the empty fallbacks included.
 
 /**
- * The stat game: `n` contenders on one stat.
+ * The stat game: `n` Pokémon on one stat.
  *
- * The count is the point — two for Easy and Medium, four for Hard — so the grid
- * follows `n` rather than being fixed, and four panels stack 2x2 rather than
- * shrinking to a quarter of a card's width.
+ * The count is the point: two for Easy and Medium, four for Hard. So the grid
+ * follows `n`, and four panels stack 2×2 rather than shrinking to a quarter of
+ * the card's width.
  */
 export function HigherThumb({ settings = HIGHER_DEFAULTS, className = "" }) {
   const round = drawOnce(`h:${higherKey(settings)}`, () =>
@@ -89,17 +79,17 @@ export function HigherThumb({ settings = HIGHER_DEFAULTS, className = "" }) {
         <ContenderPanel
           key={p.slug}
           size="sm"
-          // Only the outer corners follow the card's curve. With four panels
-          // the two lower ones are mid-card and must stay square, or the
-          // winner's inset ring traces a curve the card does not have.
+          // Only the outer corners follow the card's curve. With four panels,
+          // the lower two are mid-card and stay square, or the winner's inset
+          // ring would trace a curve the card doesn't have.
           className={i === 0 ? "rounded-tl-lg" : i === 1 ? "rounded-tr-lg" : ""}
           pokemon={p}
           stat={round.stat}
           value={round.values[i]}
           resolved
           won={p === round.winner}
-          // A picker is above the fold but it is not the game; there is no
-          // reason to preload six artworks before anyone has chosen (D-113).
+          // The start screen is above the fold, but it isn't the game, so
+          // there's no reason to preload six artworks before anyone chooses.
           lazy
         />
       ))}
@@ -110,9 +100,9 @@ export function HigherThumb({ settings = HIGHER_DEFAULTS, className = "" }) {
 /**
  * The type game: an attacking type against a defender.
  *
- * The tier IS the defender — a single type, a dual type, then a Pokémon — so
- * the right-hand panel changes shape between the three cards without needing a
- * label to say so.
+ * The tier is the defender (a single type, a dual type, then a Pokémon), so the
+ * right-hand panel changes shape across the three cards without a label to say
+ * so.
  */
 export function EffectiveThumb({
   settings = EFFECTIVE_DEFAULTS,
@@ -133,9 +123,9 @@ export function EffectiveThumb({
         types={[attack]}
         className="rounded-tl-lg"
       />
-      {/* `reveal`, because a thumbnail is not a round being played: the hard
-          tier hides its Pokémon's typing until you answer (D-104), and a
-          preview that hid it would advertise an empty box. */}
+      {/* `reveal`, because a thumbnail isn't a round being played: Hard hides
+          its Pokémon's typing until you answer, and a preview that hid it
+          would show an empty box. */}
       <MatchupPanel
         size="sm"
         role="Defending"

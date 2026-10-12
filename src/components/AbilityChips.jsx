@@ -6,51 +6,46 @@ import {
 } from "../lib/abilities";
 import { CHIP, CHIP_OFF, CHIP_ON, CHIP_STATIC } from "./chipStyles";
 
-// The Pokémon's ability roster, one chip each, exactly one selected (D-073).
+// A Pokémon's abilities, one chip each, with exactly one selected.
 //
-// `FormChips` is the model and the two are deliberately the same gesture: a
-// row of compact chips in a fixed band on the card, where picking one changes
-// what the board says. **There is no "none" state** — in the games a Pokémon
-// always has exactly one ability in play, so the board reads with the first
-// slot until you say otherwise, and that default is spelled as no URL
-// parameter at all (D-074).
+// The same gesture as `FormChips`, on purpose: a row of compact chips in a fixed
+// band on the card, where picking one changes what the board says. There's no
+// "none" state: in the games a Pokémon always has exactly one ability in play,
+// so the board uses the first until you choose another, and that default is
+// written as no URL parameter at all.
 //
-// Two markers, and neither is colour alone (04_design §9):
+// Two markers, and neither is colour alone:
 //
-//   · **The dot** means this ability changes type matchups — it is why the
-//     STAB block says 0× where the chart says 2×. Deliberately the same dot
-//     `GenerationStrip` puts on a generation whose board differs, because it is
-//     the same statement: *this option changes the answer.* Unlike that one it
-//     is a static property of the ability, so it does not move as the selection
-//     does.
-//   · **The icon** marks the hidden ability. It never appears more than once —
-//     the hidden ability is always slot 3 and there is never a second one,
-//     asserted over the whole dex in abilities.test.js.
+//   · The dot means this ability changes type matchups: it's why the type chips
+//     say 0× where the chart says 2×. The same dot `GenerationStrip` puts on a
+//     generation whose board differs, because it says the same thing: this
+//     option changes the answer. Unlike that one, it belongs to the ability,
+//     so it doesn't move as the selection does.
+//   · The icon marks the hidden ability. It never appears more than once: the
+//     hidden ability is always slot 3, and there's never a second one, which
+//     abilities.test.js checks across the whole dex.
 //
-// Both are said out loud in `sr-only` text on the same control, rather than
-// hung on a `title` no keyboard or touch user can reach (D-065).
+// Both are also said in screen-reader text on the same control, rather than in
+// a `title` that no keyboard or touch user can reach.
 //
-// **The two empty states render rather than collapse** (D-050). Below Gen 3
-// nobody had abilities, and fourteen entries carry none at all; a band that
-// vanished in either case would shove the board around and leave the reason to
-// be inferred from a missing control. The band keeps its height either way,
-// which is also what holds the three cards equal (PokemonCard's spec).
+// The two empty states render rather than collapse. Below Gen 3 nobody had
+// abilities, and 14 entries have none at all. A band that vanished in either
+// case would shove the board around, and leave the reason to be guessed from a
+// missing control. The band keeps its height either way, which also keeps the
+// three cards equal (see PokemonCard).
 //
-// **Without an `onSelect` it renders pills rather than buttons.** Home previews
-// the tools with their own components but is not a second copy of them
-// (D-043), so its board reports the ability instead of offering to change it —
-// and a button that does nothing when clicked is worse than a label, both for a
-// pointer and for the keyboard that would have to tab through it.
+// Without an `onSelect`, it renders pills rather than buttons. Home previews the
+// tools with their own components, but isn't a second copy of them, so its
+// board reports the ability rather than offering to change it. A button that
+// does nothing is worse than a label, for a pointer and for a keyboard that
+// would have to tab through it.
 const ABILITY_CHIP = `${CHIP} gap-1.5 px-2 py-1 transition-colors`;
 
-// `markEffect` turns the accent dot off, and it exists for exactly one caller.
-// On /compare and /types the dot is information — this ability is bending the
-// matchup, go and read it. In the type game it is the ANSWER: a dot would say
-// "this one counts" before you had worked out whether it does, which is the
-// whole of the hard tier's ability question and the whole of the trap that
-// makes drawing the ability at random worth doing — Chandelure with Flame Body
-// has to look exactly as consequential as Chandelure with Flash Fire until you
-// decide otherwise. (D-104)
+// `markEffect` turns the accent dot off, for one caller. On /compare and /types
+// the dot is information: this ability changes the matchup. In the type game
+// it would be the answer, saying "this one counts" before you've worked out
+// whether it does. Chandelure with Flame Body has to look exactly as important
+// as Chandelure with Flash Fire until you decide.
 export default function AbilityChips({
   abilities,
   selected,
@@ -88,10 +83,9 @@ export default function AbilityChips({
               active ? CHIP_ON : onSelect ? CHIP_OFF : CHIP_STATIC
             }`}
           >
-            {/* A pill carries no `aria-pressed`, so without this the selected
-                one is distinguished by its fill and nothing else — colour
-                alone, which 04_design §9 rules out. The button variant says it
-                through `aria-pressed` instead. */}
+            {/* A pill has no `aria-pressed`, so without this the selected one
+                would be marked by its fill alone, which is colour alone. The
+                button version says it through `aria-pressed` instead. */}
             {active && !onSelect && <span className="sr-only">In play: </span>}
             {markEffect && affectsTypes(slug, gen) && (
               <>

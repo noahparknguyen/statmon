@@ -77,11 +77,11 @@ export default function SearchBar({ label, onSelect }) {
         />
       </div>
 
-      {/* The dex announces its result count as it filters; this did not, so a
-          screen reader user typing here got no feedback that 1,259 Pokémon had
-          narrowed to eight — or to none. The list itself is not a live region
-          (a combobox's options should not be announced one by one as you type),
-          so the count is reported separately and politely. (D-065) */}
+      {/* The result count, announced as you type, as the dex announces its
+          own, so a screen reader user hears that the list narrowed to eight,
+          or to none. The list itself isn't a live region, since a combobox's
+          options shouldn't be read out one by one as you type, so the count is
+          reported separately and politely. */}
       <span aria-live="polite" className="sr-only">
         {showList
           ? results.length === 0
@@ -112,9 +112,9 @@ export default function SearchBar({ label, onSelect }) {
                   id={`${listId}-${i}`}
                   role="option"
                   aria-selected={i === active}
-                  // Focus stays in the input; the active option is conveyed by
-                  // aria-activedescendant. Without this, Tab walked through all
-                  // eight results instead of leaving the search field.
+                  // Focus stays in the input, and aria-activedescendant says
+                  // which option is active. Without this, Tab would walk
+                  // through all eight results instead of leaving the field.
                   tabIndex={-1}
                   onMouseEnter={() => setActive(i)}
                   onClick={() => choose(p)}
@@ -131,7 +131,7 @@ export default function SearchBar({ label, onSelect }) {
                     className="shrink-0 [image-rendering:pixelated]"
                   />
                   {/* A Pokémon's name in a row is `text-body-sm`, as in the
-                      dex's rows: the same sprite, name and badges (§5.1). */}
+                      dex's rows: the same sprite, name, and badges. */}
                   <span className="text-body-sm text-primary flex-1 truncate">
                     {p.name}
                   </span>

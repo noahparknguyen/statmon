@@ -4,45 +4,39 @@ import { artworkFor } from "../lib/pokemon";
 import { statName } from "../lib/games";
 import { PANEL_BOX, ring, tintFor } from "./gameChrome";
 
-// One Pokémon in a round: the thing you click, and then the thing that tells
-// you what it was worth (D-091, rebuilt as an arena panel by D-096).
+// One Pokémon in a round: what you click, and then what tells you what it was
+// worth.
 //
-// **Deliberately not `PokemonCard`.** That is the comparison board's 616px spec
-// sheet and it opens with six stat bars — it would print the answer on screen
-// before the question was asked.
+// Not `PokemonCard`, on purpose. That's the comparison board's spec sheet, and
+// it opens with six stat bars: it would show the answer before the question.
 //
-// **This is where the games take their exception to 04_design §1** (D-096). The
-// design principles scope themselves to the *tools*, where chrome competing
-// with the data is a defect. In a game the Pokémon **are** the data, so the
-// panel is deliberately enormous: full viewport height, artwork as the subject
-// rather than as a backdrop, and the controls somewhere else entirely. Home
-// already holds the site's other stated exception (D-070); this is the second,
-// and like that one it is an entry rather than a drift.
+// The games are an exception to the site's rule that chrome shouldn't compete
+// with the data. That rule is for the tools. In a game the Pokémon are the
+// data, so the panel is deliberately huge: full screen height, with the artwork
+// as the subject rather than a backdrop, and the controls elsewhere.
 //
-// **Tinted by its primary type**, which is the site's oldest visual idea rather
-// than a new one (04_design §3: a Pokémon's type colours its representation).
-// One colour even for a dual type (D-144); the badges carry the whole typing.
-// It also does the arena's structural work — two panels of different colours
-// read as two sides without needing a heavier divider — and it costs no new
-// colour system. Audited as group 10 of `npm run audit:contrast`.
+// Tinted by its primary type, as everywhere on the site a Pokémon's type
+// colours it. One colour even for a dual type, with the badges carrying the
+// full typing. The tint also separates the panels: two of different colours
+// read as two sides without a heavier divider. Its contrast is checked by
+// `npm run audit:contrast`.
 //
-// **Right and wrong without a red/green pair** (D-093): the palette has none, on
-// purpose, so the winner takes the accent and everything else recedes by a step,
-// on D-051's one-loud-state-and-three-quiet-ones scale. Every marked panel
-// carries an icon and screen-reader text, never colour alone.
+// Right and wrong without a red and green pair, since the palette has none on
+// purpose: the winner takes the accent and everything else steps back. Every
+// marked panel also has an icon and screen-reader text, never colour alone.
 
-// Three densities, and they are densities rather than styles: the same panel
-// with more or less room around it. `lg` is a two-up round, where each panel
-// owns half the screen; `md` is a four-up, where it owns a quarter and the name
-// has to survive 160px at 320px wide; `sm` is the games-index thumbnail.
+// Three sizes, which differ only in how much room the panel gets. `lg` is a
+// two-up round, where each panel has half the screen. `md` is a four-up, where
+// it has a quarter, and the name has to fit 160px on a 320px screen. `sm` is
+// the games index thumbnail.
 //
-// The name and value are picked per size rather than made responsive, because
-// **a responsive variant of a named text style generates no CSS**: the styles
-// are hand-written `@layer components` classes, so `lg:text-h2` is silently
-// nothing (06_style_guide §13, the D-065 finding). A prop is the only way to
-// change one.
-// The vendored official artwork is exactly 475x475 — every file, checked across
-// a 400-file sample — so a box larger than that upscales it (D-109).
+// The name and value styles are chosen per size rather than made responsive,
+// because a responsive variant of a named text style produces no CSS: the
+// styles are hand-written classes, so `lg:text-h2` would silently do nothing.
+// A prop is the only way to change one.
+//
+// The artwork files are all exactly 475×475, so a bigger box would enlarge
+// them.
 const ART_CAP = "max-h-[475px] max-w-[475px]";
 
 const SIZES = {
@@ -51,10 +45,10 @@ const SIZES = {
     pad: "gap-3 p-3 sm:p-4",
     name: "text-h2",
     value: "text-numeral-xl",
-    // The band has to clear its own numeral: `text-numeral-*` is `leading-none`
-    // by design (D-035), so the glyph is the full font size and a 48px figure
-    // in a 36px band is a figure with its feet cut off. One rung above the
-    // type size, each time.
+    // The band has to clear its own numeral: the numeral styles have no
+    // line-height padding, so the glyph is the full font size, and a 48px
+    // figure in a 36px band would have its feet cut off. So each band is one
+    // step taller than its figure.
     band: "h-14",
     badge: "md",
   },
@@ -66,15 +60,13 @@ const SIZES = {
     band: "h-11",
     badge: "md",
   },
-  // The games index thumbnail (D-043: a preview is the real component, not a
-  // mockup). Short and fixed, so two of them sit inside a card.
+  // The games index thumbnail, which is the real component rather than a
+  // mock-up.
   sm: {
-    // **`h-full`, not a fixed height.** This size is only ever used inside
-    // `gameThumbs`' band, and that band now has to hold either two panels in a
-    // row or FOUR in a 2x2 (D-117). A hardcoded `h-32` made the four-up case
-    // 256px of panels inside a 128px band, which overflowed the card and
-    // painted over the label under it. The grid owns the height; the panel
-    // fills its cell.
+    // `h-full`, not a fixed height. This size only appears in `gameThumbs`'
+    // band, which holds either two panels in a row or four in a 2×2, so a
+    // fixed height would overflow in one case. The grid owns the height, and
+    // the panel fills its cell.
     box: "h-full",
     pad: "gap-1 p-2",
     name: "text-caption",
@@ -101,11 +93,11 @@ export default function ContenderPanel({
   lazy = false,
 }) {
   const S = SIZES[size];
-  // The primary type's tint, one colour for a dual type too (D-144).
+  // The primary type's tint, one colour for a dual type too.
   const tint = tintFor(types);
 
   // Four states on one scale: the winner is loud, your wrong pick is present,
-  // the rest recede. Opacity rather than a fourth colour.
+  // and the rest recede. Opacity rather than a fourth colour.
   const mark = !resolved
     ? null
     : won
@@ -114,19 +106,11 @@ export default function ContenderPanel({
         ? ring("--color-border-strong")
         : null;
 
-  // **A button only when it is one** (D-111). With no `onPick` this is a
-  // thumbnail — on Home's preview and on the games index — and rendering it as
-  // a disabled `<button>` there was a real bug, not just a semantic one: the
-  // index wraps each thumbnail in a `<Link>`, so the markup was an `<a>`
-  // containing a `<button>`, which is invalid, and the disabled button ate
-  // every click over the top half of the card. Only the text below it opened
-  // the game.
-  //
-  // `MatchupPanel` renders a `<div>` and was unaffected, which is why the type
-  // game's card worked and the stat game's did not.
-  //
-  // The rule is the one `AbilityChips` already follows: without a handler,
-  // render a label rather than a control (D-078).
+  // A button only when it is one. With no `onPick` this is a thumbnail, on
+  // Home's preview and the games index, where the index wraps it in a <Link>.
+  // A <button> there would be a button inside a link, which is invalid HTML,
+  // and a disabled one would swallow the clicks meant for the link. As
+  // `AbilityChips` does, no handler means a label rather than a control.
   const Tag = onPick ? "button" : "div";
 
   return (
@@ -134,67 +118,51 @@ export default function ContenderPanel({
       {...(onPick
         ? { type: "button", disabled: resolved, onClick: onPick }
         : null)}
-      // No aria-label: the accessible name is computed from the contents — the
-      // Pokémon's name and its types — which is what a speech-control user
-      // would actually say (WCAG 2.5.3, the FilterChip reasoning).
-      // `className` is a layout hook only — the same contract TypeBadge's is
-      // under. It exists for **corner radius**, and for a specific reason: the
-      // winner's marking is an INSET ring, so it traces the panel's own box. In
-      // a thumbnail clipped by a card's `rounded-lg`, a square panel gave the
-      // ring square corners that the card then sliced off — the ring has to be
-      // told about the curve, it cannot infer it from its container. Safe to
-      // append here because the panel sets no radius of its own, so there is no
-      // collision of the kind TypeBadge's `radius` prop exists to avoid.
+      // No aria-label: the accessible name comes from the contents, the
+      // Pokémon's name and types, which is what a speech-control user would
+      // say (WCAG 2.5.3).
+      // `className` is for layout only, and exists for corner radius. The
+      // winner's marking is an inset ring that traces the panel's own box, so
+      // in a thumbnail clipped by a card's `rounded-lg`, a square panel would
+      // get square ring corners that the card then cuts off. The ring has to
+      // be told about the curve. The panel sets no radius of its own, so
+      // appending one here can't clash.
       className={`${PANEL_BOX} ${S.box} ${
         resolved && !won && !picked ? "opacity-50" : ""
       } ${className}`}
       style={{ backgroundColor: tint, ...mark }}
     >
-      {/* The panel is static and its CONTENT is what moves (D-102). The clash
-          shakes what is inside each panel rather than the panel itself, because
+      {/* The panel stays still, and its content is what moves. The clash
+          shakes what's inside each panel rather than the panel itself, because
           shaking the panels would flicker the gaps between them open and shut
-          a dozen times a round — the fault D-100 exists to have fixed. It also
-          reads better: boxes collide, the things inside them rattle.
+          a dozen times a round. It reads better too: the boxes collide, and
+          what's inside them rattles.
 
-          `overflow-hidden` on the button above is what keeps a shaking
-          contender from spilling into its neighbour. Every shake parameter is
-          inherited from the grid cell the page sets it on, so this component
-          needs to know nothing about the variation. */}
+          `overflow-hidden` on the panel stops a shaking Pokémon spilling into
+          its neighbour. The shake's settings are inherited from the grid cell
+          the page sets them on, so this component needs to know nothing about
+          them. */}
       <span
         className={`flex h-full min-h-0 w-full flex-col items-center justify-center ${
           S.pad
         } ${shake ? "animate-clash-shake" : ""}`}
       >
-        {/* A flexible box with the image contained inside it, never a square
-          sized by the panel's WIDTH — that is the D-081 runaway, measured at
-          718px inside a 767px viewport. Here the window is whatever the labels
-          leave and the artwork fits itself into it, so the same panel works at
-          320px and at 1440px. `min-h-0` because a flex child will not shrink
-          below its content otherwise, which is what lets tall artwork push the
-          name off the bottom of the panel. */}
+        {/* A flexible box with the image fitted inside it, never a square sized
+          by the panel's width, which would grow to 718px on a 767px screen.
+          The window is whatever space the labels leave, and the artwork fits
+          itself into it, so the same panel works at 320px and at 1440px.
+          `min-h-0` because a flex child won't shrink below its content
+          otherwise, and tall artwork would push the name off the panel. */}
         <span className="flex min-h-0 w-full flex-1 items-center justify-center">
-          {/* Fills its box, but **stops at 475px** (D-109). D-096 deliberately
-            let this upscale, on the argument that capping at the artwork's own
-            size left a 700px panel with a band of dead space above the name —
-            and that argument holds right up to the point where the upscale
-            becomes visible. The vendored art is exactly 475x475, so a panel
-            taller than that is enlarging a bitmap, and on a large monitor the
-            softness shows.
-            The cap only bites where the fault is: below 475 nothing changes at
-            all, and above it the panel trades a little dead space for an image
-            that is not blown up. */}
-          {/* **`lazy` is off by default, and that is the arena's answer rather
-            than an oversight.** In a game this artwork IS the subject and it is
-            above the fold, so eager is right — React 19 emits a
-            `<link rel="preload">` for any image without `loading="lazy"`, which
-            is what you want for the thing the round is about.
-
-            Home is the other case: the preview sits below the fold, and its two
-            sibling previews (`FeaturedDex`, `FeaturedTypes`) already mark their
-            art lazy for exactly that reason. Without this prop Home preloaded
-            two 475px artworks before the reader had scrolled to them. A loading
-            hint is not a restyle, so this stays inside D-043's rule that a
-            preview may subtract from its tool but never re-dress it. */}
+          {/* Fills its box, but stops at 475px, the artwork's real size: beyond
+            that it would be enlarging a bitmap, and on a large monitor the
+            softness shows. Below 475 the cap changes nothing, and above it the
+            panel trades a little empty space for a sharp image. */}
+          {/* `lazy` is off by default, on purpose. In a game the artwork is the
+            subject and above the fold, so it should load right away: React 19
+            preloads any image without `loading="lazy"`, which is what you want
+            for the thing the round is about. Home's preview sits below the
+            fold, so it passes `lazy`, like the other previews there. */}
           <img
             src={artworkFor(pokemon)}
             alt=""
@@ -208,8 +176,8 @@ export default function ContenderPanel({
           {pokemon.name}
         </span>
 
-        {/* Both arena densities, not just `md` — the thumbnail is the only size
-          with no room for them. */}
+        {/* At both game sizes, not just `md`: only the thumbnail has no room
+          for them. */}
         {size !== "sm" && (
           <span className="flex flex-wrap justify-center gap-1">
             {types.map((t) => (
@@ -218,10 +186,9 @@ export default function ContenderPanel({
           </span>
         )}
 
-        {/* The value band holds its space from the start, so revealing an answer
-          does not change the panel's height and shove the row below it — the
-          D-050 rule about controls that arrive and push the layout around,
-          applied to a number that arrives every round. */}
+        {/* The value band holds its space from the start, so revealing an
+          answer doesn't change the panel's height and shove the row below
+          it. */}
         <span className={`flex ${S.band} shrink-0 items-center gap-1.5`}>
           {resolved ? (
             <>
@@ -247,9 +214,8 @@ export default function ContenderPanel({
               </span>
             </>
           ) : (
-            // The dash is the empty state the comparison's diff cell already uses
-            // for "no value yet" (04_design §6), rather than a blank that reads
-            // as a rendering failure.
+            // The dash is the comparison board's "no value yet", rather than a
+            // blank that would look like something failed to render.
             <span aria-hidden className={`${S.value} text-tertiary`}>
               –
             </span>

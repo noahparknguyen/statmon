@@ -5,34 +5,29 @@ import { typesIn } from "../lib/typeChart";
 import { toggleType } from "../lib/typeView";
 
 // The defending typing: one chip per type that existed in the generation being
-// read, choose up to two (D-051).
+// read, choose up to two.
 //
-// The chip itself is `FilterChip` — literally the same component the dex's type
-// filters use, because it is the same gesture on the same data and the two must
-// not drift into looking like different kinds of control. This file used to
-// carry its own copy of that markup; only the cap below is genuinely local.
+// The chip is `FilterChip`, the same component the dex's type filters use,
+// because it's the same gesture on the same data, and the two shouldn't drift
+// into looking like different kinds of control. Only the cap below is local.
 //
-// **Why this does NOT collapse on a phone, where the dex's type chips do.**
-// The two look like the same control at the same width, and only one of them
-// folds away behind a disclosure — which reads as drift until you ask what each
-// one is for. On /dex the type chips are one optional filter among several, and
-// the payload (the table) is below them, so hiding them puts the answer higher
-// on the screen. Here the picker IS the tool: collapsing it would put a tap in
-// front of the only interaction the page has. So the deviation stays, and this
-// is the reason. (D-058)
+// It doesn't collapse on a phone, where the dex's type chips do. That reads as
+// an inconsistency until you ask what each one is for. On /dex the type chips
+// are one optional filter among several, with the table below them, so hiding
+// them puts the answer higher on the screen. Here the picker is the tool:
+// collapsing it would put a tap in front of the only interaction the page has.
 //
-// The cap is expressed by dimming the rest once two are chosen, rather than by
-// silently evicting one of the pair when a third is clicked. Dimmed chips keep
-// `aria-disabled` instead of the real `disabled` attribute, so they stay in the
-// tab order: a keyboard user who tabs into one gets told it is unavailable,
-// where a genuinely disabled control would just be skipped with no explanation.
+// The cap dims the rest once two are chosen, rather than silently dropping one
+// of the pair when a third is clicked. Dimmed chips use `aria-disabled` rather
+// than `disabled`, so they stay in the tab order: a keyboard user who tabs to
+// one is told it's unavailable, where a disabled control would be skipped with
+// no explanation.
 export default function TypePicker({ types, asof = null, onChange }) {
   const full = types.length >= 2;
 
-  // The cap is not spelled out on screen: no other control on the site
-  // captions itself, and the dimming says it at the moment it matters. Screen
-  // reader users get it up front, in the group's name, where dimming is harder
-  // to notice at a glance. (D-052)
+  // The cap isn't spelled out on screen: the dimming says it at the moment it
+  // matters. Screen reader users get it up front, in the group's name, rather
+  // than only on reaching a dimmed chip.
   return (
     <ChipGroup label="Defending type" name="Defending type, pick up to two">
       {typesIn(asof).map((type) => {

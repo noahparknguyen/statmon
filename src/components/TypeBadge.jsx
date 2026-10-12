@@ -1,18 +1,17 @@
 import { typeColorVar, typeTextVar, capitalize } from "../lib/types";
 
-// A type pill, colored by the type token. `size="sm"` for search rows.
+// A type pill, coloured by the type's token. `size="sm"` for rows.
 //
-// `label` overrides the text (the type chart's column headers show a three-
-// letter abbreviation) and `className` is a layout hook only — the caller can
-// make a badge fill its column, but the colour pairing stays in here, where it
-// is the one audited by `npm run audit:contrast`.
+// `label` overrides the text (the type chart's column headers show a
+// three-letter abbreviation), and `className` is for layout only: the caller
+// can make a badge fill its column, but the colour pairing stays in here,
+// where `npm run audit:contrast` checks it.
 //
-// `radius` is a prop rather than something a caller passes through `className`
-// for a reason worth stating: appending `rounded-xs` to a string that already
-// says `rounded-full` does not override it. Tailwind resolves that collision by
-// stylesheet order, not by the order the classes are written — the same trap
-// that silently gave the dex's sort control the wrong height (D-042). A prop
-// picks one class instead of stacking two.
+// `radius` is a prop rather than something passed through `className`,
+// because adding `rounded-xs` to a string that already says `rounded-full`
+// doesn't override it. Tailwind settles that by stylesheet order, not by the
+// order the classes are written. A prop picks one class instead of stacking
+// two.
 const RADIUS = { full: "rounded-full", xs: "rounded-xs" };
 
 export default function TypeBadge({

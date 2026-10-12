@@ -2,54 +2,44 @@ import TypeBadge from "./TypeBadge";
 import { capitalize, typeAbbr } from "../lib/types";
 import { chartAsOf, formatMult, typesIn } from "../lib/typeChart";
 
-// The effectiveness matrix: one row per attacking type, one column per
-// defending type, for the generation being read (D-051).
+// The effectiveness matrix: one row per attacking type and one column per
+// defending type, for the generation being read.
 //
-// **Every cell carries a fill, on a luminance ramp.** Red and green are ruled
-// out by 04_design §2 — they clash with eighteen type colours and are not
-// colourblind-safe — so the scale is brightness instead, which is colourblind-
-// safe by construction and runs in the direction the meaning does: resisted
-// cells sink below the surface, super-effective ones rise above it.
+// Every cell has a fill, on a brightness scale. Red and green are out: they
+// clash with 18 type colours and aren't colourblind-safe. Brightness is
+// colourblind-safe, and runs the way the meaning does: resisted cells sink
+// below the surface, and super-effective ones rise above it. With fills that
+// differ, the grid can be scanned rather than read cell by cell.
 //
-// The first version left 1× cells blank and gave the other three nearly the same
-// fill, which measured 1.42 between 2× and ½×, 1.10 against a blank, and exactly
-// 1.00 between ½× and 0× — three states that were, as fills, the same cell. All
-// the information sat in 11px text, so the grid had to be *read* rather than
-// scanned, and 70% of it being blank left nothing for the eye to track along.
-// (D-052)
+// 1× cells show no text, since 324 repetitions of "1×" would be noise, but
+// they keep screen-reader text, because a screen reader walks the grid cell by
+// cell and an empty cell would tell it nothing.
 //
-// 1× keeps no text — 324 repetitions of "1×" is noise — but it does keep an
-// `sr-only` one, since a screen reader walks the grid cell by cell and an empty
-// cell would tell it nothing at all.
+// The axis badges take the cells' `rounded-xs` corners rather than the pill
+// shape they have everywhere else: in a grid they are cells, and pills beside
+// slightly rounded rectangles would look like two systems sharing a table.
 //
-// The axis badges take the cells' `rounded-xs` rather than the pill shape they
-// wear everywhere else on the site: inside a grid they ARE cells, and a row of
-// pills against a row of slightly-rounded rectangles reads as two different
-// systems sharing a table.
+// A real <table> with scoped headers, so a screen reader announces each cell's
+// attacker and defender for free, where a grid of divs would need it all
+// rebuilt with ARIA.
 //
-// A real <table> with scope'd headers, for D-039's reason: a screen reader then
-// announces each cell's attacker and defender for free, where a grid of divs
-// would need all of that rebuilt by hand out of ARIA.
-//
-// The panel scrolls sideways on a narrow screen — the one place on the site that
-// does. D-010/D-029 rejected sideways scrolling for the comparison board and the
-// dex, but both of those are lists whose columns can be dropped; a matrix has no
-// subset that still answers the question. The page around it never scrolls.
+// The panel scrolls sideways on a narrow screen, the one place on the site
+// that does. The comparison board and the dex avoid it, but they're lists
+// whose columns can be dropped, and no subset of a matrix still answers the
+// question. The page around it never scrolls sideways.
 
-// The scale is built around the question people actually bring to a type chart —
-// "what is super effective?" — so 2× gets the one loud treatment and everything
-// else stays quiet.
+// The scale is built around the question people bring to a type chart, "what
+// is super effective?", so 2× gets the one loud fill and everything else stays
+// quiet.
 //
-// Reaching for a darker fill to mean "resisted" was the first attempt and it
-// does not work: on a near-black UI the dark end has no room, and base → surface
-// → elevated measured 1.08 and 1.10 apart, which is nothing. Brightness is where
-// the range is, so the accent goes UP and the rest stays down.
+// A darker fill for "resisted" wouldn't work: on a near-black page the dark
+// end has no room left. Brightness is where the range is, so the accent goes
+// up and the rest stays down.
 //
-// 55% accent into elevated is the ceiling: it clears the baseline by 3.00, and
-// one step brighter (70%) would drop primary text to 3.78 and fail AA. Mixed
-// inline from two tokens rather than hardcoded, the same way DexRow tints its
-// stat fill (D-039), and audited as group 6 of `npm run audit:contrast`.
-// The share is `--mix-grid-strong` in index.css (D-134), which the audit reads.
+// 55% accent into the elevated colour is the ceiling: the 2× text on it is
+// 5.04:1, and a brighter fill would drop it below AA. Mixed from two tokens
+// rather than hard-coded, like DexRow's stat fill. The share is
+// `--mix-grid-strong` in index.css, which `npm run audit:contrast` reads.
 const STRONG_FILL = {
   backgroundColor:
     "color-mix(in srgb, var(--color-accent) var(--mix-grid-strong), var(--color-elevated))",
@@ -57,28 +47,25 @@ const STRONG_FILL = {
 
 // Marking the selected column.
 //
-// A wash over the cells alone cannot do it: anything strong enough to see puts
-// the multiplier under it below AA — 22% dropped 2× text to 4.14 and ½× to
-// 4.24, and 12%, the most that stays legal, is barely a 1.23 change. So the
-// weight goes into an accent rule down each edge of the column instead, which
-// costs the text nothing and draws two continuous lines the full height of the
-// grid, with the last legal amount of wash on top of that. (D-053)
+// A wash over the cells alone can't do it: any wash strong enough to see would
+// push the multiplier text under it below AA. So an accent rule runs down each
+// edge of the column instead, which costs the text nothing, with the most wash
+// that still keeps AA on top. The 2× text under it is 4.53:1.
 const SELECTED_WASH = {
   backgroundColor:
     "color-mix(in srgb, var(--color-accent) var(--mix-grid-wash), transparent)",
 };
 
-// The column is framed on all four sides, so the top and bottom cells close it
-// off rather than leaving two rules running into nothing. The header carries the
-// top edge and the last row the bottom, since those are the column's ends.
+// The column is framed on all four sides, so the top and bottom close it off
+// rather than leaving two rules running into nothing. The header cell carries
+// the top edge and the last row the bottom.
 //
-// **Drawn as inset shadows, not borders** (D-141). In a collapsed table a
-// border is part of the layout, so selecting a type grew the grid by 2px and
-// moved every row below the header down by one: the chart jumped each time
-// you picked or dropped a type. An inset shadow takes no space. It is drawn in
-// the cell's 1px padding, the gutter, which the cell's fill does not cover, so
-// the lines still run unbroken down the column. (D-055 found an OUTSET shadow
-// painted over by the cells beside it; an inset one stays inside its own cell.)
+// Drawn as inset shadows, not borders. In a collapsed table a border is part of
+// the layout, so selecting a type would grow the grid by 2px and make it jump.
+// An inset shadow takes no space. It's drawn in the cell's 1px padding, the
+// gutter, which the cell's fill doesn't cover, so the lines still run unbroken
+// down the column. An outset shadow would be painted over by the neighbouring
+// cells.
 const ACCENT = "var(--color-accent)";
 const selectedEdge = (selected, { top = false, bottom = false } = {}) =>
   selected
@@ -93,10 +80,10 @@ const selectedEdge = (selected, { top = false, bottom = false } = {}) =>
     : undefined;
 
 const CELL = {
-  strong: "text-primary", // 2× — the only loud cell
-  neutral: "bg-elevated", // 1× — the baseline
-  weak: "bg-base text-tertiary", // ½× — recessed and quiet
-  none: "bg-base text-primary", // 0× — same floor, bright glyph
+  strong: "text-primary", // 2×, the only loud cell
+  neutral: "bg-elevated", // 1×, the baseline
+  weak: "bg-base text-tertiary", // ½×, sunk and quiet
+  none: "bg-base text-primary", // 0×, the same floor, with a bright glyph
 };
 
 const cellClass = (mult) =>
@@ -113,36 +100,29 @@ export default function TypeGrid({ asof = null, highlight = [] }) {
   const chart = chartAsOf(asof);
 
   return (
-    // The scroll container is the bordered panel itself, so the edge of the
-    // scrollable region is visible rather than the page just ending mid-table.
-    // overflow-y is pinned hidden, not left to compute: setting overflow-x
-    // alone turns the other axis into `auto`, and the cross-hair's full-height
-    // bar (index.css) then counts as vertical overflow and grows a scrollbar
-    // inside the panel.
-    // p-1.5 is not decoration: with the table flush to the edge, the panel's own
-    // 16px corner radius cut across the corner badges and made them look
-    // differently rounded from the rest of the axis.
-    // `tabIndex` and `role` are the fix for a real WCAG 2.1.1 failure, not
-    // decoration: this panel is the one thing on the site that scrolls
-    // sideways, and a scroll container that cannot take focus cannot be
-    // scrolled from a keyboard at all. At 390px eight of the eighteen columns
-    // are visible, so the other ten were simply unreachable without a pointer.
-    // Focusable + named makes it a region a keyboard user can tab to and then
-    // pan with the arrow keys; the global :focus-visible ring shows where they
-    // are. The grid has no focusable children, so nothing is shadowed by this.
-    // (D-065)
+    // The bordered panel is the scroll container, so the edge of the
+    // scrollable area is visible, rather than the page just ending mid-table.
+    // overflow-y is pinned to hidden: setting only overflow-x turns the other
+    // axis to `auto`, and the cross-hair's full-height bar (index.css) would
+    // then count as vertical overflow and add a scrollbar inside the panel.
+    // p-1.5 keeps the table off the edge, so the panel's 16px corner radius
+    // doesn't cut across the corner badges.
+    // `tabIndex` and `role` are needed for WCAG 2.1.1: a scroll container that
+    // can't take focus can't be scrolled from a keyboard at all, and at 390px
+    // ten of the 18 columns are off screen. Focusable and named, it's a region
+    // a keyboard user can tab to and scroll with the arrow keys. The grid has
+    // no focusable children, so nothing is hidden by this.
     <div
       tabIndex={0}
       role="region"
       aria-label="Type effectiveness chart, scrollable"
       className="type-grid-panel overflow-x-auto overflow-y-hidden rounded-lg border border-border-subtle bg-surface p-1.5"
     >
-      {/* w-full lets the grid spread into the panel when there is room, instead
-          of leaving a strip of dead space to the right of the last column on a
-          wide screen. The minimum width that makes it scroll on a phone comes
-          from the columns' own min-widths, NOT from `min-w-max` on the table:
-          that made the table's min-content size escape the scroll container and
-          pushed the whole page sideways by a scrollbar's width at 768px. */}
+      {/* w-full lets the grid spread into the panel when there's room, rather
+          than leaving empty space to the right of the last column. The width
+          that makes it scroll on a phone comes from the columns' own minimum
+          widths, not `min-w-max` on the table, which would let the table's
+          width escape the scroll container and push the whole page sideways. */}
       <table className="type-grid w-full border-collapse">
         <caption className="sr-only">
           Type effectiveness: each row is an attacking type, each column a
@@ -151,10 +131,9 @@ export default function TypeGrid({ asof = null, highlight = [] }) {
         </caption>
         <thead>
           <tr>
-            {/* The row-header column is sized explicitly. Without that, auto
-                table layout hands every spare pixel to the one column that has
-                no width of its own — which put a 440px gutter to the left of
-                the grid the moment the table was told to fill its panel. */}
+            {/* The row-header column is sized explicitly. Otherwise automatic
+                table layout gives every spare pixel to the one column with no
+                width of its own, leaving a wide gap left of the grid. */}
             <th
               scope="col"
               className="type-grid-sticky sticky left-0 z-1 w-28 bg-surface p-px"
@@ -168,15 +147,12 @@ export default function TypeGrid({ asof = null, highlight = [] }) {
                 className="min-w-9 p-px"
                 style={selectedEdge(highlight.includes(def), { top: true })}
               >
-                {/* Filled, like the row headers on the other axis. Eighteen grey
-                    abbreviations made you count columns to find one; the colour
-                    is the same cue the rows already had, and it lets the two
-                    axes be read the same way.
-                    Every header stays at full strength — dimming the unselected
-                    ones was tried and it fought the whole point of colouring
-                    them, making seventeen columns harder to find in order to
-                    mark two. The wash down the selected columns does that job
-                    on its own. */}
+                {/* Coloured, like the row headers, so both axes read the same
+                    way and a column can be found by colour rather than by
+                    counting. Every header stays at full strength: dimming the
+                    unselected ones would make 17 columns harder to find in
+                    order to mark two, and the selected column's frame already
+                    does that job. */}
                 <span aria-hidden>
                   <TypeBadge
                     type={def}
@@ -186,8 +162,8 @@ export default function TypeGrid({ asof = null, highlight = [] }) {
                     className="flex h-7 w-full items-center justify-center"
                   />
                 </span>
-                {/* The abbreviation is for the eye only; the full name is what
-                    assistive tech announces for the whole column. */}
+                {/* The abbreviation is for the eye only. Assistive tech
+                    announces the full name for the column. */}
                 <span className="sr-only">{capitalize(def)}</span>
               </th>
             ))}
@@ -196,22 +172,21 @@ export default function TypeGrid({ asof = null, highlight = [] }) {
         <tbody>
           {types.map((atk, rowIndex) => (
             <tr key={atk}>
-              {/* Sticky so the attacker stays readable once the matrix is
-                  scrolled sideways — without it the numbers lose their row. */}
-              {/* The badge fills the column rather than sitting left-aligned
-                  in it: eighteen names of different lengths left a ragged edge
-                  and a different-sized gap on every row. Full width makes the
-                  axis a solid band and squares it with the header row above. */}
+              {/* Sticky, so the attacker stays visible once the matrix scrolls
+                  sideways. Otherwise the numbers lose their row. */}
+              {/* The badge fills the column rather than sitting left-aligned:
+                  names of different lengths would leave a ragged edge. Full
+                  width makes the axis a solid band, squared with the header
+                  row above. */}
               <th
                 scope="row"
                 // The same 1px gutter every other cell has, so the axis sits in
-                // the grid rather than beside it — `pl-2` here left 15px inside
-                // the panel's left edge against 8px on its right.
+                // the grid rather than beside it.
                 className="type-grid-sticky sticky left-0 z-1 bg-surface p-px text-left"
               >
-                {/* Full cell height, like every other cell in the row — a
-                    short label floating in a tall row reads as a different kind
-                    of thing sitting next to the grid rather than part of it. */}
+                {/* Full cell height, like every other cell in the row: a short
+                    label floating in a tall row would look like something
+                    sitting next to the grid rather than part of it. */}
                 <TypeBadge
                   type={atk}
                   size="sm"
@@ -222,9 +197,9 @@ export default function TypeGrid({ asof = null, highlight = [] }) {
               {types.map((def) => {
                 const mult = chart[atk]?.[def] ?? 1;
                 return (
-                  // A 1px gutter rather than 4px: the gutters are what draw the
-                  // grid, and at four they read as space between floating chips
-                  // instead of lines between cells.
+                  // A 1px gutter rather than 4px: the gutters draw the grid, and
+                  // at 4px they'd read as space between floating chips instead
+                  // of lines between cells.
                   <td
                     key={def}
                     className="p-px"
@@ -236,11 +211,9 @@ export default function TypeGrid({ asof = null, highlight = [] }) {
                       className={`relative flex h-7 items-center justify-center rounded-xs text-badge ${cellClass(mult)}`}
                       style={mult > 1 ? STRONG_FILL : undefined}
                     >
-                      {/* The selected columns were marked only by a slightly
-                          brighter header, which was far too quiet to find. A
-                          persistent wash down the whole column reads at a
-                          glance, and sits ON TOP of the cell's own fill so the
-                          2× / ½× / 0× encoding underneath survives it. */}
+                      {/* The wash down a selected column sits on top of the
+                          cell's own fill, so the 2×, ½×, and 0× fills
+                          underneath still show through. */}
                       {highlight.includes(def) && (
                         <span
                           aria-hidden

@@ -4,37 +4,33 @@ import { PANEL_BOX, tintFor } from "./gameChrome";
 import { artworkFor } from "../lib/pokemon";
 import { capitalize, typeColorVar } from "../lib/types";
 
-// One side of a type-game round: the attacking type, or the defender (D-104).
+// One side of a type-game round: the attacking type, or the defender.
 //
-// **The role label is not decoration.** The whole question is directional —
-// Fire into Water is not Water into Fire — and the two panels are otherwise
-// symmetrical, so "ATTACKING" and "DEFENDING" are the only thing distinguishing
-// them. It is the first thing in each panel for that reason.
+// The role label matters. The question has a direction (Fire into Water isn't
+// Water into Fire), and the two panels are otherwise alike, so "ATTACKING" and
+// "DEFENDING" are all that tells them apart. That's why it comes first in each
+// panel.
 //
-// **A Pokémon defender is not tinted until you answer**, which is the one place
-// this panel departs from `ContenderPanel`. Every panel on this site is tinted
-// by its primary type, and here that would print the answer: in Hard the typing
-// is precisely the thing being recalled. So the tint arrives with the reveal,
-// along with the type badges — and both are then part of the teaching, not part
-// of the question.
+// A Pokémon defender isn't tinted until you answer, the one way this panel
+// differs from `ContenderPanel`. Every panel on the site is tinted by its
+// primary type, and here that would give the answer away: in Hard, the typing
+// is what you're recalling. So the tint arrives with the answer, along with the
+// type badges.
 //
-// Sized in two densities like the stat game's panels, and for the identical
-// reason: a responsive variant of a named text style generates no CSS, because
-// the styles are hand-written `@layer components` classes (06_style_guide §13).
-// A prop is the only way to change one.
-// The vendored official artwork is exactly 475x475 — every file, checked across
-// a 400-file sample — so a box any larger than that upscales it, which is the
-// visible pixelation on a big screen. The cap is the source's own resolution
-// rather than a number anyone chose (D-109).
+// Sized in two densities like the stat game's panels, for the same reason: a
+// responsive variant of a named text style produces no CSS, because the styles
+// are hand-written classes. A prop is the only way to change one.
+//
+// The artwork files are all exactly 475×475, so a bigger box would enlarge
+// them, which shows as pixelation on a big screen.
 const ART_CAP = "max-h-[475px] max-w-[475px]";
 
-// The role label is the overline at the panel's scale: `text-overline-lg` on
-// the board, where it carries the direction of the whole question (D-107), and
-// the plain overline in a thumbnail, where at 16px it was the largest thing in
-// a card whose Pokémon names are 12 (D-137).
+// The role label is an overline at the panel's scale: `text-overline-lg` on the
+// board, where it carries the direction of the question, and the plain overline
+// in a thumbnail, where a bigger one would outweigh the Pokémon names.
 //
 // `lg` pads like `ContenderPanel`'s `lg`, 12px on a phone and 16 from `sm`, so
-// the two games' panels hold their contents at the same insets.
+// both games' panels hold their contents at the same insets.
 const SIZES = {
   lg: {
     box: "h-full",
@@ -43,30 +39,23 @@ const SIZES = {
     type: "text-display",
     name: "text-h3",
     band: "h-6",
-    // Beside a card-scale name, `md`, as in ContenderPanel's arena densities
-    // (06_style_guide §12.2). It was `sm` here, so the same name-and-typing
-    // read a size smaller on one game's board than on the other's.
+    // `md`, beside a card-sized name, as in ContenderPanel, so a name and
+    // typing look the same size on both games' boards.
     badge: "md",
   },
   sm: {
-    // **`h-full`, not a fixed height.** This size is only ever used inside
-    // `gameThumbs`' band, and that band now has to hold either two panels in a
-    // row or FOUR in a 2x2 (D-117). A hardcoded `h-32` made the four-up case
-    // 256px of panels inside a 128px band, which overflowed the card and
-    // painted over the label under it. The grid owns the height; the panel
-    // fills its cell.
+    // `h-full`, not a fixed height. This size only appears in `gameThumbs`'
+    // band, which holds either two panels in a row or four in a 2×2, so a fixed
+    // height would overflow in one case. The grid owns the height, and the
+    // panel fills its cell.
     box: "h-full",
     pad: "gap-1 p-2",
     role: "text-overline",
     type: "text-h4",
     name: "text-caption",
-    // **Not `h-0`.** The reservation exists so a revealed typing does not shove
-    // the name up the panel mid-round (D-107) — but at this size nothing was
-    // ever revealed, so the band was zero and the question never came up. The
-    // difficulty picker's hard-tier card shows a Pokémon WITH its typing
-    // (D-117), and its badges spilled straight out of the thumbnail's bottom
-    // edge. One row's worth here; the artwork above is `flex-1` and gives up
-    // the space.
+    // Not `h-0`: the Hard card on the start screen shows a Pokémon with its
+    // typing, and the badges need a row's height. The artwork above is
+    // `flex-1`, so it gives up the space.
     band: "h-5",
     badge: "sm",
   },
@@ -93,12 +82,12 @@ export default function MatchupPanel({
   return (
     <div
       className={`${PANEL_BOX} ${S.box} ${className}`}
-      // No ring on reveal (D-137): the accent ring means "this is the answer"
-      // on both boards, and a revealed defender is not the answer — the
-      // multiplier is, and its button says so.
+      // No ring on reveal: the accent ring means "this is the answer" on both
+      // boards, and a revealed defender isn't the answer. The multiplier is,
+      // and its button says so.
       style={{ backgroundColor: tint }}
     >
-      {/* The panel is static and its CONTENT is what moves (D-102): shaking the
+      {/* The panel stays still, and its content is what moves: shaking the
           panels themselves would flicker the gap between them open and shut a
           dozen times a round. */}
       <span
@@ -106,28 +95,24 @@ export default function MatchupPanel({
           S.pad
         } ${shake ? "animate-clash-shake" : ""}`}
       >
-        {/* 16px, not 11. This label carries the entire direction of the
-            question — Fire into Water is not Water into Fire — and the two
-            panels are otherwise symmetrical, so it cannot be the quietest
-            thing on the board (D-107). */}
+        {/* 16px, not 11: this label carries the direction of the whole
+            question, so it can't be the quietest thing on the board. */}
         <span className={`${S.role} text-tertiary`}>{role}</span>
 
         {pokemon ? (
           <>
-            {/* `lazy` is off by default — in a round this artwork is the
-                subject and eager is right — and on by the thumbnails, where
-                React 19 would otherwise emit a `<link rel="preload">` for a
-                picture of a game nobody has started (D-113). The same prop
-                `ContenderPanel` carries, for the same reason. */}
-            {/* The artwork's box fills what the labels leave, and the image
-                sits inside it — `ContenderPanel`'s anatomy. It used to be the
-                image itself that grew, and an image stops growing at its 475px
-                cap, so on a tall board the column's slack went above and below
-                the whole group and floated DEFENDING 73px lower than the
-                ATTACKING beside it (D-137). With a box that always fills, both
-                labels sit at the top, and the name, ability and typing at the
-                foot, the way the stat game's panels have always set theirs.
-                One element still, so the clash shakes it as one part (D-114). */}
+            {/* `lazy` is off by default, since in a round the artwork is the
+                subject and should load right away. The thumbnails turn it on,
+                or React 19 would preload a picture of a game nobody has
+                started. `ContenderPanel` has the same prop, for the same
+                reason. */}
+            {/* The artwork's box fills whatever the labels leave, and the image
+                sits inside it, as in `ContenderPanel`. If the image itself
+                grew, it would stop at its 475px cap, and on a tall board the
+                spare space would float this panel's labels lower than the
+                attacker's beside it. With a box that always fills, both labels
+                sit at the top, and the name, ability, and typing at the foot.
+                One element, so the clash shakes it as one part. */}
             <span className="flex min-h-0 w-full flex-1 items-center justify-center">
               <img
                 src={artworkFor(pokemon)}
@@ -138,25 +123,24 @@ export default function MatchupPanel({
               />
             </span>
             <span className={`${S.name} text-primary`}>{pokemon.name}</span>
-            {/* Read-only: without an `onSelect` these render as pills rather
-                than buttons, which is how Home previews them too — a button
-                that does nothing is worse than a label (D-078). */}
+            {/* Read-only: without an `onSelect`, these render as pills rather
+                than buttons, as on Home's preview. A button that does nothing
+                is worse than a label. */}
             {ability && (
               <AbilityChips
                 abilities={[{ slug: ability, hidden: false }]}
                 selected={ability}
                 gen={gen}
-                // No effect dot until the round is over. The marker means "this
-                // ability changes type matchups", which is the question — see
-                // AbilityChips (D-104).
+                // No effect dot until the round is over. The dot means "this
+                // ability changes type matchups", which would answer the
+                // question: see AbilityChips.
                 markEffect={reveal}
               />
             )}
-            {/* The typing, revealed with the answer — into space that was
-                already held. The band keeps its height from the start, so the
-                reveal does not shove the name and the ability up the panel
-                (D-107). Same reservation `ContenderPanel` makes for its value.
-                Two rows' worth, because a dual type wraps at a narrow width. */}
+            {/* The typing, revealed with the answer into space already held.
+                The band keeps its height from the start, so the reveal doesn't
+                shove the name and ability up the panel, as `ContenderPanel`
+                holds space for its value. */}
             <span
               className={`flex flex-wrap items-start justify-center gap-1 ${S.band}`}
             >
@@ -167,10 +151,10 @@ export default function MatchupPanel({
         ) : (
           <span className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1">
             {types.map((t) => (
-              // The type as coloured display text rather than as a badge: an
-              // 11px pill is not a thing you read across a room, and this is
-              // the whole content of the panel. Same treatment /types uses for
-              // the typing in its readout heading (D-053).
+              // The type as coloured display text rather than a badge: an 11px
+              // pill isn't readable from across a room, and here it's the whole
+              // content of the panel. /types sets the typing in its readout
+              // heading the same way.
               <span
                 key={t}
                 className={S.type}

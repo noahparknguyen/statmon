@@ -1,21 +1,17 @@
 import { Link } from "react-router";
 
-// The shared button/CTA. Three variants and two sizes cover every control on
-// the site that has a text label; before this existed the same class strings
-// were hand-copied across Home, Compare, NotFound and the style playground,
-// which is exactly how variants drift apart (04_design §6).
+// The shared button: three variants and two sizes, so every page's buttons
+// come from one set of class strings rather than copies that drift apart.
 //
-// Pass `to` to render a react-router <Link> that looks identical to a <button>
-// — the CTAs on Home and 404 are navigations, not actions.
+// Pass `to` to render a react-router <Link> that looks identical to a
+// <button>: the buttons on Home and the 404 are navigations, not actions.
 //
-// **`ghost` is the quiet one** (D-135): no fill and no border until the pointer
-// arrives, for an action that should not compete with what it sits under —
-// "Clear all filters", "Clear record". 04_design §6 said to add it here when a
-// use appeared rather than hand-roll one; two had appeared, both hand-rolled,
-// at two different heights.
+// `ghost` is the quiet one: no fill and no border until the pointer arrives,
+// for an action that shouldn't compete with what it sits under, such as "Clear
+// all filters" and "Clear record".
 //
-// Class strings are written out in full rather than composed from fragments so
-// Tailwind's scanner can see every utility (cf. D-028).
+// Class strings are written out in full rather than composed from fragments, so
+// Tailwind's scanner can see every utility.
 const BASE =
   "inline-flex items-center gap-2 rounded-full text-button transition-colors";
 

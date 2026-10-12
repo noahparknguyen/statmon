@@ -2,22 +2,23 @@ import { FaCaretLeft, FaCaretRight } from "react-icons/fa6";
 import StatBar from "./StatBar";
 import { typeColorVar } from "../lib/types";
 
-// The desktop (≥ md) mirrored stat row: P1's value + bar growing leftward from
-// the centre, the difference cell, then P2's bar growing rightward + value.
+// The mirrored stat row, from md up: P1's value and bar growing leftward from
+// the centre, the difference cell, then P2's bar growing rightward and value.
 //
-// Shared by ComparisonCard (the live tool) and Home's FeaturedComparison so the
-// two surfaces cannot drift — the same split already used for the mobile
-// CmpStatCard (D-029). The only difference between the two callers is that Home
-// animates its bars in on mount, hence `animate`.
+// Shared by ComparisonCard (the tool) and Home's FeaturedComparison, so the
+// two can't drift apart, as CmpStatCard is for phones. The only difference
+// between the two callers is that Home animates its bars in on mount, hence
+// `animate`.
 //
-// Column track: [value | bar | diff | bar | value]. Both value columns are fixed
-// so the centre stays centred; the diff column is wide enough for "+150".
+// Columns: value, bar, difference, bar, value. Both value columns are fixed so
+// the centre stays centred, and the difference column is wide enough for
+// "+150".
 //
-// **The values are `text-stat-sm`, not `text-diff`** (D-135). The two styles
-// share their numbers today, and that is exactly why the role matters: a value
-// set as a difference reads as one to the next person who touches it, and the
-// two are free to diverge (06_style_guide §5). These are stat values in a
-// dense row, which is `text-stat-sm`'s role, the one the dex table's cells use.
+// The values are `text-stat-sm`, not `text-diff`. The two styles look the same
+// today, which is exactly why the choice matters: a value set as a difference
+// reads as one to the next person who touches it, and the two styles are free
+// to diverge. These are stat values in a dense row, `text-stat-sm`'s job, as in
+// the dex table's cells.
 const ROW_COLS = "grid-cols-[1.6rem_1fr_3.25rem_1fr_1.6rem]";
 
 export default function CmpRow({
@@ -61,10 +62,11 @@ export default function CmpRow({
   );
 }
 
-// Centre cell: the magnitude sits on the row's centreline (aligned with the
-// flanking bars), with the stat label as a caption above it. Both caret slots
-// are reserved so the number never shifts. Magnitude + caret take the winner's
-// primary type colour (D-023); ties are muted, the empty state is a dash.
+// Centre cell: the difference sits on the row's centre line, level with the
+// bars on either side, with the stat's label as a caption above it. Both caret
+// slots are reserved, so the number never shifts. The difference and its caret
+// take the leader's primary type colour. A tie is muted, and the empty state is
+// a dash.
 function DiffCell({ label, d, aColor, bColor }) {
   return (
     <div className="relative h-9 flex items-center justify-center">

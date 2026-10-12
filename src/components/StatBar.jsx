@@ -1,32 +1,28 @@
 import { statPct } from "../lib/stats";
 import { typeColorVar } from "../lib/types";
 
-// The one stat bar (06_style_guide §12.2, D-135). Every bar on the comparison
-// surfaces is this component: the Pokémon cards' rows, the mirrored rows on the
-// comparison card, and the per-stat cards a phone gets instead.
+// The one stat bar. Every bar on the comparison pages is this component: the
+// Pokémon cards' rows, the mirrored rows on the comparison card, and the
+// per-stat cards a phone gets instead. On a desktop board the side cards and
+// the centre card share row lines, so two different bars would show the same
+// stat at two thicknesses side by side.
 //
-// **They were three bars before, and two of them sat on the same line.** The
-// side cards drew an 8px bar on the see-through track, the comparison card's
-// mirrored rows a 6px bar on the solid one, and the phone cards an 8px bar on
-// the solid one. On a desktop board the side cards and the centre card share
-// row lines, so the same stat was drawn at two thicknesses side by side.
+// What may differ is a prop, and nothing else:
+//   · `side`: which end the fill grows from. The mirrored row's left bar grows
+//     from the centre outward, so it's justified to its end.
+//   · `track`: `glass` only where the bar sits over artwork (the Pokémon
+//     card), so the art shows through, and `solid` everywhere else.
+//   · `animate`: grow in on mount. `--target` and `width` work differently, so
+//     they stay two branches rather than one style object whose meaning
+//     depends on a flag.
 //
-// What is allowed to differ is stated as props, and nothing else:
-//   · `side`  — which end the fill grows from. The mirrored row's left bar
-//               grows from the centre outward, so it is justified to its end.
-//   · `track` — `glass` only where the bar sits over artwork (the Pokémon
-//               card), so the art shows through; `solid` everywhere else.
-//   · `animate` — grow in on mount (D-124). `--target` and `width` are two
-//               mechanisms, so they stay two branches rather than one style
-//               object whose meaning depends on a flag.
+// A null `value` is the empty state: the track alone, no fill.
 //
-// `value` null is the empty state: the track alone, no fill.
-//
-// Fill width is scaled against the fixed 255 every bar on the site shares
-// (D-011), so a length means the same thing on every surface.
+// Fill width is scaled against the fixed 255 every bar on the site shares, so
+// a length means the same thing everywhere.
 const TRACK = { solid: "bg-elevated", glass: "bg-track-glass" };
 
-// Written out in full, so Tailwind's scanner sees each one (cf. D-028).
+// Written out in full, so Tailwind's scanner sees each one.
 const JUSTIFY = { start: "justify-start", end: "justify-end" };
 
 export default function StatBar({

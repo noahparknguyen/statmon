@@ -19,13 +19,13 @@ import {
 } from "../lib/games";
 import { capitalize } from "../lib/types";
 
-// The stat game's half of the setup panel: its groups, its status line, and
-// nothing about how a dialog behaves (D-104).
+// The stat game's half of the setup panel: its groups and its status line, and
+// nothing about how a dialogue behaves.
 //
-// **The lens leads, above a divider**, which is `DexFilters`' own argument
-// (D-049): the generation decides what every group below it can even offer — a
-// Gen 1 game has five stats and a Special, no Fairy chip and no Gen 7 origin.
-// Reading top to bottom is the actual dependency.
+// The generation leads, above a divider, as in `DexFilters`: it decides what
+// every group below it can offer. A Gen 1 game has five stats with a single
+// Special, no Fairy chip, and no later origins. Reading top to bottom follows
+// the dependency.
 export default function HigherSetup({ draft, onChange, ...shell }) {
   const pool = draft ? poolFor(draft) : [];
   const playable = draft ? pool.length >= draft.n : false;
@@ -52,16 +52,16 @@ export default function HigherSetup({ draft, onChange, ...shell }) {
     >
       {draft && (
         <>
-          {/* A divider sits 16px from what it divides on both sides (§6.3):
-              this padding above it, the body's gap below. */}
+          {/* A divider sits 16px from what it divides on both sides: this
+              padding above it, the body's gap below. */}
           <div className={RULE_BELOW}>
             <GenerationStrip
               label="Stats as of"
               options={allGenerations()}
               asof={draft.asof}
               // Through `setAsOf`, which re-reads every group against the new
-              // lens — a Sp. Atk drill becomes a Special drill in Gen 1, and a
-              // Fairy filter is dropped rather than left to match nothing.
+              // generation: a Sp. Atk game becomes a Special game in Gen 1, and
+              // a Fairy filter is dropped rather than left to match nothing.
               onSelect={(next) => onChange(setAsOf(draft, next))}
             />
           </div>
@@ -78,13 +78,12 @@ export default function HigherSetup({ draft, onChange, ...shell }) {
             ))}
           </ChipGroup>
 
-          {/* The one group that does NOT follow the dex's "empty is not a
-              constraint" rule (D-040), and the divergence is deliberate: these
-              are the question space, not a filter over something visible. "Ask
-              me about nothing" is not a game, so every chip starts lit and the
-              last one cannot be turned off. The labels carry the difference —
-              "Ask me about" reads as the rules, "Introduced in" and "Types"
-              read as filters. (D-096) */}
+          {/* The one group that doesn't follow the dex's rule that empty means
+              no constraint, on purpose: these are the questions, not a filter
+              over something visible. "Ask me about nothing" isn't a game, so
+              every chip starts lit and the last one can't be turned off. The
+              labels carry the difference: "Ask me about" reads as the rules,
+              and "Introduced in" and "Types" read as filters. */}
           <ChipGroup label="Ask me about">
             {statsFor(draft.asof).map((stat) => (
               <FilterChip
@@ -121,13 +120,10 @@ export default function HigherSetup({ draft, onChange, ...shell }) {
           </ChipGroup>
 
           <ChipGroup label="Options">
-            {/* **"Hide alternate forms", lit when they are hidden** — the dex's
-                  exact wording and polarity (D-126). This chip was `Alternate forms`
-                  and lit when they were INCLUDED: the same field, the same component
-                  and the same default, reading the opposite way on two surfaces a
-                  reader moves between. Every other `FilterChip` on the site means "a
-                  narrowing is applied" when it is lit, and hiding 234 entries is a
-                  narrowing, so the games were the odd one out rather than the dex. */}
+            {/* "Hide alternate forms", lit when they're hidden: the dex's exact
+                  wording and polarity. Every other `FilterChip` on the site is
+                  lit when it narrows something, and hiding 234 entries is a
+                  narrowing. */}
             <FilterChip
               active={!draft.includeForms}
               label="Hide alternate forms"

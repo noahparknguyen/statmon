@@ -9,32 +9,24 @@ import {
 } from "./gameChrome";
 import { PAGE_CONTENT } from "./pageChrome";
 
-// The screen a game opens on: three ways to play, and a way to the settings
-// (D-108).
+// The screen a game opens on: three ways to play, and a way to the settings.
 //
-// **This reverses D-092's "play immediately", and the situation is what
-// changed.** When the games shipped, the stat game had two knobs and putting a
-// form between a link and the game would have been friction for nothing. It now
-// has six axes — stat, count, origin generation, type, forms, era — and the
-// first thing a new player meets should be three answers rather than six
-// questions. The overwhelm is one this project created.
+// The stat game has six settings (stat, count, origin generation, type, forms,
+// and era), and the first thing a new player meets should be three answers
+// rather than six questions.
 //
-// **A bare URL asks; a parameterised URL plays.** `/games/higher` shows this;
-// `/games/higher?stats=speed&n=4` goes straight to the board. So a shared link
-// always carries a game and never a form, which was the whole objection to
-// gating on setup in the first place — it is answered rather than overridden.
+// A bare URL asks, and a URL with settings plays. `/games/higher` shows this
+// screen, and `/games/higher?stats=speed&n=4` goes straight to the board. So a
+// shared link always opens a game, never a form.
 //
-// **Presets are settings, not modes.** Each writes a state the setup panel
-// could also reach by hand, so nothing here is a fourth code path, and
-// Customise is not an escape hatch from a mode system — it is the same
-// controls, opened directly.
+// Presets are settings, not modes. Each one writes a state the setup panel
+// could also reach by hand, so nothing here is a separate code path, and
+// Customise isn't an escape from a mode system: it's the same controls, opened
+// directly.
 //
-// **It is a page, so it takes the page shell** (D-137): `PAGE_CONTENT` and
-// `PageHeader`, the way the games index it was drawn to match already does.
-// It used to centre itself in the board's viewport-height box with a heading
-// of its own, which put the title flush against the site header at 1280 x 900
-// and 390px, the content being taller than the box, and 32 to 42px below it
-// on a taller screen. Every other page sits at a fixed distance.
+// It's a page, so it takes the page shell, `PAGE_CONTENT` and `PageHeader`,
+// like the games index it matches. That keeps the title at the same distance
+// from the site header as on every other page, at any screen height.
 export default function GameStart({
   title,
   presets,
@@ -49,13 +41,13 @@ export default function GameStart({
       {/* The cards are equal weight: nothing here is recommended, and a
           highlighted middle option would be the page making a choice it has
           no basis for. The full content width, like the games index, since
-          they are the same object at two scales (D-117). */}
+          they're the same kind of card at two scales. */}
       <ul className="grid gap-4 sm:grid-cols-3">
         {presets.map((preset) => (
           <li key={preset.id}>
-            {/* The whole card is the control, and the panels inside it are
-                given no handler, so they render as `<div>`s rather than
-                controls nested in a control — the rule D-111 exists for. */}
+            {/* The whole card is the control. The panels inside it get no
+                handler, so they render without controls of their own: HTML
+                doesn't allow a control inside a control. */}
             <button
               type="button"
               onClick={() => onPick(preset)}
@@ -76,11 +68,10 @@ export default function GameStart({
         ))}
       </ul>
 
-      {/* Secondary, and below: the presets are the answer for almost everyone,
-          and this is the door for the person who already knows what they want.
-          It opens the settings without playing a round first. 32px under the
-          cards, the distance every section's button keeps from what it
-          follows (FeaturePreview). */}
+      {/* Secondary, and below: the presets suit almost everyone, and this is
+          for the person who already knows what they want. It opens the
+          settings without playing a round first. 32px under the cards, the
+          same gap Home's sections leave above their buttons (FeaturePreview). */}
       <div className="mt-8 flex justify-center">
         <Button variant="secondary" size="sm" onClick={onCustomise}>
           <LuSettings2 aria-hidden />

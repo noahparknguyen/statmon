@@ -1,26 +1,22 @@
 import { ALL_POKEMON, spriteFor } from "../lib/pokemon";
 
-// Home's hero (D-070): a drifting wall of pixel sprites with the wordmark and
-// tagline on a scrim over it, sized to own most of the first screen.
+// Home's opening screen: a drifting wall of pixel sprites with the wordmark and
+// tagline on a scrim over it, filling most of the first screen. The comparison
+// board still shows at the bottom of the first screen, at 72% of its height, so
+// the wall points to what's below rather than hiding it.
 //
-// This is the third greeting in one session and the first that is the whole
-// screen. It reverses D-023's product-as-hero — the comparison board is no
-// longer the first thing you see — which is a real trade recorded in the log
-// rather than made quietly. The board still crests the fold at 72vh, so the
-// hero promises something below it instead of hiding it.
-//
-// Sampled, not listed: WALL_COLS x WALL_ROWS entries taken at even intervals
-// across the default forms in dex order, so the wall crosses all nine
-// generations. Forms sit after the 1,025 species in the dataset, so sampling
+// Sampled, not listed: WALL_COLS × WALL_ROWS entries taken at even intervals
+// across the default forms in dex order, so the wall spans all nine
+// generations. Forms come after the 1,025 species in the dataset, so sampling
 // everything would spend a corner of the wall on Megas.
 //
-// The block's dimensions are set by the *worst case for repetition*, not by
-// what looks like enough. A seam-free loop needs the layer to be four identical
-// copies of one block, so any viewport that shows more than one block sees the
-// same Pokémon twice. 14 columns covers 2688px of desktop at 2x tiles; 7 rows
-// is what a 390px phone needs, where the tiles halve and 72vh is over six rows
-// tall — at 4 rows the top of the wall visibly repeated a third of the way
-// down. 98 sprites, ~108KB, and every one of them is already cached by the dex.
+// The block's size is set by the worst case for repetition. A seamless loop
+// needs the layer to be four identical copies of one block, so any screen that
+// shows more than one block sees the same Pokémon twice. 14 columns cover
+// 2,688px of desktop at double-size tiles. 7 rows is what a 390px phone needs,
+// where the tiles are half size and 72% of the screen is over six rows tall:
+// with fewer, the top of the wall visibly repeats partway down. That's 98
+// sprites.
 const WALL_COLS = 14;
 const WALL_ROWS = 7;
 export const WALL_TILES = WALL_COLS * WALL_ROWS;
@@ -31,14 +27,14 @@ const SAMPLE = Array.from(
   (_, i) => SPECIES[Math.round((i * (SPECIES.length - 1)) / (WALL_TILES - 1))],
 );
 
-// One copy of the grid. The wall renders four of these in an explicit 2x2 so
-// the diagonal drift can translate exactly -50%/-50% and land copy four where
-// copy one started, seam-free. The translation is a percentage, so the
-// responsive tile size below cannot break it.
+// One copy of the grid. The wall renders four of these in a 2×2, so the
+// diagonal drift can move exactly -50%/-50% and land the fourth copy where the
+// first started, with no seam. The movement is a percentage, so the responsive
+// tile size below can't break it.
 //
-// Tiles are 2x the sprites' native 96px at md and up: `pixelated` at exactly
-// double is nearest-neighbour, so it is crisper than any intermediate size.
-// Native 96px below that, or a 390px phone shows two columns of a grid.
+// From md up, tiles are twice the sprites' native 96px: `pixelated` at exactly
+// double size is nearest-neighbour scaling, so it's crisper than any size in
+// between. Native 96px below that, or a 390px phone would show two columns.
 function Block() {
   return (
     <div
@@ -63,18 +59,17 @@ function Block() {
   );
 }
 
-// `svh`, not `vh`. On a phone `vh` is measured against the viewport with the
-// browser chrome RETRACTED, so a 72vh hero is taller than 72% of what you can
-// actually see when the page loads — the classic reason full-height heroes
-// overshoot on iOS. `svh` measures the chrome-visible viewport, so the hero fits
-// at rest; and unlike `dvh` it does not resize while the URL bar hides and
-// shows, which would make the whole page jump as you scroll. Identical to `vh`
-// on desktop, so nothing above `md` changes.
+// `svh`, not `vh`. On a phone, `vh` is measured with the browser's toolbars
+// hidden, so a 72vh hero is taller than 72% of what you can see when the page
+// loads, which is why full-height heroes overshoot on iOS. `svh` measures the
+// screen with the toolbars showing, so the hero fits at rest, and unlike `dvh`
+// it doesn't resize as the address bar hides and shows, which would make the
+// page jump as you scroll. On a desktop it's the same as `vh`.
 export default function SpriteWall({ children }) {
   return (
     <section className="relative overflow-hidden h-[72svh] min-h-[26rem] flex items-center justify-center">
-      {/* Decorative: 56 sprite names read out in sequence would be noise, and
-          the heading on top is what the section is actually about. */}
+      {/* Decorative: 392 sprite names read out in a row would be noise, and the
+          heading on top is what the section is about. */}
       <div aria-hidden className="absolute inset-0">
         <div className="grid w-max grid-cols-2 animate-wall [--wall-tile:6rem] md:[--wall-tile:12rem]">
           <Block />
@@ -84,11 +79,11 @@ export default function SpriteWall({ children }) {
         </div>
       </div>
 
-      {/* The scrim. Its depth is not a taste call: --hero-scrim is the number
+      {/* The scrim. Its depth isn't a matter of taste: --hero-scrim is the value
           `npm run audit:contrast` checks text-primary against, over the worst
-          backdrop a sprite can produce (a pure-white pixel). Changing one
-          without the other is what the shared token prevents. The gradient on
-          top only ever deepens it, and lets the wall end without a hard line. */}
+          backdrop a sprite can produce, a pure white pixel. The shared token
+          stops one changing without the other. The gradients above it only
+          ever deepen it, and let the wall end without a hard line. */}
       <div
         aria-hidden
         className="absolute inset-0"
@@ -97,13 +92,13 @@ export default function SpriteWall({ children }) {
             "color-mix(in srgb, var(--color-base) var(--hero-scrim), transparent)",
         }}
       />
-      {/* Two gradients over the flat scrim, both of which only ever ADD base —
-          so --hero-scrim stays the true floor and the audited guarantee holds
-          everywhere, while the type sits somewhere better than the floor.
-          A radial pool behind the wordmark, because a sprite landing directly
-          under it is legible by the numbers and still busy to look at; and a
-          bottom fade so the wall ends by becoming the page rather than by
-          stopping. */}
+      {/* Two gradients over the flat scrim, which only ever add more of the
+          page colour, so --hero-scrim stays the true minimum and the audited
+          contrast holds everywhere, while the text sits somewhere better than
+          the minimum. A soft pool behind the wordmark, because a sprite right
+          under it passes the contrast check but is still busy to look at, and
+          a fade at the bottom, so the wall ends by becoming the page rather
+          than by stopping. */}
       <div
         aria-hidden
         className="absolute inset-0"

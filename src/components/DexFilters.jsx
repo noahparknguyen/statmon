@@ -24,49 +24,48 @@ import FilterChip from "./FilterChip";
 import ChipGroup from "./ChipGroup";
 import IconButton from "./IconButton";
 
-// The dex's controls. Holds no view state of its own: it renders the view
-// parsed from the URL and reports the next one up, which the page writes back to
-// the URL (D-022). The only local state is whether the panel is expanded on a
-// phone, which is ephemeral UI, not something worth a link.
+// The dex's controls. They hold no view state of their own: they render the
+// view read from the URL and report the next one, which the page writes back to
+// the URL. The only local state is whether the panel is open on a phone, which
+// isn't worth a link.
 //
-// The generation lens leads, above a divider, because it is not a peer of the
-// filters — it decides which Pokémon exist here at all, and therefore which
-// types and generations the filters below it can even offer (D-049). Reading top
-// to bottom is the actual relationship: choose the dex, then narrow it. It lives
-// inside this panel but OUTSIDE the collapsible region, like the name box, so it
-// stays on screen when the chip groups fold away on a phone. (D-050)
+// The generation strip comes first, above a divider, because it isn't one of
+// the filters: it decides which Pokémon exist here at all, and so which types
+// and generations the filters below can offer. Top to bottom is the order of
+// that relationship: choose the dex, then narrow it. It sits inside this panel
+// but outside the collapsible part, like the name box, so it stays on screen
+// when the chip groups fold away on a phone.
 //
-// Three labelled groups — Types, Introduced in, Options. The labels are what
-// stop the lone "Alternate forms" toggle reading as a stray control: it is a
-// peer group rather than an orphan in a bar of controls. (D-040)
+// Three labelled groups: Types, Introduced in, and Options. The labels keep the
+// lone forms toggle from looking like a stray control: it's a group of its own.
 //
-// "Introduced in" rather than "Generations", because two generation controls now
-// share this panel and one bare label cannot serve both: the strip above chooses
-// *which dex you are looking at*, this chooses *where a Pokémon came from*.
-// Naming the second for what it actually filters keeps them apart. (D-050)
+// "Introduced in" rather than "Generations", because this panel has two
+// generation controls: the strip above picks which dex you're looking at, and
+// this picks where a Pokémon came from. Naming it for what it filters keeps the
+// two apart.
 
-// The field look is shared with SearchBar (fieldStyles.jsx, D-135), and so is
-// the reasoning behind its two numbers:
+// The field's look is shared with SearchBar (fieldStyles.jsx), with the same
+// reasons for its two numbers:
 //
-//   · **16px type, not 14** (D-065). iOS Safari force-zooms the page when a
-//     control smaller than 16px takes focus, and never zooms back. A responsive
-//     variant is not an option, because the named text styles are hand-written
-//     `@layer components` classes and `md:text-body-sm` generates no CSS.
-//   · **Height at the call site.** Appending `h-9` to a string carrying `h-11`
-//     does not override it — Tailwind resolves that by stylesheet order — and
-//     the select once rendered 44px beside its 36px neighbours (D-042).
+//   · 16px text, not 14. iOS Safari zooms the page in when a control smaller
+//     than 16px takes focus, and never zooms back out. A responsive variant
+//     isn't an option, because the named text styles are hand-written classes
+//     and `md:text-body-sm` produces no CSS.
+//   · The height is set at each call site. Adding `h-9` to a string that
+//     already has `h-11` doesn't override it, because Tailwind resolves the
+//     clash by stylesheet order.
 
 export default function DexFilters({ view, onChange }) {
   const [open, setOpen] = useState(false);
-  // Two counts on purpose. The disclosure badge reports only what is inside the
-  // panel it opens — counting the always-visible name box would show "(1)" for
-  // a panel with nothing active in it. "Clear all" uses the true total, since
-  // clearing does include the name box.
+  // Two counts, on purpose. The disclosure's badge counts only what's inside
+  // the panel it opens: counting the always-visible name box would show "(1)"
+  // on a panel with nothing set. "Clear all" uses the full count, because
+  // clearing includes the name box.
   const panelCount = panelFilterCount(view);
   const totalCount = activeFilterCount(view);
-  // Both lists narrow with the lens: no Fairy chip in a Gen 5 dex, no Gen 7
-  // origin chip in a Gen 3 one. A control that offers a value the view cannot
-  // hold would just produce an empty table (D-049).
+  // Both lists narrow with the dex's generation: no Fairy chip in a Gen 5 dex,
+  // and no Gen 7 origin chip in a Gen 3 one. A control offering a value the
+  // view can't hold would only produce an empty table.
   const types = typesFor(view.asof);
   const generations = generationsFor(view.asof);
 
@@ -93,9 +92,9 @@ export default function DexFilters({ view, onChange }) {
         />
       </div>
 
-      {/* Phone-only row. Sorting lives here because the six stat column headers
-          are hidden below md, and it sits OUTSIDE the collapsible region — you
-          should not have to open the filters to change the sort. */}
+      {/* A phone-only row. Sorting lives here because the stat column headers
+          are hidden below md, and it sits outside the collapsible part, since
+          you shouldn't have to open the filters to change the sort. */}
       <div className="flex items-center gap-2 md:hidden">
         <label className="sr-only" htmlFor="dex-sort">
           Sort by
@@ -104,10 +103,10 @@ export default function DexFilters({ view, onChange }) {
           id="dex-sort"
           value={view.sort}
           onChange={(e) => onChange({ ...view, sort: e.target.value })}
-          // min-w-0 because a flex item will not shrink below its content's
-          // intrinsic width by default, and this select's longest option is
-          // "Sort: Base stat total" — without it the row pushed the Filters
-          // button off the side of a 320px screen. (D-055)
+          // min-w-0 because a flex item won't shrink below its content's width
+          // by default, and this select's longest option is "Sort: Base stat
+          // total". Without it, the row would push the Filters button off a
+          // 320px screen.
           className={`h-9 min-w-0 flex-1 ${FIELD_LOOK}`}
         >
           {sortKeysFor(view.asof).map((key) => (
@@ -116,8 +115,8 @@ export default function DexFilters({ view, onChange }) {
             </option>
           ))}
         </select>
-        {/* The outline icon button: it stands in a row of bordered controls,
-            where a borderless one would read as a gap (IconButton). */}
+        {/* The outline icon button, because it stands in a row of bordered
+            controls, where a borderless one would look like a gap. */}
         <IconButton
           variant="outline"
           label={`Sorted ${view.dir === "asc" ? "ascending" : "descending"}; reverse the order`}
@@ -145,9 +144,9 @@ export default function DexFilters({ view, onChange }) {
         </button>
       </div>
 
-      {/* 27 chips is a lot of vertical space above the thing people came for, so
-          on a phone they collapse behind the button above; at md and up there is
-          room and they stay open. */}
+      {/* 28 chips take a lot of space above what people came for, so on a
+          phone they fold away behind the button above. From md up there's
+          room, and they stay open. */}
       <div
         id="dex-filter-groups"
         className={`${open ? "" : "hidden"} flex flex-col gap-4 md:flex`}
@@ -165,9 +164,9 @@ export default function DexFilters({ view, onChange }) {
         </ChipGroup>
 
         <div className="flex flex-col gap-4 md:flex-row md:gap-10">
-          {/* Hidden when the lens leaves it only one option: filtering the Gen 1
-              dex down to "introduced in Gen 1" is every row it already has, so
-              the control could only ever be a no-op sitting under a strip that
+          {/* Hidden when the dex's generation leaves it one option: filtering
+              the Gen 1 dex to "introduced in Gen 1" is every row it already
+              has, so the control could only do nothing, under a strip that
               looks just like it. */}
           {generations.length > 1 && (
             <ChipGroup label="Introduced in">
@@ -193,9 +192,8 @@ export default function DexFilters({ view, onChange }) {
           </ChipGroup>
         </div>
 
-        {/* A ghost Button (D-135): the quiet action, at the compact control
-            height. It was bare caption text about 15px tall, where the other
-            quiet action on the site, "Clear record", was a 36px pill. */}
+        {/* A ghost Button, the site's quiet action, at the compact control
+            height, like "Clear record" in the games. */}
         {totalCount > 0 && (
           <div>
             <Button

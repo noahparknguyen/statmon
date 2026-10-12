@@ -8,40 +8,36 @@ import { eraView } from "../lib/eras";
 import { statPct } from "../lib/stats";
 import { typeFill } from "../lib/types";
 
-// One dex row. Memoised because the windowing hook re-renders the table on every
-// scroll frame while the on-screen rows themselves rarely change.
+// One dex row. Memoised, because the windowing hook re-renders the table on
+// every scroll frame while the rows on screen rarely change.
 //
-// Column order matches DexTable's header exactly; which columns are shown is
-// purely responsive, so the DOM order is the same at every width:
-//   #  |  Pokemon  |  Types  |  HP Atk Def SpA SpD Spe  |  [sorted stat]  |  BST
+// The column order matches DexTable's header exactly. Which columns show depends
+// only on the screen width, so the DOM order is the same at every width:
+//   #  |  Pokémon  |  Types  |  HP Atk Def SpA SpD Spe  |  [sorted stat]  |  BST
 
-// The stat cell's proportional fill. Scaled to the same fixed 255 reference as
-// every other bar on the site (D-011), tinted with the Pokemon's PRIMARY type,
-// and kept faint enough that the number on top stays the thing you read —
-// verified against text-primary by npm run audit:contrast, group 5.
+// The stat cell's proportional fill. Scaled to the same fixed 255 as every other
+// bar on the site, tinted with the Pokémon's primary type, and faint enough that
+// the number on top stays what you read: `npm run audit:contrast` checks it
+// against text-primary.
 //
-// **One colour, even for a dual type** (D-144). Both colours were drawn here
-// for a while (D-115), and two darkened type colours stacked in one bar read as
-// mud; the Types column beside the bars carries the whole typing.
+// One colour, even for a dual type: two darkened type colours in one bar read
+// as mud, and the Types column beside the bars carries the full typing.
 //
-// The share itself is `--mix-dex-fill` in index.css (D-134), where
-// `npm run audit:contrast` reads it for group 5.
+// The share is `--mix-dex-fill` in index.css, which the contrast audit reads.
 const FILL_ALPHA = "var(--mix-dex-fill)";
 
-// `animate` grows the fill in on mount, and only Home's preview passes it
-// (D-067). It is a prop rather than the default for the same reason CmpRow's is:
-// the real table windows its rows, so rows mount continuously while you scroll
-// and every one of them would animate on arrival — motion that says nothing,
-// on the surface that can least afford it. The two branches are written out
-// rather than composed because `--target` and `width` are different mechanisms;
-// reduced motion is handled globally by the rule that collapses animation
-// duration (index.css).
+// `animate` grows the fill in when the row appears, and only Home's preview
+// passes it, as with CmpRow. The real table renders rows as you scroll, so rows
+// appear constantly, and animating each one would be motion that says nothing.
+// The two branches are written out separately because `--target` and `width`
+// work differently. Reduced motion is handled site-wide, by the rule in
+// index.css that shortens every animation.
 function StatCell({ value, types, className = "", animate = false }) {
   const fill = typeFill(types, FILL_ALPHA);
   return (
     <td className={`px-1 ${className}`}>
-      {/* The number sits 8px in from the cell's edge — the column header's
-          inset — so a right-aligned header lands on it (D-141). It was 10. */}
+      {/* The number sits 8px in from the cell's edge, the column header's
+          inset, so a right-aligned header lines up with it. */}
       <div className="relative flex h-7 items-center justify-end overflow-hidden rounded-xs px-1">
         {animate ? (
           <div
@@ -60,11 +56,11 @@ function StatCell({ value, types, className = "", animate = false }) {
   );
 }
 
-// `asof` is passed as a plain number rather than a resolved view object on
-// purpose: this component is memoised because the windowing hook re-renders the
-// table on every scroll frame, and a fresh object would give it a new prop
-// identity each time and re-render every visible row. A primitive keeps the memo
-// working, and resolving one row's view here costs nothing. (D-049)
+// `asof` is passed as a plain number rather than a resolved view object, on
+// purpose. This component is memoised because the table re-renders on every
+// scroll frame, and a fresh object each time would be a new prop, re-rendering
+// every visible row. A number keeps the memo working, and working out one row's
+// view here costs nothing.
 function DexRow({
   pokemon,
   rowIndex,
@@ -79,16 +75,16 @@ function DexRow({
 
   return (
     <tr
-      // aria-rowindex is how a virtualised table stays coherent to a screen
-      // reader: only a slice of rows is in the DOM, so each one states its real
-      // position within the aria-rowcount the table declares. +2 = 1-based,
-      // past the header row.
+      // aria-rowindex keeps a partly rendered table coherent to a screen
+      // reader: only a slice of rows is in the DOM, so each states its real
+      // position within the table's aria-rowcount. +2 because it counts from 1,
+      // and the header row comes first.
       aria-rowindex={rowIndex + 2}
       className={`${heightClass} border-b border-border-subtle transition-colors hover:bg-surface`}
     >
       {/* Every cell centres its content in the same 28px box the stat cells
-          use, so a row's text shares one centre line. Set as bare inline text,
-          the dex number sat 2px below the stats and the total 1px (D-141). */}
+          use, so a row's text shares one centre line. As bare inline text, the
+          dex number and the total would sit a pixel or two off it. */}
       <td className="hidden px-2 sm:table-cell">
         <span className="flex h-7 items-center text-caption text-tertiary">
           #{String(dex).padStart(4, "0")}
@@ -108,17 +104,17 @@ function DexRow({
           />
           <div className="min-w-0">
             <Link
-              // Built through the shared helper rather than by hand, so the
-              // partial one-slot URL shape lives in exactly one place (D-022).
-              // Carries the lens through, so a name clicked in a Gen 3 dex opens
-              // a Gen 3 comparison rather than silently jumping to today.
+              // Built with the shared helper rather than by hand, so the one-slot
+              // URL shape lives in one place. It carries the generation through,
+              // so a name clicked in a Gen 3 dex opens a Gen 3 comparison rather
+              // than quietly jumping to today.
               to={compareUrl(pokemon.slug, null, { asof })}
               className="block truncate text-body-sm text-primary transition-colors hover:text-accent"
             >
               {pokemon.name}
             </Link>
-            {/* Types have no column of their own until lg, so they ride along
-                under the name at narrower widths. */}
+            {/* Types have no column of their own until lg, so at narrower
+                widths they sit under the name. */}
             <span className="mt-0.5 flex gap-1 lg:hidden">
               {view.types.map((t) => (
                 <TypeBadge key={t} type={t} size="sm" />
