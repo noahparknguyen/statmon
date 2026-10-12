@@ -5,6 +5,7 @@ import {
   typeColorVar,
   typeFill,
   typeTextVar,
+  typeAbbr,
   capitalize,
 } from "./types";
 import {
@@ -175,6 +176,15 @@ describe("token helpers", () => {
 
   it("capitalizes a type slug for display", () => {
     expect(capitalize("dragon")).toBe("Dragon");
+  });
+
+  // The type chart's column headers are each type's first three letters. They
+  // happen to be unique (GRAss and GROund, DRAgon and DARk, FIRe and FIGhting),
+  // and this stops a new type from giving two columns the same header.
+  it("abbreviates every type to a unique three-letter header", () => {
+    const abbrs = TYPES.map(typeAbbr);
+    for (const a of abbrs) expect(a).toMatch(/^[A-Z]{3}$/);
+    expect(new Set(abbrs).size).toBe(TYPES.length);
   });
 });
 
