@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <title>Statmon — social image generator</title>
-    <!-- The vendored faces, not Google's (D-061), so this generator renders the
-         same letterforms the site ships and works with no network. -->
+    <!-- The vendored faces, not Google's, so this generator renders the same
+         letterforms the site ships, and works with no network. -->
     <style>
       @font-face {
         font-family: "Space Grotesk";
@@ -134,11 +134,11 @@
       <code>public/og-image.png</code> (1200×630, referenced by the meta tags in
       <code>index.html</code>) and <code>docs/preview.png</code> (1280×640). It
       then measures both and fails if either is more than 2px off centre,
-      because a wrong social image is the first thing anyone sees and nothing
-      about it looks broken (D-064, D-066). <br /><br />
-      Exporting by hand is no longer the workflow, but it still works if you
-      need it: right-click a frame → <em>Inspect</em> → in the Elements panel
-      right-click the highlighted <code>&lt;div class="frame …"&gt;</code> →
+      because a wrong social image is the first thing anyone sees, and nothing
+      about it looks broken. <br /><br />
+      Exporting by hand still works if you need it: right-click a frame →
+      <em>Inspect</em> → in the Elements panel right-click the highlighted
+      <code>&lt;div class="frame …"&gt;</code> →
       <code>Capture node screenshot</code>. <br /><br />
       <strong>Still manual:</strong> <code>docs/preview.png</code> is only the
       checked-in copy of the GitHub social preview — GitHub stores that outside
@@ -171,17 +171,13 @@
     <script>
       // `?only=og` or `?only=gh` reduces the page to that one frame, so a
       // headless window sized to the frame captures it exactly.
-      // scripts/shoot-docs.mjs uses this; without it the only way to get these
-      // images was a manual "Capture node screenshot", which is why they went
-      // stale (D-064).
+      // scripts/shoot-docs.mjs uses this, so the images never depend on a
+      // manual "Capture node screenshot".
       //
       // It hoists the frame to be the body's only child rather than pruning
-      // wrappers, because the first version pruned `section` elements and the
-      // wrappers here are `div`s — so it matched nothing, removed nothing, and
-      // both captures silently photographed whichever frame came first in the
-      // DOM. That shipped a `preview.png` that was the 1200px OG frame sitting
-      // in a 1280px window, with the wordmark 40px left of centre. Targeting the
-      // frame itself cannot go wrong that way. (D-066)
+      // wrappers: pruning by tag name silently matches nothing if the markup
+      // changes, and both captures would then photograph whichever frame came
+      // first in the DOM. Targeting the frame itself can't go wrong that way.
       const only = new URLSearchParams(location.search).get("only");
       if (only) {
         const frame = document.querySelector(".frame." + only);

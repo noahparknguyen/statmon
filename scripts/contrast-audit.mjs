@@ -275,7 +275,7 @@ if (!scrimPct) {
 // `accent`, and it's an icon rather than text, so it's held to 1.4.11's 3.0 for
 // non-text contrast rather than to 4.5, the same threshold as the stat-bar
 // fills in group 4.
-console.log("\n=== 9. The correct answer's accent fill (D-093) ===");
+console.log("\n=== 9. The correct answer's accent fill ===");
 const accentMuted = hex("accent-muted");
 console.log(row("multiplier (primary)", ratio(primary, accentMuted), 4.5));
 console.log(

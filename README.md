@@ -63,11 +63,11 @@ The dataset, sprites, and fonts are already committed, so that's all it takes. W
 - `lint`: ESLint.
 - `format:check`: Prettier.
 - `audit:classes`: no class string sets the same CSS property twice. Tailwind resolves those by stylesheet order, not by the order they're written, so the one that wins isn't the one you meant.
-- `audit:styles`: every utility is one the [style guide](docs/06_style_guide.md) allows. Colours are semantic tokens, text uses the 22 named styles, and spacing, radius, opacity, and layering each come from a closed set. A value the guide doesn't list fails.
-- `test:run`: 501 unit tests, covering the stat math, the dex's sorting and filters, the generation lens, the ability table, both games' question generators, a server render of every route, accessibility and copy regressions, and one implementation of each shared component.
+- `audit:styles`: every utility is one the design system allows, as shown on the [style guide](https://statmon.noahpn.dev/style) page. Colours are semantic tokens, text uses the 22 named styles, and spacing, radius, opacity, and layering each come from a closed set. Any other value fails.
+- `test:run`: 506 unit tests, covering the stat math, the dex's sorting and filters, the generation lens, the ability table, both games' question generators, a server render of every route, accessibility and copy regressions, and one implementation of each shared component.
 - `build`: the production build.
 - `audit:contrast`: WCAG AA contrast for every text and colour pairing, in 13 groups, including text on all 18 type tints, text on the flame gradient, and the edges of the text fields.
-- `check:docs`: every link and anchor in this README and in `docs/`.
+- `check:docs`: every link and anchor in this README.
 - `sweep:widths`: headless Chrome across 29 routes at 14 widths. No page may scroll sideways or show its footer on load. Every touch target has to meet WCAG 2.5.8.
 
 On every push to `main`, GitHub Actions runs the same nine. `npm run shoot:docs` regenerates this README's screenshots from the built site.
@@ -78,10 +78,6 @@ On every push to `main`, GitHub Actions runs the same nine. `npm run shoot:docs`
 - **Only the 20 abilities in the table change the numbers.** Every other ability is shown on its card without affecting a matchup. Dry Skin's extra damage from Fire (1.25×) isn't modelled either, because the chart has no room for it.
 - **The data is a snapshot.** It's rebuilt from PokéAPI by hand, so Pokémon released after the last build aren't in it.
 - **Effective never asks for ⅛×.** A double resistance plus an ability that halves again reaches it, but only four Pokémon can: Dewgong, Spheal, Sealeo, and Walrein. The type chart still shows it.
-
-## Docs
-
-My working notes are in [`docs/`](docs/): the original brainstorm, the spec, the design system, and a dated log of why things are built the way they are. To see how I think through a project, start with the [decision log](docs/03_decisions.md).
 
 ## Credits
 

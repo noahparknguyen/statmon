@@ -255,7 +255,7 @@ export default function StyleGuide() {
           ))}
         </div>
         <p className="text-caption text-tertiary mt-4">
-          All badges use near-black text on the type colour (AA — D-027).
+          All badges use near-black text on the type colour, which passes AA.
         </p>
       </Section>
 
@@ -321,7 +321,7 @@ export default function StyleGuide() {
         <div className="flex flex-col gap-6 max-w-md">
           <ChipRow
             label="Text field · 44px, the 3:1 field edge, the focus ring on its wrapper"
-            note="Shared by every text field on the site (fieldStyles.jsx, D-135, D-136)."
+            note="Shared by every text field on the site (fieldStyles.jsx)."
           >
             <SearchBar label="Search a Pokémon" onSelect={noop} />
           </ChipRow>
@@ -347,7 +347,7 @@ export default function StyleGuide() {
           </ChipRow>
           <ChipRow
             label="Icon buttons · 36px, a 16px icon"
-            note="Ghost on its own, outline in a row of bordered controls (D-135)."
+            note="Ghost on its own, outline in a row of bordered controls."
           >
             <div className="flex items-center gap-3">
               <IconButton label="Close (demo)" onClick={noop}>
@@ -371,7 +371,7 @@ export default function StyleGuide() {
           <div className="flex max-w-md flex-col gap-6">
             <ChipRow
               label="Solid track · the comparison card and the phone cards"
-              note="Scaled to 255, the same length for the same number on every surface (D-011)."
+              note="Scaled to 255, the same length for the same number on every surface."
             >
               <StatBar value={volcarona.stats.spAtk} type={t0} />
             </ChipRow>
@@ -405,7 +405,7 @@ export default function StyleGuide() {
         <div className="flex flex-col gap-6">
           <ChipRow
             label="Form chips · compact, sharing the card's 88px controls band"
-            note="21px tall, so they pass WCAG 2.5.8 by spacing rather than size: 27.1px between the tightest centres (D-059)."
+            note="21px tall, so they pass WCAG 2.5.8 by spacing rather than size: 27.1px between the tightest centres."
           >
             {/* Shown at about the width of the card band they live in, so the
                 wrapping matches the real layout. Left-aligned, as in their
@@ -419,7 +419,7 @@ export default function StyleGuide() {
 
           <ChipRow
             label="Generation strip · 36px, one line at every width"
-            note="A dot marks a generation whose board differs from today (D-046). The strip never wraps: its chips share the width, from 36px down to about 25 on a 320px phone (D-137)."
+            note="A dot marks a generation whose board differs from today. The strip never wraps: its chips share the width, from 36px down to about 25 on a 320px phone."
           >
             {charizard ? (
               <GenerationStrip
@@ -436,7 +436,7 @@ export default function StyleGuide() {
               of the component. */}
           <ChipRow
             label="Filter chips · 36px, with a colour dot and a dismiss ×"
-            note="Selected type chips take the audited TypeBadge pairing (D-027). The last pair is the single-select variant, which drops the × because nothing there can be dismissed (D-091)."
+            note="Selected type chips take the audited TypeBadge pairing. The last pair is the single-select variant, which drops the × because nothing there can be dismissed."
           >
             <div className="flex flex-wrap gap-1.5">
               <FilterChip label={capitalize(t1)} color={t1} onClick={noop} />
@@ -455,7 +455,7 @@ export default function StyleGuide() {
 
           <ChipRow
             label="Ability chips · compact, exactly one always selected"
-            note="A dot marks an ability that changes type matchups; the icon marks the hidden one (D-073)."
+            note="A dot marks an ability that changes type matchups; the icon marks the hidden one."
           >
             {chandelure ? (
               <AbilityChips
@@ -469,7 +469,7 @@ export default function StyleGuide() {
 
           <ChipRow
             label="Ability chips · read-only, as Home renders them"
-            note="No onSelect ⇒ pills, not buttons: a button that does nothing is worse than a label (D-078)."
+            note="No onSelect ⇒ pills, not buttons: a button that does nothing is worse than a label."
           >
             {chandelure ? (
               <AbilityChips
@@ -501,7 +501,7 @@ export default function StyleGuide() {
 
           <ChipRow
             label="md · corrected by the defender's ability"
-            note="The chart's own answer stays on screen, struck through. The ability is named by the surface, never on the chip (D-079)."
+            note="The chart's own answer stays on screen, struck through. The ability is named by the surface, never on the chip."
           >
             <div className="flex flex-col items-start gap-2">
               <div className="flex flex-wrap gap-2">
@@ -516,7 +516,7 @@ export default function StyleGuide() {
 
           <ChipRow
             label="sm · Home's three-column head"
-            note="Geometry only — the fill, border weight, tier colour and icon are identical to md (D-058)."
+            note="Geometry only: the fill, border weight, tier colour, and icon are identical to md."
           >
             <div className="flex flex-col items-start gap-1.5">
               <StabLabel>STAB</StabLabel>
@@ -546,8 +546,7 @@ export default function StyleGuide() {
       </Section>
 
       <footer className="border-t border-border-subtle py-10 text-caption text-tertiary">
-        Style-guide playground · tokens in src/index.css · see
-        docs/06_style_guide.md
+        Style-guide playground · tokens in src/index.css
       </footer>
     </div>
   );

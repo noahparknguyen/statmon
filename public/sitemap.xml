@@ -2,14 +2,14 @@
 <!--
   The pages a visitor is meant to land on. Deep links (/compare/a/vs/b,
   /types/water/flying, /dex?sort=speed) are generated from the dataset and are
-  effectively unbounded, so they are deliberately not enumerated here — they are
+  effectively unbounded, so they're not listed here, on purpose: they're
   shareable links, not pages to index. /style is excluded, as in robots.txt.
 
-  /games is listed and the individual games are not, for the same reason: the
-  index is the page, and a game's settings are a view of it (D-091).
+  /games is listed and the individual games aren't, for the same reason: the
+  index is the page, and a game's settings are a view of it.
 
-  /credits is not listed because it is no longer a page — it redirects to
-  /about#credits, where the attribution now lives (D-118).
+  /credits isn't listed because it isn't a page: it redirects to /about, and
+  the attribution lives in every page's footer.
 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>

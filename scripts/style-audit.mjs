@@ -120,14 +120,14 @@ const EMPHASIS = new Set(["font-display", "font-semibold"]);
 const ARBITRARY = new Map([
   ["min-h-[21px]", "a compact chip: 11px text, py-1, a 1px border each side"],
   ["min-h-[26rem]", "the game board's floor on a landscape phone"],
-  ["h-[72svh]", "Home's hero wall, so the board crests the fold (D-070)"],
+  ["h-[72svh]", "Home's hero wall, so the board crests the fold"],
   ["max-h-[85svh]", "the setup dialog stays inside the viewport"],
   ["w-[min(36rem,calc(100vw-2rem))]", "the setup dialog, inside the gutters"],
-  ["max-h-[475px]", "the vendored artwork's own size (D-109)"],
-  ["max-w-[475px]", "the vendored artwork's own size (D-109)"],
+  ["max-h-[475px]", "the vendored artwork's own size"],
+  ["max-w-[475px]", "the vendored artwork's own size"],
   ["[image-rendering:pixelated]", "pixel sprites at whole multiples"],
   ["[--wall-tile:6rem]", "a hero tile at the sprite's native 96px"],
-  ["[--wall-tile:12rem]", "a hero tile at exactly 2x native (D-070)"],
+  ["[--wall-tile:12rem]", "a hero tile at exactly 2x native"],
   ["grid-cols-[1.6rem_1fr_3.25rem_1fr_1.6rem]", "the mirrored stat row"],
   ["grid-cols-[0.55rem_auto_0.55rem]", "a difference with a caret each side"],
   ["grid-cols-[2rem_1fr_2.5rem]", "a stat row: label, bar, value"],
@@ -139,15 +139,12 @@ const ARBITRARY = new Map([
   ["grid-rows-[1fr_auto_1fr]", "a stacked board and its round card"],
   [
     "grid-rows-[minmax(15rem,1fr)_auto_1fr]",
-    "the type game's answer column: the verdict's room, never under its tallest card, then the answers (D-143)",
+    "the type game's answer column: the verdict's room, never under its tallest card, then the answers",
   ],
-  [
-    "grid-rows-[1fr_auto]",
-    "a verdict's layer: the card on its bottom edge (D-143)",
-  ],
+  ["grid-rows-[1fr_auto]", "a verdict's layer: the card on its bottom edge"],
   [
     "right-[calc(50%+8rem+1px)]",
-    "the attacking column's right edge: half the board, half the 16rem answer column, one divider (D-143)",
+    "the attacking column's right edge: half the board, half the 16rem answer column, one divider",
   ],
 ]);
 
@@ -173,12 +170,12 @@ function verdict({ base, family }) {
   if (raw.includes("[")) {
     return ARBITRARY.has(raw)
       ? null
-      : "arbitrary value with no derivation in the list (§6.5)";
+      : "arbitrary value with no derivation in the list";
   }
 
   if (!family)
     return raw.startsWith("text-")
-      ? "a stock text size; use a named style (§5)"
+      ? "a stock text size; use a named style"
       : "not a utility this audit knows";
   if (family === "text-style") return null;
   if (family.startsWith("component:") || family.startsWith("marker:"))
@@ -188,10 +185,10 @@ function verdict({ base, family }) {
     const [name, alpha] = value.split("/");
     if (!SEMANTIC_COLORS.has(name))
       return COLORS.has(name)
-        ? `a primitive colour; use its semantic token (§3)`
+        ? `a primitive colour; use its semantic token`
         : "not a colour token";
     if (alpha != null && !COLOR_ALPHA.has(alpha))
-      return `opacity /${alpha} is not one of the steps (§7.4)`;
+      return `opacity /${alpha} is not one of the steps`;
     return null;
   };
 
@@ -205,15 +202,15 @@ function verdict({ base, family }) {
     case "text-decoration-color":
       return colour(after(raw, "decoration-"));
     case "text":
-      return "a stock text size; use a named style (§5)";
+      return "a stock text size; use a named style";
 
     case "font-family":
     case "font-weight":
     case "font-size":
-      return EMPHASIS.has(raw) ? null : "type is set by named styles (§5)";
+      return EMPHASIS.has(raw) ? null : "type is set by named styles";
     case "line-height":
     case "letter-spacing":
-      return "type is set by named styles (§5)";
+      return "type is set by named styles";
 
     case "padding":
     case "padding-x":
@@ -235,12 +232,12 @@ function verdict({ base, family }) {
     case "space-x":
     case "space-y": {
       const value = raw.slice(raw.lastIndexOf("-") + 1);
-      return SPACING.has(value) ? null : `${value} is not on the scale (§6.1)`;
+      return SPACING.has(value) ? null : `${value} is not on the scale`;
     }
 
     case "radius": {
       const value = after(raw, "rounded-");
-      return RADII.has(value) ? null : `not a role radius (§7.1)`;
+      return RADII.has(value) ? null : `not a role radius`;
     }
     case "radius-tl":
     case "radius-tr":
@@ -252,7 +249,7 @@ function verdict({ base, family }) {
     case "radius-r":
       return raw.endsWith("-lg")
         ? null
-        : "a side radius only follows a surface's lg curve (§7.1)";
+        : "a side radius only follows a surface's lg curve";
 
     case "height":
     case "width":
@@ -271,41 +268,39 @@ function verdict({ base, family }) {
     case "translate-y": {
       const value = raw.slice(raw.indexOf("-") + 1).replace(/^[xy]-/, "");
       const v = value.replace(/^(h|w|x|y)-/, "");
-      return onGrid(v) ? null : `${v} is off the 4px grid (§6.4)`;
+      return onGrid(v) ? null : `${v} is off the 4px grid`;
     }
     case "max-width": {
       const value = after(raw, "max-w-");
       return CONTAINERS.has(value) || onGrid(value)
         ? null
-        : `not a named measure (§6.4)`;
+        : `not a named measure`;
     }
 
     case "opacity":
-      return OPACITY.has(after(raw, "opacity-"))
-        ? null
-        : "not an opacity step (§7.4)";
+      return OPACITY.has(after(raw, "opacity-")) ? null : "not an opacity step";
 
     case "z-index": {
       const value = after(raw, "z-");
       if (LOCAL_Z.has(value)) return null;
       return /^\(--z-[a-z]+\)$/.test(value)
         ? null
-        : "a layer takes a token from the ladder (§10)";
+        : "a layer takes a token from the layer scale";
     }
 
     case "box-shadow":
     case "ring":
     case "drop-shadow":
-      return "shadows are the named tokens (§7.3)";
+      return "shadows are the named tokens";
     case "backdrop":
       return raw === "backdrop-blur"
         ? null
-        : "the one backdrop effect is the sticky bars' blur (§7.3)";
+        : "the one backdrop effect is the sticky bars' blur";
 
     case "transition-duration":
     case "transition-timing":
     case "transition-delay":
-      return "motion takes its tokens by default (§9)";
+      return "motion takes its tokens by default";
 
     default:
       return null;
@@ -349,7 +344,7 @@ if (failures.length) {
   }
   console.log(`\n── ${failures.length} violation(s) ${line}`);
   console.log(
-    "  Use a value 06_style_guide allows, or add it to the guide first.\n",
+    "  Use an allowed value, or add it to the closed sets in scripts/style-audit.mjs first.\n",
   );
   process.exit(1);
 }
