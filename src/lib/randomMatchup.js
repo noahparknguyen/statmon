@@ -1,10 +1,9 @@
-// "Surprise me" for the comparison tool (00_brainstorm §2.2, D-123).
+// The comparison tool's Random button.
 //
-// Pure, with an INJECTED rng, for the reason every generator on this site takes
-// one (lib/games.js): a random function that reaches for `Math.random` itself
-// cannot be tested, and the two properties worth asserting here — the pair is
-// always distinct, and it always exists at the generation being read — are only
-// assertable against a seeded sequence.
+// Pure, and takes its `rng`, as every generator on the site does: the two
+// things worth testing here, that the pair is always two different Pokémon and
+// that both existed in the generation being read, can only be checked against a
+// known sequence.
 
 import { filterRows } from "./dexTable";
 import { ALL_POKEMON } from "./pokemon";
@@ -13,21 +12,21 @@ import { ALL_POKEMON } from "./pokemon";
  * Two different Pokémon that both existed at `asof`, or `null` if fewer than
  * two did.
  *
- * **Drawn from the era's own pool, not the whole dex.** Hitting Random while
- * reading a Gen 1 board should hand back two Pokémon that Gen 1 had — otherwise
- * the lens silently drops to the current generation on arrival (`parseAsOf`
- * validates the era against the selection) and the control quietly undoes the
- * one you set. `filterRows` is the dex's own filter, so "what existed then"
- * means the identical thing here, on `/dex`, and in the games.
+ * Drawn from that generation's pool, not the whole dex. Pressing Random on a
+ * Gen 1 board should give two Pokémon Gen 1 had. Otherwise the board would drop
+ * back to today's generation on arrival, since `parseAsOf` checks the
+ * generation against the selection, and the button would quietly undo the one
+ * you set. `filterRows` is the dex's own filter, so "what existed then" means
+ * the same thing here, on /dex, and in the games.
  *
- * **Alternate forms are out**, matching the dex's resting state (D-056) and the
- * games' pool: a random matchup should be two Pokémon, not Mega Charizard X
- * against a Rotom appliance.
+ * Alternate forms are out, as in the dex's default view and the games: a random
+ * matchup should be two Pokémon, not Mega Charizard X against a Rotom
+ * appliance.
  *
  * The second pick draws from a range one shorter and steps over the first,
- * rather than redrawing until the two differ. That is O(1) with no loop to
- * bound, and it cannot hang on an rng that returns a constant — which a test
- * one written as a rejection loop would.
+ * rather than redrawing until the two differ. That takes constant time with no
+ * loop to bound, and it can't hang on an `rng` that always returns the same
+ * value, as a test's might.
  */
 export function randomMatchup(asof = null, rng = Math.random) {
   const pool = filterRows(ALL_POKEMON, { asof, includeForms: false });

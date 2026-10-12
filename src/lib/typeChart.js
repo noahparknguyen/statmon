@@ -1,14 +1,14 @@
-// Type effectiveness (Gen 6+ / current, includes Fairy). Attacking type → the
-// defending types it deviates from 1× against. Anything unlisted is 1× — a
-// shape the grid on /types renders literally, leaving 1× cells empty so the
-// deviations are the thing you see (D-051).
-// This is canonical, static data — safe to hardcode.
+// Type effectiveness, as it's been since Gen 6 brought Fairy. Each attacking
+// type lists only the defending types it doesn't hit for 1×, and anything
+// unlisted is 1×. The grid on /types draws it the same way, leaving 1× cells
+// empty, so the exceptions are what you see. It's fixed, canonical data, so
+// it's written out by hand.
 //
-// Exported so a test can assert its keys match TYPES in lib/types.js exactly.
-// Two hand-maintained lists of the 18 types is precisely the pair that drifts.
+// Exported so a test can check its keys match TYPES in lib/types.js exactly:
+// two hand-kept lists of the 18 types would drift apart.
 //
-// Explicit .js extension on the import below, like pokemonCodec: scripts/*.mjs
-// load this module under plain Node ESM to verify it against PokéAPI.
+// The import below names its .js extension, like pokemonCodec's, because
+// scripts/*.mjs load this module under plain Node to check it against PokéAPI.
 import { abilityMultiplier } from "./abilities.js";
 import { TYPES } from "./types.js";
 
@@ -140,38 +140,36 @@ export const CHART = {
 };
 
 /* -------------------------------------------------------------------------
-   The chart as it was (D-045). Reading a Pokémon at an earlier generation and
-   scoring its matchup on today's chart would be a board that mixes Gen 1
-   typings with Gen 9 maths, so the chart moves with the era.
+   The chart as it was. Reading a Pokémon at an earlier generation but scoring
+   it on today's chart would mix Gen 1 typings with Gen 9 maths, so the chart
+   follows the generation too.
 
-   Only three charts have ever existed, and the differences are small:
-   Generation 1, Generations 2–5, and Generation 6 onward (`CHART` above).
-   Same `until` semantics as the dataset's stat and type eras: the last
-   generation those relations applied in.
+   Only three charts have ever existed, and they differ little: Gen 1, Gens 2
+   to 5, and Gen 6 on (`CHART` above). `until` means what it does in the
+   dataset's stat and type eras: the last generation those values applied in.
    ---------------------------------------------------------------------- */
 
-// Dark and Steel arrived in Gen 2, Fairy in Gen 6; the other fifteen have
-// always been here. A type that does not exist yet is simply not part of a
-// matchup, which is what lets most rows below be inherited unchanged — Fire's
-// modern row mentions Steel, but in Gen 1 that entry can never be reached.
+// Dark and Steel arrived in Gen 2, and Fairy in Gen 6. The other fifteen have
+// always existed. A type that doesn't exist yet isn't part of any matchup, which
+// is what lets most rows carry over unchanged: Fire's row today mentions Steel,
+// but in Gen 1 that entry can never be reached.
 export const TYPE_INTRODUCED_IN = { dark: 2, steel: 2, fairy: 6 };
 
 export const typeExistsIn = (type, gen) =>
   gen == null || (TYPE_INTRODUCED_IN[type] ?? 1) <= gen;
 
-// The types that existed at `gen`, in canonical order — 15 in Gen 1, 17 through
-// Gen 5, 18 since. This is what makes a Gen 1 chart a 15×15 grid rather than an
-// 18×18 one with three empty rows and columns (D-051).
+// The types that existed at `gen`, in canonical order: 15 in Gen 1, 17 through
+// Gen 5, and 18 since. So a Gen 1 chart is a 15×15 grid rather than an 18×18
+// one with three empty rows and columns.
 export const typesIn = (gen) => TYPES.filter((t) => typeExistsIn(t, gen));
 
-// Only the attacking rows that genuinely differ once types that did not exist
-// are excluded — four in Gen 1, two in Gen 2–5. Whole rows rather than cell
-// patches, because a patch cannot express a relation that is simply absent
-// (Gen 1 Ice is not resisted by Fire).
+// Only the attacking rows that really differ, once types that didn't exist yet
+// are set aside: four in Gen 1, and two in Gens 2 to 5. Whole rows rather than
+// cell patches, because a patch can't express a relation that's simply absent:
+// in Gen 1, Fire doesn't resist Ice.
 //
-// Derived from PokéAPI's `past_damage_relations` rather than transcribed, and
-// `npm run build:data` re-verifies both these and `CHART` against it — the
-// hardcode-canonical-data call of D-018, with the claim actually checked.
+// Taken from PokéAPI's `past_damage_relations` rather than typed in, and
+// `npm run build:data` checks both these rows and `CHART` against it.
 export const CHART_ERAS = [
   {
     until: 1,
@@ -196,8 +194,8 @@ export const CHART_ERAS = [
         psychic: 2,
         poison: 2,
       },
-      // Ghost did nothing to Psychic — the famous Gen 1 bug, and what the
-      // games actually did.
+      // Ghost did nothing to Psychic: the famous Gen 1 bug, and what the games
+      // actually did.
       ghost: { normal: 0, psychic: 0, ghost: 2 },
     },
   },
@@ -218,15 +216,15 @@ export function chartAsOf(gen = null) {
   return era ? { ...CHART, ...era.chart } : CHART;
 }
 
-// Multiplier of a single attacking type vs a defender's full typing (product
-// over each defending type → 0, ¼, ½, 1, 2, or 4), on the chart in force at
-// `gen`.
+// The multiplier of one attacking type against a defender's full typing, the
+// product over each defending type (0, ¼, ½, 1, 2, or 4), on the chart in
+// force at `gen`.
 //
-// `ability` is the DEFENDER's, and applies on top of the chart — Ground into an
-// Electric type is 2× and Levitate takes it to 0×. It is the last word rather
-// than a special case in the reduce because that is what it is mechanically:
-// the type product happens, then the ability edits the result (D-073). Passing
-// none, or one with no effectiveness clause, returns the chart's own answer.
+// `ability` is the defender's, and applies on top of the chart: Ground into an
+// Electric type is 2×, and Levitate takes it to 0×. It comes last rather than
+// being a special case in the product because that's how it works in the
+// games: the types multiply, then the ability changes the result. No ability,
+// or one with no type effect, leaves the chart's answer as it is.
 export function effectiveness(
   attackType,
   defenderTypes,
@@ -240,15 +238,14 @@ export function effectiveness(
   return abilityMultiplier(base, attackType, ability, gen);
 }
 
-// For an attacker vs a defender: each of the attacker's types is a STAB move
-// type. Returns [{ type, mult, baseMult, via }] for each. The first two
-// arguments are anything with a `types` array — a dataset entry, or an era view
-// of one (lib/eras.js); `ability` is the defender's.
+// An attacker against a defender: each of the attacker's types is a move type
+// that gets the same-type bonus. Returns [{ type, mult, baseMult, via }] for
+// each. The first two arguments are anything with a `types` array, a dataset
+// entry or an era view of one, and `ability` is the defender's.
 //
-// `via` is the ability slug ONLY when it actually changed the answer, and is
-// null otherwise. That is the whole of what the chip needs to render the
-// correction (2̶×̶ 0×, "via Levitate"), so no component recomputes the
-// comparison to find out whether there was one.
+// `via` is the ability slug only when it changed the answer, and null
+// otherwise. That's everything the chip needs to show the correction (2̶×̶ 0×,
+// "via Levitate"), so no component works it out again.
 export function stabMatchup(attacker, defender, gen = null, ability = null) {
   return attacker.types.map((type) => {
     const baseMult = effectiveness(type, defender.types, gen);
@@ -257,12 +254,11 @@ export function stabMatchup(attacker, defender, gen = null, ability = null) {
   });
 }
 
-// ⅛× is reachable only with an ability in play: a defender that already resists
-// twice, whose ability halves again. Four entries do it — Dewgong, Spheal,
-// Sealeo and Walrein are Water/Ice with **Thick Fat in slot 1**, so Ice into
-// them is ¼ × ½, and it is their DEFAULT reading rather than an opt-in one.
-// Without a label here it printed a raw "0.125×"; without the matching entry in
-// MULT_ORDER the tier list dropped Ice from /types altogether (D-084).
+// ⅛× needs an ability: a defender that already resists twice, whose ability
+// halves again. Four entries reach it: Dewgong, Spheal, Sealeo, and Walrein are
+// Water/Ice with Thick Fat as their first ability, so Ice into them is ¼ × ½,
+// and that's their default reading. Without a label here it would print a raw
+// "0.125×".
 const MULT_LABEL = {
   0: "0×",
   0.125: "⅛×",

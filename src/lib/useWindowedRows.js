@@ -1,20 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// Renders only the rows near the viewport. The dex is 1,259 entries and each row
-// carries a sprite, two badges and seven stat cells — mounting all of them costs
-// roughly 15k DOM nodes and makes every re-sort janky, which is the opposite of
-// the point of this site.
+// Renders only the rows near the viewport. The dex has 1,259 entries, and each
+// row carries a sprite, two badges, and seven stat cells. Mounting them all
+// makes every re-sort stutter.
 //
-// It windows against the *page* scroll rather than an inner scroll container, so
-// the table behaves like an ordinary long page: one scrollbar, the site header
-// stays put, and browser find-on-page still works over what is rendered.
+// It follows the page's scroll rather than an inner scroll box, so the table
+// behaves like an ordinary long page: one scrollbar, the site header stays put,
+// and the browser's find-on-page still works over what's rendered.
 //
-// Kept free of any table specifics so it is just "which slice of N fixed-height
-// rows is on screen" — the caller supplies the row height and pads the gap.
+// It knows nothing about tables, only which slice of N fixed-height rows is on
+// screen. The caller supplies the row height and pads the gap.
 
 // Rows to render on the first paint, before the effect has measured. A fresh
-// navigation starts at scroll 0, so this is the correct slice in the common
-// case and there is no visible flash of an empty table.
+// visit starts at the top, so this is usually the right slice, with no flash of
+// an empty table.
 const INITIAL_ROWS = 30;
 
 export function useWindowedRows({ count, rowHeight, overscan = 8 }) {
@@ -32,8 +31,8 @@ export function useWindowedRows({ count, rowHeight, overscan = 8 }) {
     const perScreen = Math.ceil(window.innerHeight / rowHeight);
     const start = Math.max(0, Math.floor(scrolledInto / rowHeight) - overscan);
     const end = Math.min(count, start + perScreen + overscan * 2);
-    // Bail out when nothing moved, so scrolling within a row does not re-render
-    // every row on screen.
+    // Stop if nothing moved, so scrolling within a row doesn't re-render every
+    // row on screen.
     setRange((prev) =>
       prev.start === start && prev.end === end ? prev : { start, end },
     );
@@ -41,7 +40,7 @@ export function useWindowedRows({ count, rowHeight, overscan = 8 }) {
 
   useEffect(() => {
     measure();
-    // Coalesce to one measurement per frame; scroll fires far more often.
+    // At most one measurement per frame, since scroll fires far more often.
     let frame = 0;
     const onScroll = () => {
       if (frame) return;
@@ -59,11 +58,11 @@ export function useWindowedRows({ count, rowHeight, overscan = 8 }) {
     };
   }, [measure]);
 
-  // A filter can shrink the list under a stored range — the range is state, and
-  // the effect that re-measures it does not run until after this render. For
-  // that one frame the slice would point past the end and paint an empty table
-  // under a huge spacer, so an out-of-range range falls back to the top (which
-  // is where the scroll position ends up anyway).
+  // A filter can shrink the list under a stored range, and the effect that
+  // re-measures doesn't run until after this render. For that one frame the
+  // slice would point past the end and paint an empty table under a huge
+  // spacer, so a range past the end falls back to the top, which is where the
+  // scroll ends up anyway.
   const outOfRange = range.start >= count;
   const start = outOfRange ? 0 : range.start;
   const end = outOfRange

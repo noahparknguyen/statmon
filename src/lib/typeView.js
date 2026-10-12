@@ -1,35 +1,30 @@
 // Pure logic for the type chart page: what typing the URL names, what URL a
 // typing produces, and how the 18 attacking types group against it.
 //
-// No React and no DOM, so it is unit-tested directly (typeView.test.js) and the
-// page stays thin on top of it — the same split as lib/dexTable.js and
-// lib/eras.js. The effectiveness maths itself is not here: that is
-// lib/typeChart.js, which already answers every question this module asks.
+// No React and no DOM, so it's tested directly in typeView.test.js and the page
+// stays thin. The effectiveness maths itself is in lib/typeChart.js.
 import { eraView } from "./eras";
 import { getBySlug } from "./pokemon";
 import { TYPES } from "./types";
 import { effectiveness, typeExistsIn, typesIn } from "./typeChart";
 
-// Highest first, which is the order the question is asked in — "what beats
-// this?" is answered at the top of the list. Every value `effectiveness` can
-// return, so a tier is never missing because nobody thought of ¼×.
+// Highest first, the order the question is asked in: "what beats this?" is
+// answered at the top. It lists every value `effectiveness` can return, because
+// an attacking type whose multiplier is missing here would silently vanish from
+// every tier rather than show up wrong.
 //
-// **⅛× is in here for exactly that reason** and is the
-// case that proved the comment right: it is unreachable from typing alone, but
-// a defender resisting twice with an ability that halves again produces it, and
-// an attacker whose multiplier is absent from this list is silently dropped
-// from every tier rather than rendered wrong — the worst of the two failures
-// (D-084).
+// That's why ⅛× is here. Typing alone can't reach it, but a defender that
+// resists twice and has an ability that halves again can.
 export const MULT_ORDER = [4, 2, 1, 0.5, 0.25, 0.125, 0];
 
 /**
- * The defending typing named by the URL's path segments, canonicalised.
+ * The defending typing the URL's path names, canonicalised.
  *
- * Returns at most two types **in TYPES order**, so `/types/flying/water` and
- * `/types/water/flying` are one view with one canonical URL — the same
- * normalise-on-read rule `parseList` applies to the dex's filters. Anything
- * unrecognised, duplicated, or not yet invented at `gen` is dropped rather than
- * throwing: a hand-edited link degrades to a plainer view of the same page.
+ * Returns at most two types, in TYPES order, so `/types/flying/water` and
+ * `/types/water/flying` are one view with one canonical URL, as the dex's
+ * filters are. Anything unrecognised, repeated, or not yet invented at `gen` is
+ * dropped rather than throwing, so a hand-edited link gives a plainer view of
+ * the same page.
  */
 export function parseTypes(segments, gen = null) {
   const picked = new Set(
@@ -39,19 +34,18 @@ export function parseTypes(segments, gen = null) {
 }
 
 /**
- * The canonical URL for a typing, with the generation lens and — when the
- * typing was named by picking a Pokémon — that Pokémon and its ability.
+ * The canonical URL for a typing, with the generation and, when the typing was
+ * named by picking a Pokémon, that Pokémon and its ability.
  *
- * Path segments rather than a query param, mirroring `/compare/<p1>/vs/<p2>`
- * (D-022): the typing is what the page is *about*, so it belongs in the path,
- * and `/types/water/flying` reads as what it is. The Pokémon is `?as=` because
- * it is a way of *naming* that typing rather than a different subject — which
- * is also why `parseDefender` validates it against the path instead of trusting
- * it (D-075).
+ * The typing goes in the path rather than a query parameter, as in
+ * `/compare/<p1>/vs/<p2>`: it's what the page is about, and
+ * `/types/water/flying` reads as what it is. The Pokémon is `?as=` because it's
+ * a way of naming that typing rather than a different subject, which is also
+ * why `parseDefender` checks it against the path instead of trusting it.
  *
- * Every parameter is omitted at its default — no `asof` for the current
- * generation, no `ab` for the Pokémon's first ability — the same rule the rest
- * of the site follows, so the common case stays a clean path.
+ * Every parameter is left out at its default: no `asof` for today's generation,
+ * and no `ab` for the Pokémon's first ability. So the usual case is a clean
+ * path.
  */
 export function typesUrl(
   types,
@@ -67,15 +61,14 @@ export function typesUrl(
 }
 
 /**
- * The Pokémon named by `?as=`, or null — validated against the typing the page
- * is actually showing.
+ * The Pokémon `?as=` names, or null, checked against the typing the page is
+ * showing.
  *
- * This is the move that keeps the URL a single source of truth rather than two
- * that can disagree. The Pokémon is never independent: if its typing at `gen`
- * is not the path's typing, or it did not exist that far back, the parameter is
- * simply dropped. So clicking a type chip off drops the Pokémon for free, with
- * no cleanup branch anywhere — and a stale or hand-edited link degrades to a
- * plainer view of the same page, the way `parseAsOf` and `parseTypes` do.
+ * That check keeps the URL one source of truth rather than two that can
+ * disagree. If the Pokémon's typing at `gen` isn't the path's typing, or it
+ * didn't exist that far back, the parameter is dropped. So turning a type chip
+ * off drops the Pokémon too, with no cleanup code anywhere, and a stale link
+ * gives a plainer view of the same page.
  */
 export function parseDefender(types, searchParams, gen = null) {
   const slug = searchParams.get("as");
@@ -87,29 +80,26 @@ export function parseDefender(types, searchParams, gen = null) {
  * Whether `mon` is a Pokémon this page could be showing: it existed at `gen`,
  * and its typing there is the typing on screen.
  *
- * Exported beside `parseDefender` because the same question has to be asked on
- * the way OUT as well as in — building the next URL has a Pokémon in hand
- * rather than a query string, and a link should never carry a parameter its own
- * page would discard on arrival.
+ * Exported because the same check is needed when building the next URL, which
+ * starts from a Pokémon rather than a query string. A link should never carry a
+ * parameter its own page would drop on arrival.
  */
 export function defends(mon, types, gen = null) {
   if (!mon || (gen != null && mon.introducedIn > gen)) return false;
-  // Through parseTypes on both sides, so the comparison is between two
-  // canonical lists rather than between a canonical one and a slot-ordered one.
+  // Both sides go through parseTypes, so two canonical lists are compared.
   // Volcarona is stored Bug/Fire and canonicalises to Fire/Bug, so comparing
-  // position by position against the path would reject the very Pokémon that
-  // produced it.
+  // slot by slot against the path would reject the Pokémon that produced it.
   const mine = parseTypes(eraView(mon, gen).types, gen);
   return mine.length === types.length && mine.every((t, i) => t === types[i]);
 }
 
 /**
- * Adds or removes one type, capped at two.
+ * Adds or removes one type, up to two.
  *
- * A third pick is refused rather than silently evicting one of the existing
- * two — the picker greys out the remaining chips when it is full, so this is
- * the state that control is already showing. Re-derived from TYPES order so the
- * URL is identical however the pair was clicked.
+ * A third pick is refused rather than pushing one of the others out: the picker
+ * greys out the remaining chips when it's full, so this matches what the
+ * control shows. Rebuilt in TYPES order, so the URL is the same however the
+ * pair was clicked.
  */
 export function toggleType(types, type) {
   if (types.includes(type)) return types.filter((t) => t !== type);
@@ -119,14 +109,14 @@ export function toggleType(types, type) {
 
 /**
  * Every attacking type grouped by what it does to `types`, as
- * `[{ mult, types }]` — highest multiplier first, empty tiers dropped.
+ * `[{ mult, types }]`, highest multiplier first, with empty tiers dropped.
  *
- * Dropping empty tiers is deliberate: the shape of the answer carries
- * information. A typing with no 4× row has no double weakness, and that reads
- * faster from an absent row than from an empty one.
+ * Dropping them is deliberate, because the shape of the answer says something:
+ * a typing with no 4× row has no double weakness, and an absent row reads
+ * faster than an empty one.
  *
- * With no defending types this is every attacker at 1×, which is true but not
- * worth rendering — the page shows the grid instead.
+ * With no defending types this would be every attacker at 1×, which is true but
+ * not worth showing, so the page shows the grid instead.
  */
 export function matchupTiers(types, gen = null, ability = null) {
   if (!types.length) return [];

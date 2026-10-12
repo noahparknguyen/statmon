@@ -1,8 +1,8 @@
-// Encode/decode for the on-disk dataset format.
+// Encoding and decoding for the dataset's stored format.
 //
-// `src/data/pokemon.json` ships inside the JS bundle, so its size is download
-// size for every visitor. The stored rows therefore omit everything that can be
-// rebuilt from `id` and `slug` — which was more than half the file:
+// `src/data/pokemon.json` ships inside the JavaScript bundle, so its size is
+// download size for every visitor. The stored rows leave out everything that
+// can be rebuilt from `id` and `slug`, more than half the file:
 //
 //   name        always titlecase(slug)          (1259/1259)
 //   bst         always sum(stats)               (1259/1259)
@@ -12,61 +12,52 @@
 //   speciesSlug usually equals slug             ( 988/1259, stored otherwise)
 //
 // Keys are single letters and stats are a fixed-order array. Decoding happens
-// once at import and produces the exact same objects the app used before, so no
-// component or lib consumer changed. (D-036)
+// once, at import, and gives the full objects the rest of the app reads.
 //
 // Stored shape:
 //   i  id                       s  slug            g  generation
 //   t  [types]                  st [6 base stats, STAT_ORDER order]
-//   p  speciesSlug   — only when it differs from slug
-//   f  [form slugs]  — only when there is more than one
-//   d  0            — present only for non-default forms
-//   ns 1            — present only when there is no pixel sprite
-//   na 1            — present only when there is no official artwork
-//   se [stat eras]  — only for the 193 entries whose base stats ever changed
-//   te [type eras]  — only for the 29 entries whose typing ever changed
-//   in introducedIn — only when it differs from the species generation
-//   ab [ability slugs]  — the normal abilities, slots 1–2, in slot order
-//   ah ability slug     — the hidden ability (slot 3), when there is one
-//   ae [ability eras]   — only for the 464 entries whose roster ever changed
+//   p  speciesSlug   (only when it differs from slug)
+//   f  [form slugs]  (only when there's more than one)
+//   d  0             (only for non-default forms)
+//   ns 1             (only when there's no pixel sprite)
+//   na 1             (only when there's no official artwork)
+//   se [stat eras]   (only for the 193 entries whose base stats ever changed)
+//   te [type eras]   (only for the 29 entries whose typing ever changed)
+//   in introducedIn  (only when it differs from the species generation)
+//   ab [ability slugs]  the normal abilities, slots 1 and 2, in slot order
+//   ah ability slug     the hidden ability (slot 3), when there is one
+//   ae [ability eras]   (only for the 464 entries whose abilities ever changed)
 //
-// The three era fields are the D-045 addition. `se`/`te` store one record per
-// change as [until, payload], where `until` is the LAST generation those values
-// applied in — PokéAPI's own `past_stats` semantics, kept rather than converted
-// so the stored data reads the same as its source. Stat keys are indices into
-// ERA_STAT_KEYS, which is STAT_ORDER plus Gen 1's `special` at the end; the
-// six-stat `st` array above is untouched by that extension.
+// `se` and `te` store one record per change as [until, payload], where `until`
+// is the last generation those values applied in. That's PokéAPI's own
+// `past_stats` meaning, kept so the stored data reads the same as its source.
+// Stat keys are indices into ERA_STAT_KEYS, which is STAT_ORDER with Gen 1's
+// `special` added at the end. The six-stat `st` array doesn't use it.
 //
-// The three ability fields are the D-073 addition, on the same `until` rule.
-// `ab`/`ah` are split rather than stored as one list with a flag because the
-// dataset makes it free: across all 1,259 entries the hidden ability is ALWAYS
-// slot 3, there is never more than one, and there are never more than two
-// normal ones. Two flat fields therefore carry the same information as slot
-// tuples, and cost less.
+// The ability fields follow the same `until` rule. `ab` and `ah` are separate
+// rather than one list with a flag because the data allows it: in all 1,259
+// entries the hidden ability is always slot 3, there's never more than one,
+// and there are never more than two normal ones. Two flat fields carry the
+// same information as slot tuples, and cost less.
 //
-// `ae` stores slot PATCHES — [until, [[slot, slug], …]] — where `0` means the
-// slot was empty then. That is the `se` shape rather than the `te` one, and
-// deliberately: 540 of the 566 stored records are a single empty slot ("no
-// hidden ability yet"), so patching measured 1.5 kB gzip cheaper than restating
-// the whole roster. (PokéAPI serves 568 records over these entries; the build's
-// no-op filter drops two that restate a value already in force — the Hisuian
-// Sliggoo and Goodra, each re-stating Shell Armor in slot 2. The counts here
-// are the STORED ones, like `se` and `te` above.)
+// `ae` stores slot patches, [until, [[slot, slug], …]], where `0` means the
+// slot was empty then. 540 of its 566 records are a single empty slot ("no
+// hidden ability yet"), so patching is smaller than restating every list:
+// 1.5 kB less, gzipped. `0` rather than `null` because it's one byte instead
+// of four, on the field that occurs most.
 //
-// `0` rather than `null` for the same reason JSON nulls are avoided elsewhere
-// here — it is one byte instead of four, on the field that occurs most.
-//
-// Explicit .js extension (unlike the rest of src/, which relies on Vite's
-// resolver) because scripts/*.mjs import this module under plain Node ESM.
+// The import below names its .js extension, unlike the rest of src/, because
+// scripts/*.mjs load this module under plain Node.
 import { STAT_ORDER, SPECIAL } from "./stats.js";
 
-// Index space for era stat patches only. Appending `special` here rather than
-// to STAT_ORDER keeps the modern six — and every consumer that maps over them —
-// exactly as they were. Module-private: it is an encoding detail, and the
-// decoded objects hand consumers real stat keys.
+// Index space for era stat patches only. Adding `special` here rather than to
+// STAT_ORDER leaves the six stats, and everything that maps over them, as they
+// are. Private to this module, because it's an encoding detail: the decoded
+// objects use real stat keys.
 const ERA_STAT_KEYS = [...STAT_ORDER, SPECIAL];
 
-// Canonical slug → display-name derivation. Exported because the same rule has
+// The one rule for turning a slug into a display name. Exported because it has
 // to hold in three places: the decoder, form-chip labels, and the build script.
 export const titleCase = (slug) =>
   slug
@@ -103,8 +94,8 @@ export function encodeEntry(e) {
   if (e.abilityEras?.length)
     row.ae = e.abilityEras.map(({ until, slots }) => [
       until,
-      // Object keys that are integer-like enumerate in ascending numeric order,
-      // so this is stable without sorting — which the round-trip test relies on.
+      // Integer-like object keys enumerate in ascending order, so this is stable
+      // without sorting, which the round-trip test relies on.
       Object.entries(slots).map(([slot, slug]) => [Number(slot), slug ?? 0]),
     ]);
   return row;
@@ -127,16 +118,16 @@ export function decodeEntry(r) {
     forms: r.f ?? [r.s],
     spriteUrl,
     artworkUrl: r.na ? spriteUrl : `/artwork/${r.i}.webp`,
-    // Decoded to empty arrays rather than left undefined, so every consumer can
-    // map over them without a guard — the same reason `forms` always includes
-    // self. Encoding drops them again, so the round trip is unaffected.
+    // Empty arrays rather than undefined, so every consumer can map over them
+    // without a guard, as `forms` always includes the entry itself. Encoding
+    // drops them again, so the round trip is unaffected.
     statEras: (r.se ?? []).map(([until, patch]) => ({
       until,
       stats: Object.fromEntries(patch.map(([i, v]) => [ERA_STAT_KEYS[i], v])),
     })),
     typeEras: (r.te ?? []).map(([until, types]) => ({ until, types })),
-    // Slot order, normal then hidden — the order the chips are rendered in and
-    // the order `defaultAbility` reads slot 1 from.
+    // Slot order, normal then hidden: the order the chips are shown in, and the
+    // order `defaultAbility` reads slot 1 from.
     abilities: [
       ...(r.ab ?? []).map((slug) => ({ slug, hidden: false })),
       ...(r.ah ? [{ slug: r.ah, hidden: true }] : []),

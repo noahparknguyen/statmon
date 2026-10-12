@@ -1,15 +1,13 @@
-// Effective — the type game: an attacking type against a defender, name the
-// multiplier (D-104).
+// Effective, the type game: an attacking type against a defender, and you name
+// the multiplier.
 //
-// The second game, and the one lib/typeChart.js was always going to carry. It
-// asks the question /types answers, in the units /types answers it in — the
-// multiplier ladder, through `formatMult` and `MULT_ORDER`, so a player learns
-// the vocabulary the rest of the site speaks.
+// It asks the question /types answers, in the same units: the multiplier
+// ladder, through `formatMult` and `MULT_ORDER`, so a player learns the terms
+// the rest of the site uses.
 //
-// Pure functions over plain data, no React, no DOM, unit-tested directly — the
-// same split as lib/games.js, lib/dexTable.js and lib/typeView.js. Randomness is
-// injected, for the same two reasons: a test can pin a round, and a daily seeded
-// puzzle would be a caller rather than a rewrite.
+// Pure functions over plain data, with no React and no DOM, so they're tested
+// directly. Randomness is passed in, as in games.js, so a test can deal a known
+// round.
 import { abilitiesAsOf } from "./abilities";
 import {
   filterRows,
@@ -28,18 +26,18 @@ import { PLAY_PARAM } from "./games";
 /* -------------------------------------------------------------------------
    The three tiers.
 
-   One at a time, not a mix. That is what makes the answer buttons a property
-   of the TIER rather than of the round: they are computed once from the
-   settings, they stay put all session, and so they can never leak anything
-   about the question in front of you (D-104).
+   One tier at a time, never a mix. That makes the answer buttons a property of
+   the tier rather than of the round: they're worked out once from the
+   settings and stay put all session, so they can never give away anything
+   about the question in front of you.
    ---------------------------------------------------------------------- */
 
 export const TIERS = ["easy", "medium", "hard"];
 
 export const TIER_LABEL = { easy: "Easy", medium: "Medium", hard: "Hard" };
 
-// Shown under the tier chips, for the selected one. A chip cannot carry this
-// and a difficulty name does not explain itself.
+// Shown under the tier chips for the selected one, since a difficulty name
+// doesn't explain itself.
 export const TIER_DESC = {
   easy: "One attacking type against one defending type: a single row of the chart.",
   medium:
@@ -48,8 +46,8 @@ export const TIER_DESC = {
 };
 
 // Only Hard draws from the dex, so only Hard has a pool to narrow. In the other
-// two tiers a generation filter and a forms toggle are controls that do
-// nothing, and the URL should not carry them either.
+// tiers a generation filter or a forms toggle would do nothing, so the URL
+// doesn't carry them either.
 export const usesPool = (tier) => tier === "hard";
 
 export const DEFAULT_SETTINGS = {
@@ -61,9 +59,8 @@ export const DEFAULT_SETTINGS = {
 };
 
 /**
- * The three ways in (D-108) — which here are just the tiers, since the tier IS
- * the difficulty. Presets are settings rather than modes, so each is a state
- * the setup panel could also reach by hand.
+ * The three presets on the start screen, which here are just the tiers, since
+ * the tier is the difficulty. Each is a state the setup panel can also reach.
  */
 export const EFFECTIVE_PRESETS = TIERS.map((tier) => ({
   id: tier,
@@ -75,22 +72,19 @@ export const EFFECTIVE_PRESETS = TIERS.map((tier) => ({
 /* -------------------------------------------------------------------------
    The question space.
 
-   Everything below derives from ONE enumeration: the defenders a settings
-   object admits, and the attackers that existed at its generation. The answer
-   buttons and the generator both read it, which is the point — a button can
-   never offer an answer the generator cannot produce, because both are the
-   same list.
+   Everything below comes from one list: the defenders a settings object
+   allows, and the attacking types that existed in its generation. The answer
+   buttons and the generator both read it, so a button can never offer an
+   answer the generator can't produce.
    ---------------------------------------------------------------------- */
 
 /**
- * Every defender this settings object can ask about, as
- * `{ types, pokemon, ability }`.
+ * Every defender these settings can ask about, as `{ types, pokemon, ability }`.
  *
- * `types` filters the DEFENDER in all three tiers, on the dex's own rule — the
- * typing must contain at least one selected type, OR within the group (D-040).
- * That makes one control mean one thing across tiers: in Easy it picks the
- * defending type, in Medium it requires a pairing to include it, and in Hard it
- * is `filterRows`' own type filter, unchanged.
+ * `types` filters the defender in all three tiers, by the dex's rule: the
+ * typing must include at least one selected type. So one control means one
+ * thing everywhere. In Easy it picks the defending type, in Medium it requires
+ * a pairing to include it, and in Hard it's the dex's own type filter.
  */
 export function defendersFor({
   tier = "easy",
@@ -114,8 +108,8 @@ export function defendersFor({
     const out = [];
     for (let i = 0; i < pool.length; i++) {
       for (let j = i + 1; j < pool.length; j++) {
-        // Unordered pairs: Water/Flying and Flying/Water are one defender, the
-        // same canonicalisation `parseTypes` applies on /types.
+        // Unordered pairs: Water/Flying and Flying/Water are one defender, as
+        // /types treats them.
         if (!wanted(pool[i]) && !wanted(pool[j])) continue;
         out.push({ types: [pool[i], pool[j]], pokemon: null, ability: null });
       }
@@ -123,9 +117,9 @@ export function defendersFor({
     return out;
   }
 
-  // Hard. One entry per (Pokémon, ability), because the ability is part of the
-  // question — Fire into Chandelure is 0× with Flash Fire and ½× with Flame
-  // Body, and which one you are shown is drawn at random (D-104).
+  // Hard has one entry per Pokémon and ability, because the ability is part of
+  // the question: Fire into Chandelure is 0× with Flash Fire and ½× with Flame
+  // Body, and which one you get is random.
   const out = [];
   for (const p of filterRows(ALL_POKEMON, {
     types,
@@ -135,8 +129,7 @@ export function defendersFor({
   })) {
     const view = eraView(p, asof);
     const roster = abilitiesAsOf(p, asof);
-    // Below Gen III nobody had abilities, and fourteen entries carry none —
-    // both are states to render rather than assume away (D-073).
+    // Below Gen 3 nobody had abilities, and 14 entries have none at all.
     if (roster.length === 0) {
       out.push({ types: view.types, pokemon: p, ability: null });
     } else {
@@ -151,39 +144,36 @@ export function defendersFor({
 export const multOf = (attack, defender, asof = null) =>
   effectiveness(attack, defender.types, asof, defender.ability);
 
-// A multiplier is offered as an answer only if this share of the tier's
-// question space produces it.
+// An answer is offered only if at least this share of the tier's questions
+// produce it.
 //
-// **This is a rule about diversity, not a tuning constant**, and it excludes
-// exactly one thing. `⅛×` is reachable from **four Pokémon in the entire dex**
-// — Dewgong, Spheal, Sealeo and Walrein, Water/Ice with Thick Fat, the D-084
-// case — which is 0.009% of Hard's space. Offering it as an answer and sampling
-// answers evenly would put that one family in one round in seven. The rarest
-// bucket the floor KEEPS is Hard's 4× at 1.21%, clearing it by 12×, and the one
-// it drops misses by 130×. Nothing sits near the line.
+// It's a rule about variety, not a tuning knob, and it drops exactly one
+// answer. ⅛× comes from four Pokémon in the whole dex, Dewgong, Spheal, Sealeo,
+// and Walrein (Water/Ice with Thick Fat), which is 0.009% of Hard's questions.
+// Offering it, with answers drawn evenly, would put that one family in one
+// round in seven. The rarest answer the floor keeps is Hard's 4× at 1.21%, 12
+// times over the line, and ⅛× falls 11 times short of it, so nothing sits
+// close.
 //
-// /types still answers ⅛× (D-084 exists so that it can); the game just does not
-// quiz a question with four instances.
+// /types still shows ⅛×. The game just doesn't quiz something with four
+// instances.
 export const ANSWER_FLOOR = 0.001;
 
-// Built per settings and memoised, because Hard enumerates every (Pokémon,
-// ability) pair against every attacker and that is not work to repeat on each
-// render. Keyed by the canonical settings string, so two ways of reaching the
-// same game share the entry.
+// Built per settings and cached, because Hard scores every Pokémon and ability
+// against every attacking type, which is too much work to repeat on each
+// render. Keyed by the canonical settings string, so two routes to the same
+// game share it.
 const spaceCache = new Map();
 
 function buildSpace(settings) {
   const attackers = typesIn(settings.asof);
   const defenders = defendersFor(settings);
 
-  // Counted over a COLLAPSED key rather than over every defender, which turns
-  // Hard's ~43,000 effectiveness calls into a few thousand. The collapse is
-  // exact rather than approximate: `abilityMultiplier` returns the chart's
-  // answer untouched for any ability with no effectiveness clause, so every
-  // such ability is the same defender as no ability at all. The counts are
-  // still per-defender — the weight of each collapsed group is how many
-  // defenders map onto it — so the shares below remain the real draw
-  // probabilities.
+  // Counted over groups rather than every defender, which cuts Hard's 43,398
+  // effectiveness calls to a fraction of that. Grouping is exact: an ability
+  // with no type effect returns the chart's answer unchanged, so it's the same
+  // defender as no ability at all. Each group's weight is how many defenders it
+  // stands for, so the shares below are still the real odds.
   const groups = new Map();
   for (const d of defenders) {
     const ability = affectsTypes(d.ability, settings.asof) ? d.ability : null;
@@ -216,43 +206,42 @@ export function questionSpace(settings = DEFAULT_SETTINGS) {
 }
 
 /**
- * The answers this settings object offers, highest first — the buttons.
+ * The answers these settings offer, highest first: the buttons.
  *
- * Fewer than two and there is no game to play: one button is not a question.
- * The setup panel reads this to refuse Play, the way the stat game refuses a
- * pool too small to seat a round.
+ * Fewer than two means there's no game, since one button isn't a question. The
+ * setup panel reads this to refuse Play, as the stat game refuses a pool too
+ * small for a round.
  */
 export const answersFor = (settings) => questionSpace(settings).answers;
 
 export const canPlay = (settings) => answersFor(settings).length >= 2;
 
 /* -------------------------------------------------------------------------
-   Drawing a round.
+   Dealing a round.
    ---------------------------------------------------------------------- */
 
 const pick = (list, rng) => list[Math.floor(rng() * list.length)];
 
-// Bounded, like `higherQuestion`'s: at these hit rates the first or second
-// defender almost always works, and this only exists so a narrow filter cannot
-// spin forever.
+// A bound, as in the stat game: at these hit rates the first or second
+// defender almost always works, and this only stops a narrow filter from
+// spinning forever.
 const MAX_DRAWS = 200;
 
 /**
- * One round: `{ tier, attack, defender, mult, baseMult, via }`.
+ * One round: `{ tier, asof, attack, defender, mult, baseMult, via }`.
  *
- * **The answer is picked first.** Uniform sampling is a broken quiz — 63% of
- * single-type matchups and 47% of dual ones are 1×, so "always guess 1×" beats
- * a real player. So a target multiplier is drawn from the offered set, and then
- * a question is found for it.
+ * The answer is picked first. Drawing questions evenly makes a broken quiz: 63%
+ * of single-type matchups and 47% of dual-type ones are 1×, so always guessing
+ * 1× would beat a real player. So a target multiplier is drawn from the
+ * offered answers, then a question is found for it.
  *
- * The search is cheap because a defender answers eighteen questions at once:
- * draw one, score every attacker against it, and keep an attacker that lands on
- * the target. That is up to eighteen candidates per draw rather than one, which
- * is what makes this converge instead of rejection-sampling blind.
+ * The search is quick because one defender answers up to 18 questions at once:
+ * draw a defender, score every attacking type against it, and keep one that
+ * hits the target.
  *
- * `via` is the ability slug ONLY when it actually changed the answer, and null
- * otherwise — the same contract `stabMatchup` uses, so the verdict can render
- * the correction without recomputing anything.
+ * `via` is the ability slug only when it changed the answer, and null
+ * otherwise, as in `stabMatchup`, so the verdict can show the correction
+ * without working anything out again.
  */
 export function effectiveQuestion(
   settings = DEFAULT_SETTINGS,
@@ -271,8 +260,8 @@ export function effectiveQuestion(
     if (!matches.length) continue;
 
     const attack = pick(matches, rng);
-    // The chart's own answer, before the defender's ability had its say. Equal
-    // to `mult` in Easy and Medium, where there is no ability to have one.
+    // The chart's answer before the ability had its say. The same as `mult` in
+    // Easy and Medium, which have no abilities.
     const baseMult = effectiveness(attack, defender.types, settings.asof);
     return {
       tier: settings.tier,
@@ -288,18 +277,17 @@ export function effectiveQuestion(
 }
 
 /* -------------------------------------------------------------------------
-   URL <-> settings. The SETTINGS are the view and live in the URL (D-022);
-   the round and the score do not (D-092).
+   The URL. The settings live in it, and the round and the score don't.
    ---------------------------------------------------------------------- */
 
 /**
- * The settings named by the URL, fully resolved. Anything unrecognised, or
- * impossible at the generation being read, degrades to its default rather than
- * throwing — the forgiving parse every reader on this site follows.
+ * The settings a URL names, fully resolved. Anything unrecognised, or
+ * impossible in the generation being read, falls back to its default rather
+ * than throwing, like every other parser on the site.
  *
- * The pool parameters are read **only in Hard**, because only Hard has a pool.
- * That is what keeps one canonical URL per game: `?tier=easy&gen=1` cannot mean
- * anything, so it is not a state you can be in.
+ * The pool parameters are read only in Hard, because only Hard has a pool.
+ * That keeps one URL per game: `?tier=easy&gen=1` can't mean anything, so it
+ * isn't a state you can be in.
  */
 export function parseEffective(searchParams) {
   const rawAsOf = Number(searchParams.get("asof"));
@@ -341,36 +329,27 @@ export function settingsKey({
   return params.toString();
 }
 
-// `PLAY_PARAM` and the "a chosen game always has a non-empty query" rule are
-// the stat game's, shared rather than restated — both games have a preset that
-// is the defaults, so both had the same reload bug.
+// The `?play` marker is the stat game's. Both games have a preset that is the
+// defaults, so both need it for a chosen game to survive a reload.
 export function effectiveUrl(settings = DEFAULT_SETTINGS) {
   const qs = settingsKey(settings);
   return `/games/effective?${qs || PLAY_PARAM}`;
 }
 
 /* -------------------------------------------------------------------------
-   Settings mutations. Each returns a whole new settings object through
-   `normalise`, so a control can never emit a state its own page would discard
-   on arrival (the D-078 rule).
+   Changing settings. Each change returns a whole new settings object through
+   `normalise`, so no control can emit a state the page would drop on arrival.
    ---------------------------------------------------------------------- */
 
 /**
- * The one definition of a valid settings object, and every mutator below
- * returns through it.
+ * The one definition of valid settings, which every change below returns
+ * through. Lists are rebuilt in canonical order rather than filtered, anything
+ * the generation can't hold is dropped, and pool settings are kept only for the
+ * tier that has a pool.
  *
- * Three separate bugs turned out to be the same bug: `setAsOf` filtered its
- * lists in place (keeping whatever order it was handed), `setTier` passed the
- * type list through untouched, and both could therefore emit a settings object
- * whose URL parsed back into a *different* object — a control writing a state
- * its own page would discard, which is the D-078 fault. Fixing them one at a
- * time was fixing the same thing three times.
- *
- * So: lists are re-derived from their canonical order rather than filtered,
- * anything the lens cannot hold is dropped, and the pool settings exist only
- * for the tier that has a pool. `parseEffective` produces exactly this shape,
- * which is what makes "the URL round-trips" a structural property rather than
- * something each mutator has to remember.
+ * `parseEffective` produces exactly this shape, so every change survives a trip
+ * through the URL by construction, rather than each function having to
+ * remember to.
  */
 function normalise({ tier, types, gens, includeForms, asof }) {
   const pooled = usesPool(tier);
