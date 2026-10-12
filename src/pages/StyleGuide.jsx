@@ -1,8 +1,7 @@
-// Style-guide playground — the living reference for the design system, at the
-// /style route. It renders the REAL tokens and components (not hand-rolled
-// copies) so it can never drift from the app: swatches read CSS vars, badges use
-// <TypeBadge>, and the sample comparison is the actual <FeaturedComparison>.
-// See docs/06_style_guide.md (tokens) and docs/04_design.md (rationale).
+// The style guide at /style: a live reference for the design system. It renders
+// the real tokens and components rather than copies, so it can't drift from the
+// app: swatches read CSS variables, badges are <TypeBadge>, and the sample
+// comparison is the actual <FeaturedComparison>.
 
 import { useState } from "react";
 import { LuArrowRight, LuX } from "react-icons/lu";
@@ -27,10 +26,10 @@ import { TYPES, capitalize } from "../lib/types";
 const noop = () => {};
 
 // Reads each token's computed value from the live stylesheet, so a swatch can
-// never disagree with src/index.css. Read once in a lazy initialiser rather
-// than an effect: the stylesheet is static for the session, so there is nothing
-// to subscribe to, and this avoids a second render pass. Guarded for the
-// no-DOM case so the component stays server-renderable.
+// never disagree with src/index.css. Read once, in a lazy initialiser rather
+// than an effect: the stylesheet doesn't change during a visit, so there's
+// nothing to subscribe to, and it saves a second render. Guarded for when
+// there's no DOM, so the component can still render on a server.
 function readTokenValues(names) {
   if (typeof document === "undefined") return {};
   const cs = getComputedStyle(document.documentElement);
@@ -39,11 +38,10 @@ function readTokenValues(names) {
   );
 }
 
-// Guards against this page silently falling behind the stylesheet: finds every
-// `.text-*` rule that bundles a font-family (i.e. a §5 named style, not a colour
-// utility like `text-primary`) and reports any the page forgot to list. Same
-// idea as `npm run check:docs` — a consistency claim that isn't checked degrades
-// the moment attention moves on. This page previously listed 14 of 17.
+// Stops this page silently falling behind the stylesheet: it finds every
+// `.text-*` rule that sets a font family (a named text style, as opposed to a
+// colour utility like `text-primary`) and reports any the page doesn't list. A
+// consistency claim that nothing checks soon stops being true.
 function readMissingTextStyles(listed) {
   if (typeof document === "undefined") return [];
   const found = new Set();
@@ -59,15 +57,15 @@ function readMissingTextStyles(listed) {
     try {
       walk(sheet.cssRules);
     } catch {
-      /* cross-origin sheet — nothing to read */
+      /* A cross-origin stylesheet: nothing to read. */
     }
   }
   return [...found].filter((c) => !listed.includes(c)).sort();
 }
 
-// Literal `rounded-*` strings so Tailwind's scanner keeps the utilities. Each
-// radius is a ROLE (06_style_guide §7.1), so each specimen is labelled with
-// the job it does rather than only its number.
+// Literal `rounded-*` strings, so Tailwind's scanner keeps the classes. Each
+// radius is a role, so each specimen is labelled with the job it does rather
+// than only its size.
 const RADII = [
   ["rounded-xs", "xs · 4 · grid cell"],
   ["rounded-sm", "sm · 6 · text field"],
@@ -76,9 +74,9 @@ const RADII = [
   ["rounded-full", "full · control"],
 ];
 
-// [label, CSS var, note] — the value is read from the live stylesheet at
-// runtime (see useTokenValue), never hardcoded here. A literal hex in this file
-// would be a second source of truth and would drift the moment a token moved.
+// [label, CSS variable, note]. The value is read from the live stylesheet as
+// the page runs (see useTokenValue), never written here: a literal hex in this
+// file would be a second copy, and would drift the moment a token changed.
 const NEUTRALS = [
   ["base", "--color-base", "page background"],
   ["surface", "--color-surface", "cards / surfaces"],
@@ -106,10 +104,10 @@ const OTHER_TOKENS = [
   ["track-glass", "--color-track-glass", "bar track over artwork"],
 ];
 
-// ALL 22 named styles from 06_style_guide §5. Kept complete on purpose: a
-// partial list makes this page look authoritative while quietly omitting styles
-// (it previously showed 14 of 17). checkStyleCoverage below fails loudly if a
-// style exists in the stylesheet but is missing here.
+// All 22 named text styles. Kept complete on purpose, since a partial list would
+// make this page look authoritative while quietly leaving styles out.
+// checkStyleCoverage below reports any style in the stylesheet that's missing
+// here.
 const TEXT_STYLES = [
   ["text-display-hero", "Display hero", "48 · 700"],
   ["text-display", "Display", "36 · 700"],
@@ -135,8 +133,8 @@ const TEXT_STYLES = [
   ["text-button", "Button label", "14 · 600"],
 ];
 
-// A labelled specimen row, so each chip family is captioned with what makes its
-// geometry different rather than left to be compared by eye.
+// A labelled specimen row, so each chip family is captioned with how its shape
+// differs, rather than left to be compared by eye.
 function ChipRow({ label, note, children }) {
   return (
     <div className="flex flex-col gap-2">
@@ -185,21 +183,19 @@ export default function StyleGuide() {
   const volcarona = getBySlug("volcarona");
   const chandelure = getBySlug("chandelure");
   const charizard = getBySlug("charizard"); // has Mega forms → FormChips demo
-  // Chandelure is the AbilityChips demo because it shows all three states at
-  // once: Flash Fire is in the effect table (dot), Flame Body is not, and
-  // Infiltrator is hidden (icon). A one-ability Pokémon demonstrates neither
-  // marker, which is the whole point of the row.
-  // Derived, never listed: three quoted type names in a row is exactly what the
-  // "only one list of the 18" guard in types.test.js fails on, and this page is
-  // the file that already broke that rule once (D-048).
+  // Chandelure demonstrates AbilityChips because it shows all three states at
+  // once: Flash Fire is in the effect table (a dot), Flame Body isn't, and
+  // Infiltrator is hidden (an icon). A one-ability Pokémon would show neither
+  // marker, and the markers are the point of the row.
+  // Taken from TYPES rather than written out: three quoted type names in a row
+  // is what types.test.js's "only one list of the 18" check fails on.
   const [t0, t1, t2, t3] = TYPES;
 
   return (
     <div className={PAGE_CONTENT}>
-      {/* This page of all pages renders through the shared shell: it had its own
-          `px-6` gutter against the uniform `px-4` every other route uses
-          (06_style_guide §8) and its own `text-display` title against their
-          `text-h1` — drift in the one file whose stated job is not to have any. */}
+      {/* Rendered through the shared page shell, with the same gutter and
+          title as every other page: this is the one page that mustn't drift
+          from the rest. */}
       <PageHeader
         title="Style guide"
         subtitle="Every colour, text style, and core component, rendered from the live tokens and real components, so this page can't drift from the app."
@@ -279,10 +275,10 @@ export default function StyleGuide() {
             >
               <div className={cls}>{sample}</div>
               {/* No whitespace-nowrap: the longest spec ("text-numeral-xl · 48 ·
-                  700 · display numeral") cannot shrink below its own width, and
-                  pushed this page 6px past the viewport at 390px. The auto grid
-                  column still takes max-content whenever there is room, so this
-                  only wraps on a narrow screen. */}
+                  700 · display numeral") couldn't shrink below its own width,
+                  and would push the page past the screen at 390px. The auto
+                  grid column still takes its full width whenever there's room,
+                  so this only wraps on a narrow screen. */}
               <div className="text-caption text-tertiary text-right">
                 <span className="text-secondary">{cls}</span> · {spec}
               </div>
@@ -304,10 +300,10 @@ export default function StyleGuide() {
         </div>
       </Section>
 
-      {/* Every surface on the site is one of two boxes (06_style_guide §6.2,
-          §7.1): a surface, 16px in and 16px round, and an inset nested inside
-          one, 12px in and 10px round. Shown nested, because that is the only
-          way an inset is ever used. */}
+      {/* Every box on the site is one of two kinds: a surface, with 16px of
+          padding and a 16px radius, and an inset nested inside one, with 12px
+          and 10px. Shown nested, because that's the only way an inset is
+          used. */}
       <Section title="Surfaces — a surface and an inset">
         <div className="max-w-md rounded-lg border border-border-subtle bg-surface p-4">
           <span className="text-overline text-tertiary">
@@ -369,7 +365,7 @@ export default function StyleGuide() {
         </div>
       </Section>
 
-      {/* The one stat bar (D-135), in each of the ways it is used. */}
+      {/* The site's one stat bar, in each of the ways it's used. */}
       <Section title="Stat bars — one bar, 8px">
         {volcarona ? (
           <div className="flex max-w-md flex-col gap-6">
@@ -402,18 +398,18 @@ export default function StyleGuide() {
       </Section>
 
       {/* All four chip families side by side. They share one colour pair
-          (components/chipStyles.jsx) and differ only in geometry, so seeing
-          them together is the check that they still agree — the same reason
-          this page renders real components instead of copies. */}
+          (components/chipStyles.jsx) and differ only in shape, so seeing them
+          together is the check that they still agree, which is also why this
+          page renders real components instead of copies. */}
       <Section title="Chips — one colour pair, four geometries">
         <div className="flex flex-col gap-6">
           <ChipRow
             label="Form chips · compact, sharing the card's 88px controls band"
             note="21px tall, so they pass WCAG 2.5.8 by spacing rather than size: 27.1px between the tightest centres (D-059)."
           >
-            {/* Shown at roughly the width of the card band they live in, so
-                the wrapping reads as the real layout it is. Left-aligned since
-                D-080 put them in a labelled column beside FORM. */}
+            {/* Shown at about the width of the card band they live in, so the
+                wrapping matches the real layout. Left-aligned, as in their
+                labelled column beside FORM. */}
             <div className="max-w-72 rounded-md border border-dashed border-border-subtle p-2">
               {charizard ? (
                 <FormChips pokemon={charizard} onSelect={noop} />
@@ -435,13 +431,9 @@ export default function StyleGuide() {
             ) : null}
           </ChipRow>
 
-          {/* The real `FilterChip`, not a copy of it (D-095). This page carried
-              a hand-rebuilt `DemoChip` under a comment explaining that the dex
-              "keeps its Chip private" — which stopped being true at D-058, when
-              the dex's chip and the type picker's became one exported
-              component. It is the same fault D-090 found in this same file one
-              session earlier: a specimen page makes copies feel legitimate, and
-              the rule is that a specimen is a **call site**. */}
+          {/* The real `FilterChip`, not a copy. A specimen page makes copies
+              feel legitimate, so the rule here is that a specimen is a real use
+              of the component. */}
           <ChipRow
             label="Filter chips · 36px, with a colour dot and a dismiss ×"
             note="Selected type chips take the audited TypeBadge pairing (D-027). The last pair is the single-select variant, which drops the × because nothing there can be dismissed (D-091)."
@@ -490,10 +482,9 @@ export default function StyleGuide() {
         </div>
       </Section>
 
-      {/* StabChip only ever appeared on this page incidentally, inside the
-          FeaturedComparison below — so its four tiers and its corrected state
-          had no reference anywhere. That is the drift this page exists to
-          prevent, in the file whose job is preventing it (D-079). */}
+      {/* StabChip's four tiers and its corrected state, shown on their own,
+          since the FeaturedComparison below only shows whichever the sample
+          matchup happens to produce. */}
       <Section title="STAB chips — the four effectiveness tiers">
         <div className="flex flex-col gap-6">
           <ChipRow
@@ -517,9 +508,8 @@ export default function StyleGuide() {
                 <StabChip type={t0} mult={0} baseMult={2} via="levitate" />
                 <StabChip type={t1} mult={2} baseMult={1} via="fluffy" />
               </div>
-              {/* The real component, not a copy of its markup — which is this
-                  page's whole contract, and which a hand-copy here had already
-                  broken inside one session (D-090). */}
+              {/* The real component, not a copy of its markup, which is this
+                  page's whole contract. */}
               <StabCaption types={[t2]} via="levitate" />
             </div>
           </ChipRow>

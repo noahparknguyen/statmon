@@ -36,132 +36,112 @@ import {
   writeRecord,
 } from "../lib/record";
 
-// Higher — the stat game, as an arena (D-091, redesigned by D-096).
+// Higher, the stat game, as a full-screen board.
 //
-// **The field takes precedence.** The first build was a tool page: a page
-// header, a controls panel, then the game as a strip underneath — so the
-// configuration was the biggest thing on screen and the Pokémon were thumbnails.
-// That is the right shape for /compare, /dex and /types, where the controls are
-// why you came, and the wrong one here. The board now fills the viewport, the
+// The board comes first. On /compare, /dex, and /types the controls are why you
+// came, but here they'd crowd out the game, so the board fills the screen, the
 // chrome is one 56px bar, and the settings live behind a button.
 //
-// **The settings are in the URL; the play-through is not** (D-092). A stated
-// exception to D-022, and the line is that `?stats=speed&n=4` reproduces *the
-// game you are playing* while the round and the score are local state. A round
-// in the URL would make Back replay it; a score there would make it editable.
+// The settings are in the URL, but the play-through isn't: `?stats=speed&n=4`
+// reproduces the game you're playing, while the round and the score are local
+// state. A round in the URL would make Back replay it, and a score there would
+// make it editable.
 //
-// The consequence is the `key` below: changing a setting is a different game, so
-// the round and the score start over. Keying the session subtree on the settings
-// URL is how that happens with no effect and no reset branch — the state is
-// scoped to the thing it belongs to.
+// So changing a setting is a different game, and the round and score start
+// over. Keying the board on the settings URL (the `key` below) does that with
+// no effect and no reset code.
 
-// This game's namespace in the saved record. Both games spell their default
-// settings as the empty string, so without it they would share a best streak
-// (D-104).
+// This game's name in the saved record. Both games write their default
+// settings as an empty string, so without it they'd share a best streak.
 const GAME = "higher";
 
-// "Higher" for two, "highest" for four. A superlative over two contenders is the
-// kind of small wrongness that makes a page feel machine-written.
+// "Higher" for two, "Highest" for four: "Highest" of two would be a small
+// grammar slip.
 //
-// The verdict's line answers in the question's own words, "Higher Speed:
-// Teddiursa, by 5." (D-143). While the board stacks the verdict covers the
-// question card, and it was the one card on the board that never said which
-// stat the round was about: "Teddiursa leads by 5." left you to remember.
+// The verdict answers in the question's own words, "Higher Speed: Teddiursa,
+// by 5.", because while the board stacks the verdict covers the question card,
+// and a bare "Teddiursa leads by 5." would leave you to remember which stat it
+// was.
 const question = (n, stat) =>
   `${n === 2 ? "Higher" : "Highest"} ${statName(stat)}`;
 
-// Two panels split down the middle; four split again. Below `sm` a pair stacks
-// rather than shrinking to 160px each — a versus screen on a phone is top
-// against bottom, which costs nothing to be.
+// Two panels split down the middle, and four split again. Below `sm` a pair
+// stacks rather than shrinking to 160px each: on a phone, a face-off is top
+// against bottom.
 //
-// **The middle row is the overlay's**, and that is the fix for a real bug
-// rather than a layout preference (D-097). Centring the verdict absolutely
-// works when the panels are one row: it lands on the divider, over artwork.
-// The moment they stack — a pair on a phone, or four in a 2×2 below `lg` — the
-// centre of the board is exactly where the top row's names and values are, so
-// the answer covered half the answer. Stacked, the overlay is a real grid row
-// between the halves and nothing overlaps; side by side, it goes back to being
-// an absolute layer.
+// The middle row is the overlay's. Centring the verdict absolutely works while
+// the panels are one row, where it lands on the divider, over artwork. Once
+// they stack (a pair on a phone, or four in a 2×2 below `lg`), the centre of
+// the board is where the top row's names and values are, so the answer would
+// cover half the answer. Stacked, the overlay is a real grid row between the
+// halves and nothing overlaps. Side by side, it's an absolute layer again.
 const GRID = {
   2: "grid-cols-1 grid-rows-[1fr_auto_1fr] sm:grid-cols-2 sm:grid-rows-1",
   4: "grid-cols-2 grid-rows-[1fr_auto_1fr] lg:grid-cols-4 lg:grid-rows-1",
 };
 
-// The breakpoint at which each count stops stacking — where the overlay stops
-// being a row and becomes a layer. Written out in full rather than composed, so
-// Tailwind's scanner sees every utility (cf. D-028).
+// The breakpoint at which each count stops stacking, where the overlay stops
+// being a row and becomes a layer. Written out in full rather than built up, so
+// Tailwind's scanner sees every class.
 const OVERLAY = {
   2: "col-span-full flex justify-center bg-base px-4 py-3 sm:pointer-events-none sm:absolute sm:inset-0 sm:grid sm:justify-items-center sm:bg-transparent sm:p-4",
   4: "col-span-full flex justify-center bg-base px-4 py-3 lg:pointer-events-none lg:absolute lg:inset-0 lg:grid lg:justify-items-center lg:bg-transparent lg:p-4",
 };
 
-// Where the two cards sit once the panels are side by side (D-101). They share
-// the layer's one cell, so neither moves the other.
+// Where the two cards sit once the panels are side by side. They share the
+// layer's one cell, so neither moves the other.
 //
-// **The question at the top, for the whole round** (D-143). Dead centre is
-// where the artwork is: at four panels on a wide screen each one is
-// `object-contain`-ed into a tall box, so there is real empty space above and
-// below the Pokémon and none at all in the middle. A question you read once
-// and then keep glancing back at is chrome, and chrome does not belong on top
-// of the subject. It used to vanish when you answered, which nobody chose: the
-// two cards took turns in one slot, so the verdict replaced it.
+// The question sits at the top, for the whole round. The middle is where the
+// artwork is: with four panels on a wide screen, each Pokémon is fitted into a
+// tall box, leaving space above and below it and none in the middle. A question
+// you read once and then glance back at belongs out of the subject's way.
 //
-// **The answer in the centre**, deliberately. It is not chrome, it is an event:
-// it interrupts, it carries the button you are about to press, and it wants to
-// be exactly where your eye already is. The two positions are the two roles.
+// The answer sits in the centre, deliberately. It interrupts, carries the
+// button you're about to press, and wants to be where your eye already is.
 //
-// Stacked, the cards are a real grid row BETWEEN the panels; see VERDICT_WRAP.
+// Stacked, the cards are a grid row between the panels: see VERDICT_WRAP.
 const PROMPT_PLACE = {
   2: "sm:col-start-1 sm:row-start-1 sm:self-start",
   4: "lg:col-start-1 lg:row-start-1 lg:self-start",
 };
 
-// Stacked, the verdict card is **80px taller than the question card** — 134.6
-// against 54.8, measured at 390px. In a grid row sized by its contents that
-// growth is a shove: both panels give up 40px the instant you answer, and the
-// Pokémon jump (D-103).
+// Stacked, the verdict card is about 80px taller than the question card, so in
+// a row sized by its contents, answering would shove both panels and make the
+// Pokémon jump. Reserving the taller height instead would cost the question,
+// the state you spend nearly all your time in, a quarter of the artwork on a
+// phone, to smooth over one moment.
 //
-// Reserving the taller height was the obvious fix and it is the wrong one: the
-// question is the state you spend nearly all your time in, and it would spend
-// 80px of a 668px board on a gap, taking a quarter of the artwork off a phone
-// permanently to smooth over one transition.
+// So the row keeps the question's height, with the question card left in place
+// but invisible once the round resolves, and the verdict is lifted out of flow
+// on top of it, growing downward. Downward because above the row is the first
+// Pokémon's value, which is the answer, and the verdict mustn't cover it. Below
+// is the second Pokémon's artwork, whose name and value sit lower and stay
+// visible. Starting the verdict below the question card instead would cover
+// the second Pokémon's name on an iPhone in Safari, and its value on a smaller
+// phone.
 //
-// So the row keeps the QUESTION's height — the question card stays in flow,
-// invisible, once the round resolves — and the verdict is lifted out of flow on
-// top of it, growing **downward**. Downward is forced rather than chosen: above
-// the gutter is the first Pokémon's value, which is the answer, and covering
-// the answer with the answer is the fault D-097 already fixed once. Below it is
-// the second Pokémon's artwork, whose name and value sit lower still and stay
-// visible.
-//
-// **The question card stays under it, and the verdict's line says the
-// question instead** (D-143). Opening the verdict BELOW the question was the
-// first idea and the measurement killed it: in the 664px Safari leaves an
-// iPhone, a verdict starting under the question covered the second Pokémon's
-// name, and on a smaller phone its value, which is the answer.
-//
-// Side by side the wrapper is an ordinary item in the layer's one cell,
+// Side by side, the wrapper is an ordinary item in the layer's one cell,
 // centred, with the question above it at the top.
 const VERDICT_WRAP = {
   2: "absolute inset-x-4 top-3 flex justify-center sm:static sm:col-start-1 sm:row-start-1 sm:self-center",
   4: "absolute inset-x-4 top-3 flex justify-center lg:static lg:col-start-1 lg:row-start-1 lg:self-center",
 };
 
-// Once resolved and while the board stacks, the question card holds the row's
-// height under the verdict, and only that: invisible, so it does not show
-// through the verdict's fade-in. Side by side it stays on screen.
+// Once resolved and while the board stacks, the question card only holds the
+// row's height under the verdict: it's invisible, so it doesn't show through
+// the verdict's fade-in. Side by side, it stays on screen.
 const PROMPT_SPACER = { 2: "invisible sm:visible", 4: "invisible lg:visible" };
 
 function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
   const [session, setSession] = useState(NEW_SESSION);
   // A lazy initialiser, so a round is drawn once on mount rather than on every
-  // render. The draw is random, which is fine here in a way it would not be
-  // under hydration — the site is a client-only SPA (D-030).
+  // render. A random draw is fine here, because the site renders only in the
+  // browser, with no server-rendered HTML to match.
   const [round, setRound] = useState(() => higherQuestion(settings));
   const [picked, setPicked] = useState(null);
-  // Bumped per round so the entrance animation re-runs; the round object alone
-  // is not a usable key, and reusing the winner's slug would skip the animation
-  // whenever the same Pokémon came up twice.
+  // Bumped each round so the entrance animation re-runs. The round object isn't
+  // a usable key, and the winner's slug would skip the animation whenever the
+  // same Pokémon came up twice.
   const [dealt, setDealt] = useState(0);
 
   const key = settingsKey(settings);
@@ -175,8 +155,8 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
     setSession(next);
     onAnswer({
       key,
-      // The topic is the axis this game tests, and the accuracy log is kept in
-      // its terms: a stat here, an attacking type in Effective (D-104).
+      // The accuracy log is kept in terms of what this game tests: a stat here,
+      // and an attacking type in Effective.
       topic: round.stat,
       wasCorrect: p === round.winner,
       streak: next.streak,
@@ -199,9 +179,9 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
     />
   );
 
-  // Reachable now that the filters can be narrowed by hand (D-096): a typing
-  // that did not exist in the chosen era, or fewer Pokémon than the round needs
-  // seats for. A real state, so it gets a real screen rather than a blank one.
+  // Reachable with hand-narrowed filters: a typing that didn't exist in the
+  // chosen generation, or fewer Pokémon than the round has seats. A real state,
+  // so it gets a real screen rather than a blank one.
   if (!round) {
     return (
       <>
@@ -215,10 +195,9 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
 
   const winnerValue = round.values[round.contenders.indexOf(round.winner)];
 
-  // Every round ends with a way into the tool that would have answered it —
-  // which is the argument for a game living on a reference site at all. Built
-  // with the real URL builders, never assembled by hand, so a link from here
-  // cannot drift from the page it opens.
+  // Every round ends with a way into the tool that would have answered it.
+  // Built with the real URL builders, never by hand, so the link can't drift
+  // from the page it opens.
   const followUp =
     settings.n === 2
       ? {
@@ -244,20 +223,20 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
     <div
       key={`${dealt}-${p.slug}`}
       className="animate-clash-charge min-h-0"
-      // The clash's variables are set HERE, on the grid cell, and inherited by
-      // the content inside the panel — so `ContenderPanel` knows only that it
-      // is shaking, never how. The choreography itself (which way each panel
-      // charges, and how its shake differs from its neighbour's) lives in
-      // gameChrome.jsx, because both games need exactly it.
+      // The clash animation's variables are set here, on the grid cell, and
+      // inherited inside the panel, so `ContenderPanel` only knows that it's
+      // shaking, never how. Which way each panel charges, and how its shake
+      // differs from its neighbour's, lives in gameChrome.jsx, since both games
+      // use it.
       style={clashVars(i, settings.n, dealt)}
     >
       <ContenderPanel
         // A two-up round gives each panel half the screen, so its name and
-        // value get the bigger of the two arena densities.
+        // value get the bigger of the two sizes.
         size={settings.n === 2 ? "lg" : "md"}
-        // Only the arena shakes. Home's preview and the games-index thumbnails
-        // render the same component statically — a preview that rattles when it
-        // scrolls into view is advertising a twitch, not a game.
+        // Only the game board shakes. Home's preview and the games index use
+        // the same component standing still: a preview that rattles as it
+        // scrolls into view looks like a glitch, not a game.
         shake
         pokemon={p}
         types={round.types[i]}
@@ -275,48 +254,39 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
     <>
       {bar}
 
-      {/* `gap-px` over the board's own background is the divider — no border on
-          any panel, and it stays a hairline at every width.
+      {/* `gap-px` over the board's own background is the divider, so no panel
+          needs a border, and it stays a hairline at every width.
 
-          **The background is `base`, not `border-subtle`, and that is the fix
-          for what the clash actually looked like** (D-100). The panels converge
-          on the centre, so for the length of the animation the gap between the
-          two halves is open — and filled with whatever is behind them. In the
-          divider's light grey that read as a grey bar flashing down the middle
-          of the screen every round. In the page's own near-black it reads as
-          what it is: two panels slamming shut on the space between them. The
-          resting 1px divider is near-black now, which the type tints already
-          separate well enough.
+          The background is `base`, not `border-subtle`. The panels charge in
+          toward the centre, so during the animation the gap between the halves
+          is open and shows whatever is behind them. Light grey would flash a
+          grey bar down the screen every round. The page's near-black reads as
+          two panels slamming shut on the space between them, and at rest the
+          type tints separate the panels well enough.
 
-          **`overflow-hidden` is not decoration.** The panels travel 5rem, and
-          without clipping that reaches the document and scrolls every width
-          sideways — caught by `npm run sweep:widths` at 900, 1024, 1280 and
-          1440 the first time it ran, at half this distance. Same fault as the
-          type grid leaking its overflow onto every page until `contain: paint`
-          (D-052): a board sized to the screen must not be able to push it. */}
+          `overflow-hidden` is load-bearing: the panels travel 5rem, and
+          unclipped, that would make every width scroll sideways. A board sized
+          to the screen mustn't be able to push it. */}
       <section className={`${BOARD_SURFACE} ${BOARD} ${GRID[settings.n]}`}>
         {panels.slice(0, half)}
 
-        {/* The question, and then the verdict. Everything a round needs is
-            in this one layer, so nothing about the game ever sits below the
-            fold. A real row between the halves while the board stacks, an
-            absolute layer once the panels are side by side — see GRID. */}
-        {/* `--z-raised` is load-bearing, not tidiness. The panels after this
-            one in DOM order carry a transform for the length of the entrance
-            animation, and a transformed element paints as though positioned —
-            so they painted OVER an absolutely-positioned overlay with no
-            z-index and sliced the prompt card in half down the panel boundary.
-            Exactly the fault D-088 found in the type grid's cross-hair, and
-            caught here by `npm run shoot:docs` rather than by any check. */}
+        {/* The question, and then the verdict. Everything a round needs is in
+            this one layer, so nothing about the game sits below the fold. A
+            real row between the halves while the board stacks, and an absolute
+            layer once the panels are side by side: see GRID. */}
+        {/* `--z-raised` is load-bearing. The panels after this one carry a
+            transform during their entrance animation, and a transformed element
+            paints as though positioned, so without it they'd paint over this
+            overlay and slice the question card in half along the panel edge. */}
         <div
           className={`relative ${OVERLAY[settings.n]}`}
           style={{ zIndex: "var(--z-raised)" }}
         >
-          {/* The question. Stays in flow once resolved, because while the board
-              stacks THIS is what gives the gutter its height — see
+          {/* The question. It stays in place once resolved, because while the
+              board stacks it's what gives the row its height: see
               VERDICT_WRAP. Side by side it stays at the top. */}
           {/* A one-line card, so 12px top and bottom where a surface takes
-              16 (§6.2, the bar rule). */}
+              16. */}
           <div
             className={`${ROUND_CARD} px-4 py-3 ${PROMPT_PLACE[settings.n]} ${
               resolved ? PROMPT_SPACER[settings.n] : ""
@@ -346,9 +316,9 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
         {panels.slice(half)}
       </section>
 
-      {/* The verdict is announced rather than only shown: the visible answer is
-          spread across up to four panels and a screen reader user would have to
-          go looking for it. Politely, so it does not interrupt the press that
+      {/* The verdict is announced as well as shown: the visible answer is
+          spread across up to four panels, and a screen reader user would have
+          to go looking for it. Politely, so it doesn't interrupt the press that
           caused it. */}
       <p aria-live="polite" className="sr-only">
         {resolved
@@ -366,22 +336,18 @@ export default function GameHigher() {
   const [searchParams] = useSearchParams();
   const settings = parseHigher(searchParams);
 
-  // `null` means closed. The panel edits a DRAFT rather than the live settings,
-  // so choosing which stats to keep does not restart the game under you on
-  // every chip click — only Play commits (D-096).
+  // `null` means closed. The panel edits a draft rather than the live settings,
+  // so choosing stats doesn't restart the game on every chip click: only Play
+  // commits.
   const [draft, setDraft] = useState(null);
 
-  // Whether a game has been chosen yet — READ off the URL, not held beside it
-  // (D-116). It used to be page state seeded from the URL, because the Medium
-  // preset is the defaults and so wrote no parameters: "does the URL carry
-  // settings" answered no for a game that had been chosen. `higherUrl` emits
-  // `?play` in exactly that case now, so the URL can answer it, and a flag that
-  // could disagree with the address bar is gone.
+  // Whether a game has been chosen, read from the URL rather than kept beside
+  // it, so it can never disagree with the address bar.
   const started = hasChosenGame(searchParams);
 
-  // Read once. `browserStorage()` is null under a server render or a browser
-  // refusing site data, and every function in lib/record handles that by
-  // remembering nothing rather than throwing (D-098).
+  // Read once. `browserStorage()` is null under a server render or in a browser
+  // refusing site data, and lib/record handles that by remembering nothing
+  // rather than throwing.
   const [record, setRecord] = useState(() => readRecord(browserStorage()));
 
   const saveAnswer = (entry) => {
@@ -390,9 +356,9 @@ export default function GameHigher() {
     writeRecord(browserStorage(), next);
   };
 
-  // Forgetting is a real feature, not a debug hook: the record is the only
-  // thing this site stores about anyone, so being able to throw it away is the
-  // other half of storing it at all.
+  // Forgetting is a real feature: the record is the only thing this site
+  // stores about anyone, so being able to throw it away is the other half of
+  // storing it at all.
   const forget = () => {
     clearRecord(browserStorage());
     setRecord(EMPTY_RECORD);
@@ -405,16 +371,12 @@ export default function GameHigher() {
   const play = () => {
     const next = draft;
     setDraft(null);
-    // Only navigate if something actually changed — otherwise closing the panel
-    // would restart a game you were in the middle of, which is the opposite of
-    // what "Play" should do when you opened it just to look at your accuracy.
-    //
-    // **`!started` is the other half, and its absence was a bug.** From the
-    // picker the settings are usually the defaults and therefore unchanged, so
-    // this guard alone refused to navigate and Customise -> Play left you
-    // exactly where you started. The type game had the opposite shape — it
-    // always navigated and flipped a flag — and the two are one rule now
-    // (D-116).
+    // Navigate only if something changed, or no game has started yet.
+    // Otherwise closing the panel would restart the game you're in, which is
+    // the opposite of what Play should do when you only opened it to look at
+    // your accuracy. From the start screen, the settings are usually the
+    // defaults and unchanged, so `!started` is what makes Customise, then Play,
+    // start a game.
     if (!started || settingsKey(next) !== settingsKey(settings)) {
       navigate(higherUrl(next), { replace: true, preventScrollReset: true });
     }
@@ -426,9 +388,9 @@ export default function GameHigher() {
         <GameStart
           title="Higher"
           presets={HIGHER_PRESETS}
-          // Each card shows a real round at ITS OWN preset, so the difference
-          // between Medium and Hard is visible as two panels against four
-          // rather than stated as a sentence (D-117).
+          // Each card shows a real round at its own preset, so the difference
+          // between Medium and Hard is visible, as two panels against four,
+          // rather than told.
           preview={(preset) => <HigherThumb settings={preset.settings} />}
           onPick={(preset) => start(preset.settings)}
           // Straight to the controls, without playing a round first.
@@ -456,10 +418,9 @@ export default function GameHigher() {
         record={record}
         onAnswer={saveAnswer}
         onSetup={() => setDraft(settings)}
-        // Back to the picker, which is now the whole of it: a bare URL IS the
-        // picker (D-116), so clearing the query is the state change rather
-        // than something done alongside one. A refresh from here still asks
-        // again rather than replaying the game you just left (D-109).
+        // Back to the start screen. A bare URL is the start screen, so
+        // clearing the query is all it takes, and a refresh from there asks
+        // again rather than replaying the game you just left.
         onRestart={() =>
           navigate("/games/higher", { replace: true, preventScrollReset: true })
         }

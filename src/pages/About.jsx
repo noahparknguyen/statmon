@@ -1,29 +1,12 @@
 import PageHeader from "../components/PageHeader";
 import { PAGE_CONTENT } from "../components/pageChrome";
 
-// About — the origin story, in the author's own words (D-118).
-//
-// **The copy is his, edited only for grammar and repetition.** Two earlier
-// drafts of mine failed in the same direction: the first read like release
-// notes, the second kept the shape but was still me doing an impression. The
-// fix was to stop writing it. What is here is the author's own account with
-// spelling and subject-verb agreement corrected, "over time" unglued, and one
-// duplicated "During" varied — nothing else.
-//
-// **One paragraph was added and it is the only addition**: the generation lens.
-// The story ends at "I built more tools" without it, and the lens is the one
-// feature that came DIRECTLY out of the replay the page opens with — the site
-// was describing Pokémon as they are now while he was playing them as they
-// were. It earns its place by belonging to the origin rather than by being
-// impressive.
-//
-// **Credits are not here.** They moved to the footer (D-119), where they sit on
-// every page instead of one, which suits attribution better than a section
-// nobody navigates to.
-// Body copy sits in a measure rather than the full content width: 1,120px of
-// 16px text is about 130 characters a line, roughly twice what anyone reads
-// comfortably. Centred, because `PageHeader` above it is — a narrow column
-// pinned left under a centred heading reads as a layout that lost an argument.
+// The About page: why Statmon exists. Credits are in the footer, on every page.
+
+// The text sits in a narrower column than the page: 1,120px of 16px text is
+// about 130 characters a line, roughly twice what reads comfortably. Centred,
+// because the heading above it is, and a narrow column pinned left under a
+// centred heading looks like a mistake.
 const PROSE = "mx-auto max-w-2xl space-y-4 text-body text-secondary";
 
 export default function About() {
@@ -71,9 +54,8 @@ export default function About() {
           Combining all of these tools together resulted in what you see here
           now. I hope you find it just as useful as I do.
         </p>
-        {/* A sign-off, because the page is signed work rather than a section of
-            a product. The footer carries the byline on every route; this is the
-            one place it is a person ending a letter instead of a credit. */}
+        {/* A sign-off, because this page is a letter rather than a section of a
+            product. The footer carries the byline everywhere else. */}
         <p className="text-primary">&mdash; Noah</p>
       </div>
     </div>

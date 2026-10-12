@@ -14,28 +14,25 @@ import { abilityParam, resolveAbility } from "../lib/abilities";
 import { STAT_ORDER } from "../lib/stats";
 import { randomMatchup } from "../lib/randomMatchup";
 
-// The core comparison page. The URL is the single source of truth (D-022): the
-// selection is derived from the path deep link (/compare/<p1>/vs/<p2>) or, for a
-// partial one-slot state, from a query param. Every pick/swap/form-change just
-// navigates to the URL for the next state, so back/forward and shared links work
-// with no local state to keep in sync. P1 is the attacker, P2 the defender.
+// The comparison page. The URL is the only source of truth: the selection comes
+// from the path (/compare/<p1>/vs/<p2>) or, with one slot filled, from a query
+// parameter. Every pick, swap, and form change navigates to the URL for the
+// next state, so back, forward, and shared links work with no local state to
+// keep in sync. P1 is the attacker and P2 the defender.
 //
-// The generation the board is read at (D-045) is derived the same way, from
-// `?asof=`. It is validated against the current selection rather than trusted, so
-// switching to a Mega while reading a Gen 1 board — a form that did not exist
-// then — falls back to the current generation instead of rendering a view that
-// never existed.
+// The generation the board is read at comes from `?asof=` the same way. It's
+// checked against the selection rather than trusted, so switching to a Mega
+// while reading a Gen 1 board, a form that didn't exist then, falls back to
+// today's generation instead of showing a board that never existed.
 //
-// So are the two abilities (D-073), from `?a1=`/`?a2=`, and for the same reason:
-// an ability a Pokémon does not have at the generation being read degrades to
-// its first one rather than rendering a board that never existed. Only P2's can
-// change what the comparison card says — P1 is the attacker — but both are part
-// of the view, and Swap turns the board around.
+// So are the two abilities, from `?a1=` and `?a2=`, for the same reason: an
+// ability a Pokémon didn't have in that generation falls back to its first.
+// Only P2's can change what the comparison card says, since P1 is the
+// attacker, but both are part of the view, and Swap turns the board around.
 
-// `abilityParam` (lib/abilities.js) is what keeps a slug out of the URL when it
-// is simply the Pokémon's first at that generation — the site-wide "defaults
-// stay out of the URL" rule. It lives there rather than here because /types
-// needs the identical rule, and the copy that page kept was subtly wrong.
+// `abilityParam` (lib/abilities.js) keeps an ability out of the URL when it's
+// the Pokémon's first in that generation, as defaults are everywhere. It lives
+// there because /types needs exactly the same rule.
 
 export default function Compare() {
   const navigate = useNavigate();
@@ -51,22 +48,23 @@ export default function Compare() {
   const asof = parseAsOf(searchParams, [p1, p2]);
   const v1 = eraView(p1, asof);
   const v2 = eraView(p2, asof);
-  // One stat list for the whole board. Both sides always agree — everything
-  // available in Gen 1 is one of the 151 Gen 1 species — but the empty card has
-  // no view of its own to read, and the three cards must stay the same height.
+  // One stat list for the whole board. Both sides always agree, since
+  // everything available in Gen 1 is one of its 151 species, but an empty card
+  // has no view of its own to read, and the three cards must stay the same
+  // height.
   const keys = v1?.keys ?? v2?.keys ?? STAT_ORDER;
-  // Resolved against the era's roster, so this is always an ability the card
-  // can actually show — or null, for a Gen 1 board and the handful of entries
-  // that have none.
+  // Resolved against that generation's list, so this is always an ability the
+  // card can show, or null for a Gen 1 or 2 board and the few entries with
+  // none.
   const a1 = resolveAbility(p1, asof, searchParams.get("a1"));
   const a2 = resolveAbility(p2, asof, searchParams.get("a2"));
 
-  // Selection lives in the URL; `replace` keeps history uncluttered while
-  // building/toggling forms so Back returns to where the user came from.
-  // Abilities are omitted at their default so the common case stays a clean
-  // path, and dropped entirely when the Pokémon or the generation changes under
-  // them — `resolveAbility` would only discard them on the next render anyway,
-  // and carrying a dead parameter through the URL bar is worse than not.
+  // The selection lives in the URL, and `replace` keeps picking Pokémon and
+  // forms out of the browser's history, so Back returns to where you came
+  // from. Abilities are left out at their default, so the usual case is a clean
+  // path, and dropped when the Pokémon or the generation changes under them:
+  // `resolveAbility` would drop them on the next render anyway, and a dead
+  // parameter in the URL bar is worse than none.
   const go = (a, b, g = asof, x = a1, y = a2) =>
     navigate(
       compareUrl(a?.slug, b?.slug, {
@@ -83,18 +81,16 @@ export default function Compare() {
   const selectA1 = (slug) => go(p1, p2, asof, slug);
   const selectA2 = (slug) => go(p1, p2, asof, a1, slug);
 
-  // **Keeps the lens, and draws inside it** (D-123). The pair comes from the
-  // pool that existed at `asof`, so hitting Random on a Gen 1 board hands back
-  // two Gen 1 Pokémon rather than two modern ones that quietly drop the
-  // generation on arrival. Abilities are cleared, the way they are whenever the
-  // Pokémon change under them.
-  // Clearing a slot is just the URL without that slug — `compareUrl` already
-  // spells every combination, including the partial one-slot form. The ability
-  // goes with it: `?a1=` for a Pokémon that is no longer there is a dead
-  // parameter, and `resolveAbility` would drop it on the next render anyway.
+  // Clearing a slot is the URL without that slug, which `compareUrl` already
+  // handles, one-slot form included. The ability goes too: `?a1=` for a
+  // Pokémon that's no longer there is a dead parameter.
   const clearP1 = () => go(null, p2, asof, null, a2);
   const clearP2 = () => go(p1, null, asof, a1, null);
 
+  // Random keeps the generation and draws within it: on a Gen 1 board it gives
+  // two Gen 1 Pokémon, rather than two modern ones that would drop the
+  // generation on arrival. Abilities are cleared, as whenever the Pokémon
+  // change.
   const surprise = () => {
     const pair = randomMatchup(asof);
     if (pair) go(pair[0], pair[1], asof, null, null);
@@ -107,29 +103,25 @@ export default function Compare() {
         subtitle="See who's faster, hits harder, and is bulkier."
       />
 
-      {/* One controls panel, the same surface /dex and /types put their controls
-          on. This page used to leave the strip and Swap floating bare on the
-          page background — three tools, two treatments, and the odd one out was
-          the flagship.
+      {/* One controls panel, the same surface /dex and /types use.
 
-          The lens sits BELOW the divider here where the other two tools put it
-          above, and that difference is the real relationship rather than drift:
-          on /dex and /types the generation decides what the controls below it
-          can even offer, so it leads. Here it is the selection that decides
-          which generations the strip may offer (D-045), so it follows. */}
+          The generation strip sits below the divider here, where the other two
+          tools put it above, and the difference is deliberate. On /dex and
+          /types the generation decides what the controls below it can offer,
+          so it leads. Here the selection decides which generations the strip
+          can offer, so it follows. */}
       <div className={`${PANEL} mb-6`}>
         <div role="search" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <SearchBar label="Search Pokémon 1" onSelect={selectP1} />
           <SearchBar label="Search Pokémon 2" onSelect={selectP2} />
         </div>
 
-        {/* Board controls, on one line: the generation strip takes the width it
-            needs on the left and Swap sits opposite it, rather than stacking two
-            centred rows and leaving the middle empty. Below sm they stack, since
-            nine chips plus a button do not fit on a phone.
-            Swap is pinned right with its own `ml-auto` rather than the row using
-            `justify-between`: with justify-between, Swap sat on the left of the
-            row and jumped across the moment the strip grew. */}
+        {/* The board's controls on one line: the generation strip takes the
+            width it needs on the left, and the buttons sit opposite, rather
+            than two centred rows with an empty middle. Below sm they stack,
+            since nine chips and two buttons don't fit on a phone.
+            The buttons are pinned right with their own `ml-auto` rather than
+            `justify-between` on the row, so they stay put as the strip grows. */}
         <div
           className={`${RULE_ABOVE} flex flex-col items-center gap-3 sm:flex-row sm:items-end`}
         >
@@ -139,10 +131,10 @@ export default function Compare() {
             asof={asof}
             onSelect={selectAsOf}
           />
-          {/* Random sits before Swap and is never disabled: it is the one
-              control here that works from an empty board, and on an empty board
-              it is the only thing to do besides type. Swap still needs a
-              selection to have something to turn around. */}
+          {/* Random sits before Swap and is never disabled: it's the one
+              control here that works on an empty board, where it's the only
+              thing to do besides type. Swap needs a selection to turn
+              around. */}
           <div className="flex shrink-0 items-center gap-2 sm:ml-auto">
             <Button variant="secondary" size="sm" onClick={surprise}>
               <LuShuffle aria-hidden />
@@ -161,19 +153,14 @@ export default function Compare() {
         </div>
       </div>
 
-      {/* Board: source order card1, card2, comparison, reordered per width.
-          On lg the comparison sits in the middle; at md the two cards share a
-          row and it spans below them; **below md it comes first**.
-
-          That last one is the fix for a board that had quietly become three
-          copies of itself on a phone (D-057). Stacked single-column, you used
-          to scroll past two 568px Pokémon cards — each with its own six stat
-          bars — before reaching the comparison card, which then showed the same
-          six stats a third time as per-stat cards, with the actual verdict last
-          at ~2,400px. The cards now drop their bars below md (PokemonCard), so
-          there is one stats surface, and it leads. */}
+      {/* The board: the two cards and then the comparison, reordered by width.
+          On lg the comparison sits in the middle. At md the two cards share a
+          row and it spans below them. Below md it comes first: stacked in one
+          column, the comparison would otherwise sit below two tall cards, and
+          the cards drop their stat bars at that width (PokemonCard), so the
+          comparison is the one place the stats appear, and it leads. */}
       {/* 16px between sibling surfaces, the gap every grid of cards on the site
-          uses (§6.3); it was 20 here and 16 on /games. */}
+          uses. */}
       <div className="grid gap-4 items-start grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         <div className="order-2 md:order-1">
           <PokemonCard

@@ -31,28 +31,24 @@ import {
 import { typesUrl } from "../lib/typeView";
 import { capitalize } from "../lib/types";
 
-// Effective — the type game (D-104). An attacking type against a defender;
-// name the multiplier.
+// Effective, the type game: an attacking type against a defender, and you name
+// the multiplier.
 //
-// Everything structural is `Higher.`'s, deliberately: the same arena, the same
-// clash, the same settings-in-the-URL rule (D-092), the same session reducer
-// and the same record. What differs is what a panel holds and how you answer —
-// which is exactly the seam `gameChrome.jsx` was drawn along (D-105).
+// Its structure is Higher's, deliberately: the same board, the same clash
+// animation, settings in the URL, the same session scoring, and the same
+// record. What differs is what a panel holds and how you answer, which is
+// where `gameChrome.jsx` divides the shared parts from each game's own.
 //
-// **The board is attacker │ answers │ defender** (D-107) — the shape /compare
-// has always used, two subjects with the answer between them. It was a rail
-// along the bottom first, and that put the thing you press as far from the
-// thing you read as the screen allows, across a field that is mostly empty at
-// the easier tiers. The empty middle is what pays for the move.
+// The board is attacker, answers, defender: the shape /compare uses, two
+// subjects with the answer between them, so the buttons you press sit right
+// next to what you're reading.
 
 const GAME = "effective";
 
-// Attacker, answers, defender. Below `sm` the three stack, which is the same
-// responsive shape the stat game's board takes — a versus screen on a phone is
-// top against bottom with the answer between.
-// **`md`, not `sm`** (D-109). Three columns at 480px leaves each panel about
-// 110px wide, which is a Pokémon you cannot see. Below 768 the three stack and
-// each gets the full width.
+// Attacker, answers, defender. Below `md` the three stack, as the stat game's
+// board does: on a phone, a face-off is top against bottom, with the answers
+// between. `md` rather than `sm`, because three columns at 480px would leave
+// each panel about 110px wide, too small to see the Pokémon.
 const GRID =
   "grid-cols-1 grid-rows-[1fr_auto_1fr] md:grid-cols-[1fr_auto_1fr] md:grid-rows-1";
 
@@ -60,8 +56,8 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
   const [session, setSession] = useState(NEW_SESSION);
   const [round, setRound] = useState(() => effectiveQuestion(settings));
   const [picked, setPicked] = useState(null);
-  // Bumped per round so the clash re-runs; the round object alone is not a
-  // usable key and a repeated defender would skip the animation.
+  // Bumped each round so the clash re-runs. The round object isn't a usable
+  // key, and a repeated defender would skip the animation.
   const [dealt, setDealt] = useState(0);
 
   const key = settingsKey(settings);
@@ -75,8 +71,8 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
     setSession(next);
     onAnswer({
       key,
-      // The axis this game tests, so the accuracy log reads "Ghost 54%" — one
-      // click from a drill on exactly that (D-104).
+      // What this game tests, so the accuracy log reads "Ghost 54%", one click
+      // from a drill on exactly that.
       topic: round.attack,
       wasCorrect: mult === round.mult,
       streak: next.streak,
@@ -99,9 +95,9 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
     />
   );
 
-  // Reachable by hand: a defending type the era had not invented, or filters
-  // that leave fewer than two possible answers. A game that cannot ask a
-  // question says so rather than rendering an empty board (D-104).
+  // Reachable with hand-picked filters: a defending type that didn't exist in
+  // the generation, or filters that leave fewer than two possible answers. A
+  // game that can't ask a question says so rather than showing an empty board.
   if (!round) {
     return (
       <>
@@ -114,9 +110,8 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
   }
 
   const { attack, defender } = round;
-  // Into the tool that would have answered it — the argument for a game living
-  // on a reference site at all. Built with the real URL builder, so a link from
-  // here cannot drift from the page it opens.
+  // A way into the tool that would have answered it. Built with the real URL
+  // builder, so the link can't drift from the page it opens.
   const followUp = typesUrl(defender.types, {
     asof: settings.asof,
     as: defender.pokemon?.slug ?? null,
@@ -138,8 +133,8 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
       pokemon={defender.pokemon}
       ability={defender.ability}
       gen={settings.asof}
-      // The typing and the tint arrive with the answer, never before it — in
-      // Hard the typing is the thing being recalled.
+      // The typing and the tint arrive with the answer, never before it: in
+      // Hard, the typing is what you're recalling.
       reveal={resolved}
       shake
       className="min-h-0"
@@ -159,8 +154,7 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
         </div>
 
         {/* The verdict sits directly above the answers, in the cluster's own
-            layer (D-143) — see AnswerCluster for where that lands at each
-            width. */}
+            layer. See AnswerCluster for where that lands at each width. */}
         <AnswerCluster
           answers={answersFor(settings)}
           correct={round.mult}
@@ -168,11 +162,11 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
           onPick={answer}
           verdict={
             resolved && (
-              // The site's own idiom for "the chart said one thing and the
-              // ability changed it": StabChip strikes the chart's answer
-              // beside the real one, StabCaption names what changed it
-              // (D-079). Reused rather than re-rendered, so the verdict cannot
-              // drift from the comparison board's version of the same fact.
+              // The site's usual way of saying "the chart said one thing and
+              // the ability changed it": StabChip strikes the chart's answer
+              // beside the real one, and StabCaption names what changed it.
+              // The same components as the comparison board's, so the two
+              // can't drift apart.
               <Verdict
                 correct={wasRight}
                 detail={
@@ -203,9 +197,9 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
         </div>
       </section>
 
-      {/* Announced rather than only shown: the answer is spread across a rail,
-          a chip and a caption, and a screen reader user would have to go
-          looking for it. */}
+      {/* Announced as well as shown: the answer is spread across the answer
+          buttons, a chip, and a caption, and a screen reader user would have
+          to go looking for it. */}
       <p aria-live="polite" className="sr-only">
         {resolved
           ? `${wasRight ? "Correct" : "Not quite"}. ${capitalize(attack)} against ${defender.types
@@ -224,9 +218,8 @@ export default function GameEffective() {
 
   const [draft, setDraft] = useState(null);
 
-  // Whether a game has been chosen yet — READ off the URL, not held beside it
-  // (D-116). See `hasChosenGame`: this game has the same defaults-writing-no-
-  // parameters preset the stat game does, and had the same reload bug.
+  // Whether a game has been chosen, read from the URL rather than kept beside
+  // it. See `hasChosenGame`: this game also has a preset that is the defaults.
   const started = hasChosenGame(searchParams);
   const [record, setRecord] = useState(() => readRecord(browserStorage()));
 
@@ -251,12 +244,10 @@ export default function GameEffective() {
   const play = () => {
     const next = draft ?? DEFAULT_SETTINGS;
     setDraft(null);
-    // Navigate when leaving the picker, or when something actually changed.
-    // The second half is the stat game's rule, adopted here: opening Setup just
-    // to read your accuracy and closing it on Play should not restart the round
-    // you were in the middle of. The first half is what makes `started`
-    // derivable — from the picker the settings may be identical and the
-    // navigation is still the thing that starts the game (D-116).
+    // Navigate when leaving the start screen, or when something changed, as in
+    // the stat game. Opening Setup to read your accuracy and closing it with
+    // Play shouldn't restart the round you're in. From the start screen the
+    // settings may be unchanged, and navigating is still what starts the game.
     if (!started || settingsKey(next) !== settingsKey(settings)) {
       navigate(effectiveUrl(next), { replace: true, preventScrollReset: true });
     }
@@ -268,9 +259,9 @@ export default function GameEffective() {
         <GameStart
           title="Effective"
           presets={EFFECTIVE_PRESETS}
-          // The tier IS the defender — one type, two types, then a Pokémon — so
-          // the right-hand panel changes shape across the three cards and the
-          // ladder is visible rather than described (D-117).
+          // The tier is the defender (one type, two types, then a Pokémon), so
+          // the right-hand panel changes shape across the three cards, and the
+          // difficulty is visible rather than told.
           preview={(preset) => <EffectiveThumb settings={preset.settings} />}
           onPick={(preset) => start(preset.settings)}
           // Straight to the controls, without playing a round first.
@@ -298,10 +289,9 @@ export default function GameEffective() {
         record={record}
         onAnswer={saveAnswer}
         onSetup={() => setDraft(settings)}
-        // Back to the picker, which is now the whole of it: a bare URL IS the
-        // picker (D-116), so clearing the query is the state change rather
-        // than something done alongside one. A refresh from here still asks
-        // again rather than replaying the game you just left (D-109).
+        // Back to the start screen. A bare URL is the start screen, so
+        // clearing the query is all it takes, and a refresh from there asks
+        // again rather than replaying the game you just left.
         onRestart={() =>
           navigate("/games/effective", {
             replace: true,
