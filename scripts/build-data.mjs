@@ -1,27 +1,27 @@
 #!/usr/bin/env node
 /**
- * Statmon — PokéAPI build-time data pipeline (Phase 1)
+ * Statmon: PokéAPI build-time data pipeline
  * ---------------------------------------------------------------------------
- * Fetches the full National Dex from PokéAPI ONCE and writes a slim local JSON
- * that the app serves directly — no runtime API calls (docs/03_decisions D-001).
+ * Fetches the full National Dex from PokéAPI once, and writes a slim local JSON
+ * that the app serves directly, with no API calls at runtime.
  *
- * Good-citizen behaviour (D-016):
- *   - Rate-limited to REQUESTS_PER_SECOND (default 5) — gentle on PokéAPI's
+ * Polite to the source:
+ *   - Rate-limited to REQUESTS_PER_SECOND (default 5), gentle on PokéAPI's
  *     static host, which asks callers to keep request frequency low.
- *   - On-disk cache in .cache/pokeapi — re-runs are near-instant and hit the
- *     network zero times for already-seen URLs.
+ *   - An on-disk cache in .cache/pokeapi, so re-runs are near-instant and
+ *     don't touch the network for URLs already fetched.
  *   - Retries with exponential backoff for transient failures.
- *   - Identifying User-Agent.
+ *   - An identifying User-Agent.
  *
- * Run once when adding a field/feature or when a new generation ships:
+ * Run once when adding a field or feature, or when a new generation ships:
  *   npm run build:data           # 5 req/s
  *   RPS=3 npm run build:data      # override the rate cap
  *
- * Output: src/data/pokemon.json — written in the compact form defined by
- * src/lib/pokemonCodec.js (fields derivable from id/slug are omitted, roughly
- * a third the size), which src/lib/pokemon.js decodes at import. Entries are
- * built and validated below in their full shape; encoding happens only at the
- * final write, so the summary and checks stay readable.
+ * Output: src/data/pokemon.json, written in the compact form defined by
+ * src/lib/pokemonCodec.js (fields derivable from id and slug are omitted),
+ * which src/lib/pokemon.js decodes at import. Entries are built and validated
+ * below in their full shape, and encoded only at the final write, so the
+ * summary and checks stay readable.
  */
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -150,7 +150,7 @@ const STAT_KEY = {
   "special-defense": "spDef",
   speed: "speed",
   // Generation 1's single Special stat (PokéAPI stat id 9). It appears only in
-  // `past_stats`, never in the current `stats` array. (D-045)
+  // `past_stats`, never in the current `stats` array.
   special: "special",
 };
 function extractStats(p) {
@@ -165,19 +165,19 @@ const orderedTypes = (p) =>
   [...p.types].sort((a, b) => a.slot - b.slot).map((t) => t.type.name);
 
 /* ------------------------------ ERA HELPERS ------------------------------
-   PokéAPI's `past_stats` / `past_types` both use one rule: the `generation` on
-   a record is the LAST generation those values applied in. We keep that
-   `until` semantics rather than converting it, so the stored data reads the
-   same as its source.
+   PokéAPI's `past_stats` and `past_types` both use one rule: the `generation`
+   on a record is the last generation those values applied in. That `until`
+   meaning is kept rather than converted, so the stored data reads the same as
+   its source.
 
-   Both extractors walk the records NEWEST-FIRST against a running "resolved"
+   Both extractors walk the records newest first, against a running "resolved"
    value that starts at today's. A record whose value already equals the
    resolved one is dropped: PokéAPI also emits a record when only the EV yield
-   (`effort`) changed, and seven Pokémon — Blissey, Roselia, Yanma, Dusclops,
-   Duskull, Misdreavus and Slowking — carry such a record with an identical base
-   stat. Kept, they would offer the UI an era toggle that changes nothing.
-   Comparing against the running value rather than against today's also keeps a
-   record that restores an older value correctly. (D-045)
+   (`effort`) changed, and seven Pokémon (Blissey, Roselia, Yanma, Dusclops,
+   Duskull, Misdreavus, and Slowking) carry such a record with an identical
+   base stat. Kept, they would offer the UI a generation that changes nothing.
+   Comparing against the running value rather than today's also keeps a record
+   that restores an older value correctly.
    ---------------------------------------------------------------------- */
 
 const byUntilDesc = (a, b) => b.until - a.until;
@@ -232,16 +232,16 @@ function extractTypeEras(p, currentTypes) {
 }
 
 /* ---------------------------- ABILITY HELPERS ----------------------------
-   Same `until` rule again (D-073). Two things make abilities simpler than
-   stats: the roster is small and slot-addressed, and across all 1,259 kept
-   entries the hidden ability is always slot 3 and there is never more than one
-   — so a roster is "slots 1–2, plus maybe slot 3".
+   The same `until` rule again. Two things make abilities simpler than stats:
+   the roster is small and addressed by slot, and across all 1,259 kept
+   entries, the hidden ability is always slot 3 and there's never more than
+   one, so a roster is slots 1 and 2, plus maybe slot 3.
 
-   `past_abilities` spells an empty slot as `ability: null`, which is how it
-   encodes an ability ARRIVING: 540 of the 568 records say "this Pokémon had no
-   hidden ability through Gen N". Only 28 are genuine substitutions (Gengar's
-   slot 1 was Levitate through Gen 6). Both are kept; the null ones are what
-   stop a Gen 4 board offering a hidden ability that did not exist yet.
+   `past_abilities` writes an empty slot as `ability: null`, which is how it
+   records an ability arriving: 540 of the 568 records say "this Pokémon had no
+   hidden ability through Gen N". Only 28 are real substitutions (Gengar's
+   slot 1 was Levitate through Gen 6). Both are kept: the null ones are what
+   stop a Gen 4 board offering a hidden ability that didn't exist yet.
    ---------------------------------------------------------------------- */
 
 const extractAbilities = (p) =>
@@ -285,15 +285,15 @@ const sameTypes = (a, b) =>
   a.length === b.length && a.every((t, i) => t === b[i]);
 
 /* --------------------------- TYPE CHART CHECK ---------------------------
-   The effectiveness chart is hardcoded canonical data (D-018) and its three
-   historical eras with it (D-045). Hardcoded is not the same as unverified:
-   this reads PokéAPI's `damage_relations` / `past_damage_relations` and asserts
-   the shipped chart matches, cell for cell, so a typo in 18×18 of hand-written
-   data is caught by the build rather than by a user.
+   The effectiveness chart is hardcoded, and its two historical eras with it.
+   Hardcoded isn't the same as unverified: this reads PokéAPI's
+   `damage_relations` and `past_damage_relations`, and asserts the shipped
+   chart matches, cell for cell, so a typo in 18×18 of hand-written data is
+   caught by the build rather than by a user.
 
-   Comparisons are restricted to the types that existed in the era, since that
-   is how the chart is read at runtime — Fire's modern row mentions Steel, but
-   in Gen 1 that entry can never be reached.
+   Comparisons are restricted to the types that existed in the era, since
+   that's how the chart is read at runtime: Fire's modern row mentions Steel,
+   but in Gen 1 that entry can never be reached.
    ---------------------------------------------------------------------- */
 
 // PokéAPI's defending-side lists → our attacker-row shape.
@@ -391,7 +391,7 @@ async function main() {
     ),
   );
 
-  // 4) Build entries — one per kept variety; skip cosmetic forms.
+  // 4) Build entries: one per kept variety, skipping cosmetic forms.
   const entries = [];
   let skippedCosmetic = 0;
 
@@ -403,8 +403,9 @@ async function main() {
     const defStats = extractStats(defaultP);
     const defTypes = orderedTypes(defaultP);
 
-    // A non-default variety is "cosmetic" (skip) only if BOTH its base stats
-    // and its types match the default — keeps Megas/regionals/battle forms.
+    // A non-default variety is cosmetic, and skipped, only if both its base
+    // stats and its types match the default. That keeps Megas, regional forms,
+    // and battle forms.
     const kept = sp.varieties
       .map((v) => pokemonByUrl.get(v.pokemon.url))
       .filter((p) => {
@@ -432,12 +433,12 @@ async function main() {
         types,
         stats,
         bst: Object.values(stats).reduce((a, b) => a + b, 0),
-        // Historical base stats and typings (D-045). Empty for the ~85% of
+        // Historical base stats and typings. Empty for the 1,045 of 1,259
         // entries that never changed.
         statEras: extractStatEras(p, stats),
         typeEras: extractTypeEras(p, types),
-        // The ability roster and its history (D-073). Empty for the 14 entries
-        // that carry no abilities at all — every one of them a speculative Mega.
+        // The ability roster and its history. Empty for the 14 entries that
+        // have no abilities at all, every one of them a Mega.
         abilities,
         abilityEras: extractAbilityEras(p, abilities),
         // Filled in below for alternate forms; a default form always debuts
@@ -445,10 +446,10 @@ async function main() {
         introducedIn: generation,
         formUrl: p.is_default ? null : (p.forms?.[0]?.url ?? null),
         forms: formSlugs, // sibling variety slugs (incl. self); length > 1 => has alt forms
-        // Local asset paths (self-hosted, D-002). Files are produced by
-        // `npm run vendor:images`, which downloads/optimizes from PokeAPI/sprites.
-        // Fallbacks preserved: no pixel sprite → null; no official artwork →
-        // the pixel sprite (so `spriteUrl ?? artworkUrl` still resolves).
+        // Local asset paths, since the images are self-hosted. The files come
+        // from `npm run vendor:images`, which downloads and optimizes them from
+        // PokeAPI/sprites. No pixel sprite gives null, and no official artwork
+        // gives the pixel sprite, so `spriteUrl ?? artworkUrl` still resolves.
         spriteUrl: p.sprites?.front_default ? `/sprites/${p.id}.png` : null,
         artworkUrl: p.sprites?.other?.["official-artwork"]?.front_default
           ? `/artwork/${p.id}.webp`
@@ -461,8 +462,8 @@ async function main() {
 
   // 5) Date the alternate forms. An alt form's species generation is not its
   // own: Alolan Raichu is a Gen 1 species introduced in Gen 7, and Mega
-  // Alakazam a Gen 1 species introduced in Gen 6. Without this an era selector
-  // would offer Gen 1 for a form that did not exist yet. (D-045)
+  // Alakazam a Gen 1 species introduced in Gen 6. Without this, the generation
+  // selector would offer Gen 1 for a form that didn't exist yet.
   const altForms = entries.filter((e) => e.formUrl);
   console.log(`\nDating ${altForms.length} alternate forms…`);
   const undated = [];
@@ -482,14 +483,13 @@ async function main() {
   console.log(`Verifying the type chart (${TYPES.length} types)…`);
   const chartMismatches = await verifyTypeChart(limit);
 
-  // 6b) Verify as much of the ability effect table as is verifiable (D-073).
-  // The MEANING of an entry cannot be checked — PokéAPI states Levitate's
-  // effect as the prose "Evades Ground moves." and nowhere as data — but its
-  // KEYS can be: every one has to be a real ability slug that some Pokémon in
-  // the dex actually has. That catches a typo, a rename, and an ability written
-  // down for a Pokémon this dataset does not carry, which is the failure mode a
-  // hand-maintained table actually has. The semantics are guarded by
-  // abilities.test.js instead. Hardcoded is still not the same as unverified.
+  // 6b) Verify as much of the ability effect table as can be verified. The
+  // meaning of an entry can't be checked, since PokéAPI gives Levitate's effect
+  // only as the prose "Evades Ground moves.", but its keys can: each has to be
+  // a real ability slug that some Pokémon in the dex has. That catches a typo,
+  // a rename, and an ability written down for a Pokémon this dataset doesn't
+  // carry, which are the ways a hand-maintained table goes wrong. The meanings
+  // are tested in abilities.test.js instead.
   const rostered = new Set(
     entries.flatMap((e) => e.abilities.map((a) => a.slug)),
   );
@@ -556,9 +556,9 @@ async function main() {
     chartMismatches.length ||
     unknownAbilities.length
   ) {
-    // Fail loudly — every entry must have all six stats, the hardcoded chart
-    // must agree with its source, and every ability the effect table names must
-    // be one a Pokémon in this dex actually has.
+    // Fail loudly: every entry must have all six stats, the hardcoded chart
+    // must agree with its source, and every ability the effect table names
+    // must be one a Pokémon in this dex has.
     process.exitCode = 1;
   }
 }

@@ -1,26 +1,24 @@
 #!/usr/bin/env node
 /**
- * Statmon — vendor the webfonts (D-061)
+ * Statmon: vendor the webfonts
  * ---------------------------------------------------------------------------
  * Downloads the two families into `public/fonts/` and writes the matching
  * `@font-face` rules to `src/fonts.css`, which `src/index.css` imports.
  *
- * Why self-host. The rest of the site makes **zero** runtime requests — the
- * dataset is bundled and every sprite is committed (D-002, D-025) — and then
- * index.html opened two `preconnect`s and a render-blocking stylesheet to a
- * third party before the first paint. That is one external dependency standing
- * between a user and a page that otherwise has none, and it is on the critical
- * path: the browser cannot paint text until Google's CSS arrives and tells it
- * which font files to fetch. Self-hosted, the `@font-face` rules are in the
- * stylesheet the page already downloads, so the fetch starts a round trip
- * earlier and no third party sees the request at all.
+ * Why self-host: the rest of the site makes no requests to anyone else, since
+ * the dataset is bundled and every sprite is committed. Fonts from Google would
+ * be the one outside dependency, and on the critical path: the browser can't
+ * paint text until Google's CSS arrives and says which font files to fetch.
+ * Self-hosted, the `@font-face` rules are in the stylesheet the page already
+ * downloads, so the fetch starts a round trip earlier, and no third party sees
+ * the request.
  *
  * Same shape as `vendor:images` (scripts/vendor-images.mjs): run on demand,
  * commit the output, never fetch at runtime.
  *
- * Only **latin** and **latin-ext** are kept. Google serves ten subsets per
- * weight (cyrillic, greek, vietnamese…); the UI is English and the widest
- * character it has to render is the é in "Pokémon", which is latin-1.
+ * Only latin and latin-ext are kept. Google serves many more subsets per weight
+ * (cyrillic, greek, vietnamese, and others), but the UI is English, and the
+ * widest character it has to render is the é in "Pokémon", which is latin-1.
  *
  *   npm run vendor:fonts
  */
@@ -34,27 +32,25 @@ const OUT_DIR = path.join(ROOT, "public", "fonts");
 const CSS_OUT = path.join(ROOT, "src", "fonts.css");
 
 // Must match the families and weights in src/index.css's --font-* tokens and
-// --font-weight-* ramp (06_style_guide §4.1-4.2).
+// --font-weight-* scale.
 const HREF =
   "https://fonts.googleapis.com/css2" +
   "?family=Space+Grotesk:wght@500;700" +
   "&family=Inter:wght@400;500;600" +
   "&display=swap";
 
-// A modern desktop UA, or Google serves the TTF fallback stylesheet instead of
-// the woff2 one — the whole point of vendoring these is to get woff2.
+// A modern desktop user agent, or Google serves the TTF fallback stylesheet
+// instead of the woff2 one, and woff2 is the point of vendoring these.
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
   "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 const KEEP = new Set(["latin", "latin-ext"]);
 
-// **The licences are vendored with the fonts, not beside them by hand.**
+// The licences are vendored with the fonts, not added beside them by hand.
 // Both families are SIL OFL 1.1, which requires the licence text to be
-// distributed with the font software — and ten .woff2 files shipped in this
-// repository for months with no OFL anywhere in it. Fetching them here is what
-// stops that being true again after the next re-vendor: if upstream moves, this
-// throws rather than quietly writing fonts without their terms (D-120).
+// distributed with the font software. Fetching it here means a re-vendor can't
+// write fonts without their terms: if upstream moves, this throws.
 const LICENSES = [
   {
     file: "OFL-Inter.txt",
@@ -72,7 +68,8 @@ for (const { file, url } of LICENSES) {
   const res = await fetch(url, { headers: { "User-Agent": UA } });
   if (!res.ok) throw new Error(`${file}: ${res.status} from ${url}`);
   const text = await res.text();
-  // A 404 page is a 200 from some hosts; an OFL that does not say so is not one.
+  // Some hosts send a 404 page with a 200, and an OFL that doesn't say so isn't
+  // one.
   if (!text.includes("SIL OPEN FONT LICENSE"))
     throw new Error(`${file}: fetched text is not an OFL licence`);
   await writeFile(path.join(LICENSE_DIR, file), text);
@@ -118,8 +115,8 @@ for (const [, subset, block] of blocks) {
       `  font-family: "${family}";`,
       `  font-style: normal;`,
       `  font-weight: ${weight};`,
-      // swap, not the default block: the fallback stack in --font-display /
-      // --font-body renders immediately and is replaced when the file lands.
+      // swap, not the default block: the fallback stack in --font-display and
+      // --font-body renders immediately, and is replaced when the file lands.
       // A dark UI with invisible text for 3s is worse than one reflow.
       `  font-display: swap;`,
       `  src: url("/fonts/${file}") format("woff2");`,

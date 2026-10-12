@@ -4,15 +4,12 @@ import { constants } from "node:fs";
 // Finds a usable Chrome for the two scripts that drive a headless browser
 // (`sweep-widths.mjs`, `shoot-docs.mjs`).
 //
-// It exists because the first version of this was a fake: both scripts carried
-// `["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable"].find(Boolean)`,
-// which returns the first truthy *string* — always index 0 — and never checks
-// whether anything is there. A candidate list that cannot fall back is worse
-// than a hardcoded path, because it reads as if it handles the case.
+// Each candidate is checked for an executable file, so the list really falls
+// back. A list that only looks like it falls back is worse than a hardcoded
+// path, because it reads as if it handles the case.
 //
-// Shared rather than copied into both, for the reason 06_style_guide §12 rule 8
-// gives about component styles: two copies of a lookup are two chances to fix
-// only one of them.
+// Shared rather than copied into both: two copies of a lookup are two chances
+// to fix only one of them.
 const CANDIDATES = [
   "/usr/bin/google-chrome",
   "/usr/bin/google-chrome-stable",

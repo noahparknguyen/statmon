@@ -1,15 +1,12 @@
 /**
- * Statmon — the class-string reader both style audits share
+ * Statmon: the class-string reader both style audits share
  * ---------------------------------------------------------------------------
  * `audit:classes` asks whether two utilities in one class string set the same
  * property. `audit:styles` asks whether each utility is one the style guide
  * allows at all. Both have to find the same class strings and understand each
- * utility the same way, so the finding and the understanding live here once —
- * the reason `chrome.mjs` is shared by the two scripts that drive a browser
- * (06_style_guide §12 rule 8: two copies of a lookup are two chances to fix
- * only one of them). Extracted from class-audit.mjs by D-134; the one addition is that
- * `decoration-` and `underline-offset-` now classify, where they used to be
- * the two utilities on the site this reader could not name.
+ * utility the same way, so that lives here once, as `chrome.mjs` is shared by
+ * the two scripts that drive a browser: two copies of a lookup are two chances
+ * to fix only one of them.
  */
 
 import fs from "node:fs";
@@ -29,18 +26,18 @@ export const CSS = path.join(SRC, "index.css");
 
 export const css = fs.readFileSync(CSS, "utf8");
 
-// Every class the stylesheet defines itself — §5's named text styles, the
+// Every class the stylesheet defines itself: the named text styles, the
 // `.animate-*` keyframe hooks, and one-off component classes like
-// `.type-grid`. Each is its own family: two DIFFERENT component classes are
-// unrelated properties, while the same one twice is a genuine duplicate.
-// The class is taken from the head of the selector rather than from a bare
-// `.name {`, because several are only ever written compound — `.type-grid td`
+// `.type-grid`. Each is its own family: two different component classes are
+// unrelated properties, while the same one twice is a real duplicate. The
+// class is taken from the head of the selector rather than from a bare
+// `.name {`, because several are only ever written compound: `.type-grid td`
 // and `.type-grid-sticky::before` both define classes the markup uses.
 export const COMPONENT_CLASSES = new Set(
   [...css.matchAll(/^\s*\.([a-z][a-z0-9-]*)/gm)].map((m) => m[1]),
 );
 
-// The subset that is §5's text scale, which is what disambiguates `text-*`.
+// The subset that is the text scale, which is what tells `text-*` apart.
 export const TEXT_STYLES = new Set(
   [...COMPONENT_CLASSES].filter((c) => c.startsWith("text-")),
 );
@@ -55,12 +52,10 @@ export const COLORS = new Set(
   [...css.matchAll(/^\s*--color-([a-z0-9-]+)\s*:/gm)].map((m) => m[1]),
 );
 
-// `font-` carries two unrelated properties and the split has to come from the
-// tokens, not from guessing: `--font-display` is a FAMILY and
-// `--font-weight-semibold` is a WEIGHT, so `font-display font-semibold` is a
-// correct pair rather than a conflict. Getting this wrong was this script's
-// first finding, against `ComparisonCard`, and it was the script that was
-// wrong.
+// `font-` carries two unrelated properties, and the split has to come from the
+// tokens, not from guessing: `--font-display` is a family and
+// `--font-weight-semibold` is a weight, so `font-display font-semibold` is a
+// correct pair rather than a conflict.
 export const FONT_FAMILIES = new Set(
   [...css.matchAll(/^\s*--font-(?!weight-)([a-z0-9-]+)\s*:/gm)].map(
     (m) => m[1],
@@ -305,8 +300,8 @@ const PREFIXES = [
   ["text-", "text"], // refined below into style vs colour
 ];
 
-// A bare number, a fraction, a `[...]` arbitrary value, or `px`/`full`/`auto`
-// — the shapes a WIDTH takes, as opposed to a colour token's name.
+// A bare number, a fraction, a `[...]` arbitrary value, or `px`, `full`, or
+// `auto`: the shapes a width takes, as opposed to a colour token's name.
 const isSizeish = (v) =>
   /^\[.*\]$/.test(v) ||
   /^\d+(\.\d+)?(\/\d+)?$/.test(v) ||
@@ -315,9 +310,9 @@ const isSizeish = (v) =>
 /**
  * The CSS property family a single utility sets, or `null` if unrecognised.
  *
- * `text-` and `border-` are split by looking at the VALUE, because in this
+ * `text-` and `border-` are split by looking at the value, because in this
  * codebase both prefixes carry two unrelated properties:
- *   text-h2        -> a named text style (§5)      text-primary  -> a colour
+ *   text-h2        -> a named text style           text-primary  -> a colour
  *   border-2       -> a width                       border-border-subtle -> a colour
  * Treating either as one family would flag `text-h2 text-primary`, which is the
  * single most common correct pair on the site.
@@ -326,7 +321,7 @@ export function familyOf(base) {
   if (MARKERS.has(base)) return `marker:${base}`;
   if (EXACT.has(base)) return EXACT.get(base);
   // Before the prefix table, so `.text-h1` is a text style rather than a
-  // `text-` colour lookup — and so `.type-grid` is recognised at all.
+  // `text-` colour lookup, and so `.type-grid` is recognised at all.
   if (COMPONENT_CLASSES.has(base)) {
     return TEXT_STYLES.has(base) ? "text-style" : `component:${base}`;
   }
@@ -337,9 +332,9 @@ export function familyOf(base) {
 
     if (family === "text") {
       if (COLORS.has(value)) return "text-color";
-      // A `text-*` that is neither a named style nor a colour token — a stock
-      // Tailwind size, say. Not this script's business to judge; it just must
-      // not pretend to know which property it set.
+      // A `text-*` that's neither a named style nor a colour token, such as a
+      // stock Tailwind size. Not this script's business to judge, but it
+      // mustn't pretend to know which property it set.
       return null;
     }
     if (family === "border") {
@@ -422,8 +417,8 @@ export function* walk(dir) {
  *
  * A string counts as a class string when every token is shaped like a utility
  * AND most of them classify. Classify first, decide second:
- * `npm run audit:contrast` is three lowercase tokens and passes any shape test
- * — what tells it apart from a class string is that it classifies as nothing.
+ * `npm run audit:contrast` is three lowercase tokens and passes any shape test,
+ * and what tells it apart from a class string is that it classifies as nothing.
  * That keeps prose, shell commands and `color-mix(...)` values out without
  * knowing where any of them live.
  *
@@ -443,8 +438,8 @@ export function* classStrings({ single = false, stats = {} } = {}) {
     if (/\.test\.jsx?$/.test(file)) continue;
     stats.files++;
     // Comments are blanked before anything is read, character for character
-    // so line numbers survive. They quote utilities in backticks constantly —
-    // "a bare `z-1300`", "`min-h-0` is the half that does the work" — and a
+    // so line numbers survive. They quote utilities in backticks constantly
+    // ("a bare `z-1300`", "`min-h-0` is the half that does the work"), and a
     // backtick is also how a template literal opens, so prose about classes
     // read as classes. Harmless to the conflict check, which needs two
     // utilities in one string; fatal to an allowlist, which would fail the
@@ -480,11 +475,11 @@ export function* classStrings({ single = false, stats = {} } = {}) {
           looksLikeClassString(tokens) &&
           known.length >= 2 &&
           known.length * 2 >= tokens.length;
-        // A literal written straight into `className` IS a class string,
-        // whatever it classifies as — which is the case the heuristic above
-        // cannot see: `"flex itmes-center"` is one known utility and one typo,
-        // fails the majority test, and would pass every audit by not being
-        // read. Only the opening chunk of a template can follow the attribute.
+        // A literal written straight into `className` is a class string,
+        // whatever it classifies as, and that's the case the test above can't
+        // see: `"flex itmes-center"` is one known utility and one typo, fails
+        // the majority test, and would pass every audit by not being read.
+        // Only the opening chunk of a template can follow the attribute.
         const before = text.slice(Math.max(0, m.index - 11), m.index);
         const forced =
           single &&

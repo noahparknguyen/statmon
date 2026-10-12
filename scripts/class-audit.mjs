@@ -1,45 +1,41 @@
 #!/usr/bin/env node
 /**
- * Statmon — conflicting-utility audit
+ * Statmon: conflicting-utility audit
  * ---------------------------------------------------------------------------
  * Finds class strings that set the same CSS property twice.
  *
- * Tailwind resolves `min-h-0 flex-1 min-h-[26rem]` by STYLESHEET order, not by
- * the order the utilities are written — so the one that wins is not the one you
- * meant, and nothing tells you. That is the D-042 trap, and it has now shipped
- * twice: once as a `TypeBadge` radius pair, and once as the game board's height
- * (D-110), where it was caught by a human reading the diff rather than by any
- * check. This is the part that does not depend on someone reading the diff.
+ * Tailwind resolves `min-h-0 flex-1 min-h-[26rem]` by stylesheet order, not by
+ * the order the utilities are written, so the one that wins may not be the one
+ * you meant, and nothing tells you. A careful reader can miss it in a diff, so
+ * this check looks instead.
  *
- * WHAT IT CHECKS. Each string literal in `src/` is split into utilities, each
+ * What it checks: each string literal in `src/` is split into utilities, each
  * utility is mapped to the property family it sets, and two utilities in the
  * same family under the same variant prefix are a conflict.
  *
- * The `text-*` split is the reason this needs real knowledge of the design
- * system rather than a regex: `text-h2 text-primary` is a NAMED TEXT STYLE plus
- * a COLOUR TOKEN and is correct on nearly every component on the site, while
- * `text-h2 text-h3` is a genuine conflict. Both sets are read from
- * `src/index.css` at run time — the 22 `@layer components` styles and the
- * `--color-*` tokens — so this cannot drift from the scale it audits
- * (06_style_guide §5).
+ * The `text-*` prefix is why this needs to know the design system rather than
+ * use a regex: `text-h2 text-primary` is a named text style plus a colour token,
+ * and correct on nearly every component on the site, while `text-h2 text-h3`
+ * is a real conflict. Both sets are read from `src/index.css` at run time (the
+ * named text styles in `@layer components`, and the `--color-*` tokens), so
+ * this can't drift from the scale it audits.
  *
- * WHAT IT DOES NOT CHECK, stated rather than implied:
- *   - Conflicts ACROSS composition. `${BOARD} min-h-[26rem]` in a template
+ * What it doesn't check:
+ *   - Conflicts across composition. `${BOARD} min-h-[26rem]` in a template
  *     literal is two strings to this script, and resolving it would mean
- *     evaluating the module. The D-110 defect was inside ONE string, which is
- *     the case this covers.
- *   - Utilities it cannot classify. It reports that count rather than hiding
+ *     running the module. A conflict inside one string is the case this
+ *     covers.
+ *   - Utilities it can't classify. It reports that count rather than hiding
  *     it, so the coverage is visible instead of assumed.
  *
- * Kept alongside `audit:contrast`, `check:docs` and `sweep:widths` (D-027,
- * D-031, D-059):
+ * Run it with:
  *   npm run audit:classes
  */
 
 import { classStrings } from "./classes.mjs";
 
 // The design system is read out of the stylesheet, and the class strings out of
-// src/, by the module this audit shares with `audit:styles` (D-134).
+// src/, by the module this audit shares with `audit:styles`.
 
 /* -------------------------------------------------------------------------
    The audit.

@@ -1,19 +1,16 @@
 #!/usr/bin/env node
 /**
- * Statmon — regenerate the documentation screenshots (D-064)
+ * Statmon: regenerate the documentation screenshots
  * ---------------------------------------------------------------------------
  * Captures the images the README and the repo's social preview use, plus the
  * Open Graph image, straight from the built site.
  *
- * These went stale because taking them was a manual job. `docs/preview.png` was
- * still the launch image — captured before the dex and the type chart existed,
- * on a site it no longer depicted — and `docs/home.png` predated the type
- * chart's preview landing on Home. A README whose screenshot shows two thirds
- * of the product is worse than one with no screenshot, because it is confidently
- * wrong. So this is a script, and it runs off `dist/`.
+ * A script rather than a manual job, because manual screenshots go stale, and
+ * a README whose screenshot shows two thirds of the product is worse than one
+ * with no screenshot: it's confidently wrong. So this runs off `dist/`.
  *
- * Requires a build first (`npm run build`) and Chrome; override the binary with
- * CHROME_PATH. The repo root is served, so the app resolves at `/` and the OG
+ * Needs a build first (`npm run build`) and Chrome. Override the binary with
+ * CHROME_PATH. The repo root is served, so the app resolves at `/`, and the OG
  * generator at `/docs/og-image.html` with its `../public/fonts` references
  * intact.
  *
@@ -44,69 +41,62 @@ const MIME = {
 
 // Each shot is [url, width, height, output].
 //
-// The three app screenshots are **16:9, all at 1600×900**. They were 1280×1000
-// and 1280×820, sized per-shot to frame their subject, which left the set
-// looking squarish and mismatched side by side in the README. One ratio and one
-// size reads as a set. 1600×900 rather than 1280×720 because 720px is not enough
-// page for two of the three: it halves the hero board's speed banner, and it
-// leaves the dex showing two rows of a table whose whole point is that it holds
+// The app screenshots are all 16:9, at 1600×900, so they read as a set side by
+// side in the README. 1600×900 rather than 1280×720, because 720px isn't
+// enough page for two of them: it halves the comparison board's speed banner,
+// and leaves the dex showing two rows of a table whose point is that it holds
 // 1,259.
 //
-// The two social frames are NOT 16:9 and must not be: 1280×640 is the 2:1 GitHub
+// The two social frames aren't 16:9, and mustn't be: 1280×640 is the 2:1 GitHub
 // requires for a social preview, and 1200×630 is the Open Graph standard. They
 // are platform sizes, not aesthetic ones.
 const SHOTS = [
   // The repo's social preview (GitHub Settings → Social preview) and the OG
-  // image, both rendered from the one generator so they cannot disagree.
+  // image, both rendered from the one generator so they can't disagree.
   ["/docs/og-image.html?only=gh", 1280, 640, "docs/preview.png"],
   ["/docs/og-image.html?only=og", 1200, 630, "public/og-image.png"],
   // The README's images, one per tool, so it shows the site it describes.
   //
-  // Home is captured TALL and cropped, and the arithmetic is the point (D-071).
-  // The hero is `72vh`, so at any window height it leaves 28% of the viewport to
-  // whatever is below it — there is no window size at which it fills the frame
-  // by itself. Solving for one that crops cleanly: header (56) + 0.72H = 900
-  // gives H = 1172, so the top 900px of a 1600x1172 shot is exactly the header
-  // and the hero, with no bleed and nothing cut off.
+  // Home is captured tall and cropped, and the arithmetic is the point. The
+  // hero is 72% of the viewport's height, so at any window height it leaves 28%
+  // to whatever is below it, and there's no window size at which it fills the
+  // frame by itself. Solving for one that crops cleanly: header (56) + 0.72H =
+  // 900 gives H = 1172, so the top 900px of a 1600×1172 shot is exactly the
+  // header and the hero, with no bleed and nothing cut off.
   //
-  // Doing it here rather than by making the hero `100vh` is deliberate: the
-  // crest of the comparison board below the fold is a usability affordance for
-  // real visitors, and a documentation image is not a reason to spend it. The
-  // whole point of this script (D-064) is that the docs bend to the site.
+  // Done here rather than by making the hero full height, on purpose: the top
+  // of the comparison board peeking above the fold tells real visitors there's
+  // more below, and a documentation image isn't a reason to give that up. The
+  // docs bend to the site.
   ["/", 1600, 1172, "docs/home.png", { cropTo: 900 }],
-  // The flagship needs a shot of its own now that home.png is the hero alone —
-  // otherwise the README shows two of the three tools, which is the exact
-  // failure D-064 exists to prevent.
+  // The comparison needs a shot of its own, since home.png is the hero alone,
+  // or the README would show two of the three tools.
   ["/compare/volcarona/vs/chandelure", 1600, 900, "docs/compare.png"],
   ["/dex", 1600, 900, "docs/dex.png"],
-  // Bronzong rather than a bare Water/Flying: the page can now be asked about a
-  // Pokémon (D-075), and it is Steel/Psychic with Levitate — so one frame shows
-  // the dual-type readout the tool exists for, the search that reaches it, and
-  // Ground dropping from 2x to 0x because of an ability (D-073). A screenshot of
-  // the typing alone would show the version before this session.
+  // Bronzong rather than a bare typing: it's Steel/Psychic with Levitate, so
+  // one frame shows the dual-type readout the tool exists for, the Pokémon
+  // search that reaches it, and Ground dropping from 2× to 0× because of an
+  // ability.
   ["/types/psychic/steel?as=bronzong", 1600, 900, "docs/types.png"],
-  // Four contenders and a fixed stat, because it is the shape the brief asked
-  // about — "which of these four moves first" — and because four cards show the
-  // controls, the prompt and the round in one frame where two leave half of it
-  // empty.
+  // Four contenders and a fixed stat, because that's the question the game
+  // asks ("which of these four moves first?"), and because four cards show the
+  // controls, the prompt, and the round in one frame, where two leave half of
+  // it empty.
   //
-  // **This shot is the one that is not reproducible**, and deliberately so: the
-  // round is drawn at random (D-091), so re-running `shoot:docs` produces a
-  // different four Pokémon every time. That is a true picture of the page —
-  // there is no canonical round — and pinning a seed here would mean shipping a
-  // capture mode the game itself does not have.
+  // This shot isn't reproducible, on purpose: the round is drawn at random, so
+  // re-running `shoot:docs` gives a different four Pokémon every time. That's a
+  // true picture of the page, since there's no canonical round, and pinning a
+  // seed here would mean shipping a capture mode the game itself doesn't have.
   ["/games/higher?stat=speed&n=4", 1600, 900, "docs/games.png"],
-  // The hard tier, because it is the one with something to show: a Pokémon
-  // whose typing is hidden and whose ability is the question (D-104). Random
-  // like the shot above, and for the same reason — there is no canonical round.
+  // The hard tier, because it's the one with something to show: a Pokémon whose
+  // typing is hidden and whose ability is the question. Random like the shot
+  // above, for the same reason.
   ["/games/effective?tier=hard", 1600, 900, "docs/effective.png"],
 ];
 
-// The two social frames must come out centred. This check exists because they
-// did not: the generator's frame-isolation matched nothing, so both captures
-// photographed the 1200px OG frame, and `preview.png` shipped as that frame in a
-// 1280px window with the wordmark 40px left of centre. It rendered fine in a
-// browser, which is exactly why nobody caught it. (D-066)
+// The two social frames must come out centred, and that's measured rather than
+// trusted: a frame can be off-centre in the capture while rendering fine in a
+// browser.
 const CENTRED = new Set(["docs/preview.png", "public/og-image.png"]);
 const CENTRE_TOLERANCE = 2; // px
 
@@ -176,10 +166,9 @@ try {
   process.exit(1);
 }
 
-// Horizontal centre of everything brighter than the near-black background.
 // Keep the top of a shot and discard the rest. Written to a buffer first and
-// then over the original, because sharp will not read and write the same path
-// in one pipeline.
+// then over the original, because sharp won't read and write the same path in
+// one pipeline.
 async function cropTop(file, width, height) {
   const { default: sharp } = await import("sharp");
   const buf = await sharp(file)
@@ -188,7 +177,9 @@ async function cropTop(file, width, height) {
   await writeFile(file, buf);
 }
 
-// sharp is already a devDependency (it resizes the vendored artwork).
+// The horizontal centre of everything brighter than the near-black background,
+// as an offset from the frame's centre. sharp is already a devDependency (it
+// resizes the vendored artwork).
 async function contentOffset(file) {
   const { default: sharp } = await import("sharp");
   const { data, info } = await sharp(file)

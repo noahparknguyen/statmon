@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 /**
- * Statmon — documentation link checker
+ * Statmon: documentation link checker
  * ---------------------------------------------------------------------------
- * Validates every relative Markdown link across README.md + docs/:
+ * Checks every relative Markdown link across README.md and docs/:
  *   - the target file exists
  *   - any #fragment resolves to a real heading or an explicit <a id="…"> anchor
  *
- * Anchor slugs are computed the way GitHub does it (github-slugger):
- * lowercase → strip everything outside [\w- ] → spaces become hyphens.
- * Note this does NOT collapse runs of spaces, so a heading containing "—" or
- * "&" yields a DOUBLE hyphen ("A — B" → "a--b"). Getting this wrong produces
- * false positives, which is exactly why this check is scripted rather than eyeballed.
+ * Anchor slugs are computed the way GitHub does it (github-slugger): lowercase,
+ * strip everything outside [\w- ], and turn each space into a hyphen. Runs of
+ * spaces aren't collapsed, so a heading containing "—" or "&" gives a double
+ * hyphen ("A — B" becomes "a--b"). Getting that wrong gives false alarms, which
+ * is why this check is a script rather than done by eye.
  *
- * Kept as a regression tool alongside `audit:contrast` (D-027, D-031):
+ * Run it with:
  *   npm run check:docs
  */
 

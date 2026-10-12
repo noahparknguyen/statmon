@@ -1,45 +1,41 @@
 #!/usr/bin/env node
 /**
- * Statmon — style allowlist audit
+ * Statmon: style allowlist audit
  * ---------------------------------------------------------------------------
- * Fails on any utility in src/ that the style guide does not allow.
+ * Fails on any utility in src/ that the design system doesn't allow.
  *
- * 06_style_guide has opened on one sentence since it was written: "If a value
- * isn't in this document, it doesn't get used." For colour that was true from
- * D-033 on, because the stock palette was cleared and an off-palette class
- * simply produces no CSS. For everything else it was a hope. A `p-5` on two
- * cards, a `rounded-xl` token nothing used, a bare `z-1300`, a `px-5` board
- * beside `px-3` and `px-4` ones: each was a value the guide never named, and
- * nothing said so (D-134).
+ * The design system's rule is that a value it doesn't name doesn't get used.
+ * For colour, the stylesheet enforces that itself: the stock palette is
+ * cleared, so an off-palette class produces no CSS. For everything else, a
+ * stray `p-5` or a bare `z-1300` builds without complaint, so this audit is
+ * what enforces it.
  *
- * So the guide's closed sets are written down here, once, as rules, and every
- * utility in every class string is held to them. The sets are the guide's own
- * tables (06_style_guide §2–§10); where this file and the guide disagree, the
- * guide is the one to read and this is the one to fix.
+ * The system's closed sets are written down here, once, as rules, and every
+ * utility in every class string is held to them.
  *
- * WHAT IT CHECKS, by property:
- *   - colour       semantic tokens only (§3). A primitive such as
- *                  `neutral-500` or `accent-300` names a value, not a role.
- *   - type         the 22 named text styles (§5), read from index.css. No
- *                  stock size (`text-sm`), no `leading-*` or `tracking-*`;
- *                  family and weight only as inline emphasis.
- *   - spacing      padding, margin, gap and space from the scale (§6.1).
- *   - radius       the five role radii (§7.1); a side radius only follows a
+ * What it checks, by property:
+ *   - colour       semantic tokens only. A primitive such as `neutral-500` or
+ *                  `accent-300` names a value, not a role.
+ *   - type         the named text styles, read from index.css. No stock size
+ *                  (`text-sm`), and no `leading-*` or `tracking-*`. Family and
+ *                  weight only as inline emphasis.
+ *   - spacing      padding, margin, gap, and space from the scale.
+ *   - radius       the five role radii. A side radius only follows a
  *                  surface's `lg` curve.
- *   - size, place  on the 4px grid, a fraction, or a keyword (§6.4).
- *   - opacity      the four steps (§7.4).
- *   - layer        `z-0`/`z-1`/`z-2` for paint order inside one component, or
- *                  a token from the ladder (§10).
- *   - effects      no stock shadow, ring or blur outside the named ones.
+ *   - size, place  on the 4px grid, a fraction, or a keyword.
+ *   - opacity      the four steps.
+ *   - layer        `z-0`, `z-1`, or `z-2` for paint order inside one
+ *                  component, or a token from the layer scale.
+ *   - effects      no stock shadow, ring, or blur outside the named ones.
  *   - arbitrary    `[...]` values only from the list below, each with the
- *                  derivation that makes it a number rather than a guess (§6.5).
- *   - unknown      a token that is not a utility this reader knows fails too,
- *                  so the coverage cannot quietly shrink.
+ *                  working that makes it a number rather than a guess.
+ *   - unknown      a token that isn't a utility this reader knows fails too,
+ *                  so the coverage can't quietly shrink.
  *
- * WHAT IT DOES NOT CHECK, stated rather than implied: inline `style={{…}}`
- * objects, which carry token references (`var(--…)`) that a class scan cannot
- * see; and class names built at run time, which Tailwind cannot see either and
- * which this codebase therefore never builds (D-028).
+ * What it doesn't check: inline `style={{…}}` objects, which carry token
+ * references (`var(--…)`) that a class scan can't see, and class names built at
+ * run time, which Tailwind can't see either, so this codebase never builds
+ * them.
  *
  *   npm run audit:styles
  */
@@ -47,10 +43,10 @@
 import { COLORS, TEXT_STYLES, classStrings } from "./classes.mjs";
 
 /* -------------------------------------------------------------------------
-   The closed sets (06_style_guide).
+   The closed sets.
    ---------------------------------------------------------------------- */
 
-// §3: the semantic colour tokens. Every other `--color-*` in index.css is a
+// The semantic colour tokens. Every other `--color-*` in index.css is a
 // primitive or a type colour, and both are reached through these or through
 // `typeColorVar()`, never as a class.
 const SEMANTIC_COLORS = new Set([
@@ -72,16 +68,16 @@ const SEMANTIC_COLORS = new Set([
   "transparent",
 ]);
 
-// §7.4: a colour's opacity modifier. 85 is a sticky bar over scrolling
-// content, 70 a modal's backdrop.
+// A colour's opacity modifier. 85 is a sticky bar over scrolling content, and
+// 70 a modal's backdrop.
 const COLOR_ALPHA = new Set(["70", "85"]);
 
-// §7.4: element opacity. 40 is unavailable or disabled, 50 is receded.
+// Element opacity. 40 is unavailable or disabled, and 50 is receded.
 const OPACITY = new Set(["40", "50"]);
 
-// §6.1: the spacing scale, in Tailwind steps (×4px). 36 and 40 are the two
-// layout steps: Home's section rhythm (D-083) and the flanking art's anchor
-// off the centre line (D-072).
+// The spacing scale, in Tailwind steps (×4px). 36 and 40 are the two layout
+// steps: the gap between Home's sections, and the flanking art's anchor off
+// the centre line.
 const SPACING = new Set([
   "0",
   "px",
@@ -105,22 +101,22 @@ const SPACING = new Set([
   "auto",
 ]);
 
-// §7.1: one radius per role.
+// One radius per role.
 const RADII = new Set(["xs", "sm", "md", "lg", "full"]);
 
-// §6.4: the named measures a box may be capped at.
+// The named widths a box may be capped at.
 const CONTAINERS = new Set(["content", "sm", "md", "xl", "2xl", "4xl"]);
 
-// §10: paint order inside one component. Anything that has to sit above or
-// below another component reads the ladder's token instead.
+// Paint order inside one component. Anything that has to sit above or below
+// another component uses a token from the layer scale instead.
 const LOCAL_Z = new Set(["0", "1", "2"]);
 
-// Inline emphasis (§5): family and weight may change inside a run of text, and
-// only those two, only to these.
+// Inline emphasis: family and weight may change inside a run of text, and only
+// those two, only to these.
 const EMPHASIS = new Set(["font-display", "font-semibold"]);
 
-// §6.5: every arbitrary value, with the working that makes it a number rather
-// than a taste. A new one is added here with its derivation, or it fails.
+// Every arbitrary value, with the working that makes it a number rather than a
+// taste. A new one is added here with its working, or it fails.
 const ARBITRARY = new Map([
   ["min-h-[21px]", "a compact chip: 11px text, py-1, a 1px border each side"],
   ["min-h-[26rem]", "the game board's floor on a landscape phone"],
@@ -160,7 +156,7 @@ const ARBITRARY = new Map([
    ---------------------------------------------------------------------- */
 
 // A value on the 4px grid, a fraction, or a keyword: the shapes a size or a
-// position may take (§6.4).
+// position may take.
 const onGrid = (v) =>
   /^\d+(\.5)?$/.test(v) ||
   /^\d+\/\d+$/.test(v) ||

@@ -1,25 +1,22 @@
 #!/usr/bin/env node
 /**
- * Statmon — responsive width sweep
+ * Statmon: responsive width sweep
  * ---------------------------------------------------------------------------
- * Loads every route at every width that has ever mattered and asserts the page
- * does not scroll sideways, and that no page shows its footer before you
- * scroll (D-142).
+ * Loads every route at every width that matters, and asserts the page doesn't
+ * scroll sideways, and that no page shows its footer before you scroll.
  *
- * This exists because that check kept being done by hand and kept being done
- * incompletely. The type grid leaked its overflow into the document for as long
- * as it had shipped, and three rounds of width testing missed it because 390,
- * 768 and 1280 are all clean while 600 and 700 are not (D-052/D-055). A bug you
- * can only find at 600px is a bug you will not find by resizing a window.
+ * A script, because by hand this check gets done incompletely. A layout can be
+ * clean at 390, 768, and 1280 and still overflow at 600 or 700, and a bug you
+ * can only find at 600px is one you won't find by resizing a window.
  *
  * How it works: `dist/` is served by a throwaway static server with the same
  * SPA fallback Cloudflare uses (wrangler.jsonc), and a harness page loads each
- * route in an iframe sized to the width under test. An iframe establishes its
- * own viewport, so media queries respond to the iframe's width — which means
- * one browser launch covers every width instead of one launch per width.
+ * route in an iframe sized to the width under test. An iframe has its own
+ * viewport, so media queries respond to the iframe's width, which means one
+ * browser launch covers every width instead of one launch per width.
  *
- * Reports `scrollHeight` per route too, since "how far does a phone have to
- * scroll for the answer" is the other thing worth watching (D-057).
+ * Reports `scrollHeight` per route too, since how far a phone has to scroll
+ * for the answer is the other thing worth watching.
  *
  *   npm run sweep:widths            # after npm run build
  *   npm run sweep:widths -- --json  # machine-readable
@@ -35,12 +32,11 @@ import { requireChrome } from "./chrome.mjs";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DIST = path.join(ROOT, "dist");
 
-// Every breakpoint boundary, the common device widths, and — deliberately — the
-// awkward middles between them, which is where the bugs have actually been.
+// Every breakpoint boundary, the common device widths, and, on purpose, the
+// awkward middles between them, which is where layout bugs hide.
 //
-// 360 / 375 / 383 / 384 bracket the `xs` wordmark boundary specifically: the
-// header overflowed on every width in [360, 374] for as long as xs was 360,
-// and no round device width lands in that range to catch it (D-062).
+// 360, 375, 383, and 384 bracket the `xs` breakpoint (384px), where the
+// header's wordmark appears: no common device width lands just under it.
 const WIDTHS = [
   320, 360, 375, 383, 384, 390, 430, 600, 700, 768, 900, 1024, 1280, 1440,
 ];
@@ -50,9 +46,9 @@ const ROUTES = [
   "/compare",
   "/compare/volcarona/vs/chandelure",
   "/compare/charizard/vs/blastoise?asof=1",
-  // The widest ability roster in the dex (38 characters over three chips) and
-  // the era case that renders a corrected STAB chip — the two shapes the card's
-  // 88px controls band has to hold (D-073, D-080).
+  // The widest ability roster in the dex (38 characters over three chips), and
+  // the older-generation case that renders a corrected STAB chip: the two
+  // shapes the card's 88px controls band has to hold.
   "/compare/hydrapple/vs/happiny",
   "/compare/krookodile/vs/gengar?asof=6",
   "/dex",
@@ -61,32 +57,30 @@ const ROUTES = [
   "/types/water/flying",
   "/types/electric?as=eelektross",
   "/games",
-  // The bare routes are the start screen now (D-108), so the boards need
-  // parameterised routes of their own to stay measured.
+  // A bare game route is the start screen, so the boards need routes with
+  // settings to be measured.
   "/games/higher?stats=speed",
   "/games/higher",
-  // Four contenders is the widest a round gets, and it is the layout that
-  // stacks into a 2x2 below `lg` — the case the verdict card has to sit
-  // between rather than on top of (D-097).
+  // Four contenders is the widest a round gets, and it's the layout that
+  // stacks into a 2×2 below `lg`, where the verdict card has to sit between
+  // the rows rather than on top of them.
   "/games/higher?stats=speed&n=4",
   // A heavily filtered game: the narrowest pool the setup panel can produce
   // that still plays, and a Gen 1 lens, which changes the stat chips under it.
   "/games/higher?stats=speed&gen=1&type=water",
   "/games/higher?asof=1",
-  // One route per tier: the answer rail changes width with the tier, and the
-  // hard board is the only one carrying artwork and an ability pill (D-104).
+  // One route per tier: the answer column changes width with the tier, and the
+  // hard board is the only one carrying artwork and an ability pill.
   "/games/effective",
   "/games/effective?tier=easy",
   "/games/effective?tier=medium",
   "/games/effective?tier=hard",
   "/games/effective?tier=hard&type=ghost&asof=5",
-  // Two DISCLOSURES, measured for the first time. A panel that only exists
-  // after a click has never been swept, so the games' setup dialog and — the
-  // one this closes retroactively — the dex's own mobile filter panel were both
-  // unmeasured surfaces (D-099).
-  // The setup dialog, opened from a game in progress — so it needs a
-  // parameterised URL now that a bare one is the start screen (D-108). Both
-  // games, because their panels hold different groups.
+  // Panels that only exist after a click: the games' setup dialogue and the
+  // dex's phone filter panel. Each is opened by clicking its button first.
+  // The setup dialogue, opened from a game in progress, so it needs a URL with
+  // settings, since a bare one is the start screen. Both games, because their
+  // panels hold different groups.
   ["/games/higher?stats=speed", "Setup"],
   ["/games/effective?tier=hard", "Setup"],
   // And from the start screen, which is the other way in.
@@ -98,7 +92,7 @@ const ROUTES = [
 ];
 
 // A route is either a path, or a path plus the visible text of a button to
-// click before measuring — which is how a disclosure or a modal gets swept at
+// click before measuring, which is how a disclosure or a modal gets swept at
 // all. The label keeps the two apart in the report.
 const ENTRIES = ROUTES.map((r) =>
   Array.isArray(r)
@@ -150,57 +144,54 @@ const HARNESS = `<!doctype html><meta charset="utf-8"><title>sweep</title>
 <script>
 const ENTRIES = ${JSON.stringify(ENTRIES)};
 const WIDTHS = ${JSON.stringify(WIDTHS)};
-// A tall frame so lazy content and sticky elements settle the way they would on
-// a real screen; height does not affect the horizontal question being asked.
-// It is also the screen the footer check measures against. One height is
-// enough for that: the rule is written in viewport units (D-142), so it holds
-// at every height or at none.
+// A tall frame, so lazy content and sticky elements settle the way they would
+// on a real screen. Height doesn't affect the horizontal question being asked.
+// It's also the screen the footer check measures against. One height is
+// enough for that: the rule is written in viewport units, so it holds at every
+// height or at none.
 const HEIGHT = 900;
 
 const load = (entry, width) => new Promise((resolve) => {
   const f = document.createElement("iframe");
-  // Width pinned in CSS as well as the attribute. The attribute alone left a
-  // window in which the frame was laid out wider, which is how routes that
-  // cannot overflow — the 404 is centred text — reported ~1000px scroll widths.
+  // Width pinned in CSS as well as the attribute. The attribute alone leaves a
+  // moment in which the frame is laid out wider, so routes that can't
+  // overflow, such as the 404's centred text, would report false overflows.
   f.width = width; f.height = HEIGHT;
   f.style.width = width + "px"; f.style.height = HEIGHT + "px";
   f.src = entry.route;
   f.onload = () => {
-    // Overlay scrollbars, which is what phones actually have. Without this the
-    // frame lays out at the requested width but reports a 15px-narrower
-    // viewport once a classic scrollbar appears, and every route looks like it
-    // overflows by exactly a scrollbar — an artifact of the harness, not the
-    // page. (Backticks are deliberately absent: this comment lives inside a
-    // template literal.)
+    // Overlay scrollbars, which is what phones have. Without this, the frame
+    // lays out at the requested width but reports a 15px-narrower viewport
+    // once a classic scrollbar appears, and every route looks like it
+    // overflows by exactly a scrollbar: an artifact of the harness, not the
+    // page. (No backticks here: this comment lives inside a template literal.)
     const d = f.contentDocument.documentElement;
     d.style.scrollbarWidth = "none";
     // Read once to force the reflow before measuring.
     void d.clientWidth;
-    // Measure only once the layout has stopped moving, and capture the evidence
-    // in the same breath as the number.
+    // Measure only once the layout has stopped moving, and collect the
+    // evidence in the same read as the number.
     //
-    // A fixed delay is not good enough here, and the reasons stacked up: the
-    // webfonts change text metrics when they swap, every route but Home is a
-    // lazily-imported chunk that renders after load fires (D-060), and the type
-    // grid briefly reports its uncontained width before paint containment clips
-    // it. Each produced its own phantom failure on roughly one run in six.
+    // A fixed delay isn't enough here: the webfonts change text metrics when
+    // they swap, every route but Home is a lazily loaded chunk that renders
+    // after load fires, and the type grid briefly reports its uncontained
+    // width before paint containment clips it. Each can cause a false failure.
     //
-    // Two equal readings 120ms apart was not enough either — a transient can sit
-    // still for longer than that. So: three consecutive identical readings, and
-    // the offending elements are collected inside the same read as the numbers,
-    // so a report can never disagree with itself the way an earlier version did
-    // (it printed a 1035px overflow with an empty offender list, because the
-    // page had settled between measuring and inspecting).
+    // Two equal readings close together aren't enough either, since a
+    // transient can hold still for longer than that. So it takes three
+    // consecutive identical readings, and the offending elements are collected
+    // inside the same read as the numbers, so a report can't disagree with
+    // itself, such as an overflow with an empty list of offenders.
     //
     // A checker that cries wolf is a checker people learn to ignore.
     const read = () => {
       const doc = f.contentDocument;
       // Force a layout flush before reading. Under Chrome's virtual clock,
-      // scrollWidth can hand back a cached value from before the last relayout
-      // while getBoundingClientRect() (which always flushes) reports the settled
-      // box — which is how an earlier version printed a 1016px overflow next to
-      // an empty list of overflowing elements. Reading a rect first puts both on
-      // the same layout.
+      // scrollWidth can hand back a cached value from before the last relayout,
+      // while getBoundingClientRect() (which always flushes) reports the
+      // settled box, so a report could show an overflow next to an empty list
+      // of overflowing elements. Reading a rect first puts both on the same
+      // layout.
       d.getBoundingClientRect();
       const scrollWidth = d.scrollWidth;
       const clientWidth = d.clientWidth;
@@ -242,26 +233,24 @@ const load = (entry, width) => new Promise((resolve) => {
       await wait(150);
       // Open the disclosure or modal under test, if this entry names one. The
       // button is polled for rather than assumed present: every route but Home
-      // is a lazily-imported chunk (D-060), so at fonts.ready the page may
-      // still be its empty shell. A button that never appears is reported as a
-      // failure rather than silently measuring the closed page — a check that
-      // quietly tests nothing is worse than no check.
+      // is a lazily loaded chunk, so at fonts.ready the page may still be its
+      // empty shell. A button that never appears is reported as a failure
+      // rather than silently measuring the closed page: a check that quietly
+      // tests nothing is worse than no check.
       if (entry.open) {
         let btn = null;
-        // 4s, and deliberately not more. Raising this was the first thing
-        // tried against the intermittent failure and it did not fix it — the
-        // retry in the driver loop below is what did. It also is not free:
-        // every poll spends VIRTUAL time, so a genuinely missing button costs
-        // this budget twice on each of fourteen widths, and at 6s that was
-        // enough to overrun the harness's virtual-time budget and report
-        // "could not read the sweep results" instead of naming the button.
-        // The loop exits on the first poll that finds it, so none of this is
-        // spent in the normal case.
+        // 4s, and not more. A longer wait doesn't fix a lost race (the retry in
+        // the driver loop below does), and it isn't free: every poll spends
+        // virtual time, so a missing button costs this budget twice on each of
+        // the fourteen widths, and much more would overrun the harness's
+        // virtual-time budget and report "could not read the sweep results"
+        // instead of naming the button. The loop exits on the first poll that
+        // finds it, so none of this is spent in the normal case.
         //
         // NOTE: every comment from here down to the closing script tag lives
         // inside the HARNESS template literal, so it must not contain a
-        // backtick. One did, twice, and each time it ended the string and broke
-        // the whole file's parse in a way that points at line 146.
+        // backtick: one would end the string and break the whole file's parse,
+        // with an error pointing at the line where HARNESS starts.
         for (let i = 0; i < 40 && !btn; i++) {
           btn = [...f.contentDocument.querySelectorAll("button")].find(
             (b) => (b.textContent || "").trim().startsWith(entry.open));
@@ -278,8 +267,8 @@ const load = (entry, width) => new Promise((resolve) => {
       }
       let prev = read();
       let agreed = 0;
-      // ~4s of headroom. Every route settles well inside it; the cap only stops
-      // a genuinely unstable page from hanging the sweep.
+      // 3.9s of headroom (26 polls of 150ms). Every route settles well inside
+      // it, and the cap only stops an unstable page from hanging the sweep.
       for (let i = 0; i < 26 && agreed < 2; i++) {
         await wait(150);
         const next = read();
@@ -293,22 +282,20 @@ const load = (entry, width) => new Promise((resolve) => {
   document.body.appendChild(f);
 });
 
-// WCAG 2.5.8 Target Size (Minimum), AA. A target passes if it is at least
-// 24x24 CSS px, OR if a 24px-diameter circle centred on it does not reach any
-// other target's circle — i.e. every neighbouring centre is at least 24px away.
-// 04_design §9 states this as the binding standard, so it is measured here
-// rather than asserted: the doc has carried a "likely failure" for FormChips
-// since D-042 without anyone putting a number on it.
+// WCAG 2.5.8 Target Size (Minimum), AA. A target passes if it's at least
+// 24x24 CSS px, or if a 24px-diameter circle centred on it doesn't reach any
+// other target's circle, meaning every neighbouring centre is at least 24px
+// away. The site's compact chips rely on that spacing exception, so it's
+// measured here rather than assumed.
 const SELECTOR = "a[href], button, input, select, textarea, [tabindex]:not([tabindex='-1'])";
 
 function targetFailures(doc) {
-  // A modal dialog makes the rest of the document INERT: nothing behind it can
-  // be clicked, tabbed to or hit by a thumb, so nothing behind it is a target.
-  // Without this the checker measures a chip inside the open setup panel
-  // against a footer link it happens to sit 20px from, and reports a spacing
-  // failure between two things that can never be touched in the same moment.
-  // Modelling inertness is what makes "measured, not asserted" honest here —
-  // an over-eager checker is a checker people learn to ignore.
+  // A modal dialog makes the rest of the document inert: nothing behind it can
+  // be clicked, tabbed to, or hit by a thumb, so nothing behind it is a target.
+  // Without this, the checker would measure a chip inside the open setup panel
+  // against a footer link it happens to sit near, and report a spacing failure
+  // between two things that can never be touched at the same moment. An
+  // over-eager checker is a checker people learn to ignore.
   const modal = doc.querySelector("dialog[open]");
   const root = modal ?? doc;
   const boxes = [...root.querySelectorAll(SELECTOR)]
@@ -346,20 +333,15 @@ function targetFailures(doc) {
     for (const entry of ENTRIES) {
       let m = await load(entry, width);
       // Re-measure anything that looks like a failure, in a fresh frame.
-      // Layout probes in a headless browser are inherently a little racy — a
-      // transient caught mid-settle does not survive a second, independent
-      // measurement, while a page that genuinely overflows fails every time. So
-      // a failure has to happen twice to be reported. This is the difference
-      // between a checker that is trusted and one that is muted.
+      // Layout probes in a headless browser are a little racy: a transient
+      // caught mid-settle doesn't survive a second, independent measurement,
+      // while a page that really overflows fails every time. So a failure has
+      // to happen twice to be reported. That's the difference between a
+      // checker that's trusted and one that's muted.
       //
-      // **A disclosure that never opened is the same kind of failure and was
-      // not getting the same treatment.** The rule above was written for
-      // overflow and applied only to overflow, so a single lost race among 406
-      // checks was reported as a hard failure with no second chance — which is
-      // exactly what made this check intermittently red. Twice observed across
-      // separate runs, on a different route each time and once on a single
-      // width out of fourteen, which is the signature of a race rather than a
-      // broken page.
+      // A disclosure that never opened gets the same second chance, since a
+      // single lost race among hundreds of checks would otherwise turn the
+      // whole sweep red.
       if (m.scrollWidth > m.clientWidth || m.missing)
         m = await load(entry, width);
       results.push({ width, route: entry.label, ...m });
@@ -382,14 +364,12 @@ const dom = await new Promise((resolve, reject) => {
       "--headless",
       "--disable-gpu",
       "--no-sandbox",
-      // Raised with the route list (D-108), and again for the disclosure retry:
-      // a genuinely missing button now spends its poll budget twice on every
-      // width, which overran 300s and surfaced as the "could not read" message
-      // below rather than as the real fault. Each route × width settles on its
-      // own timers, so the budget scales with ENTRIES.length × WIDTHS.length —
-      // and the failure mode when it runs out is silent: the harness never
-      // prints its results and the sweep reports "could not read", which reads
-      // like a missing build or a missing Chrome rather than a timeout.
+      // Each route × width settles on its own timers, so this budget scales
+      // with ENTRIES.length × WIDTHS.length, and a missing button spends its
+      // poll budget twice on every width. Running out fails silently: the
+      // harness never prints its results, and the sweep reports "could not
+      // read", which reads like a missing build or a missing Chrome rather
+      // than a timeout. Raise it when the route list grows.
       "--virtual-time-budget=600000",
       "--dump-dom",
       `${origin}/__sweep.html`,
@@ -428,15 +408,15 @@ console.log(
 );
 
 // A disclosure whose button never turned up. Reported first and loudly,
-// because the failure mode it guards against is silent: the frame would
-// measure a closed page, pass, and claim to have swept a panel it never
-// opened. A renamed button is exactly how that happens (D-099).
+// because the failure it guards against is silent: the frame would measure a
+// closed page, pass, and claim to have swept a panel it never opened. A
+// renamed button is exactly how that happens.
 const missing = results.filter((r) => r.missing);
 if (missing.length) {
-  // Grouped WITH THE WIDTHS, because "this route never opened" and "this route
-  // never opened at 320px" are different bugs and the first phrasing hides the
-  // second. A disclosure that fails at every width is broken; one that fails at
-  // a single width is a layout or a timing fault, and the widths say which.
+  // Grouped with the widths, because "this route never opened" and "this route
+  // never opened at 320px" are different bugs, and the first phrasing hides the
+  // second. A disclosure that fails at every width is broken, and one that
+  // fails at a single width is a layout or timing fault.
   const byRoute = new Map();
   for (const r of missing) {
     if (!byRoute.has(r.route)) byRoute.set(r.route, []);
@@ -451,8 +431,8 @@ if (missing.length) {
   console.log();
 }
 
-// Tallest page per route, at the narrowest width — the "how far does a phone
-// scroll" number.
+// Each route's page height at 390px, a common phone width: how far a phone
+// has to scroll.
 const phone = results.filter((r) => r.width === 390);
 console.log("Page height at 390px (the scroll cost of an answer):");
 for (const r of phone.sort((a, b) => b.scrollHeight - a.scrollHeight))
@@ -473,8 +453,8 @@ if (tooSmall.length === 0) {
     );
 }
 
-// The footer stays below the fold, at every width (D-142). A failure here is a
-// page shorter than the screen that got past `<main>`'s floor.
+// The footer stays below the fold, at every width. A failure here is a page
+// shorter than the screen that got past `<main>`'s minimum height.
 const early = results.filter(
   (r) => r.footerTop != null && r.footerTop < r.viewHeight,
 );

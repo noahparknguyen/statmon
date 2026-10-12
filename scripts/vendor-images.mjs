@@ -1,19 +1,20 @@
 #!/usr/bin/env node
 /**
- * Statmon — image vendoring (docs/03_decisions D-002)
+ * Statmon: image vendoring
  * ---------------------------------------------------------------------------
  * Self-hosts both image types from the PokeAPI/sprites repo (CC0) instead of
  * hotlinking raw.githubusercontent at runtime:
- *   - pixel sprites → public/sprites/{id}.png   (kept as-is; ~1–3 KB each)
- *   - official art  → public/artwork/{id}.webp  (resized ≤475px, WebP)
- * The data file is only READ here. Asset paths are derived from each entry's id
- * by src/lib/pokemonCodec.js, so there is nothing to rewrite — build-data.mjs
- * already records which entries lack a pixel sprite or official artwork, and the
- * app's `spriteUrl ?? artworkUrl` fallback works off those flags.
+ *   - pixel sprites → public/sprites/{id}.png   (kept as they are, 863 bytes
+ *                                                at the median)
+ *   - official art  → public/artwork/{id}.webp  (resized to 475px at most, WebP)
+ * The data file is only read here. Asset paths are derived from each entry's id
+ * by src/lib/pokemonCodec.js, so there's nothing to rewrite: build-data.mjs
+ * already records which entries lack a pixel sprite or official artwork, and
+ * the app's `spriteUrl ?? artworkUrl` fallback works off those flags.
  *
- * Good-citizen behaviour (mirrors build-data.mjs, D-016): rate-limited,
- * retrying with backoff, identifying User-Agent, and idempotent — files that
- * already exist are skipped, so re-runs only fetch what's missing.
+ * It's polite to the source, as build-data.mjs is: rate-limited, retrying with
+ * backoff, with an identifying User-Agent. And it skips files that already
+ * exist, so a re-run only fetches what's missing.
  *
  * Run after build:data (once per data refresh):
  *   npm run vendor:images
@@ -40,7 +41,7 @@ const ARTWORK_DIR = path.join(ROOT, "public", "artwork");
 const SPRITE_BASE =
   "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon";
 const ARTWORK_BASE = `${SPRITE_BASE}/other/official-artwork`;
-const ARTWORK_MAX = 475; // px, longest edge (D-002)
+const ARTWORK_MAX = 475; // px, longest edge
 const WEBP_QUALITY = 82;
 const REQUESTS_PER_SECOND = Number(process.env.RPS ?? 8);
 const CONCURRENCY = Number(process.env.CONCURRENCY ?? 8);
@@ -104,8 +105,8 @@ async function fetchBuffer(url) {
 }
 
 /** True if the entry has real official artwork rather than a pixel-sprite
- *  fallback — the decoder points artworkUrl at /sprites/ for the handful of
- *  entries PokéAPI has no official art for. */
+ *  fallback. The decoder points artworkUrl at /sprites/ for the two entries
+ *  PokéAPI has no official art for. */
 const hasRealArtwork = (a) => typeof a === "string" && a.includes("/artwork/");
 
 /* -------------------------------- MAIN ---------------------------------- */
