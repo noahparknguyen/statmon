@@ -1,38 +1,32 @@
-// Historical stats and typings: reading a Pokémon as it was in an earlier
-// generation (D-045).
+// Reading a Pokémon as it was in an earlier generation: its stats, typing, and
+// abilities.
 //
-// Two things changed over the series' history. Generation 1 had no Sp. Atk /
-// Sp. Def — one **Special** stat covered both — and a number of Pokémon have
-// had base stats or typings revised since (Butterfree's Sp. Atk was 80 through
-// Gen 5, Aegislash was cut down in Gen 8). The dataset carries both as `until`
-// records, where `until` is the last generation those values applied in.
+// Two things changed over the series. Gen 1 had a single Special stat where
+// later games have Sp. Atk and Sp. Def, and some Pokémon have had base stats or
+// typings revised since: Butterfree's Sp. Atk was 80 through Gen 5, and
+// Aegislash was cut down in Gen 8. The dataset stores both as `until` records,
+// where `until` is the last generation the values applied in.
 //
-// The comparison page offers **every generation its two Pokémon both existed
-// in** and renders whichever one the URL names (D-046). Two rules the UI would
-// otherwise need fall straight out of that:
+// The comparison page offers every generation both of its Pokémon existed in.
+// Two rules follow from that without any code of their own:
 //
-//   · Gen 1's Special split is not a mode. Every Gen 1 species carries a record
-//     at `until: 1`, so asking for Gen 1 returns the five-stat shape and asking
-//     for anything later does not.
-//   · "Only offer Gen 1 when both are Gen 1 Pokémon" is not a rule either. The
-//     range starts at the latest debut among the selection, so if either side
-//     arrived later the strip simply starts after Gen 1 — and the reason is
-//     visible on screen rather than left to be inferred from a missing control.
-//     This is what makes mixing a Gen 1 board with a modern one unreachable,
-//     which it has to be: Gen 1 is a different *measurement*, not a different
-//     value. Five stats against six has no honest layout, and a five-stat total
-//     against a six-stat one is a category error, not a delta.
+//   · Gen 1's Special isn't a mode. Every Gen 1 species has a record at
+//     `until: 1`, so asking for Gen 1 returns the five-stat shape and asking
+//     for any later generation doesn't.
+//   · The range starts at the later of the two debuts, so a Gen 1 board can
+//     never be mixed with a modern one, and the reason is visible: the strip
+//     starts later. It has to be impossible, because five stats against six
+//     has no honest layout, and a five-stat total against a six-stat one isn't
+//     a difference: it's two different measurements.
 //
-// Pure functions over plain data — no React, no DOM — so this is unit-tested
-// directly (eras.test.js) and the page stays thin on top of it, the same split
-// as lib/dexTable.js.
+// Pure functions over plain data, with no React and no DOM, so they're tested
+// directly in eras.test.js.
 import { ABILITIES_FROM_GEN, abilitiesAsOf } from "./abilities";
 import { ALL_POKEMON } from "./pokemon";
 import { GEN1_STAT_ORDER, STAT_ORDER } from "./stats";
 
-// Read off the dataset rather than hardcoded, so a rebuilt dex that adds a
-// generation extends the timeline on its own — the same reasoning as
-// GENERATIONS in lib/dexTable.js.
+// Read from the dataset rather than hard-coded, so a rebuilt dataset with a new
+// generation extends the timeline by itself.
 export const CURRENT_GEN = Math.max(...ALL_POKEMON.map((p) => p.generation));
 
 const sum = (values) => values.reduce((a, b) => a + b, 0);
@@ -41,20 +35,18 @@ const sum = (values) => values.reduce((a, b) => a + b, 0);
    Resolving one Pokémon at one generation.
    ---------------------------------------------------------------------- */
 
-// The stat keys a Pokémon is read with at `gen`: the modern six, or Gen 1's
-// five with a single Special in place of the Sp. Atk / Sp. Def pair. Driven by
-// the entry's own record rather than by `gen === 1`, so a form that has no Gen
-// 1 record — an Alolan form of a Gen 1 species — never renders a stat it never
-// had.
+// The stat keys a Pokémon is read with at `gen`: today's six, or Gen 1's five
+// with Special in place of Sp. Atk and Sp. Def. It checks the entry's own
+// records rather than `gen === 1`, so a form with no Gen 1 record, like an
+// Alolan form of a Gen 1 species, never shows a stat it never had.
 const hasGen1Special = (p) =>
   p.statEras.some((era) => era.until === 1 && "special" in era.stats);
 
 const keysFor = (p, gen) =>
   gen === 1 && hasGen1Special(p) ? GEN1_STAT_ORDER : STAT_ORDER;
 
-// The value of one stat at `gen`: the earliest record still in force there —
-// records are stored oldest-first, so the first one whose `until` has not yet
-// passed — falling back to today's value once none applies.
+// One stat at `gen`: the first record still in force there, since records are
+// stored oldest first, or today's value once none applies.
 function statAt(p, key, gen) {
   const era = p.statEras.find((e) => e.until >= gen && key in e.stats);
   return era ? era.stats[key] : p.stats[key];
@@ -62,18 +54,16 @@ function statAt(p, key, gen) {
 
 /**
  * One Pokémon as it was at `gen`, in the shape the comparison components read:
- * `{ gen, keys, stats, bst, types, abilities }`. Pass `gen: null` for today,
- * which returns the entry's own values untouched — so every caller handles one
- * shape and the current view costs nothing.
+ * `{ gen, keys, stats, bst, types, abilities }`. A `gen` of null means today,
+ * which returns the entry's own values, so every caller handles one shape and
+ * the current view costs nothing.
  *
- * The BST is summed over `keys`, which is what makes a Gen 1 total a five-stat
- * total: Alakazam reads 405 there, not 500. That is correct, not a rounding
- * error — Gen 1 had one fewer stat to add up.
+ * The BST is summed over `keys`, so a Gen 1 total is a five-stat total:
+ * Alakazam reads 405 there, not 500, because Gen 1 had one fewer stat.
  *
- * `abilities` joins the view rather than being resolved beside it (D-073), so
- * there is one "this Pokémon as it was" function and not two that can disagree
- * about which generation is being read. In a Gen 1 or Gen 2 view it is empty,
- * because abilities did not exist yet.
+ * Abilities are part of the same view, so one function decides which
+ * generation is being read. In a Gen 1 or 2 view the list is empty, because
+ * abilities arrived in Gen 3.
  */
 export function eraView(pokemon, gen = null) {
   if (!pokemon) return null;
@@ -103,24 +93,19 @@ export function eraView(pokemon, gen = null) {
 }
 
 /* -------------------------------------------------------------------------
-   Resolving a selection into the generations it can be read at.
+   Which generations a selection can be read at.
    ---------------------------------------------------------------------- */
 
-// Whether a Pokémon reads differently at `gen` than it does today — a changed
-// stat, a changed typing, a changed ability roster, or Gen 1's five-stat shape.
-// Drives the marker on the strip, so the control doubles as a map of where this
-// matchup has history (D-046) instead of nine identical-looking buttons.
+// Whether a Pokémon reads differently at `gen` than today: a changed stat,
+// typing, or ability list, or Gen 1's five-stat shape. It drives the marker on
+// the generation strip, so the strip also shows where a matchup has history.
 //
-// Abilities count because the board visibly changes with them, and in the case
-// that matters most they change the ANSWER: Gengar carried Levitate through
-// Gen 6, so a Ground STAB into it reads 0× there and 2× today. Leaving them out
-// would have left the site's clearest era interaction unmarked (D-073).
+// Abilities count because they can change the answer: Gengar had Levitate
+// through Gen 6, so a Ground attack on it reads 0× there and 2× today.
 //
-// But NOT below Generation III, where nobody had abilities. That absence is a
-// fact about the games, not about this Pokémon, so marking it would put a dot
-// on Gen 2 for every entry in the dex and say nothing — the D-049 reason the
-// dex has no dots at all. Confined to Gen 3 up, an ability change marks 18% of
-// the strip's chips; counting the universal ones took it to 27%.
+// They don't count below Gen 3, where nobody had abilities. That absence is
+// true of every Pokémon, so marking it would put a dot on Gen 2 for every
+// entry and say nothing.
 export function differsFromToday(pokemon, gen) {
   const view = eraView(pokemon, gen);
   const sameAbilities =
@@ -137,28 +122,20 @@ export function differsFromToday(pokemon, gen) {
 }
 
 /**
- * Every generation the given Pokémon (one or two — whatever is selected) both
- * existed in, oldest first: `[{ gen, differs }]`.
+ * Every generation all the given Pokémon existed in, oldest first, as
+ * `[{ gen, differs }]`. Pass whatever is selected: one Pokémon or two.
  *
- * The range starts at the **latest debut** among them, so it only ever offers
- * generations in which every card on the board was actually in the games. That
- * start is the whole answer to "what if one is a Gen 1 Pokémon and the other
- * isn't": the strip starts later, and the missing generations are visibly
- * missing rather than silently unavailable.
- *
- * Unlike the change-boundary model this replaced, EVERY generation in the range
- * is offered, including the ones where nothing changed — "as of Gen 3, Pikachu
- * had these stats" is a true and useful statement even when Gen 3 looks like
- * Gen 4. `differs` marks the ones that do not match today, so the extra options
- * cost nothing to scan.
+ * The range starts at the latest debut among them, so it only offers
+ * generations every Pokémon on the board was in the games for. Every
+ * generation in that range is offered, including ones where nothing changed:
+ * "as of Gen 3, Pikachu had these stats" is true and useful even when Gen 3
+ * matches Gen 4. `differs` marks the ones that don't match today.
  */
 export function generationOptions(pokemon) {
   const mons = pokemon.filter(Boolean);
-  // Nothing selected yet: the whole timeline is on offer. Returning an empty
-  // list here instead made the control appear only once a Pokémon was picked,
-  // which grew the row it lives in and shoved the board down the page — the
-  // same appearing-and-vanishing that D-046 set out to remove, left behind on
-  // the one screen where it also caused a layout shift. (D-050)
+  // Nothing selected yet: the whole timeline is on offer, so the strip is there
+  // from the start rather than appearing once a Pokémon is picked and pushing
+  // the board down the page.
   const start = mons.length ? Math.max(...mons.map((p) => p.introducedIn)) : 1;
   const options = [];
   for (let gen = start; gen <= CURRENT_GEN; gen++) {
@@ -171,32 +148,30 @@ export function generationOptions(pokemon) {
 }
 
 /**
- * Every generation in the dataset, for the tools whose lens is not scoped to a
- * selection — the dex, which spans the whole thing, and the type chart, which
- * has existed in all nine.
+ * Every generation in the dataset, for the tools whose lens covers everything:
+ * the dex and the type chart.
  *
- * Deliberately without the `differs` flag `generationOptions` carries. Over a
- * whole dex or a whole chart nearly every generation contains *something* that
- * changed, so every chip would be marked and the mark would say nothing. It
- * earns its place on a two-Pokémon board and not here. (D-049)
+ * No `differs` flag: across a whole dex or chart, nearly every generation has
+ * something that changed, so every chip would be marked and the mark would
+ * mean nothing.
  */
 export const allGenerations = () =>
   Array.from({ length: CURRENT_GEN }, (_, i) => ({ gen: i + 1 }));
 
 /**
- * The generation named by the URL's `?asof=`, or `null` for the current one.
+ * The generation the URL's `?asof=` names, or `null` for today.
  *
- * A generation this selection never shared degrades to `null` rather than
- * throwing or rendering an impossible view — a stale link, a hand-edited one,
- * or simply switching to a Mega while reading a Gen 1 board, which takes the
- * generation with it because that form did not exist yet. Same forgiving-parse
- * rule as parseView in dexTable.js.
+ * A generation this selection never shared falls back to `null` rather than
+ * throwing or showing an impossible view. That covers a stale or hand-edited
+ * link, and switching to a Mega while reading a Gen 1 board, which drops the
+ * generation because that form didn't exist yet. The dex's parser is just as
+ * forgiving.
  */
 export function parseAsOf(searchParams, pokemon) {
   const raw = Number(searchParams.get("asof"));
   if (!Number.isInteger(raw)) return null;
-  // The newest generation is the current view, which is spelled as no
-  // parameter at all — so there is one state, not two that can disagree.
+  // Today's generation is written as no parameter at all, so there's only one
+  // way to write it.
   if (raw >= CURRENT_GEN) return null;
   return generationOptions(pokemon).some((o) => o.gen === raw) ? raw : null;
 }
