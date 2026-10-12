@@ -1,6 +1,5 @@
-# The checks that must stay green (05_roadmap). They existed as npm scripts and
-# a line in the docs asking people to remember them; this is the part that does
-# not depend on remembering.
+# Runs the same nine checks as `npm run check`, so none of them depends on
+# someone remembering to run it locally.
 name: CI
 
 on:
@@ -8,13 +7,18 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           # Matches the `engines.node` floor in package.json.
           node-version: 24
@@ -30,17 +34,16 @@ jobs:
       - name: Formatting
         run: npm run format:check
 
-      # Pure static scan of src/, no build needed, so it sits high in the
-      # cheapest-first order. Catches the D-042 trap: two utilities setting the
-      # same property in one class string, which Tailwind resolves by
-      # stylesheet order rather than by the order they are written.
+      # A static scan of src/ that needs no build, so it runs early. It catches
+      # two utilities setting the same property in one class string, which
+      # Tailwind resolves by stylesheet order rather than by the order they're
+      # written.
       - name: Conflicting utilities
         run: npm run audit:classes
 
-      # The same static scan, asking a different question: is every utility one
-      # the style guide allows? 06_style_guide's "if a value isn't in this
-      # document, it doesn't get used" was enforced for colour alone until this
-      # (D-134).
+      # The same scan, asking whether every utility comes from the site's
+      # closed sets of colours, text styles, spacing, radii, opacity steps, and
+      # layers, as scripts/style-audit.mjs lists them.
       - name: Style allowlist
         run: npm run audit:styles
 
@@ -56,10 +59,10 @@ jobs:
       - name: Docs links and anchors
         run: npm run check:docs
 
-      # Needs dist/ from the Build step above, and Chrome. The script locates a
-      # binary itself (scripts/chrome.mjs) rather than this pinning a path that
-      # may move between runner images; CHROME_PATH overrides it if needed.
-      # Catches horizontal overflow and WCAG 2.5.8 target sizes across 14 widths
-      # — the class of bug that is invisible to every check above it (D-059).
+      # Needs dist/ from the Build step, and Chrome. scripts/chrome.mjs finds a
+      # Chrome binary itself, since its path can move between runner images;
+      # CHROME_PATH overrides it. It catches horizontal overflow and touch
+      # targets below WCAG 2.5.8's minimum at 14 widths, which no check above
+      # can see.
       - name: Responsive width sweep
         run: npm run sweep:widths

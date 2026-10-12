@@ -10,7 +10,6 @@
     "type": "git",
     "url": "git+https://github.com/noahparknguyen/statmon.git"
   },
-  "bugs": "https://github.com/noahparknguyen/statmon/issues",
   "keywords": [
     "pokemon",
     "pokeapi",
