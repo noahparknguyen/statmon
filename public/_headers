@@ -33,11 +33,12 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
-# The vendored fonts are cached as immutable too. Sprites and artwork are
-# cached for a week.
+# The vendored fonts, sprites, and artwork are cached as immutable too.
+# `vendor:images` never replaces a file that already exists, and a new Pokémon
+# arrives as a new file.
 /fonts/*
   Cache-Control: public, max-age=31536000, immutable
 /sprites/*
-  Cache-Control: public, max-age=604800
+  Cache-Control: public, max-age=31536000, immutable
 /artwork/*
-  Cache-Control: public, max-age=604800
+  Cache-Control: public, max-age=31536000, immutable
