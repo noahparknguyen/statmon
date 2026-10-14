@@ -39,7 +39,7 @@ The same data, asking the questions instead. Every round ends with a link into t
 
 ## How it works
 
-Everything comes from [PokéAPI](https://pokeapi.co), pulled once at build time into a local JSON file. The sprites, the artwork, and both webfonts are downloaded and committed to the repo. So the site requests nothing from any other server: it's static files, and its Content Security Policy only allows its own origin. Search, the stat math, and the type matchups all run against the local data.
+Everything comes from [PokéAPI](https://pokeapi.co), pulled once by a script into a local JSON file. The sprites, the artwork, and both webfonts are downloaded and committed to the repo. So the site requests nothing from any other server: it's static files, and its Content Security Policy only allows its own origin. Search, the stat math, and the type matchups all run against the local data.
 
 Two parts are written by hand. The type chart has three eras (Gen 1, Gen 2 to 5, and Gen 6 on), and every data build checks all three against PokéAPI, so a typo fails the build. The 20 ability effects are a table too, because PokéAPI describes what an ability does only in prose: Levitate's entry reads "Evades Ground moves." The build checks that each one is a real ability some Pokémon has, and unit tests cover what each one does.
 
