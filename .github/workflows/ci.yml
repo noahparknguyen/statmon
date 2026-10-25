@@ -47,6 +47,11 @@ jobs:
       - name: Style allowlist
         run: npm run audit:styles
 
+      # Opens every favicon file, which nothing else does: a broken one only
+      # shows in a tab, a search result, or on a home screen.
+      - name: Icons
+        run: npm run check:icons
+
       - name: Unit tests
         run: npm run test:run
 

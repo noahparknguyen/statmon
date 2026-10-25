@@ -255,7 +255,7 @@ export default function Layout() {
               height="24"
               className="shrink-0"
             />
-            {/* Below `xs` (384px) the flame mark carries the brand alone,
+            {/* Below `xs` (384px) the Poké Ball mark carries the brand alone,
                 because the four nav items and the wordmark can't both fit, and
                 a header that overflows scrolls the whole page sideways. The
                 mark is still the logo and the link home. */}
