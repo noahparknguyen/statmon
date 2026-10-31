@@ -144,7 +144,8 @@ export default function VersusBoard({
         <>
           <PokemonPicker
             open={picking !== null}
-            slot={picking ?? 1}
+            title={`Pokémon ${picking ?? 1}`}
+            label={`Search Pokémon ${picking ?? 1}`}
             current={sides[picking]?.pokemon ?? null}
             onSelect={picking === 2 ? actions.selectP2 : actions.selectP1}
             onClear={picking === 2 ? actions.clearP2 : actions.clearP1}

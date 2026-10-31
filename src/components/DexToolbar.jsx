@@ -44,6 +44,7 @@ export default function DexToolbar({ view, onChange, count }) {
 
   return (
     <div
+      data-pinned="bar"
       className="sticky top-14 -mx-4 flex items-center gap-2 bg-base/85 px-4 py-1.5 backdrop-blur md:hidden"
       style={{ zIndex: "var(--z-raised)" }}
     >

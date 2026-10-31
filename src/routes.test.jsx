@@ -1099,6 +1099,75 @@ describe("a phone's dex", () => {
   });
 });
 
+describe("a phone's type chart", () => {
+  const BAR = "sticky top-14 -mx-4";
+  // The panel's look, shown only below md.
+  const PHONE_PANEL = "bg-surface p-4 md:hidden";
+
+  it("puts the picker in the page until a typing is chosen", () => {
+    const html = render("/types");
+    expect(html).not.toContain(BAR);
+    expect(html).toContain(PHONE_PANEL);
+    const picker = html.slice(html.indexOf(PHONE_PANEL));
+    expect(picker).toContain(">Search Pokémon</span></button>");
+    // The types as tiles: three even columns of 44px.
+    expect(picker).toContain('class="grid grid-cols-3 gap-2');
+    expect(picker.match(/inline-flex h-11 w-full/g)).toHaveLength(18);
+  });
+
+  it("folds the controls into a bar once a typing is chosen", () => {
+    const html = render("/types/water/flying");
+    const bar = html.slice(html.indexOf(BAR));
+    expect(bar).toMatch(/<h2[^>]*>.*Attacking.*Water.*Flying.*<\/h2>/s);
+    // Change's hit area covers the card, so a tap anywhere on it opens the
+    // sheet, and its name says what it changes.
+    expect(bar).toMatch(/<button[^>]*after:absolute after:inset-0[^>]*>Change/);
+    expect(bar).toContain('<span class="sr-only"> defender</span>');
+    // The picker has left the page, and the tiles with it.
+    expect(html).not.toContain("inline-flex h-11 w-full");
+  });
+
+  it("hides the desktop heading below md, where it still names the section", () => {
+    const html = render("/types/water/flying");
+    expect(html).toContain(
+      '<section class="mt-4 md:mt-6" aria-labelledby="matchup-heading"><div class="hidden md:block"><h2 id="matchup-heading"',
+    );
+  });
+
+  it("shows a Pokémon's name and typing in the bar, the name giving way first", () => {
+    const html = render("/types/electric?as=eelektross");
+    const bar = html.slice(html.indexOf(BAR));
+    expect(bar).toMatch(
+      /min-w-0 truncate text-primary">Eelektross<span class="text-tertiary">,<\/span>/,
+    );
+    expect(bar).toMatch(/<span class="shrink-0">.*Electric/);
+  });
+
+  it("gives a Pokémon's abilities a row under the bar: chips for a choice, a pill for one", () => {
+    const one = render("/types/electric?as=eelektross");
+    const oneRow = one.slice(
+      one.indexOf("mt-3 flex items-baseline gap-3 md:hidden"),
+    );
+    expect(oneRow).toMatch(/aria-label="Eelektross&#x27;s ability"[^>]*><span/);
+    const three = render("/types/psychic/steel?as=bronzong");
+    const threeRow = three.slice(
+      three.indexOf("mt-3 flex items-baseline gap-3 md:hidden"),
+    );
+    expect(threeRow).toMatch(
+      /aria-label="Bronzong&#x27;s ability"[^>]*><button/,
+    );
+  });
+
+  it("says 'Attacking Water', not 'AttackingWater', to a screen reader", () => {
+    // The dash between them is hidden from screen readers, so the space has
+    // to sit outside it.
+    const html = render("/types/water/flying").replace(/<!-- -->/g, "");
+    expect(html).toContain(
+      'Attacking <span aria-hidden="true" class="text-tertiary">— </span>',
+    );
+  });
+});
+
 // The site's modals are one component. Each of them used to manage its own
 // <dialog>, which is how two copies of `showModal()` drift apart.
 describe("one dialog", () => {
@@ -1124,6 +1193,22 @@ describe("accessibility guarantees", () => {
     const html = render("/types");
     expect(html).toMatch(/<div[^>]*tabindex="0"[^>]*role="region"/);
     expect(html).toContain("Type effectiveness chart, scrollable");
+  });
+
+  it("tells the scroll padding about everything pinned under the header", () => {
+    // A browser scrolls to a focused element only when it counts it as out
+    // of view, judged against the scroll padding, so a pinned bar the padding
+    // doesn't allow for can hide focus. Shift+Tab up the dex left rows under
+    // its headers before these. (WCAG 2.4.11)
+    const dex = render("/dex");
+    expect(dex).toContain('<thead data-pinned="head">');
+    expect(dex).toMatch(/data-pinned="bar" class="sticky top-14/);
+    expect(render("/types/water/flying")).toMatch(
+      /data-pinned="bar" class="sticky top-14/,
+    );
+    const css = readFileSync("src/index.css", "utf8");
+    expect(css).toContain('&:has([data-pinned="head"])');
+    expect(css).toContain('&:has([data-pinned="bar"])');
   });
 
   it("gives every primary nav link its bar's full height", () => {

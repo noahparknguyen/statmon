@@ -29,6 +29,17 @@ import { typeColorVar, typeTextVar } from "../lib/types";
 // name that doesn't contain the visible "Gen 1", failing WCAG 2.5.3 (Label in
 // Name), and leaving speech control unable to act on the chip. The group's
 // label and `aria-pressed` already give the context.
+//
+// `shape` is the one difference in look. A `chip` is the pill every filter
+// row uses. A `tile` fills a cell of a grid, 44px tall with 14px text, for a
+// phone's type picker: choosing a type is that page's main action, and a
+// phone's main action is 44px (style guide, Phones), where a pill is 36. Same
+// colours, same states.
+const SHAPE = {
+  chip: `${CHIP} ${CHIP_FILTER_GEOMETRY}`,
+  tile: "inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-md border px-2 text-body-sm transition-colors",
+};
+
 export default function FilterChip({
   active,
   onClick,
@@ -36,6 +47,7 @@ export default function FilterChip({
   color,
   unavailable = false,
   removable = true,
+  shape = "chip",
 }) {
   return (
     <button
@@ -43,7 +55,7 @@ export default function FilterChip({
       aria-pressed={active}
       aria-disabled={unavailable || undefined}
       onClick={() => !unavailable && onClick()}
-      className={`${CHIP} ${CHIP_FILTER_GEOMETRY} ${
+      className={`${SHAPE[shape]} ${
         active ? (color ? CHIP_ON_FILLED : CHIP_ON) : CHIP_OFF
       } ${unavailable ? "opacity-40" : ""}`}
       style={

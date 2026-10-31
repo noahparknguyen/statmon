@@ -8,23 +8,25 @@ import TypeBadge from "./TypeBadge";
 import { formsOf, spriteFor } from "../lib/pokemon";
 import { dexNumberOf } from "../lib/dexTable";
 
-// A phone's way to choose one side of the comparison: the whole screen, the
-// search field focused and the keyboard up, the results in a list under it.
-// The desktop board's search fields are dropdowns, and on a phone a dropdown
-// has nowhere to drop to above the keyboard.
+// A phone's way to choose a Pokémon: the whole screen, the search field
+// focused and the keyboard up, the results in a list under it. The desktop's
+// search fields are dropdowns, and on a phone a dropdown has nowhere to drop
+// to above the keyboard. Compare opens it for either side of its board, and
+// Types for the defender.
 //
-// Until something is typed, the space under the field says what this side
-// holds now, as a row like the results it would replace, with the × that
-// removes it, the same control the desktop card has. Under it, the Pokémon's
-// other forms: a form is the same Pokémon in another version, so it's a choice
-// of Pokémon, and lives here rather than with the ability. Each block is 16px
-// from the next, the gap between groups in every panel.
+// Until something is typed, the space under the field says what's chosen now,
+// as a row like the results it would replace, with the × that removes it, the
+// same control the desktop card has. Under it, the Pokémon's other forms: a
+// form is the same Pokémon in another version, so it's a choice of Pokémon,
+// and lives here rather than with the ability. Each block is 16px from the
+// next, the gap between groups in every panel.
 //
-// `slot` is 1 or 2, the attacker or the defender, which names the dialog and
-// the field the way the desktop's two search fields are named.
+// `title` names the dialog and `label` the field, the way the desktop names
+// its own search fields: "Pokémon 1" and "Search Pokémon 1" on Compare.
 export default function PokemonPicker({
   open,
-  slot,
+  title,
+  label,
   current,
   onSelect,
   onClear,
@@ -40,12 +42,12 @@ export default function PokemonPicker({
     <Dialog
       open={open}
       onClose={onClose}
-      title={`Pokémon ${slot}`}
-      closeLabel={`Close Pokémon ${slot}`}
+      title={title}
+      closeLabel={`Close ${title}`}
       placement="full"
     >
       <SearchBar
-        label={`Search Pokémon ${slot}`}
+        label={label}
         onSelect={choose}
         layout="list"
         autoFocus

@@ -37,9 +37,11 @@ import { capitalize, typeColorVar } from "../lib/types";
 export function MatchupHeading({ types, id, as: Heading = "h2" }) {
   return (
     <Heading id={id} className="mb-3 text-h4 text-secondary">
-      Attacking
+      {/* The space outside the hidden dash, so the name a screen reader
+          hears is "Attacking Water", not "AttackingWater". */}
+      Attacking{" "}
       <span aria-hidden className="text-tertiary">
-        {" — "}
+        {"— "}
       </span>
       {types.map((t, i) => (
         <span key={t}>
@@ -85,9 +87,9 @@ export function DefenderHeading({
           className="shrink-0 [image-rendering:pixelated]"
         />
         <Heading id={id} className="min-w-0 text-h4 text-secondary">
-          Attacking
+          Attacking{" "}
           <span aria-hidden className="text-tertiary">
-            {" — "}
+            {"— "}
           </span>
           <span className="text-primary">{pokemon.name}</span>
           {/* Not aria-hidden, unlike the dash above: a comma is a pause a

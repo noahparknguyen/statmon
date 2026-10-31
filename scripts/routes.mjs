@@ -54,6 +54,9 @@ const ROUTES = [
   // The picker again, from a filled tile: what it shows before you type. Charizard
   // has four forms, the widest row of them on a common board.
   ["/compare/charizard/vs/blastoise", "Charizard"],
+  // A phone's type chart folds its controls into a bar once a typing is
+  // chosen, and Change opens them in a sheet.
+  ["/types/water/flying", "Change"],
   "/credits",
   "/style",
   "/no-such-page",

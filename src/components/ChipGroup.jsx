@@ -18,7 +18,7 @@ import { Children } from "react";
 // "Defending type, pick up to two", so nothing has to hide inside the label as
 // screen-reader text.
 //
-// `fit` is the one layout variant, and it's for the generation strip. Nine
+// `fit` is one of two layout variants, and it's for the generation strip. Nine
 // numerals have to stay on one line: wrapped at 390px, the ninth, the selected
 // one, would sit alone on a second row. So a fitted group shares its width
 // instead of wrapping: one column per chip, each up to 36px, shrinking only as
@@ -26,11 +26,16 @@ import { Children } from "react";
 // 24px floor, which is why the strip keeps a 4px gap where every other group
 // has 6: at 6px, the same width leaves 22.9px.
 //
+// `tiles` is the other: three even columns, for a phone's type picker, whose
+// chips are `FilterChip`'s tiles and fill their cells. Eighteen types make six
+// full rows, where wrapped pills leave a ragged edge.
+//
 // `hint` gives a group's rule when its chips don't make it obvious ("leave
 // empty for all"). `note` is a sentence about the current choice, under the row
 // ("A dual type. Two rows of the chart, multiplied…").
 const ROW = "flex flex-wrap gap-1.5";
 const FIT = "grid gap-1";
+const TILES = "grid grid-cols-3 gap-2";
 
 // Where the label and the chips sit inside the group. Groups are left-aligned,
 // as everything in a panel is. `center-below-sm` is for a group its parent
@@ -53,6 +58,7 @@ export default function ChipGroup({
   hint,
   note,
   fit = false,
+  tiles = false,
   align = "start",
   children,
 }) {
@@ -66,7 +72,7 @@ export default function ChipGroup({
         {hint && <span className="ml-2 normal-case">{hint}</span>}
       </div>
       <div
-        className={`${fit ? FIT : ROW} ${ALIGN[align].row}`}
+        className={`${fit ? FIT : tiles ? TILES : ROW} ${ALIGN[align].row}`}
         style={
           fit
             ? { gridTemplateColumns: `repeat(${count}, minmax(0, 2.25rem))` }

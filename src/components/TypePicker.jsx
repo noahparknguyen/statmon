@@ -11,25 +11,33 @@ import { toggleType } from "../lib/typeView";
 // because it's the same gesture on the same data, and the two shouldn't drift
 // into looking like different kinds of control. Only the cap below is local.
 //
-// It doesn't collapse on a phone, where the dex's type chips do. That reads as
-// an inconsistency until you ask what each one is for. On /dex the type chips
-// are one optional filter among several, with the table below them, so hiding
-// them puts the answer higher on the screen. Here the picker is the tool:
-// collapsing it would put a tap in front of the only interaction the page has.
+// Two layouts: `chips`, wrapped pills in the desktop's panel, and `tiles`, three
+// even columns of 44px tiles in a phone's picker (DefenderBar), where choosing
+// a type is the page's main action.
 //
 // The cap dims the rest once two are chosen, rather than silently dropping one
 // of the pair when a third is clicked. Dimmed chips use `aria-disabled` rather
 // than `disabled`, so they stay in the tab order: a keyboard user who tabs to
 // one is told it's unavailable, where a disabled control would be skipped with
 // no explanation.
-export default function TypePicker({ types, asof = null, onChange }) {
+export default function TypePicker({
+  types,
+  asof = null,
+  onChange,
+  layout = "chips",
+}) {
   const full = types.length >= 2;
+  const tiles = layout === "tiles";
 
   // The cap isn't spelled out on screen: the dimming says it at the moment it
   // matters. Screen reader users get it up front, in the group's name, rather
   // than only on reaching a dimmed chip.
   return (
-    <ChipGroup label="Defending type" name="Defending type, pick up to two">
+    <ChipGroup
+      label="Defending type"
+      name="Defending type, pick up to two"
+      tiles={tiles}
+    >
       {typesIn(asof).map((type) => {
         const active = types.includes(type);
         return (
@@ -40,6 +48,7 @@ export default function TypePicker({ types, asof = null, onChange }) {
             onClick={() => onChange(toggleType(types, type))}
             label={capitalize(type)}
             color={type}
+            shape={tiles ? "tile" : "chip"}
           />
         );
       })}

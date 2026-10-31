@@ -332,10 +332,25 @@
     /* Bars pinned over the page would hide what keyboard focus scrolls to, so
        scrolling keeps clear of them (WCAG 2.4.11): the header's 56px at the
        top, and on a phone the tab bar's 56px plus the bottom inset at the
-       bottom. */
-    scroll-padding-top: 3.5rem;
+       bottom.
+
+       What a page pins under the header adds to the top, marked with
+       `data-pinned` where it's built: the dex's column headers at every
+       width (a 40px row and its 1px rule), and a phone's 56px bar, the dex's
+       toolbar or the type chart's. A browser only scrolls to a focused
+       element it counts as out of view, and without these it counted a row
+       under the dex's headers as in view, and left it hidden there. */
+    scroll-padding-top: calc(
+      3.5rem + var(--pinned-bar, 0rem) + var(--pinned-head, 0rem)
+    );
+    &:has([data-pinned="head"]) {
+      --pinned-head: 2.5625rem;
+    }
     @variant max-md {
       scroll-padding-bottom: calc(3.5rem + var(--inset-bottom));
+      &:has([data-pinned="bar"]) {
+        --pinned-bar: 3.5rem;
+      }
     }
   }
 

@@ -364,13 +364,14 @@ try {
   socket.close();
   close();
   // Chrome keeps writing to its profile for a moment after it's told to stop,
-  // so the folder is removed only once it has exited.
+  // so the folder is removed only once it has exited, and with retries, since
+  // its helper processes can still be writing after the main one has gone.
   if (chrome.exitCode === null && chrome.signalCode === null) {
     const exited = new Promise((r) => chrome.once("exit", r));
     chrome.kill();
     await exited;
   }
-  await rm(profile, { recursive: true, force: true });
+  await rm(profile, { recursive: true, force: true, maxRetries: 5 });
 }
 
 console.log(`\nWrote to ${path.relative(ROOT, OUT) || "."}/`);

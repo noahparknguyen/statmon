@@ -1,4 +1,5 @@
 import { useNavigate, useParams, useSearchParams } from "react-router";
+import DefenderBar from "../components/DefenderBar";
 import GenerationStrip from "../components/GenerationStrip";
 import PageHeader from "../components/PageHeader";
 import { PAGE_TOOL, PANEL, RULE_BELOW } from "../components/pageChrome";
@@ -24,9 +25,10 @@ import { defends, parseDefender, parseTypes, typesUrl } from "../lib/typeView";
 // because the chart is the subject: six matchups between existing types have
 // changed, at Gen 2 and at Gen 6.
 //
-// On a phone the picker and readout come first and the grid follows, because
-// "what beats Water/Flying" is what you want on a phone, and the matrix is the
-// reference you scroll to.
+// On a phone the answer leads: once a typing is chosen, the controls fold
+// into a bar pinned over the readout (DefenderBar), because "what beats
+// Water/Flying" is what you want on a phone, and the matrix is the reference
+// you scroll to.
 export default function TypeChart() {
   const navigate = useNavigate();
   const params = useParams();
@@ -87,6 +89,8 @@ export default function TypeChart() {
     const gen = asof != null && p.introducedIn > asof ? null : asof;
     return go(parseTypes(eraView(p, gen).types, gen), gen, p, null);
   };
+  const setAsOf = (next) => go(parseTypes(types, next), next);
+  const setAbility = (slug) => go(types, asof, mon, slug);
 
   return (
     <div className={PAGE_TOOL}>
@@ -95,47 +99,66 @@ export default function TypeChart() {
         subtitle="Every matchup, including dual types."
       />
 
-      <div className={PANEL}>
-        <div className={RULE_BELOW}>
-          <GenerationStrip
-            label="Chart as of"
-            options={allGenerations()}
-            asof={asof}
-            // Re-parsed against the new generation, so switching to Gen 5 while
-            // reading a Fairy matchup drops the Fairy rather than keeping a
-            // typing that generation never had.
-            onSelect={(next) => go(parseTypes(types, next), next)}
-          />
+      {/* Re-parsed against the new generation, so switching to Gen 5 while
+          reading a Fairy matchup drops the Fairy rather than keeping a typing
+          that generation never had. */}
+      <div className="hidden md:block">
+        <div className={PANEL}>
+          <div className={RULE_BELOW}>
+            <GenerationStrip
+              label="Chart as of"
+              options={allGenerations()}
+              asof={asof}
+              onSelect={setAsOf}
+            />
+          </div>
+          {/* The two ways to name a defending typing, in the order people
+              reach for them: the Pokémon you know by name, then the types you
+              know by heart. `SearchBar` is the comparison tool's own control,
+              already a labelled combobox that announces its result count, so a
+              second search box here would only drift from it. */}
+          <div role="search">
+            <SearchBar label="Search Pokémon" onSelect={selectMon} />
+          </div>
+          <TypePicker types={types} asof={asof} onChange={(t) => go(t)} />
         </div>
-        {/* The two ways to name a defending typing, in the order people reach
-            for them: the Pokémon you know by name, then the types you know by
-            heart. `SearchBar` is the comparison tool's own control, already a
-            labelled combobox that announces its result count, so a second
-            search box here would only drift from it. */}
-        <div role="search">
-          <SearchBar label="Search Pokémon" onSelect={selectMon} />
-        </div>
-        <TypePicker types={types} asof={asof} onChange={(t) => go(t)} />
       </div>
+      <DefenderBar
+        types={types}
+        asof={asof}
+        pokemon={mon}
+        view={view}
+        ability={ability}
+        onTypes={(t) => go(t)}
+        onAsOf={setAsOf}
+        onPokemon={selectMon}
+        onAbility={setAbility}
+      />
 
       {types.length > 0 && (
-        <section className="mt-6" aria-labelledby="matchup-heading">
+        <section className="mt-4 md:mt-6" aria-labelledby="matchup-heading">
           {/* The headings live in MatchupSummary.jsx, because Home's preview
               uses them too. The Pokémon version adds the sprite, the name, and
-              the abilities, with the typing set the same way. */}
-          {mon ? (
-            <DefenderHeading
-              id="matchup-heading"
-              pokemon={mon}
-              types={types}
-              abilities={view.abilities}
-              ability={ability}
-              onSelectAbility={(slug) => go(types, asof, mon, slug)}
-              gen={view.gen}
-            />
-          ) : (
-            <MatchupHeading id="matchup-heading" types={types} />
-          )}
+              the abilities, with the typing set the same way.
+
+              From `md` only: a phone's bar says the same thing (DefenderBar).
+              Hidden, it still names the section, since a label referenced by
+              `aria-labelledby` counts even when it isn't displayed. */}
+          <div className="hidden md:block">
+            {mon ? (
+              <DefenderHeading
+                id="matchup-heading"
+                pokemon={mon}
+                types={types}
+                abilities={view.abilities}
+                ability={ability}
+                onSelectAbility={setAbility}
+                gen={view.gen}
+              />
+            ) : (
+              <MatchupHeading id="matchup-heading" types={types} />
+            )}
+          </div>
           <MatchupSummary types={types} asof={asof} ability={ability} />
         </section>
       )}

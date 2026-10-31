@@ -126,7 +126,8 @@ export default function DexTable({ rows, view, keys, onSort, mobileStat }) {
           {SORT_LONG_LABEL[view.sort]},{" "}
           {view.dir === "asc" ? "ascending" : "descending"}.
         </caption>
-        <thead>
+        {/* Pinned, so the page's scroll padding allows for it (index.css). */}
+        <thead data-pinned="head">
           <tr>
             <SortHeader
               colKey="dex"
