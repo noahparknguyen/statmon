@@ -65,7 +65,8 @@ const tintOf = (type) =>
  * lib/types.js applies the same rule to the dex's bars.
  *
  * Two panels of different colours also read as two sides of the board without
- * a heavier divider.
+ * a heavier divider, which is why a phone's comparison (VersusBoard) tints its
+ * two tiles the same way.
  */
 export function tintFor(types = []) {
   if (!types.length) return "var(--color-base)";

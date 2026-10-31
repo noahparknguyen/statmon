@@ -6,6 +6,7 @@ import { PAGE_TOOL, PANEL, RULE_ABOVE } from "../components/pageChrome";
 import SearchBar from "../components/SearchBar";
 import PokemonCard from "../components/PokemonCard";
 import ComparisonCard from "../components/ComparisonCard";
+import VersusBoard from "../components/VersusBoard";
 import GenerationStrip from "../components/GenerationStrip";
 import { getBySlug } from "../lib/pokemon";
 import { compareUrl } from "../lib/compareUrl";
@@ -96,8 +97,12 @@ export default function Compare() {
     if (pair) go(pair[0], pair[1], asof, null, null);
   };
 
+  // A phone and a desktop lay the same page out in a different order, so the
+  // page is a flex column and the phone reorders it below `md`: the board
+  // first, then the generation strip and Random under it. On a desktop the
+  // controls lead, above the three cards.
   return (
-    <div className={PAGE_TOOL}>
+    <div className={`${PAGE_TOOL} flex flex-col`}>
       <PageHeader
         title="Compare"
         subtitle="See who's faster, hits harder, and is bulkier."
@@ -109,9 +114,13 @@ export default function Compare() {
           tools put it above, and the difference is deliberate. On /dex and
           /types the generation decides what the controls below it can offer,
           so it leads. Here the selection decides which generations the strip
-          can offer, so it follows. */}
-      <div className={`${PANEL} mb-6`}>
-        <div role="search" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          can offer, so it follows.
+
+          On a phone the search fields give way to the board's tiles, which
+          open a full-screen picker, and Swap moves between the tiles. What's
+          left here is the strip and Random. */}
+      <div className={`${PANEL} mb-6 max-md:order-2 max-md:mb-0`}>
+        <div role="search" className="hidden gap-4 md:grid md:grid-cols-2">
           <SearchBar label="Search Pokémon 1" onSelect={selectP1} />
           <SearchBar label="Search Pokémon 2" onSelect={selectP2} />
         </div>
@@ -123,13 +132,16 @@ export default function Compare() {
             The buttons are pinned right with their own `ml-auto` rather than
             `justify-between` on the row, so they stay put as the strip grows. */}
         <div
-          className={`${RULE_ABOVE} flex flex-col items-center gap-3 sm:flex-row sm:items-end`}
+          className={`${RULE_ABOVE} flex flex-col items-center gap-3 max-md:border-t-0 max-md:pt-0 sm:flex-row sm:items-end`}
         >
+          {/* Centred in the stack below sm, like Random under it, however few
+              generations the pair shares (ChipGroup). */}
           <GenerationStrip
             label="Stats as of"
             options={genOptions}
             asof={asof}
             onSelect={selectAsOf}
+            align="center-below-sm"
           />
           {/* Random sits before Swap and is never disabled: it's the one
               control here that works on an empty board, where it's the only
@@ -145,6 +157,7 @@ export default function Compare() {
               size="sm"
               onClick={swap}
               disabled={!p1 && !p2}
+              className="max-md:hidden"
             >
               <LuArrowLeftRight aria-hidden />
               Swap
@@ -153,16 +166,35 @@ export default function Compare() {
         </div>
       </div>
 
-      {/* The board: the two cards and then the comparison, reordered by width.
-          On lg the comparison sits in the middle. At md the two cards share a
-          row and it spans below them. Below md it comes first: stacked in one
-          column, the comparison would otherwise sit below two tall cards, and
-          the cards drop their stat bars at that width (PokemonCard), so the
-          comparison is the one place the stats appear, and it leads. */}
+      {/* A phone's board: one card designed for the screen (VersusBoard). */}
+      <div className="mb-6 max-md:order-1 md:hidden">
+        <VersusBoard
+          p1={p1}
+          p2={p2}
+          v1={v1}
+          v2={v2}
+          keys={keys}
+          a1={a1}
+          a2={a2}
+          actions={{
+            selectP1,
+            selectP2,
+            selectA1,
+            selectA2,
+            clearP1,
+            clearP2,
+            swap,
+          }}
+        />
+      </div>
+
+      {/* The desktop board, from md: the two cards and the comparison,
+          reordered by width. On lg the comparison sits in the middle, and at
+          md the two cards share a row and it spans below them. */}
       {/* 16px between sibling surfaces, the gap every grid of cards on the site
           uses. */}
-      <div className="grid gap-4 items-start grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        <div className="order-2 md:order-1">
+      <div className="hidden gap-4 items-start md:grid md:grid-cols-2 lg:grid-cols-3">
+        <div className="order-1">
           <PokemonCard
             pokemon={p1}
             view={v1}
@@ -173,7 +205,7 @@ export default function Compare() {
             onClear={clearP1}
           />
         </div>
-        <div className="order-3 md:order-2 lg:order-3">
+        <div className="order-2 lg:order-3">
           <PokemonCard
             pokemon={p2}
             view={v2}
@@ -184,7 +216,7 @@ export default function Compare() {
             onClear={clearP2}
           />
         </div>
-        <div className="order-1 md:order-3 md:col-span-2 lg:col-span-1 lg:order-2">
+        <div className="order-3 col-span-2 lg:col-span-1 lg:order-2">
           <ComparisonCard
             p1={p1}
             p2={p2}

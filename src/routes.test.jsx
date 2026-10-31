@@ -374,8 +374,11 @@ describe("abilities", () => {
     // The chart's own answer stays on screen beside the corrected one, because
     // the correction is the interesting part.
     expect(board).toContain("2× on the chart");
-    // Stated once by the caption, not repeated on the chip.
-    expect(board.match(/Levitate/g) ?? []).toHaveLength(2); // card chip + caption
+    // Stated once by the caption, not repeated on the chip. The page carries
+    // two boards, the desktop's and a phone's, each naming it twice: the
+    // desktop card's chip and the phone's pill, and each board's caption. A
+    // STAB chip that named it too would make six.
+    expect(board.match(/Levitate/g) ?? []).toHaveLength(4);
   });
 
   it("changes the answer with the generation, not just the roster", () => {
@@ -921,6 +924,134 @@ describe("the compare route", () => {
     const html = render("/compare/volcarona/vs/chandelure");
     expect(html).toContain("Volcarona");
     expect(html).toContain("Chandelure");
+  });
+});
+
+// A phone's comparison is its own board (VersusBoard), below `md`, and the
+// desktop's three cards from `md`. The sides are named once, by the two tiles,
+// so the stats can be the desktop's mirrored rows.
+describe("a phone's comparison board", () => {
+  // The phone board's own markup: its wrapper is the page's one `md:hidden`
+  // block, and it ends at its <section>. React's server renderer separates
+  // text from an expression with an empty comment ("Pokémon <!-- -->1"), so
+  // those go, to assert the text a reader gets.
+  const phoneBoard = (html) => {
+    const start = html.indexOf('md:hidden"><section');
+    if (start < 0) return "";
+    return html
+      .slice(start, html.indexOf("</section>", start))
+      .replaceAll("<!-- -->", "");
+  };
+
+  it("names each side with a tile that opens its picker", () => {
+    const board = phoneBoard(render("/compare/volcarona/vs/chandelure"));
+    expect(board).toContain("change Pokémon 1");
+    expect(board).toContain("change Pokémon 2");
+    expect(board).toContain('aria-label="Swap"');
+  });
+
+  it("gives the verdicts before the numbers", () => {
+    const board = phoneBoard(render("/compare/volcarona/vs/chandelure"));
+    const at = (s) => board.indexOf(s);
+    expect(at("Higher total")).toBeGreaterThan(-1);
+    expect(at("Higher total")).toBeLessThan(at("STAB"));
+    expect(at("STAB")).toBeLessThan(at("moves first"));
+    expect(at("moves first")).toBeLessThan(at(">HP<"));
+  });
+
+  it("draws its stats as the desktop's own mirrored rows", () => {
+    // Six on each board: the desktop card's and the phone's.
+    const rows = render("/compare/volcarona/vs/chandelure").match(
+      /grid-cols-\[1\.6rem_1fr_3\.25rem_1fr_1\.6rem\]/g,
+    );
+    expect(rows).toHaveLength(12);
+  });
+
+  it("closes the stats with each side's total, the leader's bright", () => {
+    const board = phoneBoard(render("/compare/volcarona/vs/chandelure"));
+    // After the last stat row, as each desktop card's footer is.
+    const footer = board.slice(board.lastIndexOf(">Spe<"));
+    expect(footer).toContain("Base stat total");
+    expect(footer).toMatch(/text-stat-lg text-primary">550</);
+    expect(footer).toMatch(/text-stat-lg text-tertiary">520</);
+    // A tie leaves both bright: Charizard and Blastoise are 425 in Gen 1.
+    const tie = phoneBoard(render("/compare/charizard/vs/blastoise?asof=1"));
+    expect(tie.match(/text-stat-lg text-primary">425</g)).toHaveLength(2);
+  });
+
+  it("offers a choice of ability only where there is one", () => {
+    // Volcarona and Chandelure have two and three, so both are buttons.
+    const board = phoneBoard(render("/compare/volcarona/vs/chandelure"));
+    expect(board).toContain("Volcarona&#x27;s ability, change");
+    expect(board).toContain("Chandelure&#x27;s ability, change");
+    // On a Gen 1 board there are none to choose, and the board says why.
+    const gen1 = phoneBoard(render("/compare/charizard/vs/blastoise?asof=1"));
+    expect(gen1).not.toContain("ability, change");
+    expect(gen1).toContain("Abilities arrived in Gen 3");
+  });
+
+  it("opens on two empty slots, with nothing to compare yet", () => {
+    const board = phoneBoard(render("/compare"));
+    expect(board).toContain("Choose Pokémon 1");
+    expect(board).toContain("Choose Pokémon 2");
+    expect(board).not.toContain("Higher total");
+  });
+
+  it("is what Home previews on a phone, with its controls taken away", () => {
+    const board = phoneBoard(render("/"));
+    expect(board).toContain("Volcarona");
+    expect(board).toContain("moves first");
+    // A preview subtracts interactivity: no tile, swap, or ability button.
+    expect(board).not.toContain("<button");
+  });
+
+  it("leaves every name room on a 360px phone", () => {
+    // Measured in a browser, not here: the longest word in any name,
+    // "Brambleghast", is 136px at `text-h3`, and a tile has 146px for it at
+    // 360. What a server render can hold is that the tiles keep that room:
+    // two halves with nothing between them but the seam, and names that wrap
+    // rather than overflow at 320.
+    const board = phoneBoard(render("/compare/volcarona/vs/chandelure"));
+    expect(board).toContain("grid grid-cols-2 gap-px");
+    expect(board).toContain("text-h3 break-words");
+  });
+});
+
+// Compare stacks its controls and centres them below `sm`, and the strip is
+// only as wide as its widest part. With one or two generations the label is
+// the wider, so the chips have to centre inside the strip too. Everywhere
+// else, groups stay left-aligned with their panel.
+describe("the generation strip's alignment", () => {
+  const strip = (path) => {
+    const html = render(path);
+    const at = html.indexOf('aria-label="Stats as of generation"');
+    const alt = html.indexOf('aria-label="Dex as of generation"');
+    const start = at > -1 ? at : alt;
+    return html.slice(start, html.indexOf("</div></div>", start));
+  };
+
+  it("centres on a phone's comparison, however few the generations", () => {
+    const html = strip("/compare/blastoise/vs/sprigatito");
+    expect(html).toContain("max-sm:text-center");
+    expect(html).toContain("max-sm:justify-center");
+  });
+
+  it("stays left-aligned in every other panel", () => {
+    expect(strip("/dex")).not.toContain("max-sm:text-center");
+  });
+});
+
+// The site's modals are one component. Each of them used to manage its own
+// <dialog>, which is how two copies of `showModal()` drift apart.
+describe("one dialog", () => {
+  it("calls showModal() in exactly one place", () => {
+    const callers = readdirSync("src/components").filter(
+      (f) =>
+        f.endsWith(".jsx") &&
+        readFileSync(`src/components/${f}`, "utf8").includes("showModal()"),
+    );
+    // Dialog.jsx, where the comment that names it also lives.
+    expect(callers).toEqual(["Dialog.jsx"]);
   });
 });
 

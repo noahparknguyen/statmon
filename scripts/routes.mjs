@@ -47,6 +47,13 @@ const ROUTES = [
   // And from the start screen, which is the other way in.
   ["/games/higher", "Customise"],
   ["/dex", "Filters"],
+  // A phone's comparison opens its own two dialogs: the full-screen picker from
+  // an empty tile, and the ability sheet from the defender's ability chip.
+  ["/compare", "Choose Pokémon 1"],
+  ["/compare/volcarona/vs/chandelure", "Flash Fire"],
+  // The picker again, from a filled tile: what it shows before you type. Charizard
+  // has four forms, the widest row of them on a common board.
+  ["/compare/charizard/vs/blastoise", "Charizard"],
   "/credits",
   "/style",
   "/no-such-page",

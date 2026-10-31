@@ -1,11 +1,12 @@
 import { STAT_LABEL } from "../lib/stats";
 import { stabMatchup } from "../lib/typeChart";
-import CmpStatCard from "./CmpStatCard";
 import StabChip, { StabCaption, StabLabel } from "./StabChip";
 import CmpRow from "./CmpRow";
 import SpeedBanner from "./SpeedBanner";
 
-// The comparison card in the middle of the board. Its heights match
+// The comparison card in the middle of the desktop board, from `md` up. A
+// phone gets `VersusBoard` instead, which reuses this card's two verdicts,
+// `Summary` and `TypeMatchup`, exported below. Its heights match
 // PokemonCard's on an 8px rhythm: a 320px top zone (head 56 + controls 88 +
 // portrait 176) so the mirrored stat rows line up, then stats 240 (pt-2 +
 // 6 × h-9 + pb-4) and the speed banner 56, for 616 in all. A Gen 1 view has
@@ -36,12 +37,9 @@ export default function ComparisonCard({ p1, p2, v1, v2, keys, ability }) {
     <div className="flex flex-col overflow-hidden bg-surface border border-border-subtle rounded-lg">
       <h2 className="sr-only">Comparison</h2>
       {/* Top zone: the BST summary and the type matchup, with generous space
-          between the two groups. */}
-      {/* A fixed height only from md, where it has to match PokemonCard's top
-          zone so the mirrored stat rows line up. Below md the three cards are
-          stacked and nothing has to line up, so a fixed height would only leave
-          a gap above the stats on a phone. */}
-      <div className="flex flex-col items-center justify-center gap-6 px-4 py-6 text-center overflow-hidden md:h-80 md:py-0">
+          between the two groups, in a fixed 320px that matches PokemonCard's
+          top zone, so the mirrored stat rows line up across the board. */}
+      <div className="flex h-80 flex-col items-center justify-center gap-6 px-4 text-center overflow-hidden">
         {ready ? (
           <>
             <Summary p1={p1} p2={p2} v1={v1} v2={v2} />
@@ -60,7 +58,7 @@ export default function ComparisonCard({ p1, p2, v1, v2, keys, ability }) {
         )}
       </div>
 
-      {/* Stats: mirrored bars and the difference between them, from 768px. */}
+      {/* Stats: mirrored bars and the difference between them. */}
       {/* The bars grow in, and `barKey` makes them do it again. A CSS
           animation runs when an element mounts, so re-running it needs a new
           element: keying this wrapper remounts the rows inside it.
@@ -69,38 +67,18 @@ export default function ComparisonCard({ p1, p2, v1, v2, keys, ability }) {
           re-grow exactly when they'd move, and not when something that doesn't
           touch them changes. Picking an ability re-renders this card for the
           type chips above, but leaves the stats, and so the bars, alone.
-
-          Both layouts animate, because below `md` the per-stat cards are the
-          only stats on screen, and a phone shouldn't be the odd one out.
           Reduced motion is handled site-wide, by the rule in index.css that
           shortens every animation. */}
       <div key={barKey}>
         {/* `px-4`, the padding every band on every card takes, so the board's
             three stats bands start at the same inset. */}
-        <div className="hidden md:block px-4 pt-2 pb-4">
+        <div className="px-4 pt-2 pb-4">
           {keys.map((k) => (
             <CmpRow
               key={k}
               label={STAT_LABEL[k]}
               a={ready ? v1.stats[k] : null}
               b={ready ? v2.stats[k] : null}
-              aColor={ready ? v1.types[0] : null}
-              bColor={ready ? v2.types[0] : null}
-              animate
-            />
-          ))}
-        </div>
-
-        {/* Stats: one card per stat, below 768px. */}
-        <div className="md:hidden flex flex-col gap-2 px-4 pt-2 pb-4">
-          {keys.map((k) => (
-            <CmpStatCard
-              key={k}
-              label={STAT_LABEL[k]}
-              a={ready ? v1.stats[k] : null}
-              b={ready ? v2.stats[k] : null}
-              aName={ready ? p1.name : null}
-              bName={ready ? p2.name : null}
               aColor={ready ? v1.types[0] : null}
               bColor={ready ? v2.types[0] : null}
               animate
@@ -119,7 +97,7 @@ export default function ComparisonCard({ p1, p2, v1, v2, keys, ability }) {
   );
 }
 
-function Summary({ p1, p2, v1, v2 }) {
+export function Summary({ p1, p2, v1, v2 }) {
   const delta = v1.bst - v2.bst;
   if (delta === 0) {
     return (
@@ -157,7 +135,7 @@ function Summary({ p1, p2, v1, v2 }) {
 // Only the defender's ability counts. This card shows one direction, and Swap
 // reverses it, so the attacker's ability stays on its own card until the board
 // turns around.
-function TypeMatchup({ attacker, attack, defend, ability }) {
+export function TypeMatchup({ attacker, attack, defend, ability }) {
   const stab = stabMatchup(attack, defend, attack.gen, ability);
   // Named only when it changed a number. A Levitate that changed nothing about
   // this matchup isn't worth announcing, and `via` already tests exactly that

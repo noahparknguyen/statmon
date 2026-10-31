@@ -34,11 +34,17 @@ import { CHIP, CHIP_OFF, CHIP_ON } from "./chipStyles";
 // line at 390px.
 const GEN_CHIP = `${CHIP} relative h-9 w-full min-w-0 justify-center transition-colors`;
 
-export default function GenerationStrip({ label, options, asof, onSelect }) {
+export default function GenerationStrip({
+  label,
+  options,
+  asof,
+  onSelect,
+  align = "start",
+}) {
   const active = asof ?? CURRENT_GEN;
 
   return (
-    <ChipGroup label={label} name={`${label} generation`} fit>
+    <ChipGroup label={label} name={`${label} generation`} fit align={align}>
       {options.map(({ gen: option, differs }) => {
         const isActive = option === active;
         return (

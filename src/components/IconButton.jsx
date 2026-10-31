@@ -18,8 +18,9 @@
 // one, it's named for what it acts on ("Remove Volcarona", not "Remove").
 import { CHIP_OFF } from "./chipStyles";
 
+// Disabled as `Button` is: faded, and out of the pointer's way.
 const BASE =
-  "inline-flex size-9 shrink-0 items-center justify-center rounded-full text-body transition-colors";
+  "inline-flex size-9 shrink-0 items-center justify-center rounded-full text-body transition-colors disabled:pointer-events-none disabled:opacity-40";
 
 const VARIANT = {
   ghost:

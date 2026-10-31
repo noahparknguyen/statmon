@@ -32,25 +32,41 @@ import { Children } from "react";
 const ROW = "flex flex-wrap gap-1.5";
 const FIT = "grid gap-1";
 
+// Where the label and the chips sit inside the group. Groups are left-aligned,
+// as everything in a panel is. `center-below-sm` is for a group its parent
+// centres in a stack below `sm`, the comparison's controls on a phone: the
+// group is as wide as its widest part, so with one or two generations the label
+// is wider than the chips, and left-aligned chips would sit off-centre under
+// it. Centring both only there keeps the label level with the panel's edge
+// everywhere else.
+const ALIGN = {
+  start: { label: "", row: "" },
+  "center-below-sm": {
+    label: "max-sm:text-center",
+    row: "max-sm:justify-center",
+  },
+};
+
 export default function ChipGroup({
   label,
   name = label,
   hint,
   note,
   fit = false,
+  align = "start",
   children,
 }) {
   const count = Children.toArray(children).length;
   return (
     <div role="group" aria-label={name} className="min-w-0">
-      <div className="mb-2 text-overline text-tertiary">
+      <div className={`mb-2 text-overline text-tertiary ${ALIGN[align].label}`}>
         {label}
         {/* Inside the label block, so it's part of what the overline
             introduces rather than a caption floating under the chips. */}
         {hint && <span className="ml-2 normal-case">{hint}</span>}
       </div>
       <div
-        className={fit ? FIT : ROW}
+        className={`${fit ? FIT : ROW} ${ALIGN[align].row}`}
         style={
           fit
             ? { gridTemplateColumns: `repeat(${count}, minmax(0, 2.25rem))` }

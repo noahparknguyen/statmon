@@ -17,11 +17,8 @@ import { dexNumberOf } from "../lib/dexTable";
 // controls 88 + portrait 176 (a 320px top zone), stats 240 (pt-2 + 6 × h-9 +
 // pb-4), and the total row 56, for 616 in all.
 //
-// Below md the card is 424 and has no stats: head 56 + controls 88 + portrait
-// 224 + total 56. At that width the board is one column with the comparison
-// card above, which already shows every stat for both Pokémon, so bars here
-// would repeat them. Equal heights only matter from md up, where the cards sit
-// side by side.
+// The card is the desktop board's, from md up. A phone gets `VersusBoard`,
+// whose tiles carry the identity and whose mirrored rows carry the stats.
 //
 // A Gen 1 view has five stat rows, since Gen 1 had a single Special, so the
 // stats band is 204 and the card 580. All three cards switch generation
@@ -43,9 +40,8 @@ import { dexNumberOf } from "../lib/dexTable";
 // touches the edge of its square, so no size could keep every subject clear of
 // the chips. Starting the box where the band ends does, whatever the crop.
 //
-// The cap is how far the art may bleed: down to 424, the bottom of the card
-// below md, and 104px behind the stat bars above it, with the scrim taking over
-// from 90% of the card's height.
+// The cap is how far the art may bleed: 104px behind the stat bars, with the
+// scrim taking over from 90% of the card's height.
 
 // Stats, typing, BST, and abilities come from the era view (lib/eras.js)
 // rather than the entry itself, so the card shows whichever generation is
@@ -79,9 +75,9 @@ export default function PokemonCard({
       {/* Eager and high priority, unlike the site's usual `loading="lazy"`.
           From md up this is the largest thing on /compare, near the top, so
           the page's load time is measured by it, and lazy loading would delay
-          the one image the first paint waits for. Below md the comparison card
-          comes first, so on a phone it loads a little early, which is the
-          better side to err on for two images. */}
+          the one image the first paint waits for. On a phone the card is
+          hidden, but the versus tiles show the same image, so it's the same one
+          download either way. */}
       <img
         src={artworkFor(pokemon)}
         alt=""
@@ -198,14 +194,10 @@ export default function PokemonCard({
           </div>
         </div>
 
-        {/* The portrait window. Taller below md, where the stats band is
-            gone: at that width, the portrait is what the card is for. */}
-        <div className="h-56 md:h-44" />
+        {/* The portrait window. */}
+        <div className="h-44" />
 
-        {/* Stats over the lower part of the artwork. Hidden below md, where the
-            comparison card above already shows every stat for both Pokémon.
-            What the card keeps there is what only it has: the identity, the
-            artwork, the forms, and the total. */}
+        {/* Stats over the lower part of the artwork. */}
         {/* These bars grow in too, like the comparison card's, so the board
             doesn't look like it's loading in halves.
 
@@ -215,7 +207,7 @@ export default function PokemonCard({
             keys on both, since it compares both. */}
         <div
           key={view.keys.map((k) => view.stats[k]).join(",")}
-          className="hidden md:block px-4 pt-2 pb-4 shadow-on-art"
+          className="px-4 pt-2 pb-4 shadow-on-art"
         >
           {view.keys.map((k) => (
             <div
@@ -253,15 +245,15 @@ export default function PokemonCard({
 function EmptyCard({ keys = STAT_ORDER }) {
   return (
     <div className="flex flex-col overflow-hidden bg-surface border border-dashed border-border-subtle rounded-lg">
-      {/* Head, controls, and portrait as one zone (56 + 88 + 176, or 224 below
-          md) rather than three empty bands. The message has to sit where
+      {/* Head, controls, and portrait as one zone (56 + 88 + 176) rather than
+          three empty bands. The message has to sit where
           ComparisonCard's "Pick two Pokémon to compare." does, centred in the
           whole 320px top zone. Split into three bands, it would centre in the
           portrait alone and hang 72px lower than its pair. */}
-      <div className="h-92 md:h-80 flex items-center justify-center">
+      <div className="h-80 flex items-center justify-center">
         <span className="text-body-sm text-tertiary">No Pokémon selected</span>
       </div>
-      <div className="hidden md:block px-4 pt-2 pb-4">
+      <div className="px-4 pt-2 pb-4">
         {keys.map((k) => (
           <div
             key={k}

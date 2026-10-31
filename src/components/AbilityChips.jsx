@@ -4,7 +4,13 @@ import {
   abilityLabel,
   affectsTypes,
 } from "../lib/abilities";
-import { CHIP, CHIP_OFF, CHIP_ON, CHIP_STATIC } from "./chipStyles";
+import {
+  CHIP,
+  CHIP_FILTER_GEOMETRY,
+  CHIP_OFF,
+  CHIP_ON,
+  CHIP_STATIC,
+} from "./chipStyles";
 
 // A Pokémon's abilities, one chip each, with exactly one selected.
 //
@@ -39,7 +45,12 @@ import { CHIP, CHIP_OFF, CHIP_ON, CHIP_STATIC } from "./chipStyles";
 // board reports the ability rather than offering to change it. A button that
 // does nothing is worse than a label, for a pointer and for a keyboard that
 // would have to tab through it.
-const ABILITY_CHIP = `${CHIP} gap-1.5 px-2 py-1 transition-colors`;
+// Two sizes, as `FormChips` has: `sm` for the card's compact band, and `md`,
+// the filter chips' 36px, for a phone's dialog.
+const ABILITY_CHIP = {
+  sm: `${CHIP} gap-1.5 px-2 py-1 transition-colors`,
+  md: `${CHIP} ${CHIP_FILTER_GEOMETRY}`,
+};
 
 // `markEffect` turns the accent dot off, for one caller. On /compare and /types
 // the dot is information: this ability changes the matchup. In the type game
@@ -53,6 +64,7 @@ export default function AbilityChips({
   gen,
   label = "Ability",
   markEffect = true,
+  size = "sm",
 }) {
   if (!abilities.length) {
     return (
@@ -79,7 +91,7 @@ export default function AbilityChips({
                   onClick: () => onSelect(slug),
                 }
               : {})}
-            className={`${ABILITY_CHIP} ${
+            className={`${ABILITY_CHIP[size]} ${
               active ? CHIP_ON : onSelect ? CHIP_OFF : CHIP_STATIC
             }`}
           >

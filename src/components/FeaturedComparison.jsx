@@ -1,9 +1,10 @@
 import TypeBadge from "./TypeBadge";
-import CmpStatCard from "./CmpStatCard";
 import CmpRow from "./CmpRow";
 import SpeedBanner from "./SpeedBanner";
 import StabChip, { StabLabel } from "./StabChip";
+import VersusBoard from "./VersusBoard";
 import { STAT_ORDER, STAT_LABEL } from "../lib/stats";
+import { eraView } from "../lib/eras";
 import { spriteFor } from "../lib/pokemon";
 import { dexNumberOf } from "../lib/dexTable";
 import { defaultAbility, abilityLabel } from "../lib/abilities";
@@ -25,85 +26,84 @@ export default function FeaturedComparison({ p1, p2 }) {
   const tied = delta === 0;
   const p1Leads = delta > 0;
   return (
-    <div className="flex flex-col overflow-hidden bg-surface border border-border-subtle rounded-lg">
-      {/* The heads. Below 768px, a row of sprite, name, badges, and type chips
-        would crush the names, so it stacks: P1's head, the type chips, then
-        P2's head. */}
-      <div className="flex flex-col gap-3 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center px-4 py-4 border-b border-border-subtle">
-        <MonHead p={p1} />
-        <StabCenter attacker={p1} defender={p2} />
-        <MonHead p={p2} right />
+    <>
+      {/* A phone gets the tool's own phone board, with its controls taken
+          away: no tiles to tap, no swap, and the abilities as plain pills.
+          Read at today's generation, through each Pokémon's first ability, as
+          the board below is. No heading, since the section's own is above it. */}
+      <div className="md:hidden">
+        <VersusBoard
+          p1={p1}
+          p2={p2}
+          v1={eraView(p1)}
+          v2={eraView(p2)}
+          keys={STAT_ORDER}
+          a1={defaultAbility(p1)}
+          a2={defaultAbility(p2)}
+          heading={false}
+        />
       </div>
-
-      {/* Mirrored stat rows, from 768px. */}
-      <div className="hidden md:block px-4 pt-2 pb-4">
-        {STAT_ORDER.map((k) => (
-          <CmpRow
-            key={k}
-            label={STAT_LABEL[k]}
-            a={p1.stats[k]}
-            b={p2.stats[k]}
-            aColor={p1.types[0]}
-            bColor={p2.types[0]}
-            animate
-          />
-        ))}
-      </div>
-
-      {/* One card per stat, below 768px. */}
-      <div className="md:hidden flex flex-col gap-2 px-4 pt-2 pb-4">
-        {STAT_ORDER.map((k) => (
-          <CmpStatCard
-            key={k}
-            label={STAT_LABEL[k]}
-            a={p1.stats[k]}
-            b={p2.stats[k]}
-            aName={p1.name}
-            bName={p2.name}
-            aColor={p1.types[0]}
-            bColor={p2.types[0]}
-            animate
-          />
-        ))}
-      </div>
-
-      {/* The BST summary. */}
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-4 border-t border-border-subtle">
-        <span
-          className={`text-stat-lg ${p1Leads || tied ? "text-primary" : "text-tertiary"}`}
-        >
-          {p1.bst}
-        </span>
-        <div className="flex flex-col items-center gap-0.5">
-          <span className="text-overline text-tertiary">
-            {tied ? "Base stat total" : "Higher total"}
-          </span>
-          {tied ? (
-            <span className="text-numeral-md">Tied</span>
-          ) : (
-            <span className="text-numeral-lg bg-flame bg-clip-text text-transparent">
-              +{Math.abs(delta)}
-            </span>
-          )}
+      <div className="hidden flex-col overflow-hidden bg-surface border border-border-subtle rounded-lg md:flex">
+        {/* The heads, either side of the STAB chips. */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-4 border-b border-border-subtle">
+          <MonHead p={p1} />
+          <StabCenter attacker={p1} defender={p2} />
+          <MonHead p={p2} right />
         </div>
-        <span
-          className={`text-stat-lg text-right ${!p1Leads || tied ? "text-primary" : "text-tertiary"}`}
-        >
-          {p2.bst}
-        </span>
-      </div>
 
-      {/* The speed verdict. Home always shows today's generation, so it gives
+        {/* Mirrored stat rows. */}
+        <div className="px-4 pt-2 pb-4">
+          {STAT_ORDER.map((k) => (
+            <CmpRow
+              key={k}
+              label={STAT_LABEL[k]}
+              a={p1.stats[k]}
+              b={p2.stats[k]}
+              aColor={p1.types[0]}
+              bColor={p2.types[0]}
+              animate
+            />
+          ))}
+        </div>
+
+        {/* The BST summary. */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-4 border-t border-border-subtle">
+          <span
+            className={`text-stat-lg ${p1Leads || tied ? "text-primary" : "text-tertiary"}`}
+          >
+            {p1.bst}
+          </span>
+          <div className="flex flex-col items-center gap-0.5">
+            <span className="text-overline text-tertiary">
+              {tied ? "Base stat total" : "Higher total"}
+            </span>
+            {tied ? (
+              <span className="text-numeral-md">Tied</span>
+            ) : (
+              <span className="text-numeral-lg bg-flame bg-clip-text text-transparent">
+                +{Math.abs(delta)}
+              </span>
+            )}
+          </div>
+          <span
+            className={`text-stat-lg text-right ${!p1Leads || tied ? "text-primary" : "text-tertiary"}`}
+          >
+            {p2.bst}
+          </span>
+        </div>
+
+        {/* The speed verdict. Home always shows today's generation, so it gives
           the banner today's speeds. */}
-      <SpeedBanner p1={p1} p2={p2} a={p1.stats.speed} b={p2.stats.speed} />
-    </div>
+        <SpeedBanner p1={p1} p2={p2} a={p1.stats.speed} b={p2.stats.speed} />
+      </div>
+    </>
   );
 }
 
 function MonHead({ p, right = false }) {
   return (
     <div
-      className={`flex items-center justify-center gap-3 min-w-0 md:justify-normal ${right ? "md:flex-row-reverse md:text-right" : ""}`}
+      className={`flex items-center gap-3 min-w-0 ${right ? "flex-row-reverse text-right" : ""}`}
     >
       <div className="w-14 h-14 shrink-0 rounded-md bg-elevated overflow-hidden flex items-center justify-center">
         {/* Decorative: the name comes right after it, so alt text would only
@@ -123,7 +123,7 @@ function MonHead({ p, right = false }) {
         <div className="text-caption text-tertiary">
           #{String(dexNumberOf(p)).padStart(4, "0")}
         </div>
-        <div className={`flex gap-1.5 mt-1.5 ${right ? "md:justify-end" : ""}`}>
+        <div className={`flex gap-1.5 mt-1.5 ${right ? "justify-end" : ""}`}>
           {p.types.map((t) => (
             <TypeBadge key={t} type={t} />
           ))}

@@ -2,13 +2,14 @@ import { FaCaretLeft, FaCaretRight } from "react-icons/fa6";
 import StatBar from "./StatBar";
 import { typeColorVar } from "../lib/types";
 
-// The mirrored stat row, from md up: P1's value and bar growing leftward from
-// the centre, the difference cell, then P2's bar growing rightward and value.
+// The mirrored stat row: P1's value and bar growing leftward from the centre,
+// the difference cell, then P2's bar growing rightward and value.
 //
-// Shared by ComparisonCard (the tool) and Home's FeaturedComparison, so the
-// two can't drift apart, as CmpStatCard is for phones. The only difference
-// between the two callers is that Home animates its bars in on mount, hence
-// `animate`.
+// Every comparison board's stats, at every width: the desktop's middle card
+// (ComparisonCard), a phone's (VersusBoard), and Home's preview of both, so
+// none of them can drift apart. Narrowest at 296px on a 360px phone, where the
+// versus tiles above say which side is which, and at 288px in the desktop's
+// middle card at 1024.
 //
 // Columns: value, bar, difference, bar, value. Both value columns are fixed so
 // the centre stays centred, and the difference column is wide enough for

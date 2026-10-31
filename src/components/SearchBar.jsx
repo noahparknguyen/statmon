@@ -4,8 +4,41 @@ import { searchPokemon, spriteFor } from "../lib/pokemon";
 import TypeBadge from "./TypeBadge";
 import { FIELD, FIELD_INPUT } from "./fieldStyles";
 
-// Search-as-you-type with a sprite dropdown. Calls onSelect(pokemon) on pick.
-export default function SearchBar({ label, onSelect }) {
+// The list's box, and a row's, per layout. A dropdown floats on the overlay
+// shadow. A list sits in the page, its rows 48px for a thumb, ruled like the
+// dex's.
+const LIST = {
+  dropdown:
+    "absolute mt-1 w-full bg-surface border border-border-subtle rounded-md overflow-hidden",
+  list: "mt-2 flex flex-col",
+};
+const ROW = {
+  dropdown: "flex items-center gap-3 w-full px-3 py-2 text-left",
+  list: "flex min-h-12 w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-colors active:bg-elevated",
+};
+
+// Search-as-you-type, with sprite rows. Calls onSelect(pokemon) on pick.
+//
+// Two layouts, one search:
+//   · `dropdown`: the results float over the page under the field, and close
+//     on a click outside it. Every search on a desktop.
+//   · `list`: the results are the page, in flow under the field, for a
+//     phone's full-screen picker, where a dropdown would have nowhere to drop
+//     to above the keyboard. More of them, since the list scrolls, and `idle`
+//     fills the space until something is typed.
+//
+// `autoFocus` asks the dialog around the field for focus (Dialog.jsx), as a
+// `data-` attribute, because React's `autoFocus` focuses on mount, before
+// the dialog opens and moves focus to its first control.
+const LIMIT = { dropdown: 8, list: 20 };
+
+export default function SearchBar({
+  label,
+  onSelect,
+  layout = "dropdown",
+  autoFocus = false,
+  idle = null,
+}) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -13,8 +46,8 @@ export default function SearchBar({ label, onSelect }) {
   const listId = useId();
 
   const trimmed = query.trim();
-  const results = trimmed ? searchPokemon(trimmed, 8) : [];
-  const showList = open && trimmed.length > 0;
+  const results = trimmed ? searchPokemon(trimmed, LIMIT[layout]) : [];
+  const showList = (open || layout === "list") && trimmed.length > 0;
 
   // Close on outside click.
   useEffect(() => {
@@ -74,6 +107,7 @@ export default function SearchBar({ label, onSelect }) {
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
           className={FIELD_INPUT}
+          {...(autoFocus ? { "data-autofocus": "" } : {})}
         />
       </div>
 
@@ -90,15 +124,21 @@ export default function SearchBar({ label, onSelect }) {
           : ""}
       </span>
 
+      {layout === "list" && !showList && idle}
+
       {showList && (
         <ul
           id={listId}
           role="listbox"
-          className="absolute mt-1 w-full bg-surface border border-border-subtle rounded-md overflow-hidden"
-          style={{
-            zIndex: "var(--z-dropdown)",
-            boxShadow: "var(--shadow-overlay)",
-          }}
+          className={LIST[layout]}
+          style={
+            layout === "dropdown"
+              ? {
+                  zIndex: "var(--z-dropdown)",
+                  boxShadow: "var(--shadow-overlay)",
+                }
+              : undefined
+          }
         >
           {results.length === 0 ? (
             <li className="p-3 text-body-sm text-tertiary">No matches</li>
@@ -118,7 +158,7 @@ export default function SearchBar({ label, onSelect }) {
                   tabIndex={-1}
                   onMouseEnter={() => setActive(i)}
                   onClick={() => choose(p)}
-                  className={`flex items-center gap-3 w-full px-3 py-2 text-left ${
+                  className={`${ROW[layout]} ${
                     i === active ? "bg-elevated" : ""
                   }`}
                 >

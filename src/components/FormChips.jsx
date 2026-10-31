@@ -1,5 +1,5 @@
 import { formsOf, formLabel } from "../lib/pokemon";
-import { CHIP, CHIP_OFF, CHIP_ON } from "./chipStyles";
+import { CHIP, CHIP_FILTER_GEOMETRY, CHIP_OFF, CHIP_ON } from "./chipStyles";
 
 // Toggle chips for a Pokémon's alternate forms. Renders nothing when the
 // Pokémon has only one form. Clicking a chip swaps the selection instantly.
@@ -14,8 +14,14 @@ import { CHIP, CHIP_OFF, CHIP_ON } from "./chipStyles";
 // Renders nothing for a single-form Pokémon, which is 845 of the 1,259 entries.
 // The card supplies the dash placeholder rather than this component, because
 // what mustn't collapse is the labelled row, not the chips.
-const FORM_CHIP = `${CHIP} px-2 py-1 transition-colors`;
-export default function FormChips({ pokemon, onSelect }) {
+// Two sizes. `sm` is the card's compact band, where eight forms already fill
+// two rows. `md` is the filter chips' 36px, for a phone's dialog, where the
+// chips have the room and a thumb is doing the choosing.
+const FORM_CHIP = {
+  sm: `${CHIP} px-2 py-1 transition-colors`,
+  md: `${CHIP} ${CHIP_FILTER_GEOMETRY}`,
+};
+export default function FormChips({ pokemon, onSelect, size = "sm" }) {
   const forms = formsOf(pokemon);
   if (forms.length <= 1) return null;
 
@@ -29,7 +35,7 @@ export default function FormChips({ pokemon, onSelect }) {
             type="button"
             aria-pressed={active}
             onClick={() => onSelect(form)}
-            className={`${FORM_CHIP} ${active ? CHIP_ON : CHIP_OFF}`}
+            className={`${FORM_CHIP[size]} ${active ? CHIP_ON : CHIP_OFF}`}
           >
             {formLabel(form)}
           </button>

@@ -2,10 +2,10 @@ import { statPct } from "../lib/stats";
 import { typeColorVar } from "../lib/types";
 
 // The one stat bar. Every bar on the comparison pages is this component: the
-// Pokémon cards' rows, the mirrored rows on the comparison card, and the
-// per-stat cards a phone gets instead. On a desktop board the side cards and
-// the centre card share row lines, so two different bars would show the same
-// stat at two thicknesses side by side.
+// Pokémon cards' rows, and the mirrored rows on the desktop's comparison card
+// and on a phone's board. On a desktop board the side cards and the centre
+// card share row lines, so two different bars would show the same stat at two
+// thicknesses side by side.
 //
 // What may differ is a prop, and nothing else:
 //   · `side`: which end the fill grows from. The mirrored row's left bar grows
