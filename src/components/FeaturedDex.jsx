@@ -163,6 +163,7 @@ export default function FeaturedDex() {
               ))}
               <Head colKey={PREVIEW_SORT} className={COL.mobileStat} />
               <Head colKey="bst" className={COL.bst} align="right" />
+              <th aria-hidden="true" className={`${HEAD_CELL} ${COL.go}`} />
             </tr>
           </thead>
           <tbody>

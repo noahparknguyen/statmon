@@ -38,7 +38,7 @@ const ROUTES = [
   "/games/effective?tier=hard",
   "/games/effective?tier=hard&type=ghost&asof=5",
   // Panels that only exist after a click: the games' setup dialogue and the
-  // dex's phone filter panel. Each is opened by clicking its button first.
+  // dex's phone sort and filter sheet. Each is opened by clicking its button first.
   // The setup dialogue, opened from a game in progress, so it needs a URL with
   // settings, since a bare one is the start screen. Both games, because their
   // panels hold different groups.
@@ -46,7 +46,7 @@ const ROUTES = [
   ["/games/effective?tier=hard", "Setup"],
   // And from the start screen, which is the other way in.
   ["/games/higher", "Customise"],
-  ["/dex", "Filters"],
+  ["/dex", "Sort & filter"],
   // A phone's comparison opens its own two dialogs: the full-screen picker from
   // an empty tile, and the ability sheet from the defender's ability chip.
   ["/compare", "Choose Pokémon 1"],

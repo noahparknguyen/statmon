@@ -38,9 +38,11 @@ function SortHeader({ colKey, view, onSort, className, align = "right" }) {
     <th
       scope="col"
       aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}
-      // top-14 is the site header's h-14. The two have to agree, or the sticky
-      // header overlaps it or leaves a gap.
-      className={`sticky top-14 ${HEAD_CELL} ${className}`}
+      // Pinned under what's pinned above it: on a phone the toolbar's 56px
+      // under the site header's (top-28), and from md the site header alone
+      // (top-14). Each has to agree with those bars' heights, or the header
+      // row overlaps them or leaves a gap.
+      className={`sticky top-28 md:top-14 ${HEAD_CELL} ${className}`}
       style={STICKY_HEAD}
     >
       <button
@@ -104,8 +106,14 @@ export default function DexTable({ rows, view, keys, onSort, mobileStat }) {
     );
   }
 
+  // Scroll anchoring is off for the list. The browser keeps the page from
+  // jumping when content above the screen changes size by shifting the scroll
+  // to hold some element in place, and a windowed list changes that content on
+  // purpose: as you scroll, rows leave and the spacer above grows to match.
+  // With anchoring on, a quick flick of 700px moved the page by up to 720px
+  // more in 27 of 62 steps, measured down a 1,025-row list at 390; off, none.
   return (
-    <div ref={ref}>
+    <div ref={ref} className="[overflow-anchor:none]">
       <table
         // The DOM only ever holds a slice of the rows, so the table states the
         // real total, and each row its real position (DexRow).
@@ -136,7 +144,7 @@ export default function DexTable({ rows, view, keys, onSort, mobileStat }) {
             />
             <th
               scope="col"
-              className={`sticky top-14 ${HEAD_CELL} ${COL.types}`}
+              className={`sticky top-28 md:top-14 ${HEAD_CELL} ${COL.types}`}
               style={STICKY_HEAD}
             >
               {/* Not sortable, but with the same cell layout as its
@@ -170,6 +178,12 @@ export default function DexTable({ rows, view, keys, onSort, mobileStat }) {
               onSort={onSort}
               className={COL.bst}
               align="right"
+            />
+            {/* The chevron's column, which has nothing to say in a header. */}
+            <th
+              aria-hidden="true"
+              className={`sticky top-28 md:top-14 ${HEAD_CELL} ${COL.go}`}
+              style={STICKY_HEAD}
             />
           </tr>
         </thead>

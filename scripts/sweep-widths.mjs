@@ -207,7 +207,19 @@ function targetFailures(doc) {
     .filter(({ el, r }) => {
       if (r.width === 0 || r.height === 0) return false;
       const cs = doc.defaultView.getComputedStyle(el);
-      return cs.visibility !== "hidden" && cs.display !== "none";
+      if (cs.visibility === "hidden" || cs.display === "none") return false;
+      // Covered where a thumb would land: a fixed bar over the content
+      // scrolling under it, such as a phone's tab bar over the row behind it.
+      // A tap there hits the bar, so the row isn't a target at this scroll
+      // position, any more than the page behind a modal is. Only on screen:
+      // off it nothing can be hit, so nothing can be told, and the target
+      // stays in.
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      const view = doc.documentElement;
+      if (cx < 0 || cy < 0 || cx > view.clientWidth || cy > view.clientHeight)
+        return true;
+      const hit = doc.elementFromPoint(cx, cy);
+      return !hit || el.contains(hit) || hit.contains(el);
     });
   const out = [];
   for (const b of boxes) {

@@ -126,6 +126,10 @@ const ARBITRARY = new Map([
   ["max-h-[475px]", "the vendored artwork's own size"],
   ["max-w-[475px]", "the vendored artwork's own size"],
   ["[image-rendering:pixelated]", "pixel sprites at whole multiples"],
+  [
+    "[overflow-anchor:none]",
+    "a windowed list, whose swapped rows scroll anchoring would chase",
+  ],
   ["[--wall-tile:6rem]", "a hero tile at the sprite's native 96px"],
   ["[--wall-tile:12rem]", "a hero tile at exactly 2x native"],
   ["grid-cols-[1.6rem_1fr_3.25rem_1fr_1.6rem]", "the mirrored stat row"],

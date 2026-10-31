@@ -1,5 +1,6 @@
 import { useNavigate, useSearchParams } from "react-router";
 import DexFilters from "../components/DexFilters";
+import DexToolbar from "../components/DexToolbar";
 import PageHeader from "../components/PageHeader";
 import { PAGE_TOOL } from "../components/pageChrome";
 import DexTable from "../components/DexTable";
@@ -59,13 +60,19 @@ export default function Dex() {
   // sorted by instead: sort by Speed on a phone, and Speed is the number you
   // see. Sorting by name, dex number, or BST leaves it out rather than picking
   // an arbitrary stat to show.
+  //
+  // The controls take two shapes: the desktop's panel from md, and below it a
+  // toolbar pinned over the list with the rest in a sheet (DexToolbar).
   const mobileStat = keys.includes(view.sort) ? view.sort : null;
 
   return (
     <div className={PAGE_TOOL}>
       <PageHeader title="Dex" subtitle="Every Pokémon, sorted by any stat." />
 
-      <DexFilters view={view} onChange={setView} />
+      <div className="hidden md:block">
+        <DexFilters view={view} onChange={setView} />
+      </div>
+      <DexToolbar view={view} onChange={setView} count={rows.length} />
 
       {/* 24px under the controls panel, the gap every tool page leaves
           between a panel and what it controls, and 8px over the table it

@@ -685,11 +685,13 @@ describe("the dex route", () => {
   });
 
   it("lifts every sticky header cell above the rows that scroll under it", () => {
-    const html = render("/dex");
+    const page = render("/dex");
     // The stat cells position their fill and number, and a positioned element
     // paints over a non-positioned one, so without an explicit z-index the
     // bars would draw straight over the sticky header. Guarded here because it
     // only shows up once the page is scrolled, which no unit test does.
+    // Scoped to the table: a phone's toolbar above it is on the same layer.
+    const html = page.slice(page.indexOf("<table"), page.indexOf("</table>"));
     const headerCells = html.match(/<th\b/g) ?? [];
     const lifted = html.match(/z-index:var\(--z-raised\)/g) ?? [];
     expect(headerCells.length).toBeGreaterThan(0);
@@ -1038,6 +1040,62 @@ describe("the generation strip's alignment", () => {
 
   it("stays left-aligned in every other panel", () => {
     expect(strip("/dex")).not.toContain("max-sm:text-center");
+  });
+});
+
+// A phone's dex: the name and one button pinned over the list, the column
+// headers pinned under them, and every row one link. What a server render can
+// hold is the markup each behaviour rests on; the browser facts (the pins'
+// heights, a tap landing on the link, rows staying 48px) were measured in
+// headless Chrome, and the sweep opens the sheet at every width.
+describe("a phone's dex", () => {
+  const page = () => render("/dex?sort=speed");
+
+  it("pins the name field and the sort and filter button over the list", () => {
+    const html = page();
+    const bar = html.slice(html.indexOf("sticky top-14 -mx-4"));
+    expect(bar).toContain('aria-label="Filter by name"');
+    expect(bar).toContain("Sort &amp; filter");
+    // The desktop's panel is the same controls from md, and only from md.
+    expect(html).toContain(
+      '<div class="hidden md:block"><div class="flex flex-col gap-4',
+    );
+  });
+
+  it("pins the column headers under the toolbar, and under the header from md", () => {
+    const head = page().slice(
+      page().indexOf("<thead"),
+      page().indexOf("</thead>"),
+    );
+    const cells = head.match(/<th\b[^>]*>/g) ?? [];
+    expect(cells.length).toBeGreaterThan(0);
+    for (const th of cells) expect(th).toContain("sticky top-28 md:top-14");
+  });
+
+  it("makes the whole row one link into Compare", () => {
+    const body = page().slice(page().indexOf("<tbody"));
+    const row = body.slice(
+      body.indexOf("<tr aria-rowindex"),
+      body.indexOf("</tr>") + 5,
+    );
+    expect(row).toMatch(/<tr[^>]*class="relative /);
+    expect(row).toContain("after:absolute after:inset-0");
+    expect(row).toContain("open in Compare");
+    // The stat cell's fill is positioned, so it lets a tap through to the
+    // link beneath it.
+    expect(row).toContain("pointer-events-none relative");
+    // And a phone's chevron says the row opens something.
+    expect(row).toMatch(/<td class="pr-2 text-tertiary md:hidden"><svg/);
+  });
+
+  it("keeps a phone's 48px sprite inside the windowing's 48px row", () => {
+    // A 48px image made the row 49 with its rule, which drifts the windowed
+    // list a pixel a row. The sprite overlaps the rule instead.
+    expect(page()).toContain("-my-px size-12");
+  });
+
+  it("keeps the browser's scroll anchoring off the windowed list", () => {
+    expect(page()).toContain('<div class="[overflow-anchor:none]"><table');
   });
 });
 
@@ -1506,7 +1564,7 @@ describe("the site's name and description agree everywhere", () => {
 // never mean opposite things.
 describe("one control, one meaning: the alternate-forms chip", () => {
   const sources = [
-    "src/components/DexFilters.jsx",
+    "src/components/DexFilterGroups.jsx",
     "src/components/HigherSetup.jsx",
     "src/components/EffectiveSetup.jsx",
   ].map((f) => readFileSync(f, "utf8"));
@@ -1947,11 +2005,6 @@ describe("the bottom inset", () => {
 // is a hover style gives a phone no answer at all. Every hover on a control
 // has a pressed twin with the same base, in the same class string.
 describe("every control answers a tap", () => {
-  // The one hover that isn't on a control: a dex row lights up under the
-  // pointer to help an eye track it across the table. Only the name inside the
-  // row is a link, and it has its twin.
-  const NOT_A_CONTROL = new Set(["src/components/DexRow.jsx bg-surface"]);
-
   it("gives every hover a pressed twin", () => {
     const missing = [];
     let hovers = 0;
@@ -1959,7 +2012,6 @@ describe("every control answers a tap", () => {
       const tokens = new Set(parsed.map((p) => p.token));
       for (const { variant, base, token } of parsed) {
         if (!/(^|:)(group-)?hover$/.test(variant)) continue;
-        if (NOT_A_CONTROL.has(`${file} ${base}`)) continue;
         hovers++;
         const twin = `${variant.replace(/hover$/, "active")}:${base}`;
         if (!tokens.has(twin)) missing.push(`${file}:${line} ${token}`);
@@ -2050,7 +2102,8 @@ describe("one component per job", () => {
     for (const [path, n] of [
       ["/compare", 2],
       ["/types", 1],
-      ["/dex", 1],
+      // The name field twice: a phone's toolbar and the desktop's panel.
+      ["/dex", 2],
     ]) {
       const html = render(path);
       expect((html.match(/focus-ring-within/g) ?? []).length, path).toBe(n);

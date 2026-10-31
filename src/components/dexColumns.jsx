@@ -18,6 +18,9 @@ export const COL = {
   stat: "hidden w-14 md:table-cell lg:w-20",
   mobileStat: "w-16 md:hidden",
   bst: "w-16 lg:w-20",
+  // A phone's chevron, which says a row opens something: the whole row is a
+  // link into Compare (DexRow). From md the row's hover says it instead.
+  go: "w-6 md:hidden",
 };
 
 // Row height, as both the number the windowing maths needs and the class that

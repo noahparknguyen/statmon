@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { Link } from "react-router";
+import { LuChevronRight } from "react-icons/lu";
 import TypeBadge from "./TypeBadge";
 import { spriteFor } from "../lib/pokemon";
 import { compareUrl } from "../lib/compareUrl";
@@ -13,7 +14,14 @@ import { typeFill } from "../lib/types";
 //
 // The column order matches DexTable's header exactly. Which columns show depends
 // only on the screen width, so the DOM order is the same at every width:
-//   #  |  Pokémon  |  Types  |  HP Atk Def SpA SpD Spe  |  [sorted stat]  |  BST
+//   #  |  Pokémon  |  Types  |  HP Atk Def SpA SpD Spe  |  [sorted stat]  |  BST  |  ›
+//
+// The whole row is one link, into Compare with this Pokémon on the board: the
+// name's link stretches over the row with an `::after`, so a thumb can land
+// anywhere on it. The row is its containing block (`relative`), and the stat
+// cells' fills, which are positioned and would sit over the link, let a tap
+// through (`pointer-events-none`). A phone gets a chevron, since a list row
+// that opens something says so.
 
 // The stat cell's proportional fill. Scaled to the same fixed 255 as every other
 // bar on the site, tinted with the Pokémon's primary type, and faint enough that
@@ -38,7 +46,7 @@ function StatCell({ value, types, className = "", animate = false }) {
     <td className={`px-1 ${className}`}>
       {/* The number sits 8px in from the cell's edge, the column header's
           inset, so a right-aligned header lines up with it. */}
-      <div className="relative flex h-7 items-center justify-end overflow-hidden rounded-xs px-1">
+      <div className="pointer-events-none relative flex h-7 items-center justify-end overflow-hidden rounded-xs px-1">
         {animate ? (
           <div
             className="absolute inset-y-0 left-0 animate-grow-w"
@@ -80,7 +88,7 @@ function DexRow({
       // position within the table's aria-rowcount. +2 because it counts from 1,
       // and the header row comes first.
       aria-rowindex={rowIndex + 2}
-      className={`${heightClass} border-b border-border-subtle transition-colors hover:bg-surface`}
+      className={`relative ${heightClass} border-b border-border-subtle transition-colors hover:bg-surface active:bg-surface`}
     >
       {/* Every cell centres its content in the same 28px box the stat cells
           use, so a row's text shares one centre line. As bare inline text, the
@@ -93,14 +101,22 @@ function DexRow({
 
       <td className="px-2">
         <div className="flex items-center gap-2 overflow-hidden">
+          {/* 48px on a phone, the row's full height, and 32 from md: half and a
+              third of the sprite's 96px, so both stay crisp. The sprites carry
+              their own margin, so 48 fills the row without touching its rules.
+
+              A 48px image would still make the row 49 with its 1px rule, and
+              the windowing counts on 48 (ROW_HEIGHT): a pixel a row is 1,000px
+              of drift by the end of the list. `-my-px` lets the sprite's
+              transparent edge overlap the rule instead. */}
           <img
             src={spriteFor(pokemon)}
             alt=""
-            width="32"
-            height="32"
+            width="48"
+            height="48"
             loading="lazy"
             decoding="async"
-            className="shrink-0 [image-rendering:pixelated]"
+            className="-my-px size-12 shrink-0 [image-rendering:pixelated] md:size-8"
           />
           <div className="min-w-0">
             <Link
@@ -109,9 +125,10 @@ function DexRow({
               // so a name clicked in a Gen 3 dex opens a Gen 3 comparison rather
               // than quietly jumping to today.
               to={compareUrl(pokemon.slug, null, { asof })}
-              className="block truncate text-body-sm text-primary transition-colors hover:text-accent active:text-accent"
+              className="block truncate text-body-sm text-primary transition-colors after:absolute after:inset-0 hover:text-accent active:text-accent"
             >
               {pokemon.name}
+              <span className="sr-only">, open in Compare</span>
             </Link>
             {/* Types have no column of their own until lg, so at narrower
                 widths they sit under the name. */}
@@ -155,6 +172,10 @@ function DexRow({
         <span className="flex h-7 items-center justify-end text-stat-sm text-primary">
           {view.bst}
         </span>
+      </td>
+
+      <td className="pr-2 text-tertiary md:hidden">
+        <LuChevronRight aria-hidden />
       </td>
     </tr>
   );
