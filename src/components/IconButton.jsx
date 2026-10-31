@@ -22,7 +22,8 @@ const BASE =
   "inline-flex size-9 shrink-0 items-center justify-center rounded-full text-body transition-colors";
 
 const VARIANT = {
-  ghost: "text-secondary hover:bg-elevated hover:text-primary",
+  ghost:
+    "text-secondary hover:bg-elevated hover:text-primary active:bg-elevated active:text-primary",
   outline: `border ${CHIP_OFF}`,
 };
 

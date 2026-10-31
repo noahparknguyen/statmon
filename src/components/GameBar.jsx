@@ -11,7 +11,8 @@ import Button from "./Button";
 //
 // Sticky under the site header, at `--z-raised`, the layer for content lifted
 // above its neighbours but below all chrome: it has to paint over the board
-// scrolling under it, and never over the site header above it.
+// scrolling under it, and never over the site header above it. On a phone the
+// site header steps aside for a board (Layout), so the bar pins to the top.
 //
 // Inter with tabular figures (`text-stat`), not the display numerals. These
 // numbers change under you every round, and tabular figures stop "9" becoming
@@ -29,7 +30,7 @@ export default function GameBar({ title, session, best, onSetup, onRestart }) {
 
   return (
     <div
-      className="sticky top-14 border-b border-border-subtle bg-base/85 backdrop-blur"
+      className="sticky top-0 border-b border-border-subtle bg-base/85 backdrop-blur md:top-14"
       style={{ zIndex: "var(--z-raised)" }}
     >
       <div className="max-w-content mx-auto flex h-14 items-center gap-3 px-4 sm:gap-6">
@@ -48,18 +49,21 @@ export default function GameBar({ title, session, best, onSetup, onRestart }) {
             a different game". It fills the bar's height, as the nav links do,
             which clears WCAG 2.5.8's minimum, and its screen-reader text says
             what it does while keeping the visible word in its accessible name
-            (WCAG 2.5.3). */}
+            (WCAG 2.5.3).
+
+            On a phone it's the only way off the board, since neither the site
+            header nor the tab bar is there, so it carries a back arrow: a
+            touch screen has no hover to show that a name is a control. */}
         <h1 className="text-h3 min-w-0 truncate text-primary">
-          {/* Below `xs` the name gives way to an arrow, as the site's wordmark
-              gives way to its flame at the same width, and as with the
-              wordmark, the control stays: at 320px it's the only way back to
-              the start screen. A truncated "Effe…" says less than an arrow. */}
+          {/* Below `xs` the name gives way to the arrow alone: beside the
+              score and Setup there's no room for "Effective.", and a truncated
+              "Effe…" says less than an arrow. The control stays either way. */}
           <button
             type="button"
             onClick={onRestart}
-            className="inline-flex h-14 max-w-full items-center gap-1 truncate transition-colors hover:text-accent"
+            className="inline-flex h-14 max-w-full items-center gap-1 truncate transition-colors hover:text-accent active:text-accent"
           >
-            <LuChevronLeft aria-hidden className="shrink-0 xs:hidden" />
+            <LuChevronLeft aria-hidden className="shrink-0 md:hidden" />
             {/* `aria-hidden` on the visible half, with the full accessible name
                 in the screen-reader half. Otherwise a screen reader would hear
                 the name twice ("Effective. Effective, choose a different

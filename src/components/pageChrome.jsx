@@ -25,10 +25,13 @@
 // The bottom is the end of the page, before the footer, and the same small gap
 // there would make the footer look like it's crowding the content. Tool pages
 // end with `pb-20`, the same as Home, and reading pages with `pb-24`.
+//
+// The top is tighter on a phone, where every pixel above the tool pushes the
+// tool down, and the tab bar already says which page this is.
 const PAGE = "max-w-content mx-auto px-4";
 
-export const PAGE_TOOL = `${PAGE} pt-10 pb-20`;
-export const PAGE_CONTENT = `${PAGE} pt-16 pb-24`;
+export const PAGE_TOOL = `${PAGE} pt-6 pb-20 md:pt-10`;
+export const PAGE_CONTENT = `${PAGE} pt-10 pb-24 md:pt-16`;
 
 // The controls panel: the surface /compare, /dex, and /types put their controls
 // on.

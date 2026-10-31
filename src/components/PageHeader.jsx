@@ -16,7 +16,7 @@
 // rather than bent to fit.
 export default function PageHeader({ title, subtitle, as: Heading = "h1" }) {
   return (
-    <header className="mb-8 text-center">
+    <header className="mb-6 text-center md:mb-8">
       <Heading className="text-h1">
         {title}
         <span className="text-accent">.</span>

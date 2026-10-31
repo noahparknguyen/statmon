@@ -46,7 +46,7 @@ function SortHeader({ colKey, view, onSort, className, align = "right" }) {
       <button
         type="button"
         onClick={() => onSort(colKey)}
-        className={`${HEAD_INNER} transition-colors hover:text-primary ${HEAD_ALIGN[align]} ${active ? "text-accent" : "text-tertiary"}`}
+        className={`${HEAD_INNER} transition-colors hover:text-primary active:text-primary ${HEAD_ALIGN[align]} ${active ? "text-accent" : "text-tertiary"}`}
       >
         <DexHeadLabel colKey={colKey} dir={dir} align={align}>
           {/* The visible label is often an abbreviation ("SpA", "#"), so the

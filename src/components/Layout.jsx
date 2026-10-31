@@ -7,15 +7,24 @@ import {
   useLocation,
   useMatches,
 } from "react-router";
-import { LuExternalLink, LuGithub } from "react-icons/lu";
+import {
+  LuExternalLink,
+  LuGamepad2,
+  LuGithub,
+  LuGrid3X3,
+  LuRows3,
+  LuSwords,
+} from "react-icons/lu";
 import { toolOf } from "../lib/toolKey";
 import { hasChosenGame } from "../lib/games";
 import { ALL_POKEMON } from "../lib/pokemon";
 import { CURRENT_GEN } from "../lib/eras";
 
-// The shell around every page: a sticky header with the wordmark and nav, the
-// page itself in <main>, and a footer with the credits. The wordmark links
-// home, and the nav marks the current page.
+// The shell around every page: a sticky header with the wordmark, the page
+// itself in <main>, and a footer with the credits. The four tools are a nav in
+// the header from `md` up, and a tab bar along the bottom of a phone, where a
+// thumb can reach them from anywhere on a long page. The wordmark links home,
+// and both navs mark the current page.
 const REPO_URL = "https://github.com/noahparknguyen/statmon";
 const LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`;
 const NOTICE_URL = `${REPO_URL}/blob/main/licenses/NOTICE.md`;
@@ -32,8 +41,21 @@ const SITE_TITLE = "Statmon — Pokémon comparison, dex, type chart, and games"
 // since only the text colour changes on hover.
 function navClass({ isActive }) {
   return [
-    "inline-flex h-14 items-center text-button transition-colors hover:text-primary",
+    "inline-flex h-14 items-center text-button transition-colors hover:text-primary active:text-primary",
     isActive ? "text-primary" : "text-secondary",
+  ].join(" ");
+}
+
+// A phone's tab: an icon over its label, filling a quarter of the 56px bar, so
+// the whole quarter is the target. The current tool takes the accent, which is
+// for selection, and the others stay `secondary` like the header's nav.
+//
+// The icon is 20px rather than the 1em of its label, because it sits above the
+// label rather than beside it, and is the part of a tab the eye finds first.
+function tabClass({ isActive }) {
+  return [
+    "flex h-14 flex-col items-center justify-center gap-1 text-button transition-colors",
+    isActive ? "text-accent" : "text-secondary active:text-primary",
   ].join(" ");
 }
 
@@ -86,17 +108,23 @@ function useFocusOnNavigate(ref) {
   }, [tool, ref]);
 }
 
+// The four tools, once, for the header's nav, the phone's tab bar, and the
+// footer, so the three can't list different tools.
+const TOOLS = [
+  { label: "Compare", to: "/compare", icon: LuSwords },
+  { label: "Dex", to: "/dex", icon: LuRows3 },
+  { label: "Types", to: "/types", icon: LuGrid3X3 },
+  { label: "Games", to: "/games", icon: LuGamepad2 },
+];
+
 // The footer's link groups, as data rather than markup, so the columns are one
 // component and can't drift into different shapes.
 //
-// Tools repeats the nav on purpose. The two game boards drop the footer and
-// the nav is sticky, so this copy is for someone who has scrolled to the
-// bottom of the dex table, which runs to about 50,000px.
+// Tools repeats the header's nav, for someone who has scrolled to the bottom
+// of the dex table, which runs to about 50,000px. A phone hides it, since its
+// tab bar is on screen at every depth, and its About link moves to the header.
 const TOOL_LINKS = [
-  { label: "Compare", to: "/compare" },
-  { label: "Dex", to: "/dex" },
-  { label: "Types", to: "/types" },
-  { label: "Games", to: "/games" },
+  ...TOOLS.map(({ label, to }) => ({ label, to })),
   { label: "About", to: "/about" },
 ];
 
@@ -132,11 +160,11 @@ const CRAFT_LINKS = [
 // about 28px, which passes WCAG 2.5.8 outright rather than through its spacing
 // exception. `npm run sweep:widths` measures it either way.
 const FOOTER_LINK =
-  "inline-flex items-center gap-1.5 py-1 text-body-sm text-tertiary transition-colors hover:text-secondary";
+  "inline-flex items-center gap-1.5 py-1 text-body-sm text-tertiary transition-colors hover:text-secondary active:text-secondary";
 
-function FooterGroup({ title, links }) {
+function FooterGroup({ title, links, className = "" }) {
   return (
-    <div>
+    <div className={className}>
       <h3 className="text-overline text-tertiary">{title}</h3>
       <ul className="mt-2 flex flex-col items-start">
         {links.map(({ label, to, href, icon: Icon }) => (
@@ -233,20 +261,23 @@ export default function Layout() {
       >
         Skip to content
       </a>
+      {/* Over a game board on a phone, the header steps aside, and the game
+          bar takes the top of the screen: the board is the screen there, and
+          a bar holding only the wordmark would take 56px of it. The game bar's
+          own back control leads out. */}
       <header
-        className="sticky top-0 border-b border-border-subtle bg-base/85 backdrop-blur"
+        className={`sticky top-0 border-b border-border-subtle bg-base/85 backdrop-blur ${
+          playing ? "hidden md:block" : ""
+        }`}
         style={{ zIndex: "var(--z-sticky)" }}
       >
-        {/* The gaps tighten on a phone, so the header fits a 390px screen
-            without scrolling the page sideways. Every label stays visible:
-            it's the space between them that gives. */}
-        <div className="max-w-content mx-auto flex items-center justify-between gap-2 px-4 h-14 sm:gap-4">
+        <div className="max-w-content mx-auto flex items-center justify-between gap-4 px-4 h-14">
           {/* The wordmark brightens on hover, like the game bar's name. The nav
               links beside it already respond to the pointer, and a control
               that doesn't look like one is worse than one that does. */}
           <Link
             to="/"
-            className="flex items-center gap-2 text-h3 text-primary transition-colors hover:text-accent"
+            className="flex items-center gap-2 text-h3 text-primary transition-colors hover:text-accent active:text-accent"
           >
             <img
               src="/favicon.svg"
@@ -255,38 +286,28 @@ export default function Layout() {
               height="24"
               className="shrink-0"
             />
-            {/* Below `xs` (384px) the Poké Ball mark carries the brand alone,
-                because the four nav items and the wordmark can't both fit, and
-                a header that overflows scrolls the whole page sideways. The
-                mark is still the logo and the link home. */}
-            <span className="hidden xs:inline">
+            <span>
               Statmon<span className="text-accent">.</span>
             </span>
           </Link>
-          {/* gap-2 below sm, not gap-3, so the wordmark and four nav items fit
-              under 384px and the wordmark still shows on a 390px phone, the
-              most common width there is. The labels all stay visible, and the
-              space between them gives. */}
+          {/* On a phone the tools are in the tab bar, which leaves the
+              header's far end for About. That's the one page the tab bar
+              doesn't hold, and a corner suits it: it's the page tapped least. */}
+          <NavLink
+            to="/about"
+            className={(state) => `${navClass(state)} md:hidden`}
+          >
+            About
+          </NavLink>
           <nav
             aria-label="Primary"
-            className="flex items-center gap-2 sm:gap-5"
+            className="hidden items-center gap-5 md:flex"
           >
-            <NavLink to="/compare" className={navClass}>
-              Compare
-            </NavLink>
-            <NavLink to="/dex" className={navClass}>
-              Dex
-            </NavLink>
-            <NavLink to="/types" className={navClass}>
-              Types
-            </NavLink>
-            {/* The header has room for four items beside the wordmark on a
-                390px phone. A fifth would push the wordmark off every phone,
-                so the fourth slot goes to the games, and the credits live in
-                the footer, beside the attribution they belong with. */}
-            <NavLink to="/games" className={navClass}>
-              Games
-            </NavLink>
+            {TOOLS.map(({ label, to }) => (
+              <NavLink key={to} to={to} className={navClass}>
+                {label}
+              </NavLink>
+            ))}
           </nav>
         </div>
       </header>
@@ -329,7 +350,7 @@ export default function Layout() {
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
           <h2 className="sr-only">Site information</h2>
-          <div className="max-w-content mx-auto px-4 py-10">
+          <div className="max-w-content mx-auto px-4 py-8 md:py-10">
             {/* The brand on the left and the link groups on the right, rather
                 than three even columns. Even columns would leave most of each
                 column empty, since the links are short, so the footer would
@@ -337,10 +358,11 @@ export default function Layout() {
                 block a clean left and right edge, the shape most footers
                 settle on.
 
-                Side by side only from `lg`. Below it, the three link columns
-                don't fit beside the brand, so the brand sits over them. They
-                fit in one row from 480px, and wrap below that. */}
-            <div className="flex flex-col gap-10 lg:flex-row lg:justify-between lg:gap-8">
+                Side by side only from `lg`. Below it, the link columns don't
+                fit beside the brand, so the brand sits over them. On a phone
+                there are two, which fit side by side down to 360px, and the
+                gaps tighten so the footer isn't most of a screen. */}
+            <div className="flex flex-col gap-8 md:gap-10 lg:flex-row lg:justify-between lg:gap-8">
               <div className="max-w-sm">
                 <p className="text-h3 text-primary">
                   Statmon<span className="text-accent">.</span>
@@ -361,8 +383,12 @@ export default function Layout() {
 
               {/* Three groups on a fixed gap, so they read as a set rather
                   than as three things that happened to land apart. */}
-              <div className="flex flex-wrap gap-x-12 gap-y-8 lg:gap-x-20">
-                <FooterGroup title="Tools" links={TOOL_LINKS} />
+              <div className="flex flex-wrap gap-x-8 gap-y-8 md:gap-x-12 lg:gap-x-20">
+                <FooterGroup
+                  title="Tools"
+                  links={TOOL_LINKS}
+                  className="hidden md:block"
+                />
                 <FooterGroup title="Data" links={DATA_LINKS} />
                 <FooterGroup title="Fonts & icons" links={CRAFT_LINKS} />
               </div>
@@ -370,7 +396,7 @@ export default function Layout() {
 
             {/* Mirrors the block above, with one thing on each edge, so the
                 footer reads as one arrangement rather than two stacked. */}
-            <div className="mt-10 flex flex-col gap-3 border-t border-border-subtle pt-6 sm:flex-row sm:justify-between sm:gap-8">
+            <div className="mt-8 flex flex-col gap-3 border-t border-border-subtle pt-6 sm:flex-row sm:justify-between sm:gap-8 md:mt-10">
               <p className="max-w-xl text-caption text-tertiary">
                 Data and images from PokéAPI; sprites are CC0. Fonts are SIL
                 OFL, and the carets on the comparison board and the dex are Font
@@ -379,7 +405,7 @@ export default function Layout() {
                   href={NOTICE_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className="underline decoration-border-strong underline-offset-2 transition-colors hover:text-secondary"
+                  className="underline decoration-border-strong underline-offset-2 transition-colors hover:text-secondary active:text-secondary"
                 >
                   repository
                   <span className="sr-only"> (opens in a new tab)</span>
@@ -393,7 +419,7 @@ export default function Layout() {
                   href={LICENSE_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className="underline decoration-border-strong underline-offset-2 transition-colors hover:text-secondary"
+                  className="underline decoration-border-strong underline-offset-2 transition-colors hover:text-secondary active:text-secondary"
                 >
                   MIT
                   <span className="sr-only"> (opens in a new tab)</span>
@@ -402,6 +428,37 @@ export default function Layout() {
             </div>
           </div>
         </footer>
+      )}
+
+      {/* The phone's tab bar: fixed to the bottom edge, clear of the home
+          indicator, and gone from `md`, where the header's nav takes over.
+          Not over a game board, where the board is the whole screen.
+
+          The empty block before it is the bar's footprint in the page, so
+          the end of the footer scrolls up clear of the bar instead of ending
+          underneath it. The footer already keeps the home indicator's inset,
+          so the footprint is only the bar's own 56px. */}
+      {!playing && (
+        <>
+          <div aria-hidden className="h-14 md:hidden" />
+          <nav
+            aria-label="Primary"
+            className="fixed inset-x-0 bottom-0 border-t border-border-subtle bg-base/85 backdrop-blur md:hidden"
+            style={{
+              zIndex: "var(--z-sticky)",
+              paddingBottom: "env(safe-area-inset-bottom)",
+            }}
+          >
+            <div className="grid grid-cols-4">
+              {TOOLS.map(({ label, to, icon: Icon }) => (
+                <NavLink key={to} to={to} className={tabClass}>
+                  <Icon aria-hidden size="1.25rem" className="shrink-0" />
+                  {label}
+                </NavLink>
+              ))}
+            </div>
+          </nav>
+        </>
       )}
     </div>
   );

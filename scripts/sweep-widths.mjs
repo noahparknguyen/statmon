@@ -33,7 +33,7 @@ import { ENTRIES } from "./routes.mjs";
 // awkward middles between them, which is where layout bugs hide.
 //
 // 360, 375, 383, and 384 bracket the `xs` breakpoint (384px), where the
-// header's wordmark appears: no common device width lands just under it.
+// game bar's name appears: no common device width lands just under it.
 const WIDTHS = [
   320, 360, 375, 383, 384, 390, 430, 600, 700, 768, 900, 1024, 1280, 1440,
 ];

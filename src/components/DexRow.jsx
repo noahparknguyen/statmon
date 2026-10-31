@@ -109,7 +109,7 @@ function DexRow({
               // so a name clicked in a Gen 3 dex opens a Gen 3 comparison rather
               // than quietly jumping to today.
               to={compareUrl(pokemon.slug, null, { asof })}
-              className="block truncate text-body-sm text-primary transition-colors hover:text-accent"
+              className="block truncate text-body-sm text-primary transition-colors hover:text-accent active:text-accent"
             >
               {pokemon.name}
             </Link>

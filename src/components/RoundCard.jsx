@@ -33,7 +33,7 @@ export function Verdict({ correct, detail, onNext, followUp }) {
           </Button>
           <Link
             to={followUp.to}
-            className="text-body-sm text-accent transition-colors hover:text-accent-hover"
+            className="text-body-sm text-accent transition-colors hover:text-accent-hover active:text-accent-hover"
           >
             {followUp.label}
           </Link>

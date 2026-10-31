@@ -188,20 +188,16 @@
   --radius-lg: 16px;
 
   /* ---------------------------------------------------------------------------
-      BREAKPOINTS. md is where the comparison collapses to cards.
-      xs exists for one thing: the header's wordmark. With four tools in the
-      nav, there isn't room for both on a 320px screen, and every alternative
-      is worse: shrinking the type breaks the scale, wrapping the nav breaks
-      the h-14 the dex's sticky headers are pinned to, and hiding the wordmark
-      at `sm` would remove it from every phone rather than the few that can't
-      fit it.
-
-      At the `gap-2` the nav takes below `sm`, the header needs 361px: 32
-      gutter + 121 brand (mark and wordmark, in Space Grotesk) + 8 gap + 200
-      nav. 384 leaves 23px of room for platforms that render the wordmark a
-      little wider, and still covers every current phone from the iPhone 12
-      (390) up. Below the boundary, a header that doesn't fit scrolls the whole
-      site sideways, so `npm run sweep:widths` tests 360, 375, 383, and 384.
+      BREAKPOINTS. md is where the comparison collapses to cards, and where a
+      phone's tab bar gives way to the header's nav.
+      xs exists for one thing: the game bar's name. On a phone the bar holds a
+      back arrow, the name, three scores, and Setup. With "Effective.", the
+      longer name, and a new game's scores, it needs 366px: 32 gutter + 115
+      arrow and name + 147 scores + 48 Setup + 24 gaps. 384 leaves 18px, and
+      every current phone from the iPhone 12 (390) up keeps the name. Below
+      it the arrow stands alone, since a truncated "Effe…" says less than an
+      arrow. As the scores grow, the name truncates before anything is pushed
+      off the screen. `npm run sweep:widths` tests 360, 375, 383, and 384.
      ------------------------------------------------------------------------ */
   --breakpoint-xs: 384px;
   --breakpoint-sm: 480px;
@@ -313,6 +309,14 @@
   html {
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    /* Bars pinned over the page would hide what keyboard focus scrolls to, so
+       scrolling keeps clear of them (WCAG 2.4.11): the header's 56px at the
+       top, and on a phone the tab bar's 56px plus the home indicator's inset
+       at the bottom. */
+    scroll-padding-top: 3.5rem;
+    @variant max-md {
+      scroll-padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+    }
   }
 
   body {

@@ -49,9 +49,10 @@ export const CHIP_CELL_LABEL = "flex min-h-[21px] items-center";
 export const CHIP_ON = "border-transparent bg-accent text-accent-contrast";
 
 // Unselected. Hovering only brightens the label, and the fill stays put, so a
-// row of chips doesn't shimmer as the pointer crosses it.
+// row of chips doesn't shimmer as the pointer crosses it. A press does the
+// same, which is the only answer a touch screen gets, since it can't hover.
 export const CHIP_OFF =
-  "border-border-strong bg-elevated text-secondary hover:text-primary";
+  "border-border-strong bg-elevated text-secondary hover:text-primary active:text-primary";
 
 // Unselected, for a chip that isn't interactive: `CHIP_OFF` without its hover,
 // since a <span> that lights up under the pointer promises a click it won't

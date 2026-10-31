@@ -1,4 +1,5 @@
 import { readFileSync, readdirSync } from "node:fs";
+import { classStrings } from "../scripts/classes.mjs";
 import { describe, it, expect, vi } from "vitest";
 import { renderToString } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
@@ -281,9 +282,12 @@ describe("the dex route's generation lens", () => {
 describe("the type chart route", () => {
   it("keeps the header within a 320px screen", () => {
     // Four tools plus the wordmark don't fit on the narrowest phones, and a
-    // header that overflows scrolls every page on the site sideways. The
+    // header that overflows scrolls every page on the site sideways. So the
+    // header's nav waits for `md`, and a phone's tools are in the tab bar. The
     // markup check is the cheap half, and the sweep measures the real width.
-    expect(render("/types")).toContain("hidden xs:inline");
+    const html = render("/types");
+    const header = html.match(/<header\b[\s\S]*?<\/header>/)[0];
+    expect(header).toMatch(/<nav[^>]*class="hidden[^"]*md:flex/);
   });
 
   it("is reachable from the primary nav on every page", () => {
@@ -933,16 +937,20 @@ describe("accessibility guarantees", () => {
     expect(html).toContain("Type effectiveness chart, scrollable");
   });
 
-  it("gives every primary nav link the header's full height", () => {
+  it("gives every primary nav link its bar's full height", () => {
     // As bare 14px text with no padding, each would be a target about 17px
-    // tall in a 56px bar. (WCAG 2.5.8)
-    // Scoped to the <nav> itself: the skip link also carries `text-button`, and
-    // is rightly not full height, since it's a focus-only control with its own
-    // padding, not a bar item.
-    const nav = render("/").match(/<nav\b[\s\S]*?<\/nav>/)?.[0] ?? "";
-    const navLinks = nav.match(/<a\b[^>]*>/g) ?? [];
-    expect(navLinks.length).toBeGreaterThanOrEqual(4);
-    for (const link of navLinks) expect(link).toContain("h-14");
+    // tall in a 56px bar. (WCAG 2.5.8) Both navs: the header's, and the
+    // phone's tab bar.
+    // Scoped to the <nav>s themselves: the skip link also carries
+    // `text-button`, and is rightly not full height, since it's a focus-only
+    // control with its own padding, not a bar item.
+    const navs = render("/").match(/<nav\b[\s\S]*?<\/nav>/g) ?? [];
+    expect(navs.length).toBe(2);
+    for (const nav of navs) {
+      const navLinks = nav.match(/<a\b[^>]*>/g) ?? [];
+      expect(navLinks.length).toBe(4);
+      for (const link of navLinks) expect(link).toContain("h-14");
+    }
   });
 
   it("keeps every form control at 16px, so iOS does not force-zoom", () => {
@@ -1703,6 +1711,101 @@ describe("the footer", () => {
     // Non-vacuous: the footer really does carry a handful of outbound links.
     expect(external).toBeGreaterThanOrEqual(6);
     expect(announced).toBe(external);
+  });
+});
+
+// A phone's tools are a tab bar along the bottom, and the header's nav takes
+// over from `md`. Only one of the two shows at any width, so a screen reader
+// meets one primary nav.
+describe("the phone's tab bar", () => {
+  const tabBar = (html) =>
+    html.match(/<nav\b[^>]*fixed[\s\S]*?<\/nav>/)?.[0] ?? null;
+
+  it.each([
+    "/",
+    "/compare",
+    "/dex",
+    "/types",
+    "/games",
+    "/about",
+    // The difficulty picker is an ordinary page on a game's route.
+    "/games/higher",
+  ])("holds the four tools on %s", (path) => {
+    const bar = tabBar(render(path));
+    expect(bar).not.toBeNull();
+    expect(bar).toContain("md:hidden");
+    for (const to of ["/compare", "/dex", "/types", "/games"])
+      expect(bar).toContain(`href="${to}"`);
+  });
+
+  it("names the same tools as the header's nav", () => {
+    const html = render("/dex");
+    const header = html.match(/<header\b[\s\S]*?<\/header>/)[0];
+    const hrefs = (s) => [...s.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+    const nav = header.match(/<nav\b[\s\S]*?<\/nav>/)[0];
+    expect(hrefs(tabBar(html))).toEqual(hrefs(nav));
+  });
+
+  it("marks the current tool", () => {
+    // The current tab takes the accent, and only the current one.
+    const bar = tabBar(render("/types/water/flying"));
+    const current = bar.match(/<a\b[^>]*aria-current="page"[^>]*>/g) ?? [];
+    expect(current).toHaveLength(1);
+    expect(current[0]).toContain('href="/types"');
+    expect(current[0]).toContain("text-accent");
+  });
+
+  it("leaves the bar's footprint at the end of the page", () => {
+    // Without it, the end of the footer would sit under the bar for good.
+    expect(render("/about")).toMatch(
+      /<div aria-hidden="true" class="h-14 md:hidden"><\/div><nav/,
+    );
+  });
+
+  it.each(["/games/higher?play", "/games/effective?play"])(
+    "gives the whole screen to the board at %s",
+    (path) => {
+      const html = render(path);
+      expect(tabBar(html)).toBeNull();
+      // The site header steps aside on a phone, and the game bar pins to the
+      // top in its place.
+      expect(html).toMatch(/<header[^>]*class="[^"]*hidden md:block/);
+      expect(html).toMatch(/class="sticky top-0[^"]*md:top-14/);
+    },
+  );
+
+  it("keeps the site header on the difficulty picker", () => {
+    expect(render("/games/higher")).not.toMatch(
+      /<header[^>]*class="[^"]*hidden md:block/,
+    );
+  });
+});
+
+// A touch screen can't hover, so a control whose only answer to the pointer
+// is a hover style gives a phone no answer at all. Every hover on a control
+// has a pressed twin with the same base, in the same class string.
+describe("every control answers a tap", () => {
+  // The one hover that isn't on a control: a dex row lights up under the
+  // pointer to help an eye track it across the table. Only the name inside the
+  // row is a link, and it has its twin.
+  const NOT_A_CONTROL = new Set(["src/components/DexRow.jsx bg-surface"]);
+
+  it("gives every hover a pressed twin", () => {
+    const missing = [];
+    let hovers = 0;
+    for (const { file, line, parsed } of classStrings({ single: true })) {
+      const tokens = new Set(parsed.map((p) => p.token));
+      for (const { variant, base, token } of parsed) {
+        if (!/(^|:)(group-)?hover$/.test(variant)) continue;
+        if (NOT_A_CONTROL.has(`${file} ${base}`)) continue;
+        hovers++;
+        const twin = `${variant.replace(/hover$/, "active")}:${base}`;
+        if (!tokens.has(twin)) missing.push(`${file}:${line} ${token}`);
+      }
+    }
+    // Non-vacuous: the site has a good number of hover styles.
+    expect(hovers).toBeGreaterThan(15);
+    expect(missing).toEqual([]);
   });
 });
 

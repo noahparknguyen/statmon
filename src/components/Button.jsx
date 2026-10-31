@@ -10,16 +10,21 @@ import { Link } from "react-router";
 // for an action that shouldn't compete with what it sits under, such as "Clear
 // all filters" and "Clear record".
 //
+// Every hover has a pressed twin with the same look, because a touch screen
+// can't hover: on a phone, the press is the only answer a button gives.
+//
 // Class strings are written out in full rather than composed from fragments, so
 // Tailwind's scanner can see every utility.
 const BASE =
   "inline-flex items-center gap-2 rounded-full text-button transition-colors";
 
 const VARIANT = {
-  primary: "bg-accent text-accent-contrast hover:bg-accent-hover",
+  primary:
+    "bg-accent text-accent-contrast hover:bg-accent-hover active:bg-accent-hover",
   secondary:
-    "bg-elevated border border-border-subtle text-secondary hover:text-primary hover:border-border-strong",
-  ghost: "text-tertiary hover:bg-elevated hover:text-primary",
+    "bg-elevated border border-border-subtle text-secondary hover:text-primary hover:border-border-strong active:text-primary active:border-border-strong",
+  ghost:
+    "text-tertiary hover:bg-elevated hover:text-primary active:bg-elevated active:text-primary",
 };
 
 const SIZE = {

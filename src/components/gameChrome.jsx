@@ -141,12 +141,12 @@ export function clashVars(i, n, dealt = 0) {
 // The whole card is the control, so the panels in its thumbnail take no
 // handler and render as <div>s, never controls nested inside a control.
 export const GAME_CARD =
-  "group flex h-full w-full flex-col overflow-hidden rounded-lg border border-border-subtle bg-surface text-left transition-colors hover:border-border-strong";
+  "group flex h-full w-full flex-col overflow-hidden rounded-lg border border-border-subtle bg-surface text-left transition-colors hover:border-border-strong active:border-border-strong";
 export const GAME_CARD_BODY = "flex flex-1 flex-col gap-1 p-4";
 export const GAME_CARD_TITLE = "flex items-center gap-1.5 text-h4 text-primary";
-// The arrow after a card's title responds to the card's hover.
+// The arrow after a card's title responds to the card's hover and press.
 export const GAME_CARD_ARROW =
-  "text-tertiary transition-colors group-hover:text-secondary";
+  "text-tertiary transition-colors group-hover:text-secondary group-active:text-secondary";
 
 // The round's card, which carries the question and then the verdict on the
 // board. A surface: 16px of padding, the lg radius, and the overlay shadow,
