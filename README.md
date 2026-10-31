@@ -71,7 +71,7 @@ The dataset, sprites, and fonts are already committed, so that's all it takes. W
 - `check:docs`: every link and anchor in this README.
 - `sweep:widths`: headless Chrome across 29 routes at 14 widths. No page may scroll sideways or show its footer on load. Every touch target has to meet WCAG 2.5.8.
 
-On every push to `main`, GitHub Actions runs the same ten. `npm run shoot:docs` regenerates this README's screenshots from the built site, and `npm run build:icons` redraws the icons from `public/favicon.svg`.
+On every push to `main`, GitHub Actions runs the same ten. `npm run shoot:docs` regenerates this README's screenshots from the built site, and `npm run build:icons` redraws the icons from `public/favicon.svg`. `npm run shoot:phone` photographs every page at two phone sizes, a screen at a time, for reviewing the phone layouts by eye.
 
 ## Limits
 

@@ -44,6 +44,7 @@
     "check:icons": "node scripts/check-icons.mjs",
     "sweep:widths": "node scripts/sweep-widths.mjs",
     "shoot:docs": "node scripts/shoot-docs.mjs",
+    "shoot:phone": "node scripts/shoot-phone.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

@@ -22,15 +22,12 @@
  *   npm run sweep:widths -- --json  # machine-readable
  */
 
-import { createServer } from "node:http";
-import { readFile, writeFile, rm } from "node:fs/promises";
+import { writeFile, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { requireChrome } from "./chrome.mjs";
-
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const DIST = path.join(ROOT, "dist");
+import { DIST, serveBuild } from "./serve.mjs";
+import { ENTRIES } from "./routes.mjs";
 
 // Every breakpoint boundary, the common device widths, and, on purpose, the
 // awkward middles between them, which is where layout bugs hide.
@@ -41,101 +38,8 @@ const WIDTHS = [
   320, 360, 375, 383, 384, 390, 430, 600, 700, 768, 900, 1024, 1280, 1440,
 ];
 
-const ROUTES = [
-  "/",
-  "/compare",
-  "/compare/volcarona/vs/chandelure",
-  "/compare/charizard/vs/blastoise?asof=1",
-  // The widest ability roster in the dex (38 characters over three chips), and
-  // the older-generation case that renders a corrected STAB chip: the two
-  // shapes the card's 88px controls band has to hold.
-  "/compare/hydrapple/vs/happiny",
-  "/compare/krookodile/vs/gengar?asof=6",
-  "/dex",
-  "/dex?asof=1",
-  "/types",
-  "/types/water/flying",
-  "/types/electric?as=eelektross",
-  "/games",
-  // A bare game route is the start screen, so the boards need routes with
-  // settings to be measured.
-  "/games/higher?stats=speed",
-  "/games/higher",
-  // Four contenders is the widest a round gets, and it's the layout that
-  // stacks into a 2×2 below `lg`, where the verdict card has to sit between
-  // the rows rather than on top of them.
-  "/games/higher?stats=speed&n=4",
-  // A heavily filtered game: the narrowest pool the setup panel can produce
-  // that still plays, and a Gen 1 lens, which changes the stat chips under it.
-  "/games/higher?stats=speed&gen=1&type=water",
-  "/games/higher?asof=1",
-  // One route per tier: the answer column changes width with the tier, and the
-  // hard board is the only one carrying artwork and an ability pill.
-  "/games/effective",
-  "/games/effective?tier=easy",
-  "/games/effective?tier=medium",
-  "/games/effective?tier=hard",
-  "/games/effective?tier=hard&type=ghost&asof=5",
-  // Panels that only exist after a click: the games' setup dialogue and the
-  // dex's phone filter panel. Each is opened by clicking its button first.
-  // The setup dialogue, opened from a game in progress, so it needs a URL with
-  // settings, since a bare one is the start screen. Both games, because their
-  // panels hold different groups.
-  ["/games/higher?stats=speed", "Setup"],
-  ["/games/effective?tier=hard", "Setup"],
-  // And from the start screen, which is the other way in.
-  ["/games/higher", "Customise"],
-  ["/dex", "Filters"],
-  "/credits",
-  "/style",
-  "/no-such-page",
-];
-
-// A route is either a path, or a path plus the visible text of a button to
-// click before measuring, which is how a disclosure or a modal gets swept at
-// all. The label keeps the two apart in the report.
-const ENTRIES = ROUTES.map((r) =>
-  Array.isArray(r)
-    ? { route: r[0], open: r[1], label: `${r[0]} [${r[1]}]` }
-    : { route: r, open: null, label: r },
-);
-
-const MIME = {
-  ".html": "text/html",
-  ".js": "text/javascript",
-  ".css": "text/css",
-  ".json": "application/json",
-  ".png": "image/png",
-  ".webp": "image/webp",
-  ".svg": "image/svg+xml",
-  ".ico": "image/x-icon",
-  ".woff2": "font/woff2",
-};
-
 /* ---- serve dist/ with the production SPA fallback ---- */
-const server = createServer(async (req, res) => {
-  const url = new URL(req.url, "http://localhost");
-  const file = path.join(DIST, decodeURIComponent(url.pathname));
-  // Resolve inside dist only; anything else falls through to index.html.
-  const safe = file.startsWith(DIST) ? file : DIST;
-  for (const candidate of [safe, path.join(DIST, "index.html")]) {
-    try {
-      const body = await readFile(candidate);
-      res.writeHead(200, {
-        "Content-Type": MIME[path.extname(candidate)] ?? "text/plain",
-      });
-      return res.end(body);
-    } catch {
-      /* try the fallback */
-    }
-  }
-  res.writeHead(404).end("not found");
-});
-
-const port = await new Promise((resolve) => {
-  server.listen(0, "127.0.0.1", () => resolve(server.address().port));
-});
-const origin = `http://127.0.0.1:${port}`;
+const { origin, close } = await serveBuild();
 
 /* ---- harness: one iframe per route, measured at a given width ---- */
 const HARNESS = `<!doctype html><meta charset="utf-8"><title>sweep</title>
@@ -383,7 +287,7 @@ const dom = await new Promise((resolve, reject) => {
 });
 
 await rm(harnessPath, { force: true });
-server.close();
+close();
 
 const match = dom.match(/SWEEP_JSON:(\[.*?\])<\/pre>/s);
 if (!match) {

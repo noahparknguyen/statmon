@@ -17,27 +17,11 @@
  *   npm run build && npm run shoot:docs
  */
 
-import { createServer } from "node:http";
 import { readFile, stat, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { requireChrome } from "./chrome.mjs";
-
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const DIST = path.join(ROOT, "dist");
-
-const MIME = {
-  ".html": "text/html",
-  ".js": "text/javascript",
-  ".css": "text/css",
-  ".json": "application/json",
-  ".png": "image/png",
-  ".webp": "image/webp",
-  ".svg": "image/svg+xml",
-  ".ico": "image/x-icon",
-  ".woff2": "font/woff2",
-};
+import { ROOT, DIST, serveBuild } from "./serve.mjs";
 
 // Each shot is [url, width, height, output].
 //
@@ -100,38 +84,12 @@ const SHOTS = [
 const CENTRED = new Set(["docs/preview.png", "public/og-image.png"]);
 const CENTRE_TOLERANCE = 2; // px
 
-/* ---- serve the repo root, with the app's SPA fallback under it ---- */
-const server = createServer(async (req, res) => {
-  const url = new URL(req.url, "http://localhost");
-  const pathname = decodeURIComponent(url.pathname);
-
-  // /docs/... and /public/... come from the repo; everything else is the built
-  // app, falling back to index.html the way Cloudflare does (wrangler.jsonc).
-  const fromRepo =
-    pathname.startsWith("/docs/") || pathname.startsWith("/public/");
-  const candidates = fromRepo
-    ? [path.join(ROOT, pathname)]
-    : [path.join(DIST, pathname), path.join(DIST, "index.html")];
-
-  for (const candidate of candidates) {
-    if (!candidate.startsWith(ROOT)) continue; // no traversal out of the repo
-    try {
-      const body = await readFile(candidate);
-      res.writeHead(200, {
-        "Content-Type": MIME[path.extname(candidate)] ?? "text/plain",
-      });
-      return res.end(body);
-    } catch {
-      /* try the fallback */
-    }
-  }
-  res.writeHead(404).end("not found");
+/* ---- serve the built app, with /docs/ and /public/ from the repo ---- */
+// The generator at /docs/og-image.html loads the fonts from ../public/fonts, so
+// both prefixes come from the repo, and everything else is the built app.
+const { origin, close } = await serveBuild({
+  fromRepo: ["/docs/", "/public/"],
 });
-
-const port = await new Promise((resolve) => {
-  server.listen(0, "127.0.0.1", () => resolve(server.address().port));
-});
-const origin = `http://127.0.0.1:${port}`;
 
 const CHROME = await requireChrome("shoot:docs");
 
@@ -231,7 +189,7 @@ for (const [url, width, height, out, opts = {}] of SHOTS) {
   );
 }
 
-server.close();
+close();
 
 if (problems.length) {
   console.error(`\n── ${problems.length} problem(s) ──────────────`);
