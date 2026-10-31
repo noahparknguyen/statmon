@@ -304,6 +304,26 @@
        first" at 320px and 18 doesn't. Audited as group 11, which reads this
        value. */
     --flame-text-inset: 18%;
+
+    /* The strip along the bottom edge that the page has to keep clear: an
+       iPhone's home indicator, or a gesture bar the page is drawn behind. The
+       tab bar, the footer, and the scroll padding below all read it from here
+       rather than from env() directly, so the override below reaches them all. */
+    --inset-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Firefox for Android 150 and later reports Android's navigation bar as this
+     inset while its toolbar is showing, though it never draws the page behind
+     that bar, so a bar padded by it grows by the navigation bar's 48px whenever
+     you scroll up (https://bugzilla.mozilla.org/show_bug.cgi?id=2057232).
+     Firefox never needs the space, so it gets none. The test is
+     `-moz-appearance` because only Firefox supports it: Firefox on an iPhone
+     is built on WebKit, and keeps the home indicator's inset. Remove this once
+     that bug is fixed. */
+  @supports (-moz-appearance: none) {
+    :root {
+      --inset-bottom: 0px;
+    }
   }
 
   html {
@@ -311,11 +331,11 @@
     text-rendering: optimizeLegibility;
     /* Bars pinned over the page would hide what keyboard focus scrolls to, so
        scrolling keeps clear of them (WCAG 2.4.11): the header's 56px at the
-       top, and on a phone the tab bar's 56px plus the home indicator's inset
-       at the bottom. */
+       top, and on a phone the tab bar's 56px plus the bottom inset at the
+       bottom. */
     scroll-padding-top: 3.5rem;
     @variant max-md {
-      scroll-padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+      scroll-padding-bottom: calc(3.5rem + var(--inset-bottom));
     }
   }
 

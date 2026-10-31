@@ -1781,6 +1781,37 @@ describe("the phone's tab bar", () => {
   });
 });
 
+// The strip along the bottom edge the page keeps clear. Firefox for Android
+// reports it wrongly while its toolbar shows, so it's read from one property
+// that Firefox overrides, and nothing may read env() around it.
+describe("the bottom inset", () => {
+  const css = readFileSync("src/index.css", "utf8");
+
+  it("is read from env() in exactly one place", () => {
+    const readers = readdirSync("src", { recursive: true })
+      .filter((f) => /\.(jsx?|css)$/.test(f) && !/\.test\./.test(f))
+      .flatMap((f) => {
+        const hits = readFileSync(`src/${f}`, "utf8").match(
+          /env\(safe-area-inset-bottom\)/g,
+        );
+        return hits ? hits.map(() => f) : [];
+      });
+    expect(readers).toEqual(["index.css"]);
+    expect(css).toContain("--inset-bottom: env(safe-area-inset-bottom);");
+  });
+
+  it("is zero in Firefox, through a test only Firefox passes", () => {
+    expect(css).toMatch(
+      /@supports \(-moz-appearance: none\) \{\s*:root \{\s*--inset-bottom: 0px;/,
+    );
+  });
+
+  it("pads the tab bar and the footer", () => {
+    const html = render("/about");
+    expect(html.match(/padding-bottom:var\(--inset-bottom\)/g)).toHaveLength(2);
+  });
+});
+
 // A touch screen can't hover, so a control whose only answer to the pointer
 // is a hover style gives a phone no answer at all. Every hover on a control
 // has a pressed twin with the same base, in the same class string.

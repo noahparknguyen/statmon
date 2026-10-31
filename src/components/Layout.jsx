@@ -338,16 +338,18 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      {/* The bottom safe-area inset is the footer's alone: it's the only thing
-          that ends up under a phone's home indicator, and on the body it would
-          add dead space to every page on phones that have one.
+      {/* The bottom inset is the footer's alone: it's the only thing that
+          ends up under a phone's home indicator, and on the body it would add
+          dead space to every page on phones that have one. It's read from
+          `--inset-bottom` (index.css) rather than from env(), for one
+          browser that reports it wrongly.
 
           No top margin: the space before the footer is the page's own bottom
           padding, and nothing else. */}
       {!playing && (
         <footer
           className="border-t border-border-subtle"
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          style={{ paddingBottom: "var(--inset-bottom)" }}
         >
           <h2 className="sr-only">Site information</h2>
           <div className="max-w-content mx-auto px-4 py-8 md:py-10">
@@ -446,7 +448,7 @@ export default function Layout() {
             className="fixed inset-x-0 bottom-0 border-t border-border-subtle bg-base/85 backdrop-blur md:hidden"
             style={{
               zIndex: "var(--z-sticky)",
-              paddingBottom: "env(safe-area-inset-bottom)",
+              paddingBottom: "var(--inset-bottom)",
             }}
           >
             <div className="grid grid-cols-4">
