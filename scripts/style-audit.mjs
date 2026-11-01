@@ -119,7 +119,10 @@ const EMPHASIS = new Set(["font-display", "font-semibold"]);
 // taste. A new one is added here with its working, or it fails.
 const ARBITRARY = new Map([
   ["min-h-[21px]", "a compact chip: 11px text, py-1, a 1px border each side"],
-  ["min-h-[26rem]", "the game board's floor on a landscape phone"],
+  [
+    "min-h-[26rem]",
+    "the game board's floor in a short window not held sideways",
+  ],
   ["h-[72svh]", "Home's hero wall, so the board crests the fold"],
   [
     "h-[56svh]",

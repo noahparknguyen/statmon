@@ -264,10 +264,11 @@ export default function Layout() {
       {/* Over a game board on a phone, the header steps aside, and the game
           bar takes the top of the screen: the board is the screen there, and
           a bar holding only the wordmark would take 56px of it. The game bar's
-          own back control leads out. */}
+          own back control leads out. The same on a phone held sideways, at any
+          width (`sideways`), where 56px is a seventh of the screen. */}
       <header
         className={`sticky top-0 border-b border-border-subtle bg-base/85 backdrop-blur ${
-          playing ? "hidden md:block" : ""
+          playing ? "hidden md:block sideways:hidden" : ""
         }`}
         style={{ zIndex: "var(--z-sticky)" }}
       >

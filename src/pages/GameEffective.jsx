@@ -48,9 +48,11 @@ const GAME = "effective";
 // Attacker, answers, defender. Below `md` the three stack, as the stat game's
 // board does: on a phone, a face-off is top against bottom, with the answers
 // between. `md` rather than `sm`, because three columns at 480px would leave
-// each panel about 110px wide, too small to see the Pokémon.
+// each panel about 110px wide, too small to see the Pokémon. A phone held
+// sideways is side by side at any width (`sideways`): its screen is too short
+// for a stack, which put the defender below the fold.
 const GRID =
-  "grid-cols-1 grid-rows-[1fr_auto_1fr] md:grid-cols-[1fr_auto_1fr] md:grid-rows-1";
+  "grid-cols-1 grid-rows-[1fr_auto_1fr] md:grid-cols-[1fr_auto_1fr] md:grid-rows-1 sideways:grid-cols-[1fr_auto_1fr] sideways:grid-rows-1";
 
 function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
   const [session, setSession] = useState(NEW_SESSION);

@@ -243,13 +243,16 @@
   --default-transition-duration: var(--dur-fast);
 }
 
-/*  The one height variant: a window too short to show a whole game board,
-    which is the board's 26rem floor under the two 3.5rem bars. Below it, the
-    board scrolls, so the type game keeps its answers on the centre line, and
-    puts its verdict on the attacking panel instead of above them, where it
-    would push the answers off the bottom of the screen. Only `md:short:` is
-    used, since a stacked board handles a short screen on its own. */
-@custom-variant short (@media (max-height: 33rem));
+/*  The one height variant: a phone held sideways, which is a screen wider
+    than it's tall and under 33rem, the height a game board needs under the
+    two 3.5rem bars. It's for the game boards, which are the one place a
+    phone gets turned. There a board takes the whole screen, as it does on a
+    phone held upright, and lays its panels side by side whatever the width,
+    since stacked on a 375px-tall screen they shrank to sprites and the type
+    game's defender fell below the fold. Landscape as well as short, because a
+    short window that's narrow too, a phone's split screen, has no room for
+    three columns, and stacks as a phone does. */
+@custom-variant sideways (@media (orientation: landscape) and (max-height: 33rem));
 
 /*  NOTE ON SPACING: Tailwind v4's default spacing base (--spacing: 0.25rem)
     already gives the 4px scale exactly: p-1 is 4px, p-6 24px, gap-8 32px. So

@@ -1171,20 +1171,68 @@ describe("a phone's type chart", () => {
       'Attacking <span aria-hidden="true" class="text-tertiary">— </span>',
     );
   });
+
+  it("says the chart scrolls only where it does", () => {
+    // It fits from about 757px, so the line goes at md, not lg.
+    const html = render("/types").replace(/<!-- -->/g, "");
+    expect(html).toContain(
+      '<span class="md:hidden"> Scroll the chart sideways for the rest.</span>',
+    );
+  });
 });
 
 describe("a phone's home", () => {
   it("keeps the hero short enough that the board crests the fold", () => {
     // 72% of the screen left the first screen ending on the comparison's
     // heading, under a phone's two bars.
-    expect(render("/")).toContain(
-      'class="relative overflow-hidden h-[56svh] md:h-[72svh] min-h-[26rem]',
+    const html = render("/");
+    expect(html).toContain(
+      'class="relative overflow-hidden h-[56svh] md:h-[72svh] flex',
     );
+    // No floor: 26rem held a 375×667 phone's board under the fold, and made
+    // the hero taller than a phone held sideways.
+    expect(html).not.toMatch(/h-\[56svh\][^"]*min-h-/);
   });
 
   it("leaves 96px between sections, and 144 where the dex's figures show", () => {
     const sections = render("/").match(/<section class="mt-24 lg:mt-36">/g);
     expect(sections).toHaveLength(3);
+  });
+});
+
+describe("a phone held sideways", () => {
+  it("is landscape and too short for a board under two bars", () => {
+    const css = readFileSync("src/index.css", "utf8");
+    expect(css).toContain(
+      "@custom-variant sideways (@media (orientation: landscape) and (max-height: 33rem));",
+    );
+    // It replaced `short`, which nothing else used.
+    expect(css).not.toContain("@custom-variant short");
+  });
+
+  it("gives a game the whole screen, as a phone held upright does", () => {
+    const html = render("/games/higher?stats=speed");
+    expect(html).toMatch(/<header class="[^"]*hidden md:block sideways:hidden/);
+    expect(html).toContain("md:top-14 sideways:top-0");
+    expect(html).toContain("flex-1 min-h-[26rem] sideways:min-h-0");
+  });
+
+  it("lays every board out side by side", () => {
+    expect(render("/games/higher?stats=speed")).toContain(
+      "sm:grid-cols-2 sm:grid-rows-1 sideways:grid-cols-2 sideways:grid-rows-1",
+    );
+    const four = render("/games/higher?stats=speed&n=4");
+    expect(four).toContain(
+      "lg:grid-cols-4 lg:grid-rows-1 sideways:grid-cols-4 sideways:grid-rows-1",
+    );
+    // With four in a row, the question card sits over the panels' tops, so
+    // each panel starts its artwork below it.
+    expect(four).toContain("sideways:pt-16");
+    const effective = render("/games/effective?tier=hard");
+    expect(effective).toContain(
+      "sideways:grid-cols-[1fr_auto_1fr] sideways:grid-rows-1",
+    );
+    expect(effective).toContain("sideways:grid sideways:w-64");
   });
 });
 

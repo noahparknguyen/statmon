@@ -30,7 +30,7 @@ export default function GameBar({ title, session, best, onSetup, onRestart }) {
 
   return (
     <div
-      className="sticky top-0 border-b border-border-subtle bg-base/85 backdrop-blur md:top-14"
+      className="sticky top-0 border-b border-border-subtle bg-base/85 backdrop-blur md:top-14 sideways:top-0"
       style={{ zIndex: "var(--z-raised)" }}
     >
       <div className="max-w-content mx-auto flex h-14 items-center gap-3 px-4 sm:gap-6">
@@ -53,7 +53,8 @@ export default function GameBar({ title, session, best, onSetup, onRestart }) {
 
             On a phone it's the only way off the board, since neither the site
             header nor the tab bar is there, so it carries a back arrow: a
-            touch screen has no hover to show that a name is a control. */}
+            touch screen has no hover to show that a name is a control. Held
+            sideways too, where the header steps aside as well (Layout). */}
         <h1 className="text-h3 min-w-0 truncate text-primary">
           {/* Below `xs` the name gives way to the arrow alone: beside the
               score and Setup there's no room for "Effective.", and a truncated
@@ -63,7 +64,10 @@ export default function GameBar({ title, session, best, onSetup, onRestart }) {
             onClick={onRestart}
             className="inline-flex h-14 max-w-full items-center gap-1 truncate transition-colors hover:text-accent active:text-accent"
           >
-            <LuChevronLeft aria-hidden className="shrink-0 md:hidden" />
+            <LuChevronLeft
+              aria-hidden
+              className="shrink-0 md:hidden sideways:block"
+            />
             {/* `aria-hidden` on the visible half, with the full accessible name
                 in the screen-reader half. Otherwise a screen reader would hear
                 the name twice ("Effective. Effective, choose a different

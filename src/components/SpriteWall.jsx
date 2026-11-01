@@ -71,7 +71,7 @@ function Block() {
 // page jump as you scroll. On a desktop it's the same as `vh`.
 export default function SpriteWall({ children }) {
   return (
-    <section className="relative overflow-hidden h-[56svh] md:h-[72svh] min-h-[26rem] flex items-center justify-center">
+    <section className="relative overflow-hidden h-[56svh] md:h-[72svh] flex items-center justify-center">
       {/* Decorative: 392 sprite names read out in a row would be noise, and the
           heading on top is what the section is about. */}
       <div aria-hidden className="absolute inset-0">

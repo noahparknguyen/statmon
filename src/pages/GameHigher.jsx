@@ -67,7 +67,9 @@ const question = (n, stat) =>
 
 // Two panels split down the middle, and four split again. Below `sm` a pair
 // stacks rather than shrinking to 160px each: on a phone, a face-off is top
-// against bottom.
+// against bottom. A phone held sideways (`sideways`) lays any count out in one
+// row, as `lg` does: its screen is too short for a stack, where four panels
+// were 150px tall and their Pokémon sprite-sized.
 //
 // The middle row is the overlay's. Centring the verdict absolutely works while
 // the panels are one row, where it lands on the divider, over artwork. Once
@@ -76,16 +78,16 @@ const question = (n, stat) =>
 // cover half the answer. Stacked, the overlay is a real grid row between the
 // halves and nothing overlaps. Side by side, it's an absolute layer again.
 const GRID = {
-  2: "grid-cols-1 grid-rows-[1fr_auto_1fr] sm:grid-cols-2 sm:grid-rows-1",
-  4: "grid-cols-2 grid-rows-[1fr_auto_1fr] lg:grid-cols-4 lg:grid-rows-1",
+  2: "grid-cols-1 grid-rows-[1fr_auto_1fr] sm:grid-cols-2 sm:grid-rows-1 sideways:grid-cols-2 sideways:grid-rows-1",
+  4: "grid-cols-2 grid-rows-[1fr_auto_1fr] lg:grid-cols-4 lg:grid-rows-1 sideways:grid-cols-4 sideways:grid-rows-1",
 };
 
 // The breakpoint at which each count stops stacking, where the overlay stops
 // being a row and becomes a layer. Written out in full rather than built up, so
 // Tailwind's scanner sees every class.
 const OVERLAY = {
-  2: "col-span-full flex justify-center bg-base px-4 py-3 sm:pointer-events-none sm:absolute sm:inset-0 sm:grid sm:justify-items-center sm:bg-transparent sm:p-4",
-  4: "col-span-full flex justify-center bg-base px-4 py-3 lg:pointer-events-none lg:absolute lg:inset-0 lg:grid lg:justify-items-center lg:bg-transparent lg:p-4",
+  2: "col-span-full flex justify-center bg-base px-4 py-3 sm:pointer-events-none sm:absolute sm:inset-0 sm:grid sm:justify-items-center sm:bg-transparent sm:p-4 sideways:pointer-events-none sideways:absolute sideways:inset-0 sideways:grid sideways:justify-items-center sideways:bg-transparent sideways:p-4",
+  4: "col-span-full flex justify-center bg-base px-4 py-3 lg:pointer-events-none lg:absolute lg:inset-0 lg:grid lg:justify-items-center lg:bg-transparent lg:p-4 sideways:pointer-events-none sideways:absolute sideways:inset-0 sideways:grid sideways:justify-items-center sideways:bg-transparent sideways:p-4",
 };
 
 // Where the two cards sit once the panels are side by side. They share the
@@ -101,8 +103,8 @@ const OVERLAY = {
 //
 // Stacked, the cards are a grid row between the panels: see VERDICT_WRAP.
 const PROMPT_PLACE = {
-  2: "sm:col-start-1 sm:row-start-1 sm:self-start",
-  4: "lg:col-start-1 lg:row-start-1 lg:self-start",
+  2: "sm:col-start-1 sm:row-start-1 sm:self-start sideways:col-start-1 sideways:row-start-1 sideways:self-start",
+  4: "lg:col-start-1 lg:row-start-1 lg:self-start sideways:col-start-1 sideways:row-start-1 sideways:self-start",
 };
 
 // Stacked, the verdict card is about 80px taller than the question card, so in
@@ -123,14 +125,17 @@ const PROMPT_PLACE = {
 // Side by side, the wrapper is an ordinary item in the layer's one cell,
 // centred, with the question above it at the top.
 const VERDICT_WRAP = {
-  2: "absolute inset-x-4 top-3 flex justify-center sm:static sm:col-start-1 sm:row-start-1 sm:self-center",
-  4: "absolute inset-x-4 top-3 flex justify-center lg:static lg:col-start-1 lg:row-start-1 lg:self-center",
+  2: "absolute inset-x-4 top-3 flex justify-center sm:static sm:col-start-1 sm:row-start-1 sm:self-center sideways:static sideways:col-start-1 sideways:row-start-1 sideways:self-center",
+  4: "absolute inset-x-4 top-3 flex justify-center lg:static lg:col-start-1 lg:row-start-1 lg:self-center sideways:static sideways:col-start-1 sideways:row-start-1 sideways:self-center",
 };
 
 // Once resolved and while the board stacks, the question card only holds the
 // row's height under the verdict: it's invisible, so it doesn't show through
 // the verdict's fade-in. Side by side, it stays on screen.
-const PROMPT_SPACER = { 2: "invisible sm:visible", 4: "invisible lg:visible" };
+const PROMPT_SPACER = {
+  2: "invisible sm:visible sideways:visible",
+  4: "invisible lg:visible sideways:visible",
+};
 
 function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
   const [session, setSession] = useState(NEW_SESSION);
@@ -234,6 +239,11 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
         // A two-up round gives each panel half the screen, so its name and
         // value get the bigger of the two sizes.
         size={settings.n === 2 ? "lg" : "md"}
+        // Four in a row on a phone held sideways leave no room above the
+        // artwork, and the question card, centred at the top, sat over the two
+        // middle Pokémon. 64px of each panel's own tint clears it. A pair needs
+        // none: the card sits over the divider, between the two artworks.
+        className={settings.n === 4 ? "sideways:pt-16" : ""}
         // Only the game board shakes. Home's preview and the games index use
         // the same component standing still: a preview that rattles as it
         // scrolls into view looks like a glitch, not a game.

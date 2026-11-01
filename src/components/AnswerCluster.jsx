@@ -38,9 +38,9 @@ const SLOT = "flex w-4 shrink-0 items-center justify-center";
 // too short for both do the answers sit a little lower, and they sit there
 // before you answer, so the verdict appearing still moves nothing.
 //
-// A window too short to show the whole board (`short`, in index.css) is the
-// exception: a phone held sideways. The board scrolls there, and the minimum
-// would push the answers off the screen, so the spaces go back to equal, and
+// A phone held sideways (`sideways`, in index.css) is side by side at any
+// width, and the exception: the board is the screen's height there, and the
+// minimum would push the answers off it, so the spaces go back to equal, and
 // the verdict is centred over the attacking panel instead. The cluster stops
 // being the layer's containing block, and the board takes over: the attacking
 // column ends half a board, plus half this 16rem column and one 1px divider,
@@ -59,7 +59,7 @@ const SLOT = "flex w-4 shrink-0 items-center justify-center";
 // an absolutely positioned child an unnamed end is the container's far edge,
 // which would put the card at the bottom of the column.
 const CLUSTER_ROWS =
-  "md:grid-rows-[minmax(15rem,1fr)_auto_1fr] md:short:static md:short:grid-rows-[1fr_auto_1fr]";
+  "md:grid-rows-[minmax(15rem,1fr)_auto_1fr] sideways:static sideways:grid-rows-[1fr_auto_1fr]";
 
 export default function AnswerCluster({
   answers,
@@ -72,17 +72,17 @@ export default function AnswerCluster({
 
   return (
     <div
-      className={`contents md:relative md:grid md:w-64 md:bg-base md:px-4 ${CLUSTER_ROWS}`}
+      className={`contents md:relative md:grid md:w-64 md:bg-base md:px-4 sideways:grid sideways:w-64 sideways:bg-base sideways:px-4 ${CLUSTER_ROWS}`}
     >
       {verdict ? (
         <div
-          className="pointer-events-none absolute inset-0 row-start-1 row-end-2 grid grid-rows-[1fr_auto] content-center justify-items-center p-4 md:short:right-[calc(50%+8rem+1px)] md:short:grid-rows-[1fr_auto_1fr]"
+          className="pointer-events-none absolute inset-0 row-start-1 row-end-2 grid grid-rows-[1fr_auto] content-center justify-items-center p-4 sideways:right-[calc(50%+8rem+1px)] sideways:grid-rows-[1fr_auto_1fr]"
           style={{ zIndex: "var(--z-raised)" }}
         >
           <div className="row-start-2">{verdict}</div>
         </div>
       ) : null}
-      <div className="bg-base p-4 md:row-start-2 md:p-0">
+      <div className="bg-base p-4 md:row-start-2 md:p-0 sideways:row-start-2 sideways:p-0">
         <div
           role="group"
           aria-label="How effective?"

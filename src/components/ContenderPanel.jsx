@@ -125,12 +125,13 @@ export default function ContenderPanel({
       // No aria-label: the accessible name comes from the contents, the
       // Pokémon's name and types, which is what a speech-control user would
       // say (WCAG 2.5.3).
-      // `className` is for layout only, and exists for corner radius. The
-      // winner's marking is an inset ring that traces the panel's own box, so
-      // in a thumbnail clipped by a card's `rounded-lg`, a square panel would
-      // get square ring corners that the card then cuts off. The ring has to
-      // be told about the curve. The panel sets no radius of its own, so
-      // appending one here can't clash.
+      // `className` is for layout only: corner radius, and room at the top.
+      // The winner's marking is an inset ring that traces the panel's own box,
+      // so in a thumbnail clipped by a card's `rounded-lg`, a square panel
+      // would get square ring corners that the card then cuts off. The ring
+      // has to be told about the curve. The room is for a board whose
+      // question card sits over its panels' tops (GameHigher). The panel sets
+      // neither of its own, so appending one here can't clash.
       className={`${PANEL_BOX} ${S.box} ${
         resolved && !won && !picked ? "opacity-50" : ""
       } ${className}`}

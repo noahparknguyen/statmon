@@ -2,8 +2,9 @@
 /**
  * Statmon: responsive width sweep
  * ---------------------------------------------------------------------------
- * Loads every route at every width that matters, and asserts the page doesn't
- * scroll sideways, and that no page shows its footer before you scroll.
+ * Loads every route at every width that matters, and on three phones held
+ * sideways, and asserts the page doesn't scroll sideways, and that no page
+ * shows its footer before you scroll.
  *
  * A script, because by hand this check gets done incompletely. A layout can be
  * clean at 390, 768, and 1280 and still overflow at 600 or 700, and a bug you
@@ -12,8 +13,8 @@
  * How it works: `dist/` is served by a throwaway static server with the same
  * SPA fallback Cloudflare uses (wrangler.jsonc), and a harness page loads each
  * route in an iframe sized to the width under test. An iframe has its own
- * viewport, so media queries respond to the iframe's width, which means one
- * browser launch covers every width instead of one launch per width.
+ * viewport, so media queries respond to the iframe's size, which means one
+ * browser launch covers every size instead of one launch per size.
  *
  * Reports `scrollHeight` per route too, since how far a phone has to scroll
  * for the answer is the other thing worth watching.
@@ -38,6 +39,23 @@ const WIDTHS = [
   320, 360, 375, 383, 384, 390, 430, 600, 700, 768, 900, 1024, 1280, 1440,
 ];
 
+// And three phones held sideways, since a screen that short and wide lays the
+// game boards out by its height (the `sideways` variant in index.css): the
+// smallest, an iPhone SE's, and a common one's.
+const SIDEWAYS = [
+  [568, 320],
+  [667, 375],
+  [844, 390],
+];
+
+// Every frame the sweep measures, as [width, height]. The widths are 900px
+// tall, as a desktop or a phone held upright would be.
+const SIZES = [...WIDTHS.map((w) => [w, 900]), ...SIDEWAYS];
+
+// How a frame is named in the report: its width alone at the usual height.
+const sizeLabel = (r) =>
+  r.height === 900 ? `${r.width}px` : `${r.width}×${r.height}`;
+
 /* ---- serve dist/ with the production SPA fallback ---- */
 const { origin, close } = await serveBuild();
 
@@ -47,21 +65,18 @@ const HARNESS = `<!doctype html><meta charset="utf-8"><title>sweep</title>
 <pre id="out">PENDING</pre>
 <script>
 const ENTRIES = ${JSON.stringify(ENTRIES)};
-const WIDTHS = ${JSON.stringify(WIDTHS)};
-// A tall frame, so lazy content and sticky elements settle the way they would
-// on a real screen. Height doesn't affect the horizontal question being asked.
-// It's also the screen the footer check measures against. One height is
-// enough for that: the rule is written in viewport units, so it holds at every
-// height or at none.
-const HEIGHT = 900;
-
-const load = (entry, width) => new Promise((resolve) => {
+const SIZES = ${JSON.stringify(SIZES)};
+// Tall frames for the widths, so lazy content and sticky elements settle the
+// way they would on a real screen, and the frame's height is the screen the
+// footer check measures against. The sideways frames are short on purpose:
+// there the height changes the layout.
+const load = (entry, [width, height]) => new Promise((resolve) => {
   const f = document.createElement("iframe");
   // Width pinned in CSS as well as the attribute. The attribute alone leaves a
   // moment in which the frame is laid out wider, so routes that can't
   // overflow, such as the 404's centred text, would report false overflows.
-  f.width = width; f.height = HEIGHT;
-  f.style.width = width + "px"; f.style.height = HEIGHT + "px";
+  f.width = width; f.height = height;
+  f.style.width = width + "px"; f.style.height = height + "px";
   f.src = entry.route;
   f.onload = () => {
     // Overlay scrollbars, which is what phones have. Without this, the frame
@@ -245,9 +260,9 @@ function targetFailures(doc) {
 
 (async () => {
   const results = [];
-  for (const width of WIDTHS)
+  for (const size of SIZES)
     for (const entry of ENTRIES) {
-      let m = await load(entry, width);
+      let m = await load(entry, size);
       // Re-measure anything that looks like a failure, in a fresh frame.
       // Layout probes in a headless browser are a little racy: a transient
       // caught mid-settle doesn't survive a second, independent measurement,
@@ -259,8 +274,8 @@ function targetFailures(doc) {
       // single lost race among hundreds of checks would otherwise turn the
       // whole sweep red.
       if (m.scrollWidth > m.clientWidth || m.missing)
-        m = await load(entry, width);
-      results.push({ width, route: entry.label, ...m });
+        m = await load(entry, size);
+      results.push({ width: size[0], height: size[1], route: entry.label, ...m });
     }
   document.getElementById("out").textContent =
     "SWEEP_JSON:" + JSON.stringify(results);
@@ -281,12 +296,12 @@ const dom = await new Promise((resolve, reject) => {
       "--disable-gpu",
       "--no-sandbox",
       // Each route × width settles on its own timers, so this budget scales
-      // with ENTRIES.length × WIDTHS.length, and a missing button spends its
+      // with ENTRIES.length × SIZES.length, and a missing button spends its
       // poll budget twice on every width. Running out fails silently: the
       // harness never prints its results, and the sweep reports "could not
       // read", which reads like a missing build or a missing Chrome rather
       // than a timeout. Raise it when the route list grows.
-      "--virtual-time-budget=600000",
+      "--virtual-time-budget=720000",
       "--dump-dom",
       `${origin}/__sweep.html`,
     ],
@@ -320,7 +335,7 @@ if (process.argv.includes("--json")) {
 const overflow = results.filter((r) => r.scrollWidth > r.clientWidth);
 
 console.log(
-  `\nSwept ${ENTRIES.length} routes × ${WIDTHS.length} widths = ${results.length} checks.\n`,
+  `\nSwept ${ENTRIES.length} routes × ${WIDTHS.length} widths and ${SIDEWAYS.length} sideways phones = ${results.length} checks.\n`,
 );
 
 // A disclosure whose button never turned up. Reported first and loudly,
@@ -336,27 +351,27 @@ if (missing.length) {
   const byRoute = new Map();
   for (const r of missing) {
     if (!byRoute.has(r.route)) byRoute.set(r.route, []);
-    byRoute.get(r.route).push(r.width);
+    byRoute.get(r.route).push(sizeLabel(r));
   }
   console.log("Disclosures that never opened:");
-  for (const [route, widths] of byRoute)
+  for (const [route, sizes] of byRoute)
     console.log(
-      `  ✗ ${route} — no button matched at ${widths.sort((a, b) => a - b).join(", ")}px` +
-        ` (${widths.length} of ${WIDTHS.length} widths)`,
+      `  ✗ ${route} — no button matched at ${sizes.join(", ")}` +
+        ` (${sizes.length} of ${SIZES.length} sizes)`,
     );
   console.log();
 }
 
 // Each route's page height at 390px, a common phone width: how far a phone
 // has to scroll.
-const phone = results.filter((r) => r.width === 390);
+const phone = results.filter((r) => r.width === 390 && r.height === 900);
 console.log("Page height at 390px (the scroll cost of an answer):");
 for (const r of phone.sort((a, b) => b.scrollHeight - a.scrollHeight))
   console.log(`  ${String(r.scrollHeight).padStart(5)}px  ${r.route}`);
 
 // WCAG 2.5.8, measured at the narrowest width, where targets are tightest.
 const tooSmall = results
-  .filter((r) => r.width === 320 && r.targets.length)
+  .filter((r) => r.width === 320 && r.height === 900 && r.targets.length)
   .flatMap((r) => r.targets.map((t) => ({ route: r.route, ...t })));
 
 console.log("\nWCAG 2.5.8 target size at 320px:");
@@ -381,7 +396,7 @@ if (early.length === 0) {
 } else {
   for (const r of early)
     console.log(
-      `  ✗ ${r.route} @ ${r.width}px — footer at ${r.footerTop}px on a ${r.viewHeight}px screen`,
+      `  ✗ ${r.route} @ ${sizeLabel(r)} — footer at ${r.footerTop}px on a ${r.viewHeight}px screen`,
     );
 }
 
@@ -391,7 +406,7 @@ if (missing.length) {
 }
 if (overflow.length === 0 && tooSmall.length === 0 && early.length === 0) {
   console.log("\n── 0 horizontal overflow(s) ─────────────────");
-  console.log("  No route scrolls sideways at any width. ✓\n");
+  console.log("  No route scrolls sideways at any size. ✓\n");
   process.exit(0);
 }
 if (overflow.length === 0) {
@@ -408,7 +423,7 @@ if (overflow.length === 0) {
 console.log(`\n── ${overflow.length} horizontal overflow(s) ─────────────────`);
 for (const r of overflow) {
   console.log(
-    `  ✗ ${r.route} @ ${r.width}px — scrollWidth ${r.scrollWidth} > ${r.clientWidth}`,
+    `  ✗ ${r.route} @ ${sizeLabel(r)} — scrollWidth ${r.scrollWidth} > ${r.clientWidth}`,
   );
   for (const o of r.offenders ?? [])
     console.log(`      <${o.tag}> "${o.cls}" right=${o.right} w=${o.width}`);

@@ -23,12 +23,15 @@
 // screen-height shell asks for the space actually left, so there's no sum to
 // get wrong.
 //
-// The minimum stops a phone in landscape crushing the panels to nothing. The
-// board may scroll there, which is the right trade.
-// One `min-h-*` only: two in one string would conflict, and Tailwind resolves
-// that by stylesheet order rather than by the order they're written. `flex-1`
-// already sets `flex-basis: 0`, so nothing needs `min-h-0` here.
-export const BOARD = "flex-1 min-h-[26rem]";
+// The minimum stops a short window crushing the panels to nothing; the board
+// scrolls there instead. Not on a phone held sideways (`sideways`), where the
+// panels sit side by side and need far less height: the board is exactly the
+// screen there, and no round needs scrolling to play.
+// One `min-h-*` per variant: two in one string would conflict, and Tailwind
+// resolves that by stylesheet order rather than by the order they're written.
+// `sideways:min-h-0` only lifts the floor; `flex-1` already sets
+// `flex-basis: 0`, so the board still takes exactly the space left.
+export const BOARD = "flex-1 min-h-[26rem] sideways:min-h-0";
 
 // `gap-px` over the board's own background is the divider, so no panel needs a
 // border, and it stays a hairline at every width.

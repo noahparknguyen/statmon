@@ -65,11 +65,11 @@ The dataset, sprites, and fonts are already committed, so that's all it takes. W
 - `audit:classes`: no class string sets the same CSS property twice. Tailwind resolves those by stylesheet order, not by the order they're written, so the one that wins isn't the one you meant.
 - `audit:styles`: every utility is one the design system allows, as shown on the [style guide](https://statmon.noahpn.dev/style) page. Colours are semantic tokens, text uses the 22 named styles, and spacing, radius, opacity, and layering each come from a closed set. Any other value fails.
 - `check:icons`: every favicon is the size it claims and drawn centred, filling its square, and the SVG they're drawn from uses only palette colours.
-- `test:run`: 553 unit tests, covering the stat math, the dex's sorting and filters, the generation lens, the ability table, both games' question generators, a server render of every route, accessibility and copy regressions, and one implementation of each shared component.
+- `test:run`: 557 unit tests, covering the stat math, the dex's sorting and filters, the generation lens, the ability table, both games' question generators, a server render of every route, accessibility and copy regressions, and one implementation of each shared component.
 - `build`: the production build.
 - `audit:contrast`: WCAG AA contrast for every text and colour pairing, in 13 groups, including text on all 18 type tints, text on the flame gradient, and the edges of the text fields.
 - `check:docs`: every link and anchor in this README.
-- `sweep:widths`: headless Chrome across 33 routes at 14 widths. No page may scroll sideways or show its footer on load. Every touch target has to meet WCAG 2.5.8.
+- `sweep:widths`: headless Chrome across 33 routes at 14 widths and on three phones held sideways. No page may scroll sideways or show its footer on load. Every touch target has to meet WCAG 2.5.8.
 
 On every push to `main`, GitHub Actions runs the same ten. `npm run shoot:docs` regenerates this README's screenshots from the built site, and `npm run build:icons` redraws the icons from `public/favicon.svg`. `npm run shoot:phone` photographs every page at two phone sizes, a screen at a time, for reviewing the phone layouts by eye.
 
