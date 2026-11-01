@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 
-// The shared button: three variants and two sizes, so every page's buttons
+// The shared button: three variants and three sizes, so every page's buttons
 // come from one set of class strings rather than copies that drift apart.
 //
 // Pass `to` to render a react-router <Link> that looks identical to a
@@ -27,9 +27,13 @@ const VARIANT = {
     "text-tertiary hover:bg-elevated hover:text-primary active:bg-elevated active:text-primary",
 };
 
+// `touch` is `md` on a phone and `sm` from `md`: a dialog's footer, whose
+// main action a phone's rules make 44px, in a centred panel on a desktop
+// where the compact size fits.
 const SIZE = {
   md: "h-11 px-6", // page-level CTAs
   sm: "h-9 px-4", // inline controls (Swap)
+  touch: "h-11 px-6 md:h-9 md:px-4", // a dialog's footer
 };
 
 export default function Button({

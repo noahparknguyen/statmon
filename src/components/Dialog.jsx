@@ -6,14 +6,13 @@ import IconButton from "./IconButton";
 // brings three things that would otherwise be hand-written and half right: a
 // focus trap, Esc to close, and the rest of the page going inert.
 //
-// Three placements, chosen by what the dialog holds. Each is a centred panel
+// Two placements, chosen by what the dialog holds. Each is a centred panel
 // from `md` up, and differs only on a phone:
-//   · `center`: a panel in the middle of the screen at every width. The game
-//     setup.
 //   · `sheet`: a panel along a phone's bottom edge, for a short choice made
-//     with the page still in view above it. A Pokémon's ability.
-//   · `full`: the whole of a phone's screen, for a task with the keyboard up.
-//     Picking a Pokémon.
+//     with the page still in view above it. A Pokémon's ability, the dex's
+//     sort and filters, the type chart's controls.
+//   · `full`: the whole of a phone's screen, for a long task or one with the
+//     keyboard up. Picking a Pokémon, and a game's setup.
 //
 // A header, a scrolling body, and an optional footer, as a flex column, rather
 // than one scrolling box with a sticky footer inside it: a sticky footer sits
@@ -32,8 +31,6 @@ const BASE =
 
 // Written out in full rather than composed, so Tailwind's scanner sees each.
 const PLACEMENT = {
-  center:
-    "m-auto max-h-[85svh] w-[min(36rem,calc(100vw-2rem))] rounded-lg border",
   sheet:
     "mx-0 mt-auto mb-0 max-h-[85svh] w-full max-w-full rounded-t-lg border-t md:m-auto md:w-[min(36rem,calc(100vw-2rem))] md:rounded-lg md:border",
   full: "m-0 h-full max-h-full w-full max-w-full md:m-auto md:h-auto md:max-h-[85svh] md:w-[min(36rem,calc(100vw-2rem))] md:rounded-lg md:border",
@@ -44,7 +41,7 @@ export default function Dialog({
   onClose,
   title,
   closeLabel = `Close ${title.toLowerCase()}`,
-  placement = "center",
+  placement = "sheet",
   footer = null,
   children,
 }) {

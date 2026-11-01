@@ -84,7 +84,11 @@ export default function DefenderBar({
         title="Defender"
         placement="sheet"
         footer={
-          <Button size="sm" onClick={() => setSheet(false)} className="ml-auto">
+          <Button
+            size="touch"
+            onClick={() => setSheet(false)}
+            className="ml-auto"
+          >
             Done
           </Button>
         }

@@ -166,9 +166,12 @@ export default function Compare() {
         </div>
       </div>
 
-      {/* A phone's board: one card designed for the screen (VersusBoard). */}
-      <div className="mb-6 max-md:order-1 md:hidden">
+      {/* A phone's board: one card designed for the screen (VersusBoard).
+          The card hides from md and its dialogs don't, so the wrapper itself
+          stays, with nothing in it at md to take space. */}
+      <div className="max-md:order-1 max-md:mb-6">
         <VersusBoard
+          className="md:hidden"
           p1={p1}
           p2={p2}
           v1={v1}

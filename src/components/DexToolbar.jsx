@@ -42,34 +42,40 @@ export default function DexToolbar({ view, onChange, count }) {
   // screen beside it.
   const panelCount = panelFilterCount(view);
 
+  // The sheet sits beside the toolbar, not inside it, because the toolbar
+  // hides from `md`, and a dialog inside a hidden element stays open unseen
+  // and holds the page (VersusBoard). Beside it, the sheet becomes the
+  // desktop's centred panel if the screen widens under it.
   return (
-    <div
-      data-pinned="bar"
-      className="sticky top-14 -mx-4 flex items-center gap-2 bg-base/85 px-4 py-1.5 backdrop-blur md:hidden"
-      style={{ zIndex: "var(--z-raised)" }}
-    >
-      <div className={`${FIELD} min-w-0 flex-1`}>
-        <LuSearch aria-hidden className="shrink-0 text-tertiary" />
-        <input
-          type="search"
-          aria-label="Filter by name"
-          placeholder="Filter by name"
-          value={view.q}
-          onChange={(e) => onChange({ ...view, q: e.target.value })}
-          className={FIELD_INPUT}
-        />
-      </div>
-      {/* Lit when a filter is set, as the chips inside are, with how many. */}
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className={`${CHIP} ${CHIP_FILTER_GEOMETRY} h-11 shrink-0 ${
-          panelCount > 0 ? CHIP_ON : CHIP_OFF
-        }`}
+    <>
+      <div
+        data-pinned="bar"
+        className="sticky top-14 -mx-4 flex items-center gap-2 bg-base/85 px-4 py-1.5 backdrop-blur md:hidden"
+        style={{ zIndex: "var(--z-raised)" }}
       >
-        <LuSlidersHorizontal aria-hidden />
-        Sort &amp; filter{panelCount > 0 && ` (${panelCount})`}
-      </button>
+        <div className={`${FIELD} min-w-0 flex-1`}>
+          <LuSearch aria-hidden className="shrink-0 text-tertiary" />
+          <input
+            type="search"
+            aria-label="Filter by name"
+            placeholder="Filter by name"
+            value={view.q}
+            onChange={(e) => onChange({ ...view, q: e.target.value })}
+            className={FIELD_INPUT}
+          />
+        </div>
+        {/* Lit when a filter is set, as the chips inside are, with how many. */}
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className={`${CHIP} ${CHIP_FILTER_GEOMETRY} h-11 shrink-0 ${
+            panelCount > 0 ? CHIP_ON : CHIP_OFF
+          }`}
+        >
+          <LuSlidersHorizontal aria-hidden />
+          Sort &amp; filter{panelCount > 0 && ` (${panelCount})`}
+        </button>
+      </div>
 
       <Dialog
         open={open}
@@ -82,7 +88,7 @@ export default function DexToolbar({ view, onChange, count }) {
             {panelCount > 0 && (
               <Button
                 variant="ghost"
-                size="sm"
+                size="touch"
                 // The name stays: it's in the toolbar, not in this sheet.
                 onClick={() => onChange({ ...clearFilters(view), q: view.q })}
               >
@@ -91,7 +97,7 @@ export default function DexToolbar({ view, onChange, count }) {
               </Button>
             )}
             <Button
-              size="sm"
+              size="touch"
               onClick={() => setOpen(false)}
               className="ml-auto"
             >
@@ -115,7 +121,7 @@ export default function DexToolbar({ view, onChange, count }) {
 
         <DexFilterGroups view={view} onChange={onChange} />
       </Dialog>
-    </div>
+    </>
   );
 }
 

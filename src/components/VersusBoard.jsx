@@ -51,6 +51,7 @@ export default function VersusBoard({
   a2,
   actions = null,
   heading = true,
+  className = "",
 }) {
   // Which side's picker or ability sheet is open: 1, 2, or neither.
   const [picking, setPicking] = useState(null);
@@ -68,11 +69,19 @@ export default function VersusBoard({
     ? keys.map((k) => `${v1.stats[k]}/${v2.stats[k]}`).join(",")
     : "empty";
 
+  // The dialogs sit beside the card, not inside it, because the page hides the
+  // card from `md` (`className`). A dialog inside a hidden element stays open
+  // but can't be seen, and holds the whole page: turn a tablet from portrait
+  // to landscape with the picker open and nothing could be clicked. Beside it,
+  // the dialog becomes the desktop's centred panel instead.
   return (
-    <section className="flex flex-col overflow-hidden rounded-lg border border-border-subtle bg-surface">
-      {heading && <h2 className="sr-only">Comparison</h2>}
+    <>
+      <section
+        className={`flex flex-col overflow-hidden rounded-lg border border-border-subtle bg-surface ${className}`}
+      >
+        {heading && <h2 className="sr-only">Comparison</h2>}
 
-      {/* The two sides, edge to edge across the card's top with a 1px seam,
+        {/* The two sides, edge to edge across the card's top with a 1px seam,
           as the games' panels sit. Every pixel of width goes to the names:
           the longest word in any name, "Brambleghast", is 136px at `text-h3`,
           and each side has 146px on a 360px phone. At 320 a few of the longest
@@ -81,64 +90,70 @@ export default function VersusBoard({
 
           The swap button sits on the seam rather than in a column of its own,
           which would cost each name 18px, centred on the artwork. */}
-      <div className="relative grid grid-cols-2 gap-px bg-border-subtle">
-        <Tile {...sides[1]} onOpen={opener(setPicking, 1)} />
-        <Tile {...sides[2]} onOpen={opener(setPicking, 2)} />
-        <div className="absolute top-11 left-1/2 -translate-x-1/2">
-          {actions ? (
-            <IconButton
-              label="Swap"
-              variant="outline"
-              onClick={actions.swap}
-              disabled={!p1 && !p2}
-            >
-              <LuArrowLeftRight aria-hidden />
-            </IconButton>
-          ) : (
-            <span
-              aria-hidden
-              className="inline-flex size-9 items-center justify-center rounded-full border border-border-strong bg-elevated text-overline text-tertiary"
-            >
-              vs
-            </span>
-          )}
+        <div className="relative grid grid-cols-2 gap-px bg-border-subtle">
+          <Tile {...sides[1]} onOpen={opener(setPicking, 1)} />
+          <Tile {...sides[2]} onOpen={opener(setPicking, 2)} />
+          <div className="absolute top-11 left-1/2 -translate-x-1/2">
+            {actions ? (
+              <IconButton
+                label="Swap"
+                variant="outline"
+                onClick={actions.swap}
+                disabled={!p1 && !p2}
+              >
+                <LuArrowLeftRight aria-hidden />
+              </IconButton>
+            ) : (
+              <span
+                aria-hidden
+                className="inline-flex size-9 items-center justify-center rounded-full border border-border-strong bg-elevated text-overline text-tertiary"
+              >
+                vs
+              </span>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Each ability centred under its own side. */}
-      {(p1 || p2) && (
-        <div className="grid grid-cols-2 gap-2 border-t border-border-subtle p-3">
-          <Ability {...sides[1]} onOpen={opener(setChoosing, 1)} />
-          <Ability {...sides[2]} onOpen={opener(setChoosing, 2)} />
-        </div>
-      )}
+        {/* Each ability centred under its own side. */}
+        {(p1 || p2) && (
+          <div className="grid grid-cols-2 gap-2 border-t border-border-subtle p-3">
+            <Ability {...sides[1]} onOpen={opener(setChoosing, 1)} />
+            <Ability {...sides[2]} onOpen={opener(setChoosing, 2)} />
+          </div>
+        )}
 
-      {ready && (
-        <>
-          {/* The comparison card's own top zone, in flow rather than at its
+        {ready && (
+          <>
+            {/* The comparison card's own top zone, in flow rather than at its
               fixed 320px, since nothing beside it has to line up. */}
-          <div className="flex flex-col items-center gap-6 border-t border-border-subtle px-4 py-6 text-center">
-            <Summary p1={p1} p2={p2} v1={v1} v2={v2} />
-            <div className="w-full border-t border-border-subtle" />
-            <TypeMatchup attacker={p1} attack={v1} defend={v2} ability={a2} />
-          </div>
-          <SpeedBanner p1={p1} p2={p2} a={v1.stats.speed} b={v2.stats.speed} />
-          <div key={barKey} className="px-4 pt-3 pb-4">
-            {keys.map((k) => (
-              <CmpRow
-                key={k}
-                label={STAT_LABEL[k]}
-                a={v1.stats[k]}
-                b={v2.stats[k]}
-                aColor={v1.types[0]}
-                bColor={v2.types[0]}
-                animate
-              />
-            ))}
-          </div>
-          <Totals v1={v1} v2={v2} />
-        </>
-      )}
+            <div className="flex flex-col items-center gap-6 border-t border-border-subtle px-4 py-6 text-center">
+              <Summary p1={p1} p2={p2} v1={v1} v2={v2} />
+              <div className="w-full border-t border-border-subtle" />
+              <TypeMatchup attacker={p1} attack={v1} defend={v2} ability={a2} />
+            </div>
+            <SpeedBanner
+              p1={p1}
+              p2={p2}
+              a={v1.stats.speed}
+              b={v2.stats.speed}
+            />
+            <div key={barKey} className="px-4 pt-3 pb-4">
+              {keys.map((k) => (
+                <CmpRow
+                  key={k}
+                  label={STAT_LABEL[k]}
+                  a={v1.stats[k]}
+                  b={v2.stats[k]}
+                  aColor={v1.types[0]}
+                  bColor={v2.types[0]}
+                  animate
+                />
+              ))}
+            </div>
+            <Totals v1={v1} v2={v2} />
+          </>
+        )}
+      </section>
 
       {actions && (
         <>
@@ -159,7 +174,7 @@ export default function VersusBoard({
           />
         </>
       )}
-    </section>
+    </>
   );
 }
 

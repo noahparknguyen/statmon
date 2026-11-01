@@ -67,11 +67,15 @@ const SIZES = {
     // band, which holds either two panels in a row or four in a 2×2, so a
     // fixed height would overflow in one case. The grid owns the height, and
     // the panel fills its cell.
+    //
+    // Below `sm` that band is 96px, and the name and value would leave the
+    // artwork none of it, so a phone's thumbnail is the artwork alone, with
+    // the winner's ring and the others dimmed.
     box: "h-full",
     pad: "gap-1 p-2",
-    name: "text-caption",
+    name: "text-caption max-sm:hidden",
     value: "text-stat-sm",
-    band: "h-6",
+    band: "h-6 max-sm:hidden",
     badge: "sm",
   },
 };

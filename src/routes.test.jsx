@@ -937,8 +937,13 @@ describe("a phone's comparison board", () => {
   // block, and it ends at its <section>. React's server renderer separates
   // text from an expression with an empty comment ("Pokémon <!-- -->1"), so
   // those go, to assert the text a reader gets.
+  // The board's card is the <section> that hides from md: by its own class on
+  // Compare, beside its dialogs (VersusBoard), and inside a phone-only
+  // wrapper on Home, whose read-only board has none.
   const phoneBoard = (html) => {
-    const start = html.indexOf('md:hidden"><section');
+    const start = html.search(
+      /<section class="[^"]* md:hidden"|md:hidden"><section/,
+    );
     if (start < 0) return "";
     return html
       .slice(start, html.indexOf("</section>", start))
@@ -1168,6 +1173,56 @@ describe("a phone's type chart", () => {
   });
 });
 
+describe("a phone's games", () => {
+  it("opens setup across the whole screen, a centred panel from md", () => {
+    // A closed dialog still renders its <dialog>, with its placement's classes.
+    const html = render("/games/higher?stats=speed");
+    expect(html).toMatch(
+      /<dialog class="[^"]*m-0 h-full max-h-full w-full max-w-full md:m-auto[^"]*" aria-label="Setup"/,
+    );
+  });
+
+  it("gives every dialog's footer a 44px action on a phone", () => {
+    expect(readFileSync("src/components/Button.jsx", "utf8")).toContain(
+      'touch: "h-11 px-6 md:h-9 md:px-4"',
+    );
+    // Setup's Reset and Play, the dex sheet's Clear filters and Show, and
+    // the type chart's Done.
+    for (const [file, n] of [
+      ["GameSetup", 2],
+      ["DexToolbar", 2],
+      ["DefenderBar", 1],
+    ])
+      expect(
+        readFileSync(`src/components/${file}.jsx`, "utf8").match(
+          /size="touch"/g,
+        ),
+        file,
+      ).toHaveLength(n);
+  });
+
+  it("shows a phone a 96px thumbnail, four Pokémon in one row", () => {
+    const html = render("/games/higher");
+    expect(html).toContain(
+      "h-24 shrink-0 border-b border-border-subtle sm:h-48",
+    );
+    // Hard's four, one row on a phone and a 2×2 from sm, the top-right corner
+    // following the card's curve on the panel that has it at each width.
+    expect(html).toContain("grid-cols-4 sm:grid-cols-2 sm:grid-rows-2");
+    expect(html).toContain("sm:rounded-tr-lg");
+    expect(html).toContain("max-sm:rounded-tr-lg");
+  });
+
+  it("leaves a phone's thumbnail the artwork, without the labels", () => {
+    // The name and the value or typing would take the 96px band.
+    for (const path of ["/games/higher", "/games/effective"]) {
+      const html = render(path);
+      expect(html, path).toContain("text-caption max-sm:hidden");
+      expect(html, path).toMatch(/h-[56] max-sm:hidden/);
+    }
+  });
+});
+
 // The site's modals are one component. Each of them used to manage its own
 // <dialog>, which is how two copies of `showModal()` drift apart.
 describe("one dialog", () => {
@@ -1179,6 +1234,59 @@ describe("one dialog", () => {
     );
     // Dialog.jsx, where the comment that names it also lives.
     expect(callers).toEqual(["Dialog.jsx"]);
+  });
+
+  it("never sits inside something a breakpoint hides", () => {
+    // A modal inside a hidden element stays open but unseen, and holds the
+    // whole page: a tablet turned from portrait to landscape with the dex's
+    // sheet open could click nothing. So every <dialog> is checked against
+    // the classes of everything around it in the rendered page.
+    const VOID = new Set([
+      "img",
+      "input",
+      "br",
+      "hr",
+      "meta",
+      "link",
+      "source",
+      "wbr",
+    ]);
+    const HIDES = /(^|\s)(?:[a-z-]+:)?hidden(\s|$)/;
+    const hiddenAround = (html) => {
+      const open = [];
+      const found = [];
+      for (const [, close, tag, attrs, self] of html.matchAll(
+        /<(\/?)([a-zA-Z][\w-]*)([^>]*?)(\/?)>/g,
+      )) {
+        if (close) {
+          const i = open.findLastIndex((e) => e.tag === tag);
+          if (i >= 0) open.length = i;
+          continue;
+        }
+        if (tag === "dialog")
+          found.push(
+            ...open.filter((e) => HIDES.test(e.cls)).map((e) => e.cls),
+          );
+        if (!self && !VOID.has(tag))
+          open.push({ tag, cls: /class="([^"]*)"/.exec(attrs)?.[1] ?? "" });
+      }
+      return found;
+    };
+    for (const path of [
+      "/compare",
+      "/compare/charizard/vs/blastoise",
+      "/dex",
+      "/types",
+      "/types/water/flying",
+      "/games/higher?stats=speed",
+      "/games/effective?tier=hard",
+    ]) {
+      const html = render(path);
+      // Each of these pages has a dialog, so the check can't pass by finding
+      // none.
+      expect(html, path).toContain("<dialog");
+      expect(hiddenAround(html), path).toEqual([]);
+    }
   });
 });
 
@@ -2283,7 +2391,7 @@ describe("a game's thumbnail is a picture, hidden from assistive tech", () => {
     "hides every thumbnail on %s",
     (path) => {
       const thumbs = [
-        ...render(path).matchAll(/<div[^>]*class="h-48[^"]*"[^>]*>/g),
+        ...render(path).matchAll(/<div[^>]*class="h-24 shrink-0[^"]*"[^>]*>/g),
       ].map((m) => m[0]);
       expect(thumbs.length).toBeGreaterThan(1);
       for (const t of thumbs) expect(t).toContain('aria-hidden="true"');

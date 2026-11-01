@@ -41,7 +41,28 @@ const drawOnce = (key, draw) => {
 // band in half, and 64px of each half, at 128, would be too small to show a
 // Pokémon. The panels take their height from here (`h-full`) rather than
 // setting their own, so one number decides it for both layouts.
-const THUMB = "h-48 shrink-0 border-b border-border-subtle";
+//
+// 96px on a phone, below `sm`, where the cards are a single column and three
+// presets at 192 ran to two screens. There the panels show only their
+// artwork, or a type's name (the `sm` size in ContenderPanel and
+// MatchupPanel), and four Pokémon stand in one row rather than two: shape over
+// detail, as above, at the size a glance takes.
+const THUMB = "h-24 shrink-0 border-b border-border-subtle sm:h-48";
+
+// Which of a panel's corners follow the card's curve: only the outer ones,
+// or the winner's inset ring would trace a curve the card doesn't have. Four
+// panels are one row on a phone and a 2×2 from `sm`, so the top-right corner
+// belongs to the last panel on a phone and to the second from `sm`.
+const corner = (i, n) =>
+  i === 0
+    ? "rounded-tl-lg"
+    : n === 2
+      ? "rounded-tr-lg"
+      : i === 1
+        ? "sm:rounded-tr-lg"
+        : i === 3
+          ? "max-sm:rounded-tr-lg"
+          : "";
 
 // `bg-base` is the divider, as on the real board.
 const GRID = `${THUMB} grid gap-px bg-base`;
@@ -61,7 +82,8 @@ const GRID = `${THUMB} grid gap-px bg-base`;
  *
  * The count is the point: two for Easy and Medium, four for Hard. So the grid
  * follows `n`, and four panels stack 2×2 rather than shrinking to a quarter of
- * the card's width.
+ * the card's width. On a phone's 96px band they stand in one row instead,
+ * where a 2×2 would leave each 48px.
  */
 export function HigherThumb({ settings = HIGHER_DEFAULTS, className = "" }) {
   const round = drawOnce(`h:${higherKey(settings)}`, () =>
@@ -73,16 +95,13 @@ export function HigherThumb({ settings = HIGHER_DEFAULTS, className = "" }) {
   return (
     <div
       aria-hidden
-      className={`${GRID} ${four ? "grid-cols-2 grid-rows-2" : "grid-cols-2"} ${className}`}
+      className={`${GRID} ${four ? "grid-cols-4 sm:grid-cols-2 sm:grid-rows-2" : "grid-cols-2"} ${className}`}
     >
       {round.contenders.map((p, i) => (
         <ContenderPanel
           key={p.slug}
           size="sm"
-          // Only the outer corners follow the card's curve. With four panels,
-          // the lower two are mid-card and stay square, or the winner's inset
-          // ring would trace a curve the card doesn't have.
-          className={i === 0 ? "rounded-tl-lg" : i === 1 ? "rounded-tr-lg" : ""}
+          className={corner(i, round.contenders.length)}
           pokemon={p}
           stat={round.stat}
           value={round.values[i]}

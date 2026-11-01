@@ -15,7 +15,9 @@ import { topicAccuracy } from "../lib/record";
 // `EffectiveSetup`).
 //
 // The dialog itself, its header, scrolling body, and footer, is the shared
-// `Dialog`, in the middle of the screen at every width.
+// `Dialog`: the whole screen on a phone, since setup is a long task with six
+// groups to scroll, and Reset, the pool and Play sit on the bottom edge in
+// reach of a thumb. A centred panel from `md`.
 //
 // It edits a draft, and Play commits it. Wiring the chips straight to the URL
 // would restart the game on every click, losing your streak while you choose
@@ -74,9 +76,10 @@ export default function GameSetup({
       open={open}
       onClose={onClose}
       title="Setup"
+      placement="full"
       footer={
         <>
-          <Button variant="secondary" size="sm" onClick={onReset}>
+          <Button variant="secondary" size="touch" onClick={onReset}>
             Reset
           </Button>
           {/* The status line sits in the footer rather than at the end of the
@@ -91,7 +94,7 @@ export default function GameSetup({
             {status}
           </p>
           <Button
-            size="sm"
+            size="touch"
             onClick={onPlay}
             disabled={!playable}
             className="ml-auto"

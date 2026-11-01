@@ -48,15 +48,19 @@ const SIZES = {
     // band, which holds either two panels in a row or four in a 2×2, so a fixed
     // height would overflow in one case. The grid owns the height, and the
     // panel fills its cell.
+    //
+    // Below `sm` that band is 96px: the role and a type's name fit, and a
+    // Pokémon shows its artwork without its name and typing, as the stat
+    // game's thumbnail does (ContenderPanel).
     box: "h-full",
     pad: "gap-1 p-2",
     role: "text-overline",
     type: "text-h4",
-    name: "text-caption",
+    name: "text-caption max-sm:hidden",
     // Not `h-0`: the Hard card on the start screen shows a Pokémon with its
     // typing, and the badges need a row's height. The artwork above is
     // `flex-1`, so it gives up the space.
-    band: "h-5",
+    band: "h-5 max-sm:hidden",
     badge: "sm",
   },
 };
