@@ -3,7 +3,10 @@ import { ALL_POKEMON, spriteFor } from "../lib/pokemon";
 // Home's opening screen: a drifting wall of pixel sprites with the wordmark and
 // tagline on a scrim over it, filling most of the first screen. The comparison
 // board still shows at the bottom of the first screen, at 72% of its height, so
-// the wall points to what's below rather than hiding it.
+// the wall points to what's below rather than hiding it. 56% on a phone, below
+// `md`, where the site header and the tab bar take 112px of the screen between
+// them: at 72% there, the first screen ended on the section's heading, and the
+// board began under the tab bar.
 //
 // Sampled, not listed: WALL_COLS × WALL_ROWS entries taken at even intervals
 // across the default forms in dex order, so the wall spans all nine
@@ -13,10 +16,11 @@ import { ALL_POKEMON, spriteFor } from "../lib/pokemon";
 // The block's size is set by the worst case for repetition. A seamless loop
 // needs the layer to be four identical copies of one block, so any screen that
 // shows more than one block sees the same Pokémon twice. 14 columns cover
-// 2,688px of desktop at double-size tiles. 7 rows is what a 390px phone needs,
-// where the tiles are half size and 72% of the screen is over six rows tall:
-// with fewer, the top of the wall visibly repeats partway down. That's 98
-// sprites.
+// 2,688px of desktop at double-size tiles. 7 rows leaves more than a row to
+// spare over the tallest hero, about five and a half rows: 56% of a tall
+// phone at the native 96px, or 72% of a tall tablet at 192. With fewer than
+// the hero shows, the top of the wall would visibly repeat partway down.
+// That's 98 sprites.
 const WALL_COLS = 14;
 const WALL_ROWS = 7;
 export const WALL_TILES = WALL_COLS * WALL_ROWS;
@@ -67,7 +71,7 @@ function Block() {
 // page jump as you scroll. On a desktop it's the same as `vh`.
 export default function SpriteWall({ children }) {
   return (
-    <section className="relative overflow-hidden h-[72svh] min-h-[26rem] flex items-center justify-center">
+    <section className="relative overflow-hidden h-[56svh] md:h-[72svh] min-h-[26rem] flex items-center justify-center">
       {/* Decorative: 392 sprite names read out in a row would be noise, and the
           heading on top is what the section is about. */}
       <div aria-hidden className="absolute inset-0">

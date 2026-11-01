@@ -20,7 +20,9 @@ import PageHeader from "./PageHeader";
 //
 // The 144px is set by the art, not the heading: the dex preview's figures rise
 // above its heading, and they're what a reader sees first, so the gap has to
-// clear them.
+// clear them. They show from `lg` only, so below it the gap is 96px, still
+// three times the button's, where 144px cleared nothing and added up to 432px
+// of empty page between Home's four sections.
 export default function FeaturePreview({
   title,
   description,
@@ -29,7 +31,7 @@ export default function FeaturePreview({
   children,
 }) {
   return (
-    <section className="mt-36">
+    <section className="mt-24 lg:mt-36">
       <PageHeader as="h2" title={title} subtitle={description} />
 
       <div>{children}</div>

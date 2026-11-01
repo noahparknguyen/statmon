@@ -121,6 +121,10 @@ const ARBITRARY = new Map([
   ["min-h-[21px]", "a compact chip: 11px text, py-1, a 1px border each side"],
   ["min-h-[26rem]", "the game board's floor on a landscape phone"],
   ["h-[72svh]", "Home's hero wall, so the board crests the fold"],
+  [
+    "h-[56svh]",
+    "Home's hero wall on a phone, so the board crests the fold above the tab bar",
+  ],
   ["max-h-[85svh]", "a dialog stays inside the viewport"],
   ["w-[min(36rem,calc(100vw-2rem))]", "a centred dialog, inside the gutters"],
   ["max-h-[475px]", "the vendored artwork's own size"],

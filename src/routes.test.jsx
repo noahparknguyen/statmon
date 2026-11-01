@@ -1173,6 +1173,21 @@ describe("a phone's type chart", () => {
   });
 });
 
+describe("a phone's home", () => {
+  it("keeps the hero short enough that the board crests the fold", () => {
+    // 72% of the screen left the first screen ending on the comparison's
+    // heading, under a phone's two bars.
+    expect(render("/")).toContain(
+      'class="relative overflow-hidden h-[56svh] md:h-[72svh] min-h-[26rem]',
+    );
+  });
+
+  it("leaves 96px between sections, and 144 where the dex's figures show", () => {
+    const sections = render("/").match(/<section class="mt-24 lg:mt-36">/g);
+    expect(sections).toHaveLength(3);
+  });
+});
+
 describe("a phone's games", () => {
   it("opens setup across the whole screen, a centred panel from md", () => {
     // A closed dialog still renders its <dialog>, with its placement's classes.
