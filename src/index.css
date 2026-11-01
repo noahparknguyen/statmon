@@ -248,8 +248,8 @@
     two 3.5rem bars. It's for the game boards, which are the one place a
     phone gets turned. There a board takes the whole screen, as it does on a
     phone held upright, and lays its panels side by side whatever the width,
-    since stacked on a 375px-tall screen they shrank to sprites and the type
-    game's defender fell below the fold. Landscape as well as short, because a
+    since stacked on a 375px-tall screen they shrink to sprites and put the
+    type game's defender below the fold. Landscape as well as short, because a
     short window that's narrow too, a phone's split screen, has no room for
     three columns, and stacks as a phone does. */
 @custom-variant sideways (@media (orientation: landscape) and (max-height: 33rem));
@@ -341,8 +341,8 @@
        `data-pinned` where it's built: the dex's column headers at every
        width (a 40px row and its 1px rule), and a phone's 56px bar, the dex's
        toolbar or the type chart's. A browser only scrolls to a focused
-       element it counts as out of view, and without these it counted a row
-       under the dex's headers as in view, and left it hidden there. */
+       element it counts as out of view, and without these it counts a row
+       under the dex's headers as in view, and leaves it hidden there. */
     scroll-padding-top: calc(
       3.5rem + var(--pinned-bar, 0rem) + var(--pinned-head, 0rem)
     );

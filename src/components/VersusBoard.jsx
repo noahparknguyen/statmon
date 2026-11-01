@@ -72,7 +72,7 @@ export default function VersusBoard({
   // The dialogs sit beside the card, not inside it, because the page hides the
   // card from `md` (`className`). A dialog inside a hidden element stays open
   // but can't be seen, and holds the whole page: turn a tablet from portrait
-  // to landscape with the picker open and nothing could be clicked. Beside it,
+  // to landscape with the picker open, and nothing can be clicked. Beside it,
   // the dialog becomes the desktop's centred panel instead.
   return (
     <>

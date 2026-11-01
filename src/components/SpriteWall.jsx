@@ -5,8 +5,8 @@ import { ALL_POKEMON, spriteFor } from "../lib/pokemon";
 // board still shows at the bottom of the first screen, at 72% of its height, so
 // the wall points to what's below rather than hiding it. 56% on a phone, below
 // `md`, where the site header and the tab bar take 112px of the screen between
-// them: at 72% there, the first screen ended on the section's heading, and the
-// board began under the tab bar.
+// them: at 72% there, the first screen would end on the section's heading,
+// with the board under the tab bar.
 //
 // Sampled, not listed: WALL_COLS × WALL_ROWS entries taken at even intervals
 // across the default forms in dex order, so the wall spans all nine

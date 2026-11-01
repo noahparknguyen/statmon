@@ -35,8 +35,8 @@ export const SORT_LABEL = {
   ),
 };
 
-// Longer names for the mobile sort <select> and for screen readers, where "SpA"
-// and "#" don't explain themselves.
+// Longer names for a phone's Sort by chips, the games' questions ("Higher
+// Speed?"), and screen readers, where "SpA" and "#" don't explain themselves.
 export const SORT_LONG_LABEL = {
   dex: "Dex number",
   name: "Name",
@@ -308,9 +308,10 @@ export const clearFilters = (view) => ({
 export const activeFilterCount = (view) =>
   (view.q ? 1 : 0) + panelFilterCount(view);
 
-// Only the filters inside the collapsible panel, for the mobile disclosure's
-// badge. The name box sits outside the panel and is always on screen, so
-// counting it would put a "(1)" on a panel with nothing set.
+// Only the filters inside a phone's sort and filter sheet, for the count on
+// the button that opens it (DexToolbar). The name field sits beside that
+// button, always on screen, so counting it would put a "(1)" on a sheet with
+// nothing set.
 export const panelFilterCount = (view) =>
   view.types.length +
   view.gens.length +

@@ -17,8 +17,9 @@
  *   npm run build && npm run shoot:docs
  */
 
-import { readFile, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { requireChrome } from "./chrome.mjs";
 import { ROOT, DIST, serveBuild } from "./serve.mjs";
@@ -78,6 +79,20 @@ const SHOTS = [
   ["/games/effective?tier=hard", 1600, 900, "docs/effective.png"],
 ];
 
+// A phone's view of the three tools, in one 16:9 frame like the shots above,
+// since the README is mostly read on a desktop, where one phone screen would
+// be a strip down the middle of it. Each is captured at 390×844, an iPhone's
+// size, at 2x, and fitted into the frame with the screen's own rounded corners.
+// The same pages as the desktop shots, so the two can be compared.
+const PHONE = {
+  out: "docs/phone.png",
+  routes: [
+    "/compare/volcarona/vs/chandelure",
+    "/dex",
+    "/types/psychic/steel?as=bronzong",
+  ],
+};
+
 // The two social frames must come out centred, and that's measured rather than
 // trusted: a frame can be off-centre in the capture while rendering fine in a
 // browser.
@@ -93,7 +108,7 @@ const { origin, close } = await serveBuild({
 
 const CHROME = await requireChrome("shoot:docs");
 
-const shoot = (url, width, height, out) =>
+const shoot = (url, width, height, out, scale = 1) =>
   new Promise((resolve, reject) => {
     const child = spawn(
       CHROME,
@@ -102,8 +117,9 @@ const shoot = (url, width, height, out) =>
         "--disable-gpu",
         "--no-sandbox",
         "--hide-scrollbars",
-        `--screenshot=${path.join(ROOT, out)}`,
+        `--screenshot=${path.resolve(ROOT, out)}`,
         `--window-size=${width},${height}`,
+        `--force-device-scale-factor=${scale}`,
         // Generous: the app has to boot, resolve a lazy route, decode artwork
         // and settle the webfonts before the frame is worth keeping.
         "--virtual-time-budget=15000",
@@ -189,6 +205,57 @@ for (const [url, width, height, out, opts = {}] of SHOTS) {
   );
 }
 
+// The phone frame: three screens on the page's own background, each with its
+// corners rounded and a hairline round it, as a phone's screen would sit.
+{
+  const { default: sharp } = await import("sharp");
+  const dir = await mkdtemp(path.join(tmpdir(), "statmon-docs-"));
+  try {
+    const [W, H, PAD, GAP, RADIUS] = [1600, 900, 40, 60, 28];
+    const h = H - 2 * PAD;
+    const w = Math.round((h * 390) / 844);
+    const left = Math.round((W - (3 * w + 2 * GAP)) / 2);
+    const corners = Buffer.from(
+      `<svg width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="${RADIUS}"/></svg>`,
+    );
+    const layers = [];
+    for (const [i, url] of PHONE.routes.entries()) {
+      const file = path.join(dir, `${i}.png`);
+      await shoot(url, 390, 844, file, 2);
+      const screen = await sharp(file)
+        .resize(w, h)
+        .composite([{ input: corners, blend: "dest-in" }])
+        .png()
+        .toBuffer();
+      layers.push({ input: screen, left: left + i * (w + GAP), top: PAD });
+    }
+    // The hairlines, drawn over the screens' edges: border-subtle on base.
+    const frames = PHONE.routes
+      .map(
+        (_, i) =>
+          `<rect x="${left + i * (w + GAP) + 0.5}" y="${PAD + 0.5}" width="${w - 1}" height="${h - 1}" rx="${RADIUS}" fill="none" stroke="#2a2e37"/>`,
+      )
+      .join("");
+    layers.push({
+      input: Buffer.from(`<svg width="${W}" height="${H}">${frames}</svg>`),
+      left: 0,
+      top: 0,
+    });
+    await sharp({
+      create: { width: W, height: H, channels: 3, background: "#0b0c0f" },
+    })
+      .composite(layers)
+      .png()
+      .toFile(path.join(ROOT, PHONE.out));
+    const { size } = await stat(path.join(ROOT, PHONE.out));
+    console.log(
+      `  ${PHONE.out.padEnd(22)} ${W}×${H}  ${(size / 1024).toFixed(0).padStart(4)} kB  three phones`,
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true, maxRetries: 5 });
+  }
+}
+
 close();
 
 if (problems.length) {
@@ -197,4 +264,4 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log(`\n${SHOTS.length} screenshots regenerated ✓`);
+console.log(`\n${SHOTS.length + 1} screenshots regenerated ✓`);

@@ -110,8 +110,8 @@ export default function DexTable({ rows, view, keys, onSort, mobileStat }) {
   // jumping when content above the screen changes size by shifting the scroll
   // to hold some element in place, and a windowed list changes that content on
   // purpose: as you scroll, rows leave and the spacer above grows to match.
-  // With anchoring on, a quick flick of 700px moved the page by up to 720px
-  // more in 27 of 62 steps, measured down a 1,025-row list at 390; off, none.
+  // With anchoring on, a quick flick of 700px moves the page by up to 720px
+  // more, in 27 of 62 steps down a 1,025-row list at 390. Off, none do.
   return (
     <div ref={ref} className="[overflow-anchor:none]">
       <table

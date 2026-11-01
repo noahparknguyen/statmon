@@ -66,9 +66,10 @@ export const CHIP_STATIC = "border-border-strong bg-elevated text-secondary";
 export const CHIP_ON_FILLED = "border-transparent";
 
 // The filter family's size, the one size shared by more than one call site, so
-// it lives here with the colours. `FilterChip` uses it, and so does the dex's
-// "Filters (N)" disclosure, which isn't a filter chip but sits in a row with
-// them.
+// it lives here with the colours. `FilterChip` uses it, and so do the controls
+// that sit among chips or stand in for one: the form and ability chips in a
+// phone's dialogs, the dex toolbar's Sort & filter, the versus board's ability
+// pill, the type chart bar's Change, and the type game's ability pill.
 //
 // min-h-9 (36px) matches Button's compact size. Without it the chips would be
 // 25px tall: above WCAG 2.5.8's 24px minimum, but small for a thumb, and unlike

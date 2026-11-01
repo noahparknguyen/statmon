@@ -43,7 +43,7 @@ const drawOnce = (key, draw) => {
 // setting their own, so one number decides it for both layouts.
 //
 // 96px on a phone, below `sm`, where the cards are a single column and three
-// presets at 192 ran to two screens. There the panels show only their
+// presets at 192 would run to two screens. There the panels show only their
 // artwork, or a type's name (the `sm` size in ContenderPanel and
 // MatchupPanel), and four Pokémon stand in one row rather than two: shape over
 // detail, as above, at the size a glance takes.

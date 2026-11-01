@@ -55,8 +55,8 @@ nothing to the browser and is not listed.
 
 ## Reference, not redistributed
 
-The ~20 abilities that change type effectiveness are a hand-written table in
-`src/lib/typeChart.js`, because PokéAPI describes what an ability does only in
+The 20 abilities that change type effectiveness are a hand-written table in
+`src/lib/abilities.js`, because PokéAPI describes what an ability does only in
 prose. Their multipliers were checked against **Bulbapedia**. No Bulbapedia
 content is copied into this repository — it is a source that was read, and the
 credit is a courtesy rather than a requirement.

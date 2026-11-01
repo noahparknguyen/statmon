@@ -69,7 +69,7 @@ const question = (n, stat) =>
 // stacks rather than shrinking to 160px each: on a phone, a face-off is top
 // against bottom. A phone held sideways (`sideways`) lays any count out in one
 // row, as `lg` does: its screen is too short for a stack, where four panels
-// were 150px tall and their Pokémon sprite-sized.
+// would be 150px tall and their Pokémon sprite-sized.
 //
 // The middle row is the overlay's. Centring the verdict absolutely works while
 // the panels are one row, where it lands on the divider, over artwork. Once
@@ -83,8 +83,9 @@ const GRID = {
 };
 
 // The breakpoint at which each count stops stacking, where the overlay stops
-// being a row and becomes a layer. Written out in full rather than built up, so
-// Tailwind's scanner sees every class.
+// being a row and becomes a layer, and a phone held sideways, which never
+// stacks. Written out in full rather than built up, so Tailwind's scanner sees
+// every class.
 const OVERLAY = {
   2: "col-span-full flex justify-center bg-base px-4 py-3 sm:pointer-events-none sm:absolute sm:inset-0 sm:grid sm:justify-items-center sm:bg-transparent sm:p-4 sideways:pointer-events-none sideways:absolute sideways:inset-0 sideways:grid sideways:justify-items-center sideways:bg-transparent sideways:p-4",
   4: "col-span-full flex justify-center bg-base px-4 py-3 lg:pointer-events-none lg:absolute lg:inset-0 lg:grid lg:justify-items-center lg:bg-transparent lg:p-4 sideways:pointer-events-none sideways:absolute sideways:inset-0 sideways:grid sideways:justify-items-center sideways:bg-transparent sideways:p-4",
@@ -240,9 +241,10 @@ function Arena({ settings, record, onAnswer, onSetup, onRestart }) {
         // value get the bigger of the two sizes.
         size={settings.n === 2 ? "lg" : "md"}
         // Four in a row on a phone held sideways leave no room above the
-        // artwork, and the question card, centred at the top, sat over the two
-        // middle Pokémon. 64px of each panel's own tint clears it. A pair needs
-        // none: the card sits over the divider, between the two artworks.
+        // artwork, and the question card, centred at the top, would sit over
+        // the two middle Pokémon. 64px of each panel's own tint clears it. A
+        // pair needs none: the card sits over the divider, between the two
+        // artworks.
         className={settings.n === 4 ? "sideways:pt-16" : ""}
         // Only the game board shakes. Home's preview and the games index use
         // the same component standing still: a preview that rattles as it

@@ -224,6 +224,19 @@ export default function Layout() {
   const { search } = useLocation();
   const playing = bare && hasChosenGame(search);
 
+  // The footer's link to the full notices, in both versions of its notice.
+  const noticesLink = (
+    <a
+      href={NOTICE_URL}
+      target="_blank"
+      rel="noreferrer"
+      className="underline decoration-border-strong underline-offset-2 transition-colors hover:text-secondary active:text-secondary"
+    >
+      repository
+      <span className="sr-only"> (opens in a new tab)</span>
+    </a>
+  );
+
   return (
     // A game board is sized to the screen exactly: the height is pinned, and
     // the board takes the space left with `flex-1`. That leaves no arithmetic
@@ -400,20 +413,23 @@ export default function Layout() {
             {/* Mirrors the block above, with one thing on each edge, so the
                 footer reads as one arrangement rather than two stacked. */}
             <div className="mt-8 flex flex-col gap-3 border-t border-border-subtle pt-6 sm:flex-row sm:justify-between sm:gap-8 md:mt-10">
-              <p className="max-w-xl text-caption text-tertiary">
+              {/* A phone gets only what has to be said: Font Awesome Free is
+                  CC BY 4.0, which requires the credit, and the Pokémon notice
+                  is what an unofficial fan project owes. The sprites are CC0,
+                  PokéAPI's fair-use policy asks for caching rather than credit,
+                  and the fonts' licence travels with the font files, so those
+                  credits are courtesies, and the groups above name them. */}
+              <p className="max-w-xl text-caption text-tertiary md:hidden">
+                The carets on the comparison board and the dex are Font Awesome
+                Free (CC BY 4.0). Pokémon is © Nintendo, Game Freak, and The
+                Pokémon Company. Statmon is an unofficial fan project. Full
+                notices are in the {noticesLink}.
+              </p>
+              <p className="hidden max-w-xl text-caption text-tertiary md:block">
                 Data and images from PokéAPI; sprites are CC0. Fonts are SIL
                 OFL, and the carets on the comparison board and the dex are Font
-                Awesome Free (CC BY 4.0). Full notices are in the{" "}
-                <a
-                  href={NOTICE_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline decoration-border-strong underline-offset-2 transition-colors hover:text-secondary active:text-secondary"
-                >
-                  repository
-                  <span className="sr-only"> (opens in a new tab)</span>
-                </a>
-                . Pokémon is © Nintendo, Game Freak, and The Pokémon Company.
+                Awesome Free (CC BY 4.0). Full notices are in the {noticesLink}.
+                Pokémon is © Nintendo, Game Freak, and The Pokémon Company.
                 Statmon is an unofficial fan project.
               </p>
               <p className="shrink-0 text-caption text-tertiary sm:text-right">

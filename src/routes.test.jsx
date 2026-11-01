@@ -1094,8 +1094,8 @@ describe("a phone's dex", () => {
   });
 
   it("keeps a phone's 48px sprite inside the windowing's 48px row", () => {
-    // A 48px image made the row 49 with its rule, which drifts the windowed
-    // list a pixel a row. The sprite overlaps the rule instead.
+    // A 48px image makes the row 49 with its rule, which would drift the
+    // windowed list a pixel a row. The sprite overlaps the rule instead.
     expect(page()).toContain("-my-px size-12");
   });
 
@@ -1189,14 +1189,51 @@ describe("a phone's home", () => {
     expect(html).toContain(
       'class="relative overflow-hidden h-[56svh] md:h-[72svh] flex',
     );
-    // No floor: 26rem held a 375×667 phone's board under the fold, and made
-    // the hero taller than a phone held sideways.
+    // No floor: 26rem would hold a 375×667 phone's board under the fold, and
+    // make the hero taller than a phone held sideways.
     expect(html).not.toMatch(/h-\[56svh\][^"]*min-h-/);
   });
 
   it("leaves 96px between sections, and 144 where the dex's figures show", () => {
     const sections = render("/").match(/<section class="mt-24 lg:mt-36">/g);
     expect(sections).toHaveLength(3);
+  });
+});
+
+describe("a phone's footer", () => {
+  // The notice paragraph that shows at each width, by its classes.
+  const notice = (cls) => {
+    const html = render("/about").replace(/<!-- -->/g, "");
+    const at = html.indexOf(`class="${cls}"`);
+    return html.slice(at, html.indexOf("</p>", at)).replace(/<[^>]*>/g, "");
+  };
+
+  it("credits what has to be credited, and only that, on a phone", () => {
+    const phone = notice("max-w-xl text-caption text-tertiary md:hidden");
+    // Font Awesome Free is CC BY 4.0, which requires the credit, and the
+    // Pokémon notice is what an unofficial fan project owes.
+    expect(phone).toContain("Font Awesome Free (CC BY 4.0)");
+    expect(phone).toContain(
+      "Pokémon is © Nintendo, Game Freak, and The Pokémon Company",
+    );
+    expect(phone).toContain("Full notices are in the repository");
+    // The courtesies stay in the credit groups above, and the full notice.
+    expect(phone).not.toContain("PokéAPI");
+    expect(phone).not.toContain("SIL OFL");
+  });
+
+  it("keeps the whole notice from md", () => {
+    const desktop = notice(
+      "hidden max-w-xl text-caption text-tertiary md:block",
+    );
+    for (const credit of [
+      "PokéAPI",
+      "CC0",
+      "SIL OFL",
+      "CC BY 4.0",
+      "Pokémon is ©",
+    ])
+      expect(desktop).toContain(credit);
   });
 });
 
@@ -1286,8 +1323,8 @@ describe("a phone's games", () => {
   });
 });
 
-// The site's modals are one component. Each of them used to manage its own
-// <dialog>, which is how two copies of `showModal()` drift apart.
+// The site's modals are one component, so two copies of `showModal()` can't
+// drift apart.
 describe("one dialog", () => {
   it("calls showModal() in exactly one place", () => {
     const callers = readdirSync("src/components").filter(
@@ -1369,8 +1406,8 @@ describe("accessibility guarantees", () => {
   it("tells the scroll padding about everything pinned under the header", () => {
     // A browser scrolls to a focused element only when it counts it as out
     // of view, judged against the scroll padding, so a pinned bar the padding
-    // doesn't allow for can hide focus. Shift+Tab up the dex left rows under
-    // its headers before these. (WCAG 2.4.11)
+    // doesn't allow for can hide focus: without these, Shift+Tab up the dex
+    // leaves rows under its headers. (WCAG 2.4.11)
     const dex = render("/dex");
     expect(dex).toContain('<thead data-pinned="head">');
     expect(dex).toMatch(/data-pinned="bar" class="sticky top-14/);

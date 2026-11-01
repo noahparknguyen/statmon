@@ -7,6 +7,8 @@ import { useState } from "react";
 import { LuArrowRight, LuX } from "react-icons/lu";
 import { FaCaretDown } from "react-icons/fa6";
 import Button from "../components/Button";
+import ChipGroup from "../components/ChipGroup";
+import Dialog from "../components/Dialog";
 import IconButton from "../components/IconButton";
 import StatBar from "../components/StatBar";
 import PageHeader from "../components/PageHeader";
@@ -189,7 +191,9 @@ export default function StyleGuide() {
   // marker, and the markers are the point of the row.
   // Taken from TYPES rather than written out: three quoted type names in a row
   // is what types.test.js's "only one list of the 18" check fails on.
-  const [t0, t1, t2, t3] = TYPES;
+  const [t0, t1, t2, t3, t4, t5] = TYPES;
+  // Which demo dialog is open: "sheet", "full", or neither.
+  const [demo, setDemo] = useState(null);
 
   return (
     <div className={PAGE_CONTENT}>
@@ -326,8 +330,8 @@ export default function StyleGuide() {
             <SearchBar label="Search a Pokémon" onSelect={noop} />
           </ChipRow>
           <ChipRow
-            label="Buttons · md 44px for a page's action, sm 36px inline"
-            note="Primary, secondary, and ghost for the quiet action. Disabled is 40%."
+            label="Buttons · md 44px for a page's action, sm 36px inline, touch for a dialog's footer"
+            note="Primary, secondary, and ghost for the quiet action. Disabled is 40%. Touch is md on a phone, where a dialog's action is the one a thumb is after, and sm from md."
           >
             <div className="flex flex-wrap items-center gap-3">
               <Button>
@@ -343,6 +347,7 @@ export default function StyleGuide() {
               <Button variant="secondary" size="sm" disabled>
                 Disabled
               </Button>
+              <Button size="touch">Touch</Button>
             </div>
           </ChipRow>
           <ChipRow
@@ -370,13 +375,13 @@ export default function StyleGuide() {
         {volcarona ? (
           <div className="flex max-w-md flex-col gap-6">
             <ChipRow
-              label="Solid track · the comparison card and the phone cards"
+              label="Solid track · every comparison row, desktop and phone"
               note="Scaled to 255, the same length for the same number on every surface."
             >
               <StatBar value={volcarona.stats.spAtk} type={t0} />
             </ChipRow>
             <ChipRow
-              label="Mirrored · the comparison card's rows"
+              label="Mirrored · a comparison row, one bar per side"
               note="The left bar grows from the centre outward."
             >
               <div className="grid grid-cols-2 gap-1.5">
@@ -397,11 +402,11 @@ export default function StyleGuide() {
         ) : null}
       </Section>
 
-      {/* All four chip families side by side. They share one colour pair
+      {/* Every chip family side by side. They share one colour pair
           (components/chipStyles.jsx) and differ only in shape, so seeing them
           together is the check that they still agree, which is also why this
           page renders real components instead of copies. */}
-      <Section title="Chips — one colour pair, four geometries">
+      <Section title="Chips — one colour pair, a shape for each place">
         <div className="flex flex-col gap-6">
           <ChipRow
             label="Form chips · compact, sharing the card's 88px controls band"
@@ -451,6 +456,36 @@ export default function StyleGuide() {
               <FilterChip label="Speed" removable={false} onClick={noop} />
               <FilterChip label="Any" active removable={false} onClick={noop} />
             </div>
+          </ChipRow>
+
+          <ChipRow
+            label="Filter chips as tiles · 44px, three even columns"
+            note="A phone's type picker, where choosing a type is the page's main action. The same states: a dot, a fill and its ×, and dimmed once two are chosen."
+          >
+            <div className="max-w-sm">
+              <ChipGroup label="Defending type" tiles>
+                {[t0, t1, t2, t3, t4, t5].map((t, i) => (
+                  <FilterChip
+                    key={t}
+                    label={capitalize(t)}
+                    color={t}
+                    active={i === 1 || i === 4}
+                    unavailable={i !== 1 && i !== 4}
+                    onClick={noop}
+                    shape="tile"
+                  />
+                ))}
+              </ChipGroup>
+            </div>
+          </ChipRow>
+
+          <ChipRow
+            label="Form and ability chips · md 36px, in a phone's dialog"
+            note="The compact chips at the filter chips' height, where a thumb has to hit them."
+          >
+            {charizard ? (
+              <FormChips pokemon={charizard} onSelect={noop} size="md" />
+            ) : null}
           </ChipRow>
 
           <ChipRow
@@ -535,6 +570,56 @@ export default function StyleGuide() {
         </div>
       </Section>
 
+      {/* The real Dialog, opened for real: a sheet for a short choice with the
+          page in view above it, and the whole screen for a long task. Both are
+          a centred panel from md, so on a desktop they look alike. */}
+      <Section title="Dialogs — a sheet and the whole screen">
+        <div className="flex max-w-md flex-col gap-6">
+          <ChipRow
+            label="One modal · a native dialog, a named Close, a footer of touch buttons"
+            note="On a phone, a sheet sits along the bottom edge and a full dialog takes the screen; from md, both are a centred panel. Tap the backdrop or press Esc to close."
+          >
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setDemo("sheet")}
+              >
+                Open a sheet
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setDemo("full")}
+              >
+                Open a full dialog
+              </Button>
+            </div>
+          </ChipRow>
+        </div>
+        <Dialog
+          open={demo !== null}
+          onClose={() => setDemo(null)}
+          title={demo === "full" ? "Full dialog (demo)" : "Sheet (demo)"}
+          placement={demo === "full" ? "full" : "sheet"}
+          footer={
+            <Button
+              size="touch"
+              onClick={() => setDemo(null)}
+              className="ml-auto"
+            >
+              Done
+            </Button>
+          }
+        >
+          <p className="text-body-sm text-secondary">
+            {demo === "full"
+              ? "A long task, or one with the keyboard up: picking a Pokémon, or a game's setup."
+              : "A short choice, with the page still in view above it: an ability, the dex's sort and filters, the type chart's controls."}
+          </p>
+        </Dialog>
+      </Section>
+
       <Section title="FeaturedComparison — the live comparison board">
         {volcarona && chandelure ? (
           <div className="max-w-2xl">
@@ -543,6 +628,10 @@ export default function StyleGuide() {
         ) : (
           <p className="text-body-sm text-tertiary">Data not loaded.</p>
         )}
+        <p className="mt-4 text-caption text-tertiary">
+          On a phone, the versus board the comparison tool uses, with its
+          controls taken away.
+        </p>
       </Section>
 
       <footer className="border-t border-border-subtle py-10 text-caption text-tertiary">

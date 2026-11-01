@@ -173,8 +173,7 @@ export default function TypeChart() {
               panel's edge hints at it for a mouse, and the focus ring for a
               keyboard, but neither tells you the grid is wider than the screen
               before you try. The grid fits from about 757px (measured), so
-              `md`: until `lg` it said so to tablets that had nothing to
-              scroll. */}
+              the line stops at `md`. */}
           <span className="md:hidden">
             {" "}
             Scroll the chart sideways for the rest.

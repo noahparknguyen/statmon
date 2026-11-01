@@ -37,8 +37,10 @@ const ROUTES = [
   "/games/effective?tier=medium",
   "/games/effective?tier=hard",
   "/games/effective?tier=hard&type=ghost&asof=5",
-  // Panels that only exist after a click: the games' setup dialogue and the
-  // dex's phone sort and filter sheet. Each is opened by clicking its button first.
+  // Panels that only exist after a click: the games' setup dialogue, and a
+  // phone's sheets and picker (the dex's sort and filter, Compare's picker and
+  // ability sheet, the type chart's Change). Each is opened by clicking its
+  // button first.
   // The setup dialogue, opened from a game in progress, so it needs a URL with
   // settings, since a bare one is the start screen. Both games, because their
   // panels hold different groups.
@@ -57,7 +59,7 @@ const ROUTES = [
   // A phone's type chart folds its controls into a bar once a typing is
   // chosen, and Change opens them in a sheet.
   ["/types/water/flying", "Change"],
-  "/credits",
+  "/about",
   "/style",
   "/no-such-page",
 ];
