@@ -1,4 +1,4 @@
-# Runs the same nine checks as `pnpm run check`, so none of them depends on
+# Runs the same ten checks as `pnpm run check`, so none of them depends on
 # someone remembering to run it locally.
 name: CI
 
