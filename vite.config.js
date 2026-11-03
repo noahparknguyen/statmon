@@ -12,7 +12,7 @@ export default defineConfig({
   // filters, both games' generators, the ability table), but `routes.test.jsx`
   // also server-renders every route with `react-dom/server` and asserts on the
   // markup, which needs no DOM either. What that can't answer is anything
-  // about layout, scroll, or paint: `npm run sweep:widths` measures those in
+  // about layout, scroll, or paint: `pnpm run sweep:widths` measures those in
   // headless Chrome across every route at 14 widths and on phones held
   // sideways, and `audit:contrast` computes every colour pairing.
   test: {

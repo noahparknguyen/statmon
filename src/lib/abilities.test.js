@@ -17,7 +17,7 @@ import { TYPES } from "./types";
 
 // These tests carry more weight than the rest of the suite.
 //
-// `npm run build:data` re-derives the effectiveness chart from PokéAPI and
+// `pnpm run build:data` re-derives the effectiveness chart from PokéAPI and
 // fails on a single wrong cell. There's no equivalent here: PokéAPI gives
 // Levitate's effect only as the prose "Evades Ground moves.", so the table in
 // abilities.js is maintained by hand with nothing behind it. The build checks

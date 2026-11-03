@@ -27,7 +27,7 @@ import { formatMult } from "../lib/typeChart";
 // Only 2× gets a colour of its own. The quieter tiers use `secondary` text,
 // because `tertiary` over this 14% type fill falls below AA contrast on most
 // types, and a lighter fill can't fix that without losing the tint. `secondary`
-// passes on every type (worst 5.17:1, checked by `npm run audit:contrast`), and
+// passes on every type (worst 5.17:1, checked by `pnpm run audit:contrast`), and
 // the tier is still carried by two other cues: the icon and the border
 // strength. A multiplier shouldn't rely on colour to say "resisted" anyway.
 //
@@ -70,7 +70,7 @@ export default function StabChip({
     <div
       className={`inline-flex items-center ${SHAPE[size]}`}
       // One fill share for both sizes: `--mix-stab-fill` in index.css, which
-      // `npm run audit:contrast` reads.
+      // `pnpm run audit:contrast` reads.
       style={{
         backgroundColor: `color-mix(in srgb, ${tc} var(--mix-stab-fill), var(--color-elevated))`,
         border: `1px solid color-mix(in srgb, ${tc} ${border}, transparent)`,

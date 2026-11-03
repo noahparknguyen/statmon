@@ -1,4 +1,4 @@
-# Runs the same nine checks as `npm run check`, so none of them depends on
+# Runs the same nine checks as `pnpm run check`, so none of them depends on
 # someone remembering to run it locally.
 name: CI
 
@@ -18,51 +18,52 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      # Installs the pnpm named by `packageManager` in package.json and the Node
+      # named by `devEngines.runtime`, then runs `pnpm install`. With
+      # `require-lockfile`, a missing pnpm-lock.yaml fails the job rather than
+      # being quietly created.
+      - uses: pnpm/setup@fa36a5ef7dcdefc3a7cb25655c122e00cf6e636e # v3.1.2
         with:
-          # Matches the `engines.node` floor in package.json.
-          node-version: 24
-          cache: npm
-
-      - run: npm ci
+          cache: true
+          require-lockfile: true
 
       # Ordered cheapest-first, so an obvious failure reports in seconds rather
       # than after the browser sweep.
       - name: Lint
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Formatting
-        run: npm run format:check
+        run: pnpm run format:check
 
       # A static scan of src/ that needs no build, so it runs early. It catches
       # two utilities setting the same property in one class string, which
       # Tailwind resolves by stylesheet order rather than by the order they're
       # written.
       - name: Conflicting utilities
-        run: npm run audit:classes
+        run: pnpm run audit:classes
 
       # The same scan, asking whether every utility comes from the site's
       # closed sets of colours, text styles, spacing, radii, opacity steps, and
       # layers, as scripts/style-audit.mjs lists them.
       - name: Style allowlist
-        run: npm run audit:styles
+        run: pnpm run audit:styles
 
       # Opens every favicon file, which nothing else does: a broken one only
       # shows in a tab, a search result, or on a home screen.
       - name: Icons
-        run: npm run check:icons
+        run: pnpm run check:icons
 
       - name: Unit tests
-        run: npm run test:run
+        run: pnpm run test:run
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
 
       - name: Contrast audit (WCAG AA)
-        run: npm run audit:contrast
+        run: pnpm run audit:contrast
 
       - name: Docs links and anchors
-        run: npm run check:docs
+        run: pnpm run check:docs
 
       # Needs dist/ from the Build step, and Chrome. scripts/chrome.mjs finds a
       # Chrome binary itself, since its path can move between runner images;
@@ -70,4 +71,4 @@ jobs:
       # targets below WCAG 2.5.8's minimum at 14 widths, which no check above
       # can see.
       - name: Responsive width sweep
-        run: npm run sweep:widths
+        run: pnpm run sweep:widths

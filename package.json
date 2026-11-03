@@ -27,12 +27,20 @@
   "engines": {
     "node": ">=24"
   },
+  "packageManager": "pnpm@12.16.1",
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "^24.0.0",
+      "onFail": "download"
+    }
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "test": "vitest",
     "test:run": "vitest run",
-    "check": "npm run lint && npm run format:check && npm run audit:classes && npm run audit:styles && npm run check:icons && npm run test:run && npm run build && npm run audit:contrast && npm run check:docs && npm run sweep:widths",
+    "check": "pnpm run lint && pnpm run format:check && pnpm run audit:classes && pnpm run audit:styles && pnpm run check:icons && pnpm run test:run && pnpm run build && pnpm run audit:contrast && pnpm run check:docs && pnpm run sweep:widths",
     "build:data": "node scripts/build-data.mjs",
     "build:icons": "node scripts/build-icons.mjs",
     "vendor:images": "node scripts/vendor-images.mjs",
@@ -49,7 +57,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "preview": "vite preview",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "pnpm run build && wrangler deploy"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

@@ -187,7 +187,7 @@ describe("token helpers", () => {
 });
 
 // The dex bar takes its Pokémon's primary type, one colour even for a dual
-// type. Its contrast is group 5 of `npm run audit:contrast`, and these assert
+// type. Its contrast is group 5 of `pnpm run audit:contrast`, and these assert
 // the value, which the audit can't see.
 describe("typeFill", () => {
   it("is a flat wash of the type at the given share", () => {

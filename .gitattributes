@@ -3,7 +3,7 @@
 # Without this, `core.autocrlf=true` (the Windows/WSL default) rewrites text
 # files to CRLF on checkout while storing them as LF. The stored content is
 # fine, so `build` and the tests pass, but Prettier defaults to `endOfLine:
-# "lf"`, so `npm run format:check` fails on every source file the moment you
+# "lf"`, so `pnpm run format:check` fails on every source file the moment you
 # switch branches. A gate that breaks on `git checkout` teaches people to
 # ignore the gate.
 #

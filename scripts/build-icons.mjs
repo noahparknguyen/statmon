@@ -7,9 +7,9 @@
  * vector at its own size rather than scaled from another, with sharp, which
  * vendor-images.mjs already uses.
  *
- * Run it after changing the SVG, then `npm run check:icons`.
+ * Run it after changing the SVG, then `pnpm run check:icons`.
  *
- *   npm run build:icons
+ *   pnpm run build:icons
  */
 
 import { readFile, writeFile } from "node:fs/promises";

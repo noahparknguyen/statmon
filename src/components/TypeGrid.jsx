@@ -39,7 +39,7 @@ import { chartAsOf, formatMult, typesIn } from "../lib/typeChart";
 // 55% accent into the elevated colour is the ceiling: the 2× text on it is
 // 5.04:1, and a brighter fill would drop it below AA. Mixed from two tokens
 // rather than hard-coded, like DexRow's stat fill. The share is
-// `--mix-grid-strong` in index.css, which `npm run audit:contrast` reads.
+// `--mix-grid-strong` in index.css, which `pnpm run audit:contrast` reads.
 const STRONG_FILL = {
   backgroundColor:
     "color-mix(in srgb, var(--color-accent) var(--mix-grid-strong), var(--color-elevated))",

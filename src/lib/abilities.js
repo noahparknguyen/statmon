@@ -9,7 +9,7 @@
 //   · The effects are prose only. Levitate's entry says "Evades Ground moves.",
 //     and no structured field says "immune to Ground". So the table below is
 //     written by hand, like the type chart, but unlike the chart it can't be
-//     checked against PokéAPI's damage relations. `npm run build:data` checks
+//     checked against PokéAPI's damage relations. `pnpm run build:data` checks
 //     that every key is a real ability some Pokémon has, and abilities.test.js
 //     guards what each one does.
 //

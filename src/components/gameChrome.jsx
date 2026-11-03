@@ -50,7 +50,7 @@ export const BOARD_SURFACE = "relative grid gap-px overflow-hidden bg-base";
    ---------------------------------------------------------------------- */
 
 // How much of the type's colour sits over the page background:
-// `--mix-panel-tint` in index.css, 16%, which `npm run audit:contrast` reads.
+// `--mix-panel-tint` in index.css, 16%, which `pnpm run audit:contrast` reads.
 // Low, because it's a field behind artwork rather than a fill: enough to tell
 // two panels apart at a glance, not enough to compete with what's on them, yet
 // enough to register as a colour over near-black. The worst case for text is

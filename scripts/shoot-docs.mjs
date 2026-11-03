@@ -9,12 +9,12 @@
  * a README whose screenshot shows two thirds of the product is worse than one
  * with no screenshot: it's confidently wrong. So this runs off `dist/`.
  *
- * Needs a build first (`npm run build`) and Chrome. Override the binary with
+ * Needs a build first (`pnpm run build`) and Chrome. Override the binary with
  * CHROME_PATH. The repo root is served, so the app resolves at `/`, and the OG
  * generator at `/docs/og-image.html` with its `../public/fonts` references
  * intact.
  *
- *   npm run build && npm run shoot:docs
+ *   pnpm run build && pnpm run shoot:docs
  */
 
 import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
@@ -136,7 +136,7 @@ const shoot = (url, width, height, out, scale = 1) =>
 try {
   await readFile(path.join(DIST, "index.html"));
 } catch {
-  console.error("dist/ is missing — run `npm run build` first.");
+  console.error("dist/ is missing — run `pnpm run build` first.");
   process.exit(1);
 }
 

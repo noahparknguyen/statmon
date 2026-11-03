@@ -62,7 +62,7 @@ export default function FeaturedTypes() {
 
       {/* Decorative, and desktop-only, like the comparison board's mascots:
           below lg the tiers need the whole column, and art that overflows
-          scrolls the whole page sideways (`npm run sweep:widths` catches it).
+          scrolls the whole page sideways (`pnpm run sweep:widths` catches it).
           Lazy, unlike the board's art: this one is below the fold, and Home is
           the only route that isn't code-split. */}
       <img

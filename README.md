@@ -52,15 +52,15 @@ It's built with React, Vite, Tailwind, React Router, and plain JavaScript, and s
 Node 24 or later. From the root of the repo:
 
 ```
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
-The dataset, sprites, and fonts are already committed, so that's all it takes. When something upstream changes, `npm run build:data` rebuilds the dataset from PokéAPI, `npm run vendor:images` fetches the sprites and artwork, and `npm run vendor:fonts` fetches the fonts with their licences.
+The dataset, sprites, and fonts are already committed, so that's all it takes. When something upstream changes, `pnpm run build:data` rebuilds the dataset from PokéAPI, `pnpm run vendor:images` fetches the sprites and artwork, and `pnpm run vendor:fonts` fetches the fonts with their licences.
 
 ## Checks
 
-`npm run check` runs all ten checks, in CI's order, cheapest first:
+`pnpm run check` runs all ten checks, in CI's order, cheapest first:
 
 - `lint`: ESLint.
 - `format:check`: Prettier.
@@ -73,7 +73,7 @@ The dataset, sprites, and fonts are already committed, so that's all it takes. W
 - `check:docs`: every link and anchor in this README.
 - `sweep:widths`: headless Chrome across 33 routes at 14 widths and on three phones held sideways. No page may scroll sideways or show its footer on load. Every touch target has to meet WCAG 2.5.8.
 
-On every push to `main`, GitHub Actions runs the same ten. `npm run shoot:docs` regenerates this README's screenshots from the built site, and `npm run build:icons` redraws the icons from `public/favicon.svg`. `npm run shoot:phone` photographs every page at two phone sizes, a screen at a time, for reviewing the phone layouts by eye.
+On every push to `main`, GitHub Actions runs the same ten. `pnpm run shoot:docs` regenerates this README's screenshots from the built site, and `pnpm run build:icons` redraws the icons from `public/favicon.svg`. `pnpm run shoot:phone` photographs every page at two phone sizes, a screen at a time, for reviewing the phone layouts by eye.
 
 ## Limits
 
@@ -84,7 +84,7 @@ On every push to `main`, GitHub Actions runs the same ten. `npm run shoot:docs` 
 
 ## Credits
 
-Data and images come from [PokéAPI](https://pokeapi.co), and the sprites are CC0. The two webfonts, Inter and Space Grotesk, are under the SIL Open Font License, and the carets on the comparison board and the dex are from Font Awesome Free (CC BY 4.0). Every third-party notice is in [`licenses/NOTICE.md`](licenses/NOTICE.md). `npm run vendor:fonts` fetches the font licences along with the fonts, so a re-vendor can't drop them.
+Data and images come from [PokéAPI](https://pokeapi.co), and the sprites are CC0. The two webfonts, Inter and Space Grotesk, are under the SIL Open Font License, and the carets on the comparison board and the dex are from Font Awesome Free (CC BY 4.0). Every third-party notice is in [`licenses/NOTICE.md`](licenses/NOTICE.md). `pnpm run vendor:fonts` fetches the font licences along with the fonts, so a re-vendor can't drop them.
 
 Pokémon is © Nintendo, Game Freak, and The Pokémon Company. Statmon is an unofficial fan project.
 

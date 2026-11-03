@@ -37,7 +37,7 @@
  * run time, which Tailwind can't see either, so this codebase never builds
  * them.
  *
- *   npm run audit:styles
+ *   pnpm run audit:styles
  */
 
 import { COLORS, TEXT_STYLES, classStrings } from "./classes.mjs";

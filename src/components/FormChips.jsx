@@ -9,7 +9,7 @@ import { CHIP, CHIP_FILTER_GEOMETRY, CHIP_OFF, CHIP_ON } from "./chipStyles";
 // `ABILITY` label, and eight forms (Minior) already fill this row to two lines,
 // so they stay smaller than the 36px chips used elsewhere. At 21px tall, they
 // pass WCAG 2.5.8 through its spacing exception rather than by size, and
-// `npm run sweep:widths` checks it.
+// `pnpm run sweep:widths` checks it.
 //
 // Renders nothing for a single-form Pokémon, which is 845 of the 1,259 entries.
 // The card supplies the dash placeholder rather than this component, because

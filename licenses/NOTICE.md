@@ -7,7 +7,7 @@ obligations rather than courtesies.
 ## Fonts — redistributed in this repository
 
 `public/fonts/` contains ten `.woff2` files pulled from Google Fonts by
-`npm run vendor:fonts`. Both families are under the **SIL Open Font License
+`pnpm run vendor:fonts`. Both families are under the **SIL Open Font License
 1.1**, which requires the licence text to travel with the font files. The two
 texts are beside this one, and the script fetches them alongside the fonts so a
 re-vendor cannot quietly drop them again.
