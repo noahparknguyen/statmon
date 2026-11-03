@@ -49,7 +49,7 @@ It's built with React, Vite, Tailwind, React Router, and plain JavaScript, and s
 
 ## Run it
 
-Node 24 or later. From the root of the repo:
+It needs pnpm, which installs the project's Node version itself. From the root of the repo:
 
 ```
 pnpm install
