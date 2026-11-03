@@ -5,7 +5,7 @@ import { typeColorVar, typeTextVar, capitalize } from "../lib/types";
 // `label` overrides the text (the type chart's column headers show a
 // three-letter abbreviation), and `className` is for layout only: the caller
 // can make a badge fill its column, but the colour pairing stays in here,
-// where `npm run audit:contrast` checks it.
+// where `pnpm run audit:contrast` checks it.
 //
 // `radius` is a prop rather than something passed through `className`,
 // because adding `rounded-xs` to a string that already says `rounded-full`

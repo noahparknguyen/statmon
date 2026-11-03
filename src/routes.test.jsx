@@ -29,7 +29,7 @@ import { TIER_DESC } from "./lib/effective";
 //
 // react-dom/server needs no DOM, so this stays inside the "pure logic only" test
 // setup: no jsdom, no component-testing library. Layout and overflow are
-// measured by `npm run sweep:widths` in headless Chrome, and interaction is
+// measured by `pnpm run sweep:widths` in headless Chrome, and interaction is
 // checked by hand against the running app.
 //
 // The route table is copied from router.jsx with plain elements, because the
@@ -497,7 +497,7 @@ describe("abilities", () => {
 // (24px) rather than a chip's 21, and the labels would shift the moment a
 // Pokémon had a form.
 //
-// The offsets themselves are a browser measurement, for `npm run
+// The offsets themselves are a browser measurement, for `pnpm run
 // sweep:widths`. What a server render can hold is that both cells still
 // reserve the box.
 describe("the card's controls band does not twitch", () => {
@@ -905,7 +905,7 @@ describe("Home's feature previews", () => {
   // The hero's tagline is `primary` where every other tagline on the site is
   // `secondary`, and that isn't a style preference: over the 65% scrim, the
   // secondary token lands at 2.78:1 and fails AA, which group 8 of
-  // `npm run audit:contrast` prints every run. This is the other half: the
+  // `pnpm run audit:contrast` prints every run. This is the other half: the
   // audit proves the number, and this proves the site still uses it.
   it("keeps the hero tagline on the colour the scrim was audited for", () => {
     const tagline = render("/").match(
@@ -1587,7 +1587,7 @@ describe("the clash has parts to shake", () => {
 });
 
 // The games' arena. These are server renders, so they say nothing about layout,
-// which is `npm run sweep:widths`' job. What they do catch is what a smoke test
+// which is `pnpm run sweep:widths`' job. What they do catch is what a smoke test
 // is for: a round that renders no Pokémon, a settings combination that throws,
 // and the empty state being unreachable when it shouldn't be.
 describe("the stat game's arena", () => {
@@ -2163,7 +2163,7 @@ describe("the footer", () => {
 
   // The footer states two facts about the dataset. Both are read from it
   // rather than typed, because a footer that states a count can be wrong
-  // about it, and `npm run build:data` would make it wrong silently, months
+  // about it, and `pnpm run build:data` would make it wrong silently, months
   // later.
   it("reads its dex size and generation off the dataset", () => {
     const page = render("/about");
@@ -2418,7 +2418,7 @@ describe("one component per job", () => {
   });
 
   it("holds the speed banner's text off the flame's dark end", () => {
-    // `.flame-inset` is the rule, and group 11 of `npm run audit:contrast` is
+    // `.flame-inset` is the rule, and group 11 of `pnpm run audit:contrast` is
     // the number behind it.
     expect(render("/compare/volcarona/vs/chandelure")).toContain("flame-inset");
     expect(render("/")).toContain("flame-inset");

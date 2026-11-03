@@ -19,8 +19,8 @@
  * Reports `scrollHeight` per route too, since how far a phone has to scroll
  * for the answer is the other thing worth watching.
  *
- *   npm run sweep:widths            # after npm run build
- *   npm run sweep:widths -- --json  # machine-readable
+ *   pnpm run sweep:widths            # after pnpm run build
+ *   pnpm run sweep:widths -- --json  # machine-readable
  */
 
 import { writeFile, rm } from "node:fs/promises";
@@ -319,7 +319,7 @@ close();
 const match = dom.match(/SWEEP_JSON:(\[.*?\])<\/pre>/s);
 if (!match) {
   console.error(
-    "Could not read the sweep results. Is dist/ built (npm run build) and is\n" +
+    "Could not read the sweep results. Is dist/ built (pnpm run build) and is\n" +
       "Chrome available? Override with CHROME_PATH=/path/to/chrome.",
   );
   process.exit(1);

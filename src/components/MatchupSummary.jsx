@@ -28,7 +28,7 @@ import { capitalize, typeColorVar } from "../lib/types";
 
 // The typing under attack, as coloured text rather than badges: an 11px pill
 // beside 18px text would be two type sizes on one line, and no aligning makes
-// them sit together. `npm run audit:contrast` checks the colour pairing.
+// them sit together. `pnpm run audit:contrast` checks the colour pairing.
 //
 // `as` sets the heading level, not the style, as in PageHeader: /types is the
 // page, so its readout is an <h2>, while Home's sits inside a section and is an

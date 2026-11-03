@@ -13,7 +13,7 @@
  * is why this check is a script rather than done by eye.
  *
  * Run it with:
- *   npm run check:docs
+ *   pnpm run check:docs
  */
 
 import fs from "node:fs";

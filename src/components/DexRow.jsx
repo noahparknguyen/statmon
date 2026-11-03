@@ -25,7 +25,7 @@ import { typeFill } from "../lib/types";
 
 // The stat cell's proportional fill. Scaled to the same fixed 255 as every other
 // bar on the site, tinted with the Pokémon's primary type, and faint enough that
-// the number on top stays what you read: `npm run audit:contrast` checks it
+// the number on top stays what you read: `pnpm run audit:contrast` checks it
 // against text-primary.
 //
 // One colour, even for a dual type: two darkened type colours in one bar read

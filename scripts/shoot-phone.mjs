@@ -21,9 +21,9 @@
  * The routes are `routes.mjs`, the same list the sweep measures. The games
  * draw their rounds at random, so their shots differ on every run.
  *
- *   npm run build && npm run shoot:phone
- *   npm run shoot:phone -- --only /compare --screens 6
- *   npm run shoot:phone -- --out shots/before --sizes 390x844
+ *   pnpm run build && pnpm run shoot:phone
+ *   pnpm run shoot:phone -- --only /compare --screens 6
+ *   pnpm run shoot:phone -- --out shots/before --sizes 390x844
  *
  * Writes `<out>/<width>x<height>/<route>.png`, overwriting what is there, into
  * `shots/phone` by default. `shots/` is ignored by git.
@@ -66,7 +66,7 @@ const entries = ENTRIES.filter(
 try {
   await readFile(path.join(DIST, "index.html"));
 } catch {
-  console.error("dist/ is missing — run `npm run build` first.");
+  console.error("dist/ is missing — run `pnpm run build` first.");
   process.exit(1);
 }
 if (!entries.length) {

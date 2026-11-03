@@ -84,7 +84,7 @@ export default function SpriteWall({ children }) {
       </div>
 
       {/* The scrim. Its depth isn't a matter of taste: --hero-scrim is the value
-          `npm run audit:contrast` checks text-primary against, over the worst
+          `pnpm run audit:contrast` checks text-primary against, over the worst
           backdrop a sprite can produce, a pure white pixel. The shared token
           stops one changing without the other. The gradients above it only
           ever deepen it, and let the wall end without a hard line. */}

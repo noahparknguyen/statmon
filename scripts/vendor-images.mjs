@@ -17,8 +17,8 @@
  * exist, so a re-run only fetches what's missing.
  *
  * Run after build:data (once per data refresh):
- *   npm run vendor:images
- *   RPS=5 npm run vendor:images     # override the rate cap
+ *   pnpm run vendor:images
+ *   RPS=5 pnpm run vendor:images     # override the rate cap
  *
  * Sources are reconstructed from each entry's id, so this works whether the
  * data currently holds remote URLs or already-local paths.

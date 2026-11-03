@@ -158,7 +158,7 @@ const CRAFT_LINKS = [
 
 // `py-1` is for target size. With 4px of padding, each 14px link is a box of
 // about 28px, which passes WCAG 2.5.8 outright rather than through its spacing
-// exception. `npm run sweep:widths` measures it either way.
+// exception. `pnpm run sweep:widths` measures it either way.
 const FOOTER_LINK =
   "inline-flex items-center gap-1.5 py-1 text-body-sm text-tertiary transition-colors hover:text-secondary active:text-secondary";
 

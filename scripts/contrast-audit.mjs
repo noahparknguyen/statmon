@@ -24,7 +24,7 @@
  * Thresholds: AA normal text 4.5, AA large text 3.0, non-text (1.4.11) 3.0.
  * Statmon's difference, badge, and label text is small, so 4.5 applies.
  *
- *   npm run audit:contrast
+ *   pnpm run audit:contrast
  */
 
 import { readFile } from "node:fs/promises";
@@ -404,7 +404,7 @@ for (const f of fails) console.log(`  ✗ ${f}`);
 if (!fails.length) console.log("  All pairings pass. ✓");
 
 // This is what makes it a gate rather than a report. Without a failing exit
-// code, `npm run check` and CI would go green with WCAG failures on screen.
+// code, `pnpm run check` and CI would go green with WCAG failures on screen.
 //
 // `exitCode` rather than `exit(1)`, so the whole report still prints first,
 // which is the point of a report.

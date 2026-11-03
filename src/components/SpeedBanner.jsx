@@ -17,7 +17,7 @@ import { LuGauge } from "react-icons/lu";
 // "Squawkabilly Green Plumage moves first" would reach it on a phone.
 // `.flame-inset` holds the text inside the middle 64%, where the worst point is
 // 4.71, and a name that doesn't fit wraps to a second line instead.
-// `npm run audit:contrast` reads the inset and checks that number.
+// `pnpm run audit:contrast` reads the inset and checks that number.
 export default function SpeedBanner({ p1, p2, a, b }) {
   const tie = a === b;
   const faster = a > b ? p1 : p2;

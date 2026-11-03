@@ -19,7 +19,7 @@ import { PANEL_BOX, ring, tintFor } from "./gameChrome";
 // colours it. One colour even for a dual type, with the badges carrying the
 // full typing. The tint also separates the panels: two of different colours
 // read as two sides without a heavier divider. Its contrast is checked by
-// `npm run audit:contrast`.
+// `pnpm run audit:contrast`.
 //
 // Right and wrong without a red and green pair, since the palette has none on
 // purpose: the winner takes the accent and everything else steps back. Every

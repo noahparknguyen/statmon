@@ -417,7 +417,7 @@ export function* walk(dir) {
  *
  * A string counts as a class string when every token is shaped like a utility
  * AND most of them classify. Classify first, decide second:
- * `npm run audit:contrast` is three lowercase tokens and passes any shape test,
+ * `pnpm run audit:contrast` is three lowercase tokens and passes any shape test,
  * and what tells it apart from a class string is that it classifies as nothing.
  * That keeps prose, shell commands and `color-mix(...)` values out without
  * knowing where any of them live.

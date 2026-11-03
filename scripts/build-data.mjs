@@ -14,8 +14,8 @@
  *   - An identifying User-Agent.
  *
  * Run once when adding a field or feature, or when a new generation ships:
- *   npm run build:data           # 5 req/s
- *   RPS=3 npm run build:data      # override the rate cap
+ *   pnpm run build:data           # 5 req/s
+ *   RPS=3 pnpm run build:data      # override the rate cap
  *
  * Output: src/data/pokemon.json, written in the compact form defined by
  * src/lib/pokemonCodec.js (fields derivable from id and slug are omitted),
@@ -447,7 +447,7 @@ async function main() {
         formUrl: p.is_default ? null : (p.forms?.[0]?.url ?? null),
         forms: formSlugs, // sibling variety slugs (incl. self); length > 1 => has alt forms
         // Local asset paths, since the images are self-hosted. The files come
-        // from `npm run vendor:images`, which downloads and optimizes them from
+        // from `pnpm run vendor:images`, which downloads and optimizes them from
         // PokeAPI/sprites. No pixel sprite gives null, and no official artwork
         // gives the pixel sprite, so `spriteUrl ?? artworkUrl` still resolves.
         spriteUrl: p.sprites?.front_default ? `/sprites/${p.id}.png` : null,

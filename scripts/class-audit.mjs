@@ -29,7 +29,7 @@
  *     it, so the coverage is visible instead of assumed.
  *
  * Run it with:
- *   npm run audit:classes
+ *   pnpm run audit:classes
  */
 
 import { classStrings } from "./classes.mjs";

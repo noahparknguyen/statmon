@@ -169,7 +169,7 @@ export const typesIn = (gen) => TYPES.filter((t) => typeExistsIn(t, gen));
 // in Gen 1, Fire doesn't resist Ice.
 //
 // Taken from PokéAPI's `past_damage_relations` rather than typed in, and
-// `npm run build:data` checks both these rows and `CHART` against it.
+// `pnpm run build:data` checks both these rows and `CHART` against it.
 export const CHART_ERAS = [
   {
     until: 1,
